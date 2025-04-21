@@ -1,0 +1,139 @@
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: inherit;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Custom Scrollbar Classes */
+.scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+    background-color: inherit;
+    border-radius: 4px;
+}
+
+.scrollbar-thumb-gray-600:hover::-webkit-scrollbar-thumb {
+    background-color: #888;
+}
+
+.scrollbar-track-gray-300::-webkit-scrollbar-track {
+    background-color: inherit;
+}
+
+/* Base Styles */
+.prose ul {
+    list-style-type: disc;
+    list-style-position: outside;
+    margin-left: 1rem;
+    padding-left: 0;
+}
+
+.prose ol {
+    list-style-type: decimal;
+    list-style-position: outside;
+    margin-left: 1rem;
+    padding-left: 0;
+}
+
+.prose li {
+    line-height: 2;
+    margin-bottom: 0.5rem;
+    display: list-item;
+    padding-left: 1rem;
+}
+
+.prose p {
+    line-height: 1.6;
+}
+
+/* Mobile (up to 480px) */
+@media (max-width: 480px) {
+    .prose ul,
+    .prose ol {
+        margin-left: 0;
+    }
+
+    .prose li {
+        padding-left: 0.5rem;
+        line-height: 1.6;
+        font-size: 0.9rem;
+    }
+
+    .prose p {
+        line-height: 1.4;
+        font-size: 0.9rem;
+    }
+}
+
+/* Tablet (481px to 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .prose ul,
+    .prose ol {
+        margin-left: 0.5rem;
+    }
+
+    .prose li {
+        padding-left: 0.8rem;
+        line-height: 1.8;
+        font-size: 1rem;
+    }
+
+    .prose p {
+        line-height: 1.5;
+        font-size: 1rem;
+    }
+}
+
+/* Laptop (769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .prose ul,
+    .prose ol {
+        margin-left: 1rem;
+    }
+
+    .prose li {
+        padding-left: 1rem;
+        line-height: 2;
+        font-size: 1.05rem;
+    }
+
+    .prose p {
+        line-height: 1.6;
+        font-size: 1.05rem;
+    }
+}
+
+/* Larger Screens (above 1024px) */
+@media (min-width: 1025px) {
+    .prose ul,
+    .prose ol {
+        margin-left: 1.5rem;
+    }
+
+    .prose li {
+        padding-left: 1.2rem;
+        line-height: 2.2;
+        font-size: 0.9rem;
+    }
+
+    .prose p {
+        line-height: 1.8;
+        font-size: 0.9rem;
+    }
+}

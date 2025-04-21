@@ -1,0 +1,87 @@
+.background_image{
+    background-image: url('../assets/login_bg.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh; /* Ensures the div takes the full viewport height */
+}
+
+/* styles.css */
+.tooltip {
+    position: relative;
+}
+
+.tooltip:hover::after {
+    content: attr(title);
+    position: absolute;
+    background-color: rgba(216, 203, 203, 0.8);
+    color: #fff;
+    padding: 5px;
+    border-radius: 3px;
+    z-index: 1;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(100% + 5px);
+    white-space: nowrap;
+}
+
+.custom-input {
+    transition: border-color 0.2s ease-in-out;
+  }
+  
+  .custom-input:focus {
+    border-color: inherit;
+    outline: none;
+    box-shadow: 0 0 0 1px currentColor;
+  }
+  
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: inherit;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Custom Scrollbar Classes */
+.scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+    background-color: inherit;
+    border-radius: 4px;
+}
+
+.scrollbar-thumb-gray-600:hover::-webkit-scrollbar-thumb {
+    background-color: #888;
+}
+
+.scrollbar-track-gray-300::-webkit-scrollbar-track {
+    background-color: inherit;
+}
+
+.prose ul,
+.prose ol {
+  list-style-type: disc; /* or 'circle', 'square' for different bullet styles */
+  list-style-position: inside;
+  margin-left: 1.5rem;
+  padding-left: 0;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
+}
+

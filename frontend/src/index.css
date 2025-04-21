@@ -1,0 +1,14 @@
+@import 'github-markdown-css/github-markdown.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tw-font-sans: 'Work Sans', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  @apply font-sans;
+  overflow: hidden;
+}
+

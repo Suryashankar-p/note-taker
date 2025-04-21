@@ -1,0 +1,24 @@
+FROM node:20 as frontend
+ARG VITE_ENABLE_SSO
+ARG VITE_FIRST_USER_EMAIL
+ARG VITE_DOMAIN
+ARG VITE_URL_PREFIX
+ENV VITE_ENABLE_SSO=${VITE_ENABLE_SSO}
+ENV VITE_FIRST_USER_EMAIL=${VITE_FIRST_USER_EMAIL}
+ENV VITE_DOMAIN=${VITE_DOMAIN}
+ENV VITE_URL_PREFIX=${VITE_URL_PREFIX}
+WORKDIR /frontend/
+COPY ./frontend/package.json /frontend/package.json
+RUN npm install
+COPY ./frontend/tsconfig.json ./frontend/postcss.config.js ./frontend/tailwind.config.js ./frontend/tsconfig.node.json ./frontend/vite.config.ts ./frontend/index.html ./frontend/.eslintrc.cjs /frontend/
+COPY ./frontend/src/ /frontend/src/
+COPY ./frontend/public/ /frontend/public/
+RUN npm run build
+
+FROM nginx
+# ARG BACKEND_PORT
+# ENV BACKEND_PORT=${BACKEND_PORT}
+COPY --from=frontend /frontend/dist /usr/share/nginx/html
+COPY ./nginx/nginx-prod.conf /etc/nginx/nginx.conf
+# RUN envsubst < /etc/nginx/nginx.conf > /etc/nginx/nginx.conf
+CMD ["nginx", "-g", "daemon off;"]

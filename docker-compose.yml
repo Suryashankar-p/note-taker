@@ -1,0 +1,52 @@
+version: "3"
+services:
+  frontend:
+    container_name: thermax-frontend
+    build:
+      context: ./frontend
+      dockerfile: ./dockerfile
+    image: thermax_ai_studio_frontend
+    environment:
+      # Backend
+      - VITE_ENABLE_SSO=${ENABLE_SSO}
+      - VITE_FIRST_USER_EMAIL=${ADMIN_USER_EMAIL}
+      - VITE_DOMAIN=${DOMAIN}
+      - VITE_URL_PREFIX=${URL_PREFIX}
+      - VITE_BACKEND_SSO_URL=${BACKEND_SERVICE_SSO_URL}
+      - VITE_BACKEND_THERMAX_GPT_URL=${BACKEND_SERVICE_THERMAX_GPT_URL}
+      - VITE_BACKEND_DOCTOR_CONBOT_URL=${BACKEND_SERVICE_DOCTOR_CONBOT_URL}
+      - VITE_BACKEND_TROUBLESHOOTING_URL=${BACKEND_SERVICE_SMART_TROUBLESHOOT_URL}
+      - VITE_BACKEND_SALES_URL=${BACKEND_SERVICE_SALES_URL}
+      - VITE_BACKEND_TBWES_OCR_URL=${BACKEND_SERVICE_TBWES_OCR_URL}
+      - PORT=${FRONTEND_PORT}
+    volumes:
+      - ./frontend/src:/frontend/src
+      - ./frontend/public:/frontend/public
+    expose:
+      - "${FRONTEND_PORT}"
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    command: [ 'npm', 'run', 'dev', '--', '--host' ]
+    restart: unless-stopped
+    # depends_on:
+    #   - backend
+  nginx:
+    container_name: thermax-frontend-nginx
+    image: nginx
+    environment:
+      # - BACKEND_PORT=${BACKEND_PORT}
+      - FRONTEND_PORT=${FRONTEND_PORT}
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.template
+    ports:
+      - 80:80
+    command: [ "/bin/bash", "-c", "envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'" ]
+    restart: unless-stopped
+    depends_on:
+      # - backend
+      - frontend
+
+networks:
+  default:
+    external:
+      name: thermax-network

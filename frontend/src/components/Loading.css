@@ -1,0 +1,83 @@
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: inherit;
+  border-radius: 8px;
+  width: 80%; /* Increase width */
+  max-width: 800px; /* Increase max-width */
+  margin-left: 5vh;
+}
+
+.loading-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-icon {
+  width: 20px;
+  height: 20px;
+  background-color: #c1c1c1;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.loading-title{
+  height: 16px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  margin-left: 1.5rem;
+  animation: shine 1.5s infinite linear; /* Smooth and flowy animation */
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #555;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1.5rem;
+}
+
+.loading-line {
+  height: 10px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: shine 1.5s infinite linear; /* Smooth and flowy animation */
+}
+
+.loading-line.short {
+  width: 60%;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shine {
+  100% {
+    background-position: -200% 0;
+  }
+  0% {
+    background-position: 200% 0;
+  }
+}
+
+.custom-placeholder::placeholder {
+  color: #6B778C; /* Customize the color */
+  opacity: 1;  /* Customize the opacity */
+  font-size: 14px; /* Customize the font size */
+  
+}
