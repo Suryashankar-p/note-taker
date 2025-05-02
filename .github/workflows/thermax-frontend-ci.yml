@@ -1,17 +1,56 @@
-name: Thermax-Frontend Workflow
+name: Thermax Frontend Deployment
 
 on:
   push:
     branches:
       - development
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Select the branch to deploy'
+        required: true
+        type: choice
+        options:
+          - main
+          - development
+
+env:
+  ACR_NAME: tmxgenaidacr01
+  IMAGE_NAME: thermax_frontend
+  RESOURCE_GROUP: Tmx_Genai_Dev_RG
+  CONTAINER_APP_NAME: tmxgenaidaca03
+  IMAGE_TAG: v1
 
 jobs:
-  test_job:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout selected branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
-      - name: Print a message
-        run: echo "Hello from the dummy GitHub Actions workflow!"
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        run: |
+          az acr login --name $ACR_NAME
+
+      - name: Build Docker image
+        run: |
+          docker build -f frontend/Dockerfile -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG ./frontend
+
+      - name: Push Docker image to ACR
+        run: |
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG
+
+      - name: Deploy to Azure Container App
+        run: |
+          az containerapp update \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG

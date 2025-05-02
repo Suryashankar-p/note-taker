@@ -5,7 +5,7 @@ services:
     build:
       context: ./frontend
       dockerfile: ./dockerfile
-    image: thermax_ai_studio_frontend
+    image: thermax_frontend
     environment:
       # Backend
       - VITE_ENABLE_SSO=${ENABLE_SSO}
