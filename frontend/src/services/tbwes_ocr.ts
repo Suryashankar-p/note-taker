@@ -77,7 +77,7 @@ export const GetMemberOCRRole = async () => {
   }
   
   export const UpdateBAAN = async (body: any) => {
-    const response = await putAPI(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/baan`, body)
+    const response = await TBWESAPI.put(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/baan`, body)
     return response
   }
   

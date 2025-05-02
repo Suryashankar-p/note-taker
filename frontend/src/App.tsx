@@ -71,14 +71,6 @@ const App = () => (
         path="/ai-studio/sales/settings"
         element={<ProtectedRoute element={<Settings />} />}
       />
-      {/* <Route
-        path="/ai-studio/doc_translator"
-        element={<ProtectedRoute element={<Translator />} />}
-      />
-      <Route
-        path="/ai-studio/training_qa"
-        element={<ProtectedRoute element={<TrainingQA />} />}
-      /> */}
       <Route
         path="/ai-studio/thermax_gpt"
         element={<ProtectedRoute element={<Thermax_GPT />} />}
