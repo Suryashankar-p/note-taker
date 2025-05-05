@@ -18,7 +18,7 @@ env:
   ACR_NAME: tmxgenaidacr01
   IMAGE_NAME: thermax_frontend
   RESOURCE_GROUP: Tmx_Genai_Dev_RG
-  CONTAINER_APP_NAME: tmxgenaidaca02
+  CONTAINER_APP_NAME: tmxgenaidaca03
   IMAGE_TAG: v7
 
 jobs:
