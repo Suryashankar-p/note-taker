@@ -21,7 +21,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
 # Copy the source code and build the app
-COPY frontend/ ./
+COPY ./ ./
 RUN npm run build
 
 # Stage 2: Serve the app with Nginx
