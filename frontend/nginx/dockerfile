@@ -20,7 +20,7 @@ RUN echo "VITE_ENABLE_SSO=$VITE_ENABLE_SSO" >> .env.production && \
     echo "VITE_DOMAIN=$VITE_DOMAIN" >> .env.production && \
     echo "VITE_URL_PREFIX=$VITE_URL_PREFIX" >> .env.production && \
     echo "VITE_BACKEND_SSO_URL=$VITE_BACKEND_SSO_URL" >> .env.production && \
-    npm run build
+    RUN npm run build --mode production
 # RUN npm run build
 
 FROM nginx
