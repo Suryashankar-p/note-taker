@@ -15,6 +15,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+console.log("VITE_BACKEND_SSO_URL at build:", process.env.VITE_BACKEND_SSO_URL);
+console.log("VITE_BACKEND:", process.env);
 export default defineConfig({
   plugins: [react()],
   base: '/api2/',
