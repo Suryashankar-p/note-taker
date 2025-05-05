@@ -11,28 +11,27 @@
 # PROD Docker file
 # Stage 1: Build
 # Stage 1: Build React app
+# Stage 1: Build the React app
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependencies and install
+# Copy package.json and install dependencies
 COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy all source code
+# Copy the source code and build the app
 COPY . ./
-
-# Build the React app
 RUN npm run build
 
-# Stage 2: Serve with Nginx
+# Stage 2: Serve the app with Nginx
 FROM nginx:alpine
 
-# Copy built app into Nginx html directory
+# Copy the built React app into Nginx's html directory
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom Nginx config
-COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+# Copy custom Nginx config (adjust the path)
+COPY ../nginx/nginx.conf /etc/nginx/nginx.conf  # Adjusted path
 
 EXPOSE 80
 
