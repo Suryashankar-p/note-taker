@@ -42,8 +42,9 @@ services:
   frontend:
     container_name: thermax-frontend
     build:
-      context: .
-      dockerfile: ./frontend/dockerfile
+build:
+      context: ./frontend
+      dockerfile: dockerfile
       args:
         VITE_ENABLE_SSO: ${ENABLE_SSO}
         VITE_FIRST_USER_EMAIL: ${ADMIN_USER_EMAIL}
