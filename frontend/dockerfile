@@ -7,9 +7,9 @@
 # COPY ./public/ /frontend/public/
 # CMD ["npm", "run", "dev", "--", "--host"]
 
-PROD Docker file
-PROD Docker file
-Stage 1: Build
+# PROD Docker file
+# PROD Docker file
+# Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
