@@ -15,7 +15,13 @@ RUN npm install
 COPY ./frontend/tsconfig.json ./frontend/postcss.config.js ./frontend/tailwind.config.js ./frontend/tsconfig.node.json ./frontend/vite.config.ts ./frontend/index.html ./frontend/.eslintrc.cjs /frontend/
 COPY ./frontend/src/ /frontend/src/
 COPY ./frontend/public/ /frontend/public/
-RUN npm run build
+RUN export VITE_ENABLE_SSO=$VITE_ENABLE_SSO && \
+    export VITE_FIRST_USER_EMAIL=$VITE_FIRST_USER_EMAIL && \
+    export VITE_DOMAIN=$VITE_DOMAIN && \
+    export VITE_URL_PREFIX=$VITE_URL_PREFIX && \
+    export VITE_BACKEND_SSO_URL=$VITE_BACKEND_SSO_URL && \
+    npm run build
+# RUN npm run build
 
 FROM nginx
 # ARG BACKEND_PORT
