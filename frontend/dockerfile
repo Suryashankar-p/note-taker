@@ -7,17 +7,19 @@
 # COPY ./public/ /frontend/public/
 # CMD ["npm", "run", "dev", "--", "--host"]
 
-
-# PROD Dockerfile
-
+# PROD Docker file
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-COPY package*.json ./
+
+# Copy package.json & install dependencies from frontend folder
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
-COPY . .
+# Copy the rest of the frontend source
+COPY frontend/ ./
+
 RUN npm run build
 
 # Stage 2: Serve built files
@@ -25,14 +27,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install serve globally to serve the static files
+# Install serve globally
 RUN npm install -g serve
 
 # Copy built frontend from builder
 COPY --from=builder /app/dist ./dist
 
-# Expose the port that serve will use
 EXPOSE 80
 
-# Start the app
 CMD ["serve", "-s", "dist", "-l", "80"]
