@@ -14,3 +14,4 @@ window.env = {
   BACKEND_TBWES_OCR_URL: "${BACKEND_TBWES_OCR_URL}"
 };
 EOF
+exec nginx -g "daemon off;"
