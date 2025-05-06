@@ -1,7 +1,8 @@
 import {SSOAPI } from "./Axios";
 
 // const BASE_URL = 'http://localhost/api'
-const BACKEND_SSO_URL = import.meta.env.VITE_BACKEND_SSO_URL;
+// const BACKEND_SSO_URL = import.meta.env.VITE_BACKEND_SSO_URL;
+const BACKEND_SSO_URL = window.env?.BACKEND_SSO_URL;
 
 
 
