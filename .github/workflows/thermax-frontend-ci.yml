@@ -19,7 +19,7 @@ env:
   IMAGE_NAME: thermax_frontend
   RESOURCE_GROUP: Tmx_Genai_Dev_RG
   CONTAINER_APP_NAME: tmxgenaidaca03
-  IMAGE_TAG: v29
+  IMAGE_TAG: v30
 
 jobs:
   deploy:
