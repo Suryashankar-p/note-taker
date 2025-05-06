@@ -14,7 +14,7 @@ import { Dispatch, RootState } from "../redux/store";
 
 // const ENABLE_SSO = import.meta.env.VITE_ENABLE_SSO;
 // const USEREMAIL = import.meta.env.VITE_FIRST_USER_EMAIL;
-const ENABLE_SSO = window.env?.BACKEND_SSO_URL;
+const ENABLE_SSO = window.env?.ENABLE_SSO;
 const USEREMAIL = window.env?.ADMIN_USER_EMAIL;
 
 const LoginPage = () => {
