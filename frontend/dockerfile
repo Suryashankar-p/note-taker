@@ -41,10 +41,10 @@ ENV VITE_BACKEND_TBWES_OCR_URL=${VITE_BACKEND_TBWES_OCR_URL}
 
 WORKDIR /app
 
-COPY ./frontend/package*.json ./
+COPY ./package*.json ./
 RUN npm install
 
-COPY ./frontend ./
+COPY ./ ./
 RUN npm run build
 
 # --- Stage 2: Serve with Nginx ---
