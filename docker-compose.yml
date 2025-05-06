@@ -1,50 +1,79 @@
+# # version: "3"
+# # services:
+# #   frontend:
+# #     container_name: thermax-frontend
+# #     build:
+# #       context: ./frontend
+# #       dockerfile: ./dockerfile
+# #     image: thermax_frontend
+# #     environment:
+# #       # Backend
+# #       - VITE_ENABLE_SSO=${ENABLE_SSO}
+# #       - VITE_FIRST_USER_EMAIL=${ADMIN_USER_EMAIL}
+# #       - VITE_DOMAIN=${DOMAIN}
+# #       - VITE_URL_PREFIX=${URL_PREFIX}
+# #       - VITE_BACKEND_SSO_URL=${BACKEND_SERVICE_SSO_URL}
+# #       - VITE_BACKEND_THERMAX_GPT_URL=${BACKEND_SERVICE_THERMAX_GPT_URL}
+# #       - VITE_BACKEND_DOCTOR_CONBOT_URL=${BACKEND_SERVICE_DOCTOR_CONBOT_URL}
+# #       - VITE_BACKEND_TROUBLESHOOTING_URL=${BACKEND_SERVICE_SMART_TROUBLESHOOT_URL}
+# #       - VITE_BACKEND_SALES_URL=${BACKEND_SERVICE_SALES_URL}
+# #       - VITE_BACKEND_TBWES_OCR_URL=${BACKEND_SERVICE_TBWES_OCR_URL}
+# #       - PORT=${FRONTEND_PORT}
+# #     volumes:
+# #       - ./frontend/src:/frontend/src
+# #       - ./frontend/public:/frontend/public
+# #     expose:
+# #       - "${FRONTEND_PORT}"
+# #     ports:
+# #       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+# #     command: [ 'npm', 'run', 'dev', '--', '--host' ]
+# #     restart: unless-stopped
+# #     # depends_on:
+# #     #   - backend
+
+# # networks:
+# #   default:
+# #     external:
+# #       name: thermax-network
+
 # version: "3"
+
 # services:
 #   frontend:
 #     container_name: thermax-frontend
 #     build:
+# build:
 #       context: ./frontend
-#       dockerfile: ./dockerfile
+#       dockerfile: dockerfile
+#       args:
+#         VITE_ENABLE_SSO: ${ENABLE_SSO}
+#         VITE_FIRST_USER_EMAIL: ${ADMIN_USER_EMAIL}
+#         VITE_DOMAIN: ${DOMAIN}
+#         VITE_URL_PREFIX: ${URL_PREFIX}
+#         VITE_BACKEND_SSO_URL: ${BACKEND_SERVICE_SSO_URL}
+#         VITE_BACKEND_THERMAX_GPT_URL: ${BACKEND_SERVICE_THERMAX_GPT_URL}
+#         VITE_BACKEND_DOCTOR_CONBOT_URL: ${BACKEND_SERVICE_DOCTOR_CONBOT_URL}
+#         VITE_BACKEND_TROUBLESHOOTING_URL: ${BACKEND_SERVICE_SMART_TROUBLESHOOT_URL}
+#         VITE_BACKEND_SALES_URL: ${BACKEND_SERVICE_SALES_URL}
+#         VITE_BACKEND_TBWES_OCR_URL: ${BACKEND_SERVICE_TBWES_OCR_URL}
 #     image: thermax_frontend
-#     environment:
-#       # Backend
-#       - VITE_ENABLE_SSO=${ENABLE_SSO}
-#       - VITE_FIRST_USER_EMAIL=${ADMIN_USER_EMAIL}
-#       - VITE_DOMAIN=${DOMAIN}
-#       - VITE_URL_PREFIX=${URL_PREFIX}
-#       - VITE_BACKEND_SSO_URL=${BACKEND_SERVICE_SSO_URL}
-#       - VITE_BACKEND_THERMAX_GPT_URL=${BACKEND_SERVICE_THERMAX_GPT_URL}
-#       - VITE_BACKEND_DOCTOR_CONBOT_URL=${BACKEND_SERVICE_DOCTOR_CONBOT_URL}
-#       - VITE_BACKEND_TROUBLESHOOTING_URL=${BACKEND_SERVICE_SMART_TROUBLESHOOT_URL}
-#       - VITE_BACKEND_SALES_URL=${BACKEND_SERVICE_SALES_URL}
-#       - VITE_BACKEND_TBWES_OCR_URL=${BACKEND_SERVICE_TBWES_OCR_URL}
-#       - PORT=${FRONTEND_PORT}
-#     volumes:
-#       - ./frontend/src:/frontend/src
-#       - ./frontend/public:/frontend/public
-#     expose:
-#       - "${FRONTEND_PORT}"
 #     ports:
-#       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
-#     command: [ 'npm', 'run', 'dev', '--', '--host' ]
+#       - "${FRONTEND_PORT}:80"   # map container's nginx 80 port to desired host port
 #     restart: unless-stopped
-#     # depends_on:
-#     #   - backend
 
 # networks:
 #   default:
 #     external:
 #       name: thermax-network
 
-version: "3"
+version: "3.8"
 
 services:
   frontend:
     container_name: thermax-frontend
     build:
-build:
-      context: ./frontend
-      dockerfile: dockerfile
+      context: .
+      dockerfile: Dockerfile
       args:
         VITE_ENABLE_SSO: ${ENABLE_SSO}
         VITE_FIRST_USER_EMAIL: ${ADMIN_USER_EMAIL}
@@ -56,12 +85,23 @@ build:
         VITE_BACKEND_TROUBLESHOOTING_URL: ${BACKEND_SERVICE_SMART_TROUBLESHOOT_URL}
         VITE_BACKEND_SALES_URL: ${BACKEND_SERVICE_SALES_URL}
         VITE_BACKEND_TBWES_OCR_URL: ${BACKEND_SERVICE_TBWES_OCR_URL}
-    image: thermax_frontend
+    environment:
+      ENABLE_SSO: ${ENABLE_SSO}
+      ADMIN_USER_EMAIL: ${ADMIN_USER_EMAIL}
+      DOMAIN: ${DOMAIN}
+      URL_PREFIX: ${URL_PREFIX}
+      BACKEND_SERVICE_SSO_URL: ${BACKEND_SERVICE_SSO_URL}
+      BACKEND_SERVICE_THERMAX_GPT_URL: ${BACKEND_SERVICE_THERMAX_GPT_URL}
+      BACKEND_SERVICE_DOCTOR_CONBOT_URL: ${BACKEND_SERVICE_DOCTOR_CONBOT_URL}
+      BACKEND_SERVICE_SMART_TROUBLESHOOT_URL: ${BACKEND_SERVICE_SMART_TROUBLESHOOT_URL}
+      BACKEND_SERVICE_SALES_URL: ${BACKEND_SERVICE_SALES_URL}
+      BACKEND_SERVICE_TBWES_OCR_URL: ${BACKEND_SERVICE_TBWES_OCR_URL}
     ports:
-      - "${FRONTEND_PORT}:80"   # map container's nginx 80 port to desired host port
+      - "${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
 
 networks:
   default:
     external:
       name: thermax-network
+      

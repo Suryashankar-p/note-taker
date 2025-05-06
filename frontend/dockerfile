@@ -12,31 +12,48 @@
 # Stage 1: Build
 # Stage 1: Build React app
 # Stage 1: Build the React app
-FROM node:20-alpine AS builder
+
+
+# --- Stage 1: Build React App ---
+FROM node:20 as builder
+
+ARG VITE_ENABLE_SSO
+ARG VITE_FIRST_USER_EMAIL
+ARG VITE_DOMAIN
+ARG VITE_URL_PREFIX
+ARG VITE_BACKEND_SSO_URL
+ARG VITE_BACKEND_THERMAX_GPT_URL
+ARG VITE_BACKEND_DOCTOR_CONBOT_URL
+ARG VITE_BACKEND_TROUBLESHOOTING_URL
+ARG VITE_BACKEND_SALES_URL
+ARG VITE_BACKEND_TBWES_OCR_URL
+
+ENV VITE_ENABLE_SSO=${VITE_ENABLE_SSO}
+ENV VITE_FIRST_USER_EMAIL=${VITE_FIRST_USER_EMAIL}
+ENV VITE_DOMAIN=${VITE_DOMAIN}
+ENV VITE_URL_PREFIX=${VITE_URL_PREFIX}
+ENV VITE_BACKEND_SSO_URL=${VITE_BACKEND_SSO_URL}
+ENV VITE_BACKEND_THERMAX_GPT_URL=${VITE_BACKEND_THERMAX_GPT_URL}
+ENV VITE_BACKEND_DOCTOR_CONBOT_URL=${VITE_BACKEND_DOCTOR_CONBOT_URL}
+ENV VITE_BACKEND_TROUBLESHOOTING_URL=${VITE_BACKEND_TROUBLESHOOTING_URL}
+ENV VITE_BACKEND_SALES_URL=${VITE_BACKEND_SALES_URL}
+ENV VITE_BACKEND_TBWES_OCR_URL=${VITE_BACKEND_TBWES_OCR_URL}
 
 WORKDIR /app
 
-# Copy package.json and install dependencies
-# COPY frontend/package.json frontend/package-lock.json ./
-COPY package.json package-lock.json ./
+COPY ./frontend/package*.json ./
 RUN npm install
 
-# Copy the source code and build the app
-COPY ./ ./
+COPY ./frontend ./
 RUN npm run build
 
-# Stage 2: Serve the app with Nginx
+# --- Stage 2: Serve with Nginx ---
 FROM nginx:alpine
 
-# Copy the built React app into Nginx's html directory
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Copy custom Nginx config (adjust the path)
-# COPY nginx/nginx.conf /etc/nginx/nginx.conf
-# COPY frontend/nginx/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/entrypoint.sh"]

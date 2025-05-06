@@ -19,7 +19,7 @@ env:
   IMAGE_NAME: thermax_frontend
   RESOURCE_GROUP: Tmx_Genai_Dev_RG
   CONTAINER_APP_NAME: tmxgenaidaca03
-  IMAGE_TAG: v19
+  IMAGE_TAG: v20
 
 jobs:
   deploy:
@@ -42,14 +42,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build \
-            -f frontend/Dockerfile \
-            --build-arg VITE_ENABLE_SSO=true \
-            --build-arg VITE_FIRST_USER_EMAIL=admin@example.com \
-            --build-arg VITE_DOMAIN=thermaxglobal.com \
-            --build-arg VITE_URL_PREFIX=/ \
-            --build-arg VITE_BACKEND_SSO_URL=https://devmobility.thermaxglobal.com/genaistudio/ \
-            -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG ./frontend
+          docker build -f frontend/Dockerfile -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG ./frontend
 
       - name: Push Docker image to ACR
         run: |
