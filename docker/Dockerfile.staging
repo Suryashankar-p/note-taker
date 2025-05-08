@@ -24,7 +24,7 @@ ENV BACKEND_TBWES_OCR_URL=${BACKEND_TBWES_OCR_URL}
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
 
 COPY frontend/ ./
