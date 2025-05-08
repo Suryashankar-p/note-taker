@@ -42,7 +42,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -f docker/Dockerfile.staging -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG ./frontend
+          docker build -f docker/Dockerfile.staging -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
 
       - name: Push Docker image to ACR
         run: |
