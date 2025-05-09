@@ -66,37 +66,44 @@
 #     external:
 #       name: thermax-network
 
-version: "3.8"
-
 services:
   frontend:
-    container_name: thermax-frontend
+    container_name: thermax-frontend-local
     build:
-      context: ./frontend
-      # dockerfile: Dockerfile
-      dockerfile: ${DOCKERFILE:-../docker/Dockerfile.local}
+      context: .
+      dockerfile: docker/Dockerfile.local
       args:
         VITE_ENABLE_SSO: "true"
         VITE_FIRST_USER_EMAIL: "admin@example.com"
-        VITE_DOMAIN: "thermax.thoughtmlabs.com"
+        VITE_DOMAIN: "localhost"
         VITE_URL_PREFIX: "/thermax"
-        VITE_BACKEND_SSO_URL: "http://sso-service:3001"
-        VITE_BACKEND_THERMAX_GPT_URL: "http://gpt-service:3002"
-        VITE_BACKEND_DOCTOR_CONBOT_URL: "http://doctor-service:3003"
-        VITE_BACKEND_TROUBLESHOOTING_URL: "http://troubleshoot-service:3004"
-        VITE_BACKEND_SALES_URL: "http://sales-service:3005"
-        VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
+        VITE_BACKEND_SSO_URL: "http://localhost:3001"
+        VITE_BACKEND_THERMAX_GPT_URL: "http://localhost:3002"
+        VITE_BACKEND_DOCTOR_CONBOT_URL: "http://localhost:3003"
+        VITE_BACKEND_TROUBLESHOOTING_URL: "http://localhost:3004"
+        VITE_BACKEND_SALES_URL: "http://localhost:3005"
+        VITE_BACKEND_TBWES_OCR_URL: "http://localhost:3006"
     environment:
       VITE_ENABLE_SSO: "true"
       VITE_FIRST_USER_EMAIL: "admin@example.com"
-      VITE_DOMAIN: "thermax.thoughtmlabs.com"
+      VITE_DOMAIN: "localhost"
       VITE_URL_PREFIX: "/thermax"
-      VITE_BACKEND_SSO_URL: "http://sso-service:3001"
-      VITE_BACKEND_THERMAX_GPT_URL: "http://gpt-service:3002"
-      VITE_BACKEND_DOCTOR_CONBOT_URL: "http://doctor-service:3003"
-      VITE_BACKEND_TROUBLESHOOTING_URL: "http://troubleshoot-service:3004"
-      VITE_BACKEND_SALES_URL: "http://sales-service:3005"
-      VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
+      VITE_BACKEND_SSO_URL: "http://localhost:3001"
+      VITE_BACKEND_THERMAX_GPT_URL: "http://localhost:3002"
+      VITE_BACKEND_DOCTOR_CONBOT_URL: "http://localhost:3003"
+      VITE_BACKEND_TROUBLESHOOTING_URL: "http://localhost:3004"
+      VITE_BACKEND_SALES_URL: "http://localhost:3005"
+      VITE_BACKEND_TBWES_OCR_URL: "http://localhost:3006"
     ports:
-      - "3000:3000"
-    restart: unless-stopped
+      - "3000:80"
+    volumes:
+      - ./frontend/src:/frontend/src
+      - ./frontend/public:/frontend/public
+    # networks:
+    #   - thermax-local-network
+    # restart: unless-stopped
+
+networks:
+  default:
+    external:
+      name: thermax-network

@@ -1,11 +1,12 @@
-FROM node:20
-WORKDIR /frontend
+FROM node:20-alpine
 
-COPY ./package.json /frontend/package.json
+WORKDIR /app
+
+COPY frontend/package*.json ./
 RUN npm install
 
-COPY ./tsconfig.json ./postcss.config.js ./tailwind.config.js ./tsconfig.node.json ./vite.config.ts ./index.html ./.eslintrc.cjs /frontend/
-COPY ./src/ /frontend/src/
-COPY ./public/ /frontend/public/
+COPY frontend/ ./
+
+EXPOSE 3000
 
 CMD ["npm", "run", "dev", "--", "--host"]
