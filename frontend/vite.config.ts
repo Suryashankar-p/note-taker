@@ -17,9 +17,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/genaistudio/',
+  base: '/api2/',
   build: {
-    outDir: 'dist/genaistudio',     // put all built files under /genaistudio/
+    outDir: 'dist/api2',     // put all built files under /genaistudio/
     assetsDir: 'assets',     // keeps assets in /genaistudio/assets
   },
   preview: {

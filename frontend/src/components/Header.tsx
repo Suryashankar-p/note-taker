@@ -21,7 +21,7 @@ interface InputProps {
 
 const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
-  const baseUrl = "/genaistudio";
+  const baseUrl = "/api2";
   useLocalStorageListener("user", (newValue, oldValue) => {
     getUserInfo();
   });
