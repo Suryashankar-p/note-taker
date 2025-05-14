@@ -66,42 +66,34 @@
 #     external:
 #       name: thermax-network
 
+version: '3.8'
+
 services:
   frontend:
     container_name: thermax-frontend-local
     build:
-      context: .
+      context: ../
       dockerfile: docker/Dockerfile.local
-      args:
-        VITE_ENABLE_SSO: "true"
-        VITE_FIRST_USER_EMAIL: "admin@example.com"
-        VITE_DOMAIN: "localhost"
-        VITE_URL_PREFIX: "/thermax"
-        VITE_BACKEND_SSO_URL: "http://localhost:3001"
-        VITE_BACKEND_THERMAX_GPT_URL: "http://localhost:3002"
-        VITE_BACKEND_DOCTOR_CONBOT_URL: "http://localhost:3003"
-        VITE_BACKEND_TROUBLESHOOTING_URL: "http://localhost:3004"
-        VITE_BACKEND_SALES_URL: "http://localhost:3005"
-        VITE_BACKEND_TBWES_OCR_URL: "http://localhost:3006"
     environment:
-      VITE_ENABLE_SSO: "true"
-      VITE_FIRST_USER_EMAIL: "admin@example.com"
-      VITE_DOMAIN: "localhost"
+      CHOKIDAR_USEPOLLING: "true"
+      VITE_ENABLE_SSO: "${ENABLE_SSO}"
+      VITE_FIRST_USER_EMAIL: "${FIRST_USER_EMAIL}"
+      VITE_ADMIN_USER_EMAIL: "${ADMIN_USER_EMAIL}"
+      VITE_DOMAIN: "${DOMAIN}"
       VITE_URL_PREFIX: "/thermax"
-      VITE_BACKEND_SSO_URL: "http://localhost:3001"
-      VITE_BACKEND_THERMAX_GPT_URL: "http://localhost:3002"
-      VITE_BACKEND_DOCTOR_CONBOT_URL: "http://localhost:3003"
-      VITE_BACKEND_TROUBLESHOOTING_URL: "http://localhost:3004"
-      VITE_BACKEND_SALES_URL: "http://localhost:3005"
-      VITE_BACKEND_TBWES_OCR_URL: "http://localhost:3006"
+      VITE_BACKEND_SSO_URL: "${BACKEND_SERVICE_SSO_URL}"
+      VITE_BACKEND_THERMAX_GPT_URL: "${BACKEND_SERVICE_THERMAX_GPT_URL}"
+      VITE_BACKEND_DOCTOR_CONBOT_URL: "${BACKEND_SERVICE_DOCTOR_CONBOT_URL}"
+      VITE_BACKEND_TROUBLESHOOTING_URL: "${BACKEND_SERVICE_SMART_TROUBLESHOOT_URL}"
+      VITE_BACKEND_SALES_URL: "${BACKEND_SERVICE_SALES_URL}"
+      VITE_BACKEND_TBWES_OCR_URL: "${BACKEND_SERVICE_TBWES_OCR_URL}"
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:3000"
     volumes:
-      - ./frontend/src:/frontend/src
-      - ./frontend/public:/frontend/public
-    # networks:
-    #   - thermax-local-network
-    # restart: unless-stopped
+      - ../frontend/src:/frontend/src
+      - ../frontend/public:/frontend/public
+    env_file:
+      - ../frontend/.env
 
 networks:
   default:

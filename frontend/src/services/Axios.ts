@@ -41,6 +41,6 @@ export const TroubleshootAPI = createAPI(axiosTroubleshoot);
 export const DoctorBotAPI = createAPI(axiosDoctorBot);
 
 export async function redirectToLogin(): Promise<void> {
-  window.location.href = '/genaistudio/';
+  window.location.href = '/api2/';
   localStorage.clear();
 }
