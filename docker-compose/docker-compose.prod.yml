@@ -17,6 +17,7 @@ services:
         VITE_BACKEND_TROUBLESHOOTING_URL: "http://troubleshoot-service:3004"
         VITE_BACKEND_SALES_URL: "http://sales-service:3005"
         VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
+        VITE_ROOT_PATH: "genaistudio"
     environment:
       VITE_ENABLE_SSO: "true"
       VITE_FIRST_USER_EMAIL: "admin@example.com"
@@ -28,6 +29,7 @@ services:
       VITE_BACKEND_TROUBLESHOOTING_URL: "http://troubleshoot-service:3004"
       VITE_BACKEND_SALES_URL: "http://sales-service:3005"
       VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
+      VITE_ROOT_PATH: "genaistudio"
     ports:
       - "3000:80" 
     restart: unless-stopped
