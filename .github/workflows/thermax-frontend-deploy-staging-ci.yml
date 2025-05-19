@@ -4,14 +4,12 @@ on:
   push:
     branches:
       - staging
-
-on:
   workflow_dispatch:
     inputs:
       confirm:
         description: 'Type YES to deploy'
         required: true
-        
+
 permissions:
   contents: write
 
