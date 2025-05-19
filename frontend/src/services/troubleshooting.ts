@@ -2,7 +2,7 @@ import store, { Dispatch } from "../redux/store";
 import { TroubleshootAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_TROUBLESHOOTING_URL = import.meta.env.VITE_BACKEND_TROUBLESHOOTING_URL;
+const BACKEND_TROUBLESHOOTING_URL = import.meta.env.VITE_BACKEND_TROUBLESHOOTING_URL || window.env?.BACKEND_SMART_TROUBLESHOOT_URL;
 
 //<====================================Troubleshooting Auth========================================>
 
