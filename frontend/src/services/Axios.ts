@@ -46,7 +46,7 @@ export const TroubleshootAPI = createAPI(axiosTroubleshoot);
 export const DoctorBotAPI = createAPI(axiosDoctorBot);
 
 export async function redirectToLogin(): Promise<void> {
-  const basePath = window.env?.VITE_ROOT_PATH || import.meta.env.VITE_ROOT_PATH;
+  const basePath = window.env?.ROOT_PATH || import.meta.env.VITE_ROOT_PATH;
   window.location.href = `/${basePath}/`;
   localStorage.clear();
 }
