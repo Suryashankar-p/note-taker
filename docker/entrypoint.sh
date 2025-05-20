@@ -1,6 +1,6 @@
 #!/bin/sh
-mkdir -p /usr/share/nginx/html/genaistudio
-cat <<EOF > /usr/share/nginx/html/genaistudio/env.js
+
+cat <<EOF > /usr/share/nginx/html/env.js
 window.env = {
   ENABLE_SSO: "${ENABLE_SSO}",
   ADMIN_USER_EMAIL: "${ADMIN_USER_EMAIL}",
@@ -15,4 +15,5 @@ window.env = {
   ROOT_PATH: "${ROOT_PATH}",
 };
 EOF
+
 exec nginx -g "daemon off;"
