@@ -255,7 +255,7 @@ const Dashboard: React.FC = () => {
       // case "Training QA":
       //   getTrainingQARole();
       //   break;
-      case "Dr. ConBot.":
+      case "Dr. ConBot":
         getDoctorConbotRole();
         break;
       case "Smart Troubleshooting App":

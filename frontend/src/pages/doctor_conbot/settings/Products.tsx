@@ -208,7 +208,7 @@ const Products = () => {
           data?.id,
           data?.title,
           data?.short_title,
-          data?.description,
+          data?.description
         );
         if (editResponse?.id) {
           getAllProducts(0, 20, "");
@@ -572,19 +572,21 @@ const Products = () => {
                             className="flex flex-col items-center"
                           >
                             <div className="flex gap-4 flex-row items-center justify-center mt-2 sm:mt-0">
-                              <button
-                                title="Click to open/download"
-                                onClick={() => {
-                                  onFileClick(fileItem);
-                                  setFileName(fileItem?.filename);
-                                }}
-                                className="flex border rounded-full my-4 w-max h-10 px-4 py-2"
-                              >
-                                <img src={Link} alt="link" loading="lazy" />
-                                <Text className="text-primary_text">
-                                  {fileItem?.filename}
-                                </Text>
-                              </button>
+                              {doctorConBotMemberDetails?.role === "OWNER" && (
+                                <button
+                                  title="Click to open/download"
+                                  onClick={() => {
+                                    onFileClick(fileItem);
+                                    setFileName(fileItem?.filename);
+                                  }}
+                                  className="flex border rounded-full my-4 w-max h-10 px-4 py-2"
+                                >
+                                  <img src={Link} alt="link" loading="lazy" />
+                                  <Text className="text-primary_text">
+                                    {fileItem?.filename}
+                                  </Text>
+                                </button>
+                              )}
                               {doctorConBotMemberDetails?.role === "OWNER" && (
                                 <DropDownMenu
                                   content={

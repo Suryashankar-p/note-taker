@@ -440,7 +440,11 @@ const ChatArea: React.FC<Props> = ({
                     <button
                       key={index}
                       className="rounded-full ml-[3.5vw] px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between"
-                      onClick={() => onFileClick(file)}
+                      onClick={() => {
+                        if (file?.document_kind === "OTHER") {
+                          onFileClick(file);
+                        }
+                      }}
                     >
                       <img className="pb-1" src={Link} alt="Link" />
                       <div className="flex flex-col">

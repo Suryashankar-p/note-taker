@@ -530,17 +530,19 @@ const Faq = () => {
                     menuItems={MenuItems}
                   />
                 )}
-                <button
-                  onClick={() => {
-                    onFileClick(item);
-                    setFileName(item?.filename);
-                  }}
-                  className="w-28 h-10 rounded-full bg-[#F3F1FF]"
-                >
-                  <Text className="text-[#0061F3] text-[16px] leading-[18px]">
-                    View File
-                  </Text>
-                </button>
+                {doctorConBotMemberDetails?.role === "OWNER" && (
+                  <button
+                    onClick={() => {
+                      onFileClick(item);
+                      setFileName(item?.filename);
+                    }}
+                    className="w-28 h-10 rounded-full bg-[#F3F1FF]"
+                  >
+                    <Text className="text-[#0061F3] text-[16px] leading-[18px]">
+                      View File
+                    </Text>
+                  </button>
+                )}
               </div>
             </div>
           ))
