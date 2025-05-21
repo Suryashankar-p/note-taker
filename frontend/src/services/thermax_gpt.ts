@@ -1,7 +1,7 @@
 import axios from "axios";
 import { GPTAPI } from "./Axios.ts";
 
-const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
+const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 
 export const GetMemberGPTRole = async () => {
   const response = await GPTAPI.get(BACKEND_THERMAX_GPT_URL + "/thermax_gpt/member/me");

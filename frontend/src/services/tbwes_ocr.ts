@@ -2,7 +2,7 @@ import store, { Dispatch } from "../redux/store";
 import {TBWESAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_TBWES_OCR_URL=import.meta.env.VITE_BACKEND_TBWES_OCR_URL 
+const BACKEND_TBWES_OCR_URL=import.meta.env.VITE_BACKEND_TBWES_OCR_URL  || window.env?.BACKEND_TBWES_OCR_URL;
 
 /////////////////<<<<<<<<<<<<<<<<<<<OCR APIs>>>>>>>>>>>>>>>>>>>>>\\\\\\\\\\\\\\\\\\
 
@@ -77,7 +77,7 @@ export const GetMemberOCRRole = async () => {
   }
   
   export const UpdateBAAN = async (body: any) => {
-    const response = await putAPI(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/baan`, body)
+    const response = await TBWESAPI.put(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/baan`, body)
     return response
   }
   

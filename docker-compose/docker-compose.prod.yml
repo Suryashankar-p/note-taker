@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  frontend:
+    container_name: thermax-frontend-prod
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.prod
+      args:
+        VITE_ENABLE_SSO: "true"
+        VITE_FIRST_USER_EMAIL: "admin@example.com"
+        VITE_DOMAIN: "prod.thermax.thoughtmlabs.com"
+        VITE_URL_PREFIX: "/thermax"
+        VITE_BACKEND_SSO_URL: "http://sso-service:3001"
+        VITE_BACKEND_THERMAX_GPT_URL: "http://gpt-service:3002"
+        VITE_BACKEND_DOCTOR_CONBOT_URL: "http://doctor-service:3003"
+        VITE_BACKEND_TROUBLESHOOTING_URL: "http://troubleshoot-service:3004"
+        VITE_BACKEND_SALES_URL: "http://sales-service:3005"
+        VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
+        VITE_ROOT_PATH: "genaistudio"
+    environment:
+      VITE_ENABLE_SSO: "true"
+      VITE_FIRST_USER_EMAIL: "admin@example.com"
+      VITE_DOMAIN: "prod.thermax.thoughtmlabs.com"
+      VITE_URL_PREFIX: "/thermax"
+      VITE_BACKEND_SSO_URL: "http://sso-service:3001"
+      VITE_BACKEND_THERMAX_GPT_URL: "http://gpt-service:3002"
+      VITE_BACKEND_DOCTOR_CONBOT_URL: "http://doctor-service:3003"
+      VITE_BACKEND_TROUBLESHOOTING_URL: "http://troubleshoot-service:3004"
+      VITE_BACKEND_SALES_URL: "http://sales-service:3005"
+      VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
+      VITE_ROOT_PATH: "genaistudio"
+    ports:
+      - "3000:80" 
+    restart: unless-stopped
