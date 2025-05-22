@@ -86,6 +86,30 @@ export const CreateChatHistory = async (
   return response.data;
 };
 
+export const CreateChatHistoryPerplexity = async (
+  query: string,
+  chat_id: string,
+) => {
+  const formData = new FormData();
+  const token = localStorage.getItem("access_token");
+
+  formData.append("human", query);
+
+  const response = await axios.post(
+    `${BACKEND_THERMAX_GPT_URL}/thermax_gpt/chat/${chat_id}/chat_history/perplexity`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+
 export const DeleteChatHistory = async (
   chat_history_id: number,
   chat_id: number
