@@ -9,7 +9,7 @@ const BACKEND_SSO_URL = window.env?.BACKEND_SSO_URL || import.meta.env.VITE_BACK
 //<======================User details and services and roles====================>
 
 export const GetUserDetails = async () => {
-    const response = await SSOAPI.get(BACKEND_SSO_URL + "/user/me");
+    const response = await SSOAPI.get(BACKEND_SSO_URL + "/user/me/");
     return response;
   };
   
