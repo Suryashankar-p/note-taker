@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
-import { FaRobot, FaGlobe  } from "react-icons/fa";
+import { FaRobot, FaGlobe } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
 import Sent from "../../assets/sent.png";
@@ -40,6 +40,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { useWebSocketConnection } from "../../services/hooks/useDocumentUploadWebSocket.ts";
 
 interface Props {
   onNewChatAddition: () => void;
@@ -92,6 +93,10 @@ const ChatArea: React.FC<Props> = ({
   );
   const [aiProvider, setAiProvider] = useState("Thermax-GPT");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const { connect, disconnect, status } = useWebSocketConnection(
+    "wss://devmobility.thermaxdomain.com/api/thermax_gpt/chat/1/chat_history/document_analyser/upload"
+  );
 
   useEffect(() => {
     if (chat_id) {
@@ -577,7 +582,7 @@ const ChatArea: React.FC<Props> = ({
     { label: "Deep Search", icon: <FaGlobe className="mr-1" /> },
   ];
 
-  const activeIndex = tabs.findIndex(tab => tab.label === aiProvider);
+  const activeIndex = tabs.findIndex((tab) => tab.label === aiProvider);
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -738,7 +743,12 @@ const ChatArea: React.FC<Props> = ({
             <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
           </button>
         )}
-
+        <div className="mb-24"> 
+          <button onClick={connect}>Connect</button>
+          <button onClick={disconnect}>Disconnect</button>
+          <p>Status: {status.connected ? "Connected" : "Disconnected"}</p>
+          {status.message && <p>{status.message}</p>}
+        </div>{" "}
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex items-center justify-start bg-inherit">
           <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
             <div className="w-full flex items-center gap-2">
@@ -810,7 +820,11 @@ const ChatArea: React.FC<Props> = ({
                   maxLength={500}
                   onChange={(event) => setInputValue(event.target.value)}
                   value={inputValue}
-                  placeholder={aiProvider === "Thermax-GPT" ? "Ask anything..." : "Search anything..."}
+                  placeholder={
+                    aiProvider === "Thermax-GPT"
+                      ? "Ask anything..."
+                      : "Search anything..."
+                  }
                   rows={1}
                   className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${
                     disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
@@ -851,32 +865,32 @@ const ChatArea: React.FC<Props> = ({
                     </div>
                   </div>
                   <div className="flex justify-start mb-2 ml-4 px-1">
-      <div className="relative inline-flex rounded-lg overflow-hidden bg-gray-200">
-        {/* Sliding background indicator */}
-        <div
-          className="absolute top-0 bottom-0 left-0 w-1/2 bg-white rounded-lg border border-red-600 transition-transform duration-300 ease-in-out"
-          style={{
-            transform: `translateX(${activeIndex * 100}%)`,
-            zIndex: 0,
-          }}
-        />
-        {tabs.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => handleTabChange(tab.label)}
-            className={`relative z-10 flex items-center justify-center  px-4 py-1 text-sm font-medium transition-colors duration-300 rounded-lg
+                    <div className="relative inline-flex rounded-lg overflow-hidden bg-gray-200">
+                      {/* Sliding background indicator */}
+                      <div
+                        className="absolute top-0 bottom-0 left-0 w-1/2 bg-white rounded-lg border border-red-600 transition-transform duration-300 ease-in-out"
+                        style={{
+                          transform: `translateX(${activeIndex * 100}%)`,
+                          zIndex: 0,
+                        }}
+                      />
+                      {tabs.map((tab) => (
+                        <button
+                          key={tab.label}
+                          onClick={() => handleTabChange(tab.label)}
+                          className={`relative z-10 flex items-center justify-center  px-4 py-1 text-sm font-medium transition-colors duration-300 rounded-lg
               ${
                 aiProvider === tab.label
                   ? "text-red-600"
                   : "text-red-300 hover:text-red-600"
               }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-    </div>
+                        >
+                          {tab.icon}
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
               <Button
