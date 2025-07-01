@@ -95,8 +95,7 @@ const ChatArea: React.FC<Props> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const { connect, disconnect, status } = useWebSocketConnection(
-    // "wss://devmobility.thermaxdomain.com/api/thermax_gpt/chat/1/chat_history/document_analyser/upload"
-    "wss://demo.piesocket.com/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3eiVjgZ9VRiaV&notify_self"
+    "wss://devmobility.thermaxdomain.com/api2/api/thermax_gpt/chat/1/chat_history/document_analyser/upload"
   );
 
   useEffect(() => {
