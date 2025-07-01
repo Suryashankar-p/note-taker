@@ -743,12 +743,6 @@ const ChatArea: React.FC<Props> = ({
             <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
           </button>
         )}
-        <div className="mb-24"> 
-          <button onClick={connect}>Connect</button>
-          <button onClick={disconnect}>Disconnect</button>
-          <p>Status: {status.connected ? "Connected" : "Disconnected"}</p>
-          {status.message && <p>{status.message}</p>}
-        </div>{" "}
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex items-center justify-start bg-inherit">
           <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
             <div className="w-full flex items-center gap-2">
