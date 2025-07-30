@@ -1,0 +1,82 @@
+name: Staging Deployment - Thermax Frontend Deployment
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type YES to deploy'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  ACR_NAME:  ${{ vars.STAGING_ACR_NAME }}
+  PROD_ACR_NAME: ${{ vars.PROD_ACR_NAME }}
+  IMAGE_NAME: thermax_frontend
+  RESOURCE_GROUP: ${{ vars.STAGING_RESOURCE_GROUP }}
+  CONTAINER_APP_NAME: ${{ vars.STAGING_CONTAINER_APP_NAME }}
+  IMAGE_TAG: staging-${{ github.run_number }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Print variables
+        run: |
+          echo "ACR_NAME: $ACR_NAME"
+          echo "RESOURCE_GROUP: $RESOURCE_GROUP"
+          echo "CONTAINER_APP_NAME: $CONTAINER_APP_NAME"
+          echo "IMAGE_TAG: $IMAGE_TAG"
+
+      - name: Log in to Staging ACR
+        run: |
+          az acr login --name $ACR_NAME
+
+      - name: Build Docker image
+        run: |
+          docker build -f docker/Dockerfile.staging -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
+
+      - name: Push Docker image to Staging ACR
+        run: |
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG
+
+      - name: Deploy to Azure Container App (Staging)
+        run: |
+          az containerapp update \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG
+
+      - name: Import Image to Prod ACR
+        run: |
+          echo "Importing image to prod ACR..."
+          az acr import \
+            --name $PROD_ACR_NAME \
+            --source "$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG" \
+            --image $IMAGE_NAME:$IMAGE_TAG \
+            --force
+
+      - name: Create and Push Git Tag for Staging
+        if: success()
+        run: |
+          TAG_NAME=staging-${{ github.run_number }}
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git fetch --tags
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+          

@@ -1,0 +1,44 @@
+name: Prod Deployment - Thermax Frontend Deployment
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  ACR_NAME: ${{ vars.PROD_ACR_NAME }}
+  IMAGE_NAME: thermax_frontend
+  RESOURCE_GROUP: ${{ vars.PROD_RESOURCE_GROUP }}
+  CONTAINER_APP_NAME: ${{ vars.PROD_CONTAINER_APP_NAME }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get Latest Staging Tag
+        id: get_tag
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git tag -l "staging-*" --sort=-creatordate | head -n 1)
+          echo "Latest staging tag: $LATEST_TAG"
+          echo "::set-output name=TAG::$LATEST_TAG"
+
+      - name: Log in to ACR
+        run: az acr login --name $ACR_NAME
+
+      - name: Deploy to Azure Container App (Production)
+        run: |
+          az containerapp update \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ steps.get_tag.outputs.TAG }}

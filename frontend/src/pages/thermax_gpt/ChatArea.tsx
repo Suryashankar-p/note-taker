@@ -1,4 +1,5 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import { FaRobot, FaGlobe } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
 import Sent from "../../assets/sent.png";
@@ -15,9 +16,11 @@ import {
   CreateChatHistory,
   DeleteChatHistory,
   ReadChatHistories,
+  CreateChatHistoryPerplexity,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import DropDownMenu from "../../components/DropdownMenu";
 import Trash from "../../assets/Trash.tsx";
 import Dislike from "../../assets/Dislike.tsx";
 import LikeIcon from "../../assets/Like.tsx";
@@ -34,6 +37,10 @@ import FileViewModal from "../../components/Modals/FileViewModal.tsx";
 import { getFileType } from "../../utils/functions.ts";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
+import { useWebSocketConnection } from "../../services/hooks/useDocumentUploadWebSocket.ts";
 
 interface Props {
   onNewChatAddition: () => void;
@@ -84,6 +91,12 @@ const ChatArea: React.FC<Props> = ({
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
+  const [aiProvider, setAiProvider] = useState("Thermax-GPT");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const { connect, disconnect, status } = useWebSocketConnection(
+    "wss://devmobility.thermaxdomain.com/api2/api/thermax_gpt/chat/1/chat_history/document_analyser/upload"
+  );
 
   useEffect(() => {
     if (chat_id) {
@@ -96,6 +109,19 @@ const ChatArea: React.FC<Props> = ({
       scrollToBottom();
     }
   }, [chatContent]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownOpen && !event.target.closest(".dropdown-container")) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   useEffect(() => {
     const textarea = document.querySelector("textarea");
@@ -195,6 +221,7 @@ const ChatArea: React.FC<Props> = ({
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
+    console.log("aiProvider", aiProvider);
 
     setLoading(true);
 
@@ -217,11 +244,16 @@ const ChatArea: React.FC<Props> = ({
 
     try {
       if (chat_id) {
-        const chatResponse = await CreateChatHistory(
-          inputValue,
-          chat_id,
-          uploadedFiles?.length > 0 && uploadedFiles[0]
-        );
+        let chatResponse;
+        if (aiProvider === "Thermax-GPT") {
+          chatResponse = await CreateChatHistory(
+            inputValue,
+            chat_id,
+            uploadedFiles?.length > 0 && uploadedFiles[0]
+          );
+        } else if (aiProvider === "Deep Search") {
+          chatResponse = await CreateChatHistoryPerplexity(inputValue, chat_id);
+        }
         if (chatResponse?.ai) {
           const updatedChatHistory = [...localMessages, chatResponse];
           if (localFiles?.length > 0) {
@@ -243,8 +275,8 @@ const ChatArea: React.FC<Props> = ({
             apiHistory: updatedChatHistory,
             localMessages: [],
           });
-          setLoading(false);
           setInputValue("");
+          setLoading(false);
           setPageError(false);
           setUploadedFiles([]);
         } else {
@@ -262,12 +294,21 @@ const ChatArea: React.FC<Props> = ({
         const newSessionResponse = await CreateChat(inputValue);
         if (newSessionResponse?.id) {
           try {
-            const chatResponse = await CreateChatHistory(
-              inputValue,
-              newSessionResponse.id,
-              uploadedFiles?.length > 0 && uploadedFiles[0]
-            );
+            let chatResponse;
+            if (aiProvider === "Thermax-GPT") {
+              chatResponse = await CreateChatHistory(
+                inputValue,
+                newSessionResponse.id,
+                uploadedFiles?.length > 0 && uploadedFiles[0]
+              );
+            } else if (aiProvider === "Deep Search") {
+              chatResponse = await CreateChatHistoryPerplexity(
+                inputValue,
+                newSessionResponse.id
+              );
+            }
             if (chatResponse?.ai) {
+              setInputValue("");
               if (localFiles?.length > 0) {
                 // Retrieve previously stored files
                 const existingUploads = JSON.parse(
@@ -288,7 +329,6 @@ const ChatArea: React.FC<Props> = ({
               navigate(
                 `/ai-studio/thermax_gpt?chat_id=${newSessionResponse?.id}`
               );
-              setInputValue("");
               setUploadedFiles([]);
               setLoading(false);
               setPageError(false);
@@ -440,9 +480,9 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const copyToClipboard = (index: number, message: any) => {
-    const content: any = document.querySelector(`#message-${index}`);    
+    const content: any = document.querySelector(`#message-${index}`);
     if (!content) return;
-    copy(content.innerText);    
+    copy(content.innerText);
     setCopySuccess(true);
     dispatch.toast.openToast({
       status: true,
@@ -482,6 +522,10 @@ const ChatArea: React.FC<Props> = ({
       }, 150);
     }
     event.target.value = null;
+  };
+
+  const handleTabChange = (tab) => {
+    setAiProvider(tab);
   };
 
   const renderFileIcon = (file_name: string) => {
@@ -533,14 +577,12 @@ const ChatArea: React.FC<Props> = ({
         );
     }
   };
+  const tabs = [
+    { label: "Thermax-GPT", icon: <FaRobot className="mr-1" /> },
+    { label: "Deep Search", icon: <FaGlobe className="mr-1" /> },
+  ];
 
-  function cleanResponseText(response: string): string {
-    response = response.replace(/(\d+\.\s*\*\*.*?\*\*):?\s*\n+/g, "$1: ");
-    response = response.replace(/(-\s*\*\*.*?\*\*):?\s*\n+/g, "$1: ");
-    response = response.replace(/\n{2,}/g, "\n");
-    response = response.replace(/【\d+:\d+†source】/g, "");
-    return response.trim();
-  }
+  const activeIndex = tabs.findIndex((tab) => tab.label === aiProvider);
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -635,11 +677,26 @@ const ChatArea: React.FC<Props> = ({
                   </div>
                 )}
                 {message?.ai ? (
-                  <div id={`message-${index}`} className="max-w-[80%]  py-1 px-4 rounded-lg">
+                  <div
+                    id={`message-${index}`}
+                    className="max-w-[80%]  py-1 px-4 rounded-lg"
+                  >
                     <ReactMarkdown
                       children={message.ai}
-                      remarkPlugins={[remarkGfm]}
-                      className=" prose text-[14px] font-normal text-primary_text "
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                      className="prose text-[14px] font-normal text-primary_text"
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a
+                            {...props}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {props.children}
+                          </a>
+                        ),
+                      }}
                     />
                   </div>
                 ) : (
@@ -687,125 +744,160 @@ const ChatArea: React.FC<Props> = ({
           </button>
         )}
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex items-center justify-start bg-inherit">
-          <div className="relative w-full max-w-[88%] min-h-4 mx-auto flex items-center gap-2 border rounded-full p-2 bg-white shadow-lg">
-            <div className="relative flex-shrink-0">
-              <div className="relative group cursor-pointer">
-                <img
-                  src={Attach}
-                  className={`w-10 h-10 ${
-                    uploadedFiles.length > 0
-                      ? "cursor-default"
-                      : "cursor-pointer"
-                  }`}
-                  alt="Attach file"
-                  loading="lazy"
-                  onClick={onFileAttachClick}
-                />
-                <span
-                  className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-white bg-black rounded shadow-md opacity-0 ${
-                    uploadedFiles.length === 0
-                      ? "group-hover:opacity-100"
-                      : "group-hover:opacity-0"
-                  } transition-opacity duration-200 w-24 text-center`}
-                >
-                  Attach file
-                </span>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  multiple={false}
-                  disabled={uploadedFiles.length > 0}
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
-              </div>
-            </div>
-            <div className="flex flex-col w-full">
-              <div className="flex flex-wrap gap-2 mb-1 relative">
-                {uploadedFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex min-h-4 items-center max-w-xl gap-1 bg-gray-200 px-2 py-1 rounded-md text-lg relative"
-                  >
-                    <div className="relative">
-                      {loadingIndex === index && (
-                        <div className="absolute inset-0 flex justify-center items-center">
-                          <svg
-                            className="w-6 h-6 transform -rotate-90"
-                            viewBox="0 0 36 36"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              stroke=""
-                              strokeWidth="3"
-                              fill="none"
-                            />
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              stroke="rgb(177, 174, 174)"
-                              strokeWidth="3"
-                              fill="none"
-                              strokeDasharray="94.24777960769379"
-                              strokeDashoffset={
-                                progress !== null
-                                  ? 94.24777960769379 * (1 - progress / 100)
-                                  : 94.24777960769379
-                              }
-                              style={{
-                                transition:
-                                  "stroke-dashoffset 0.1s ease-in-out",
-                              }}
-                            />
-                          </svg>
-                        </div>
-                      )}
-                      {renderFileIcon(file.name)}
+          <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
+            <div className="w-full flex items-center gap-2">
+              <div className="flex flex-col w-full">
+                <div className="flex flex-wrap gap-2 mb-1 relative">
+                  {uploadedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex min-h-4 items-center max-w-xl gap-1 bg-gray-200 px-2 py-1 rounded-md text-lg relative"
+                    >
+                      <div className="relative">
+                        {loadingIndex === index && (
+                          <div className="absolute inset-0 flex justify-center items-center">
+                            <svg
+                              className="w-6 h-6 transform -rotate-90"
+                              viewBox="0 0 36 36"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <circle
+                                cx="18"
+                                cy="18"
+                                r="15"
+                                stroke=""
+                                strokeWidth="3"
+                                fill="none"
+                              />
+                              <circle
+                                cx="18"
+                                cy="18"
+                                r="15"
+                                stroke="rgb(177, 174, 174)"
+                                strokeWidth="3"
+                                fill="none"
+                                strokeDasharray="94.24777960769379"
+                                strokeDashoffset={
+                                  progress !== null
+                                    ? 94.24777960769379 * (1 - progress / 100)
+                                    : 94.24777960769379
+                                }
+                                style={{
+                                  transition:
+                                    "stroke-dashoffset 0.1s ease-in-out",
+                                }}
+                              />
+                            </svg>
+                          </div>
+                        )}
+                        {renderFileIcon(file.name)}
+                      </div>
+                      <span
+                        className="w-full truncate overflow-hidden whitespace-nowrap"
+                        title={file.name}
+                      >
+                        {file.name}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveFile(index)}
+                        disabled={loading}
+                        className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
                     </div>
-                    <span
-                      className="w-full truncate overflow-hidden whitespace-nowrap"
-                      title={file.name}
-                    >
-                      {file.name}
-                    </span>
-                    <button
-                      onClick={() => handleRemoveFile(index)}
-                      disabled={loading}
-                      className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
-                    >
-                      ✕
-                    </button>
+                  ))}
+                </div>
+                <textarea
+                  disabled={loading || disabled}
+                  onKeyDown={onKeyDown}
+                  maxLength={500}
+                  onChange={(event) => setInputValue(event.target.value)}
+                  value={inputValue}
+                  placeholder={
+                    aiProvider === "Thermax-GPT"
+                      ? "Ask anything..."
+                      : "Search anything..."
+                  }
+                  rows={1}
+                  className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${
+                    disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
+                  }`}
+                  style={{ lineHeight: "1.9rem" }}
+                />
+                <div className="flex items-start justify-start">
+                  <div className="relative flex-shrink-0">
+                    <div className="relative group cursor-pointer">
+                      <img
+                        src={Attach}
+                        className={`w-8 h-8 ${
+                          uploadedFiles.length > 0
+                            ? "cursor-default"
+                            : "cursor-pointer"
+                        }`}
+                        alt="Attach file"
+                        loading="lazy"
+                        onClick={onFileAttachClick}
+                      />
+                      <span
+                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-white bg-black rounded shadow-md opacity-0 ${
+                          uploadedFiles.length === 0
+                            ? "group-hover:opacity-100"
+                            : "group-hover:opacity-0"
+                        } transition-opacity duration-200 w-24 text-center`}
+                      >
+                        Attach file
+                      </span>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        multiple={false}
+                        disabled={uploadedFiles.length > 0}
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                      />
+                    </div>
                   </div>
-                ))}
+                  <div className="flex justify-start mb-2 ml-4 px-1">
+                    <div className="relative inline-flex rounded-lg overflow-hidden bg-gray-200">
+                      {/* Sliding background indicator */}
+                      <div
+                        className="absolute top-0 bottom-0 left-0 w-1/2 bg-white rounded-lg border border-red-600 transition-transform duration-300 ease-in-out"
+                        style={{
+                          transform: `translateX(${activeIndex * 100}%)`,
+                          zIndex: 0,
+                        }}
+                      />
+                      {tabs.map((tab) => (
+                        <button
+                          key={tab.label}
+                          onClick={() => handleTabChange(tab.label)}
+                          className={`relative z-10 flex items-center justify-center  px-4 py-1 text-sm font-medium transition-colors duration-300 rounded-lg
+              ${
+                aiProvider === tab.label
+                  ? "text-red-600"
+                  : "text-red-300 hover:text-red-600"
+              }`}
+                        >
+                          {tab.icon}
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <textarea
-                disabled={loading || disabled}
-                onKeyDown={onKeyDown}
-                maxLength={500}
-                onChange={(event) => setInputValue(event.target.value)}
-                value={inputValue}
-                placeholder="Ask your query here..."
-                rows={1}
-                className={`w-full max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${
-                  disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
-                }`}
-                style={{ lineHeight: "1.9rem" }}
-              />
+              <Button
+                disabled={loading}
+                onClick={handleSend}
+                custom_type="secondary"
+                className="flex-shrink-0 w-14 h-14 mt-1.5 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
+                size="very_small"
+                rounded
+              >
+                <img src={Sent} alt="Send" loading="lazy" />
+              </Button>
             </div>
-            <Button
-              disabled={loading}
-              onClick={handleSend}
-              custom_type="secondary"
-              className="flex-shrink-0 w-14 h-14 mt-1.5 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
-              size="very_small"
-              rounded
-            >
-              <img src={Sent} alt="Send" loading="lazy" />
-            </Button>
           </div>
         </div>
       </div>

@@ -1,14 +1,15 @@
 import {SSOAPI } from "./Axios";
 
-// const BASE_URL = 'http://localhost/api'
-const BACKEND_SSO_URL = import.meta.env.VITE_BACKEND_SSO_URL;
+// const ROOT_PATH = 'http://localhost/api'
+// const BACKEND_SSO_URL = import.meta.env.VITE_BACKEND_SSO_URL;
+const BACKEND_SSO_URL = window.env?.BACKEND_SSO_URL || import.meta.env.VITE_BACKEND_SSO_URL;
 
 
 
 //<======================User details and services and roles====================>
 
 export const GetUserDetails = async () => {
-    const response = await SSOAPI.get(BACKEND_SSO_URL + "/user/me");
+    const response = await SSOAPI.get(BACKEND_SSO_URL + "/user/me/");
     return response;
   };
   
