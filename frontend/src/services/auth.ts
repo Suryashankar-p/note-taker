@@ -41,6 +41,6 @@ export const getAuthUrl = async () => {
 }
 
 export const getToken = async (params: string) => {
-  const response = await SSOAPI.get(BACKEND_SSO_URL + `/microsoft/access-token?${params}`);
+  const response = await SSOAPI.get(BACKEND_SSO_URL + `/login/access-token?${params}`);
   return response
 }
