@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Text from '../../../components/Text';
 import Cost from './Cost';
 import Activity from './Activity';
@@ -20,6 +20,11 @@ type Calender = {
   month: string | number
 }
 
+type Page = {
+  skip: number,
+  limit: number
+}
+
 const Usage = () => {
   const { year, month } = getCurrentDate()
   const [activeTab, setActiveTab] = useState<'cost' | 'activity'>('cost');
@@ -31,29 +36,47 @@ const Usage = () => {
   const dispatch = useDispatch<Dispatch>()
   const [topUsers, setTopUsers] = useState<any | null>()
   const [pageError, setPageError] = useState<boolean>(false)
+  const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     getCostUsage(calender.year, calender.month)
     getUsageLimit()
     getActivityUsage(calender.year, calender.month)
-    getActivityTopUsers(calender.year, calender.month, 3)
+    getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);)
   }, [])
 
-  const getActivityTopUsers = async (year: string | number, month: string | number, n: number) => {
-    try {
-      const topUserResponse = await ReadActivityUsageTopUsers(year, month, n)
-      if (topUserResponse?.result) {
-        setTopUsers(topUserResponse?.result)
+  const getActivityTopUsers = async (
+      year: string | number,
+      month: string | number,
+      skip: number,
+      limit: number
+    ) => {
+     if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
+      try {
+        const topUserResponse = await ReadActivityUsageTopUsers(
+          year,
+          month,
+          skip,
+          limit
+        );
+  
+        if (topUserResponse?.result) {
+          setTopUsers((prevData: any) =>
+            skip === 0
+              ? topUserResponse.result
+              : [...prevData, ...topUserResponse.result]
+          );
+          setTotalUsers(topUserResponse.total);
+        } else {
+          setPageError(true);
+          setTopUsers(null);
+        }
+      } catch (err) {
+        console.log("err", err);
       }
-      else {
-        setPageError(true);
-        setTopUsers(null)
-      }
-    }
-    catch (err) {
-      console.log("err", err);
-    }
-  }
+    };
 
   const getActivityUsage = async (year: string | number, month: string | number) => {
     try {
@@ -107,12 +130,24 @@ const Usage = () => {
     }
   }
 
+  const reachedBottom = async () => {
+    if (loadingRef.current) return;
+    if (!topUsers || topUsers.length >= totalUsers) return;
+
+    loadingRef.current = true;
+    const newSkip = topUsers.length;
+    setPage((prev) => ({ ...prev, skip: newSkip }));
+
+    await getActivityTopUsers(calender.year, calender.month, newSkip, page.limit);
+    loadingRef.current = false;
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'cost':
         return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calender.month} />;
       case 'activity':
-        return <Activity activityData={activityData} month={calender.month} topUsers={topUsers} />;
+        return <Activity activityData={activityData} month={calender.month} topUsers={topUsers} reachedBottom={reachedBottom}/>;
       default:
         return null;
     }
@@ -140,7 +175,7 @@ const Usage = () => {
       setCalender({ ...calender, year: data })
       getCostUsage(data, calender.month)
       getActivityUsage(data, calender.month)
-      getActivityTopUsers(data, calender.month, 3)
+      getActivityTopUsers(data, calender.month, 0, 4);
     }
   }
 
@@ -149,12 +184,12 @@ const Usage = () => {
       setCalender({ ...calender, month: data })
       getCostUsage(calender.year, data)
       getActivityUsage(calender.year, data)
-      getActivityTopUsers(calender.year, data, 3)
+      getActivityTopUsers(calender.year, data, 0, 4);
     }
   }
 
   return (
-    <div className="flex flex-col md:mx-8 mt-1 lg:mx-16 mx-12 gap-4 relative">
+    <div className="flex flex-col md:mx-8 mt-1 lg:mx-16 mx-12 gap-4 xl:gap-8 relative">
       <Text type="header2">Usage</Text>
   
       {/* Toast Notification */}
@@ -191,7 +226,7 @@ const Usage = () => {
         </div>
   
         {/* Content Panel */}
-        <TabPanels className="bg-white h-auto min-h-[12rem] sm:min-h-[16rem] lg:min-h-[18rem] xl:min-h-[10rem] rounded-lg shadow-lg border border-gray-200">
+        <TabPanels className="bg-white h-auto min-h-[12rem] sm:min-h-[16rem] lg:min-h-[18rem] xl:h-[24rem] xl:min-h-[10rem] rounded-lg shadow-lg border border-gray-200">
           {tabs.map((tab) => (
             <TabPanel key={tab.key} className="h-full">
               {renderContent()}

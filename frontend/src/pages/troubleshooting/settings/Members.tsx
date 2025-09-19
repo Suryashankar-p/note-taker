@@ -34,25 +34,31 @@ const Members = () => {
   const [pageError, setPageError] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null); 
+  const [skip, setSkip] = useState(0);
 
-  const getAllMembers = async (skip: number, limit: number, search_term?: string) => {
-    try {
-      setLoading(true);
-      const response = await ReadMembers(skip, limit, search_term);
-      if (response?.result) {
-        setData(prevData => (skip === 0 ? response?.result : [...prevData, ...response?.result]));
-        setMemberTotal(response?.total);
-        setHasMore(response?.result.length >= limit); 
-      } else {
-        setPageError(true);
-        if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
-      }
-      setLoading(false);
-    } catch (err) {
-      console.log(err);
-      setLoading(false);
+
+  const getAllMembers = async (newSkip: number, limit: number, search_term = '') => {
+  if (loading || !hasMore) return;
+
+  try {
+    setLoading(true);
+    const response = await ReadMembers(newSkip, limit, search_term);
+    if (response?.result) {
+      setData(prev => (newSkip === 0 ? response.result : [...prev, ...response.result]));
+      setSkip(prev => (newSkip === 0 ? response.result.length : prev + response.result.length));
+      setMemberTotal(response.total);
+      setHasMore(response.result.length >= limit);
+    } else {
+      setPageError(true);
+      if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
     }
-  };
+    setLoading(false);
+  } catch (err) {
+    console.log(err);
+    setLoading(false);
+  }
+};
+
 
   const onMemberCreate = async (data: any) => {
     if (data) {
@@ -120,14 +126,12 @@ const Members = () => {
     }, 500); 
   };
 
-  const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      if (scrollTop + clientHeight >= scrollHeight && !loading && hasMore) {
-        getAllMembers(data.length, 30, searchValue); 
-      }
-    }
-  };
+const handleScroll = (e: any) => {
+  const { scrollTop, scrollHeight, clientHeight } = e.target;
+  if (scrollTop + clientHeight >= scrollHeight - 10 && hasMore && !loading) {
+    getAllMembers(skip, 30, searchValue);
+  }
+};
 
   return (
     <div className="flex flex-col h-full gap-8 overflow-y-hidden">
@@ -186,6 +190,7 @@ const Members = () => {
             data={data}
             onSubmit={onSubmit}
             onDeleteSubmit={onDeleteSubmit}
+            handleScroll={handleScroll}
           />
         ) : (
           <div className="flex justify-center items-center">
