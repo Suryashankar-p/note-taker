@@ -1,0 +1,34 @@
+.text-shimmer {
+background: linear-gradient(
+  90deg,
+  #5e5e5e 0%,
+  #7e7e7e 10%,
+  #b0b0b0 20%,
+  #dcdcdc 30%,
+  #ffffff 40%,
+  #f8f8f8 50%,
+  #dcdcdc 60%,
+  #b0b0b0 70%,
+  #7e7e7e 80%,
+  #5e5e5e 90%,
+  #3e3e3e 100%
+);
+  background-size: 200% 100%;
+  color: transparent;
+  font-weight: 500;
+  font-size: small;
+  
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shimmer-left-to-right 3s linear infinite;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes shimmer-left-to-right {
+  100% {
+    background-position: -150% center;
+  }
+  0% {
+    background-position: 150% center;
+  }
+}

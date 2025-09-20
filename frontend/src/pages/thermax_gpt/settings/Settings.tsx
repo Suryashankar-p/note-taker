@@ -44,7 +44,7 @@ const Settings = () => {
 
     useEffect(() => {
         const savedSection = localStorage.getItem('selectedSettingsSection');
-        const initialSection = savedSection || 'members';
+        const initialSection = SettingsComponents[savedSection] ? savedSection : 'members';
         setCurrentElement(SettingsComponents[initialSection]);
         setSelectedKey(initialSection);
         return () => {

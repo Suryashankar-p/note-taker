@@ -29,21 +29,41 @@ const GPTMain = () => {
   const navigate = useNavigate();
   const toast = useSelector((state: RootState) => state.toast);
   const [realtedQuestions, setRelatedQuestions] = useState<any>();
+  const access_details = useSelector(
+    (state: RootState) => state.memberRole.details
+  ).thrmx_gpt_user_service_mapping;
 
   useEffect(() => {
     getChatLists();
-  }, []);
+  }, [access_details]);
 
   const getChatLists = async () => {
     try {
       const list = await GetAllChatLists();
-      if (list?.result) {
-        SetHistoryList(list?.result);
+      if (list?.result?.length > 0 && access_details?.length > 0) {
+        const normalize = (str: string) =>
+          str?.toLowerCase().replace(/[-\s]+/g, ""); // remove spaces & dashes
+
+        const filtered = list.result.filter((item: any) => {
+          if (!item.type) return true; // keep if no type
+
+          const itemType = normalize(item.type);
+
+          return access_details.some(
+            (d: any) => normalize(d.title) === itemType
+          );
+        });
+
+        SetHistoryList(filtered);
       } else {
         dispatch.toast.openToast({ message: list?.detail, status: true });
       }
     } catch (err: any) {
-      dispatch.toast.openToast({ message: err, status: true, type: "error" });
+      dispatch.toast.openToast({
+        message: err instanceof Error ? err.message : String(err),
+        status: true,
+        type: "error",
+      });
     }
   };
 

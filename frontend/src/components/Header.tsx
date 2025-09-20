@@ -31,7 +31,7 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
     if (Object.keys(userData).length < 1) {
       getUserInfo();
     }
-  }, []);
+  }, [userData]);
 
   let userDetails = userData;
 

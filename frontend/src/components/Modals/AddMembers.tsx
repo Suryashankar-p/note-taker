@@ -14,29 +14,46 @@ import { useSelector, useDispatch } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store";
 import { useForm } from "react-hook-form";
 import Toast from "../Toast";
-import { capitalizeWords } from "../../utils/functions.ts";
-import { listValuesWithoutReviewer, listValuesWithReviewer, roleMappingWithoutReviewer, roleMappingWithReviewer } from "../../utils/constants.ts";
+import { capitalizeWords, roleMapping } from "../../utils/functions.ts";
+import {
+  listValues_normal,
+  listValues_sales,
+  roleMapping_normal,
+  roleMapping_sales,
+} from "../../utils/constants.ts";
+import { getThermaxServices } from "../../services/thermax_gpt.ts";
+import TagInput from "../TagInput.tsx";
+import SelectTagInput from "../SelectTagInput.tsx";
 
 export type DefaultValue = {
   name: string;
   role: string;
   email: string;
+  thrmx_gpt_user_service_mapping?: {
+    id: number | null | string;
+    title: string;
+  }[];
   id: number;
 };
 
 interface Props {
   defaultValue?: DefaultValue;
-  onSubmit: (data: { name: string; role: string; email: string }) => void;
+  onSubmit: (data: {
+    name: string;
+    role: string;
+    email: string;
+    services_provisioned?: { id: string | number | null; title: string }[];
+  }) => void;
 }
 
 interface IFormInput {
   name: string;
   role?: RoleKey;
   email: string;
+  services_provisioned?: { id: string | number | null; title: string }[];
 }
 
-
-type RoleKey = keyof typeof roleMappingWithReviewer;
+type RoleKey = keyof typeof roleMapping;
 // type RoleKeyDoctorConBot = keyof typeof roleMapping_doctor_conbot;
 
 const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
@@ -44,34 +61,44 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
 
   const isOcrPath = location.pathname.endsWith("/tbwes_ocr");
   const isThermaxPath = location.pathname.endsWith("/thermax_gpt/settings");
+  const isSalesPath = location.pathname.endsWith("/sales/settings");
+  const isCisoBotPath = location.pathname.endsWith("/ciso_bot/settings");
   const isDoctorConBotPath = location.pathname.endsWith(
     "/doctor_conbot/settings"
   );
   const isTroubleshootingPath = location.pathname.endsWith(
     "/troubleshooting/settings"
   );
-  const getRoleSettings = () => {
-    if (isOcrPath) return { list: listValuesWithoutReviewer, mapping: roleMappingWithoutReviewer };
-    if (isTroubleshootingPath) return { list: listValuesWithoutReviewer, mapping: roleMappingWithoutReviewer };
-    if (isDoctorConBotPath || isThermaxPath) return { list: listValuesWithoutReviewer, mapping: roleMappingWithoutReviewer };
-    return { list: listValuesWithReviewer, mapping: roleMappingWithReviewer };
-  };
-  
-  const { list: listValuesToUse, mapping: roleMappingToUse } = getRoleSettings();
+  const isSpecialPath =
+    isOcrPath || isTroubleshootingPath || isDoctorConBotPath;
+
+  const listValuesToUse =
+    isSalesPath || isCisoBotPath ? listValues_sales : listValues_normal;
+
+  const roleMappingToUse =
+    isSalesPath || isCisoBotPath ? roleMapping_sales : roleMapping_normal;
 
   const addMember = useSelector(
     (state: RootState) => state.modal.addMember.status
   );
   const type = useSelector((state: RootState) => state.modal.addMember.type);
   const dispatch = useDispatch<Dispatch>();
-  //     type SelectedRoleKey = typeof roleMappingToUse extends typeof roleMapping_doctor_conbot
-  //   ? RoleKeyDoctorConBot
-  //   : RoleKey;
+
+  // All available services from API
+  const [allThermaxServices, setAllThermaxServices] = useState<
+    { id: number | null | string; title: string }[]
+  >([]);
+
+  // User-selected services (defaultValue)
+  const [selectedServices, setSelectedServices] = useState<
+    { id: number | null | string; title: string }[]
+  >(type === 'edit' ? defaultValue?.thrmx_gpt_user_service_mapping : []);
 
   const {
     register,
     handleSubmit,
     clearErrors,
+    setError,
     formState: { errors },
     setValue,
     watch,
@@ -81,17 +108,24 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
       email: type === "edit" && defaultValue ? defaultValue.email : "",
       role:
         type === "edit" && defaultValue
-          ? roleMappingToUse[defaultValue.role as RoleKey]
-          : "Member", // Ensure 'Member' is default
+          ? (defaultValue.role as RoleKey)
+          : "Member", // Make sure role matches IFormInput type
+      services_provisioned: type === "edit" && defaultValue ? defaultValue?.thrmx_gpt_user_service_mapping : [],
     },
   });
+
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const checkScreenSize = () => setIsMobile(window.innerWidth < 768);
     checkScreenSize(); // Initial check
+    if (isThermaxPath) {
+      getAllThermaxServices();
+    }
     window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
+    return () => {
+      window.removeEventListener("resize", checkScreenSize);
+    };
   }, []);
 
   const toastStatus = useSelector((state: RootState) => state.toast);
@@ -107,6 +141,10 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
     if (defaultValue && type === "edit") {
       setValue("name", defaultValue.name);
       setValue("email", defaultValue.email);
+      setValue(
+        "services_provisioned",
+        defaultValue.thrmx_gpt_user_service_mapping
+      );
       setValue("role", defaultValue.role as RoleKey);
       const defaultRole = listValuesToUse.find(
         (value) => roleMappingToUse[value.name as RoleKey] === defaultValue.role
@@ -127,13 +165,54 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
 
   const handleOnSubmit = (data: IFormInput) => {
     const role = data.role as RoleKey;
+    if (
+      isThermaxPath &&
+      (!data?.services_provisioned || data.services_provisioned.length < 1)
+    ) {
+      setError(
+        "services_provisioned",
+        {
+          type: "manual",
+          message: "Please select at least one service",
+        },
+        { shouldFocus: true }
+      );
+      return; // ⛔ stop submission
+    }
     const body = {
       name: data.name,
       email: data.email,
       role: roleMappingToUse[role],
       memberId: defaultValue?.id,
+      thrmx_gpt_user_service_mapping: selectedServices,
     };
     onSubmit(body);
+  };
+
+  const getAllThermaxServices = async () => {
+    try {
+      const response = await getThermaxServices();
+
+      if (response?.result?.length > 0) {
+        const serviceList = response.result.map((item: any) => ({
+          id: item.key,
+          title: item.display_name,
+        }));
+        setAllThermaxServices(serviceList); // Update state
+      } else {
+        setAllThermaxServices([]); // Optional: clear state if no services
+      }
+    } catch (error) {
+      console.error("Failed to fetch Thermax services:", error);
+    }
+  };
+
+  const onTagChange = (
+    tags: { id: number | null | string; title: string }[]
+  ) => {
+    clearErrors("services_provisioned");
+    setSelectedServices(tags);
+    setValue("services_provisioned", tags, { shouldValidate: true });
   };
 
   return (
@@ -162,14 +241,20 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
             leaveTo="opacity-0 scale-95"
           >
             <DialogPanel
-              className="w-full sm:w-[90vw] md:w-[70vw] lg:w-[50vw] max-w-xl h-fit transform overflow-hidden rounded-2xl bg-white p-4 sm:p-6 text-left align-middle shadow-xl transition-all"
+              className="w-full sm:w-[90vw] md:w-[70vw] lg:w-[50vw] max-w-xl h-fit transform  rounded-2xl bg-white p-4 sm:p-6 text-left align-middle shadow-xl transition-all"
               onClick={(e) => e.stopPropagation()}
             >
               <DialogTitle
                 as="h3"
                 className="text-lg sm:text-xl font-medium flex justify-between text-gray-900"
               >
-                <Text>{type === "add" ? "Add Member" : "Edit Member"}</Text>
+                <Text>
+                  {!isThermaxPath
+                    ? type === "add"
+                      ? "Add Member"
+                      : "Edit Member"
+                    : "Add Owners"}
+                </Text>
                 <button
                   className="absolute -right-2 -top-1"
                   onClick={closeModal}
@@ -212,6 +297,7 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
                         <p className="text-red-500">{errors.name.message}</p>
                       )}
                     </div>
+
                     <div className="w-full flex flex-col space-y-1">
                       <label>
                         <Text className="text-primary_text">Role*</Text>
@@ -251,6 +337,26 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
                       <p className="text-red-500">{errors.email.message}</p>
                     )}
                   </div>
+                  {isThermaxPath && (
+                    <div className="w-full flex flex-col space-y-2">
+                      <label>
+                        <Text className="text-primary_text">
+                          Services provisioned*
+                        </Text>
+                      </label>
+                      <SelectTagInput
+                        value={selectedServices}
+                        options={allThermaxServices}
+                        onChange={onTagChange}
+                        placeholder="Select the services the member should have access to"
+                      />
+                      {errors.services_provisioned && (
+                        <p className="text-red-500">
+                          {errors.services_provisioned.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 flex justify-end gap-2 sm:gap-3">
