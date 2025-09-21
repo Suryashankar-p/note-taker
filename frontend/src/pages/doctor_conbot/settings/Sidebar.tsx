@@ -26,7 +26,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 }) => {
   const settingsValues: SettingsValueType[] = [
     {
-      title: "Products",
+      title: "Categories",
       src: Knowledge,
       alt: "knowledge",
       key: "knowledge",
@@ -43,12 +43,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
       alt: "members",
       key: "members",
     },
-    // {
-    //     title: 'Feedback',
-    //     src: Feedback,
-    //     alt: 'feedback',
-    //     key: 'feedback'
-    // },
+
     {
       title: "Usage",
       src: Usage,
