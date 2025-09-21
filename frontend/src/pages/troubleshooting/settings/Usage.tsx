@@ -44,7 +44,7 @@ const Usage = () => {
     getCostUsage(calender.year, calender.month)
     getUsageLimit()
     getActivityUsage(calender.year, calender.month)
-    getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);)
+    getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);
   }, [])
 
   const getActivityTopUsers = async (
