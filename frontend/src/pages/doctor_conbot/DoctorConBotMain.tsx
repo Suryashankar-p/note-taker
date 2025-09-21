@@ -16,7 +16,7 @@ const breadCrumbs = [
     url: "/ai-studio",
   },
   {
-    title: "Dr. ConBot.",
+    title: "Dr. ConBot",
     url: "/ai-studio/doctor_conbot",
   },
 ];
