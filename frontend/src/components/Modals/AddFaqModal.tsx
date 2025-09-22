@@ -42,11 +42,10 @@ interface IFormInput {
 
 interface Props {
   defaultValues: any;
-  options: any;
   onSubmit: any;
 }
 
-const AddFaqModal: React.FC<Props> = ({ defaultValues, options, onSubmit }) => {
+const AddFaqModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
   const isOpen = useSelector((state: RootState) => state.modal.isOpen);
   const dispatch = useDispatch<Dispatch>();
   const [fileName, setFileName] = useState<string>("");
