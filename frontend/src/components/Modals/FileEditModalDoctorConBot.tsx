@@ -13,18 +13,14 @@ import Close from "../../assets/close.svg";
 import { useSelector, useDispatch } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store";
 import { useForm } from "react-hook-form";
-import SelectTagInput from "../SelectTagInput";
 import Toast from "../Toast";
-import {
-  fileTypeSelctor,
-  fileTypeSelectorDoctorConBot,
-} from "../../utils/functions";
+import { fileTypeSelectorDoctorConBot } from "../../utils/functions";
 
 const listValues = [
   { name: "Manual" },
   { name: "Image" },
   { name: "Video" },
-  //   { name: "FAQ" },
+  { name: "Other" },
 ];
 
 interface Tag {
@@ -37,20 +33,15 @@ interface IFormInput {
   description: string;
   fileType: string;
   file: any;
-  // models: Tag[]; // Adding models field
 }
 
 interface Props {
   defaultValues: any;
-  options: any;
   onSubmit: any;
+  title: string;
 }
 
-const FileEditModal: React.FC<Props> = ({
-  defaultValues,
-  options,
-  onSubmit,
-}) => {
+const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, title }) => {
   const isOpen = useSelector((state: RootState) => state.modal.isOpen);
   const dispatch = useDispatch<Dispatch>();
   const [fileName, setFileName] = useState<string>("");
@@ -70,16 +61,12 @@ const FileEditModal: React.FC<Props> = ({
     getValues,
   } = useForm<IFormInput>();
 
-  // useEffect(() => {
-  //     if (options?.length > 0) {
-  //         setSelectedModels(options)
-  //     }
-  // }, [options])
-
   useEffect(() => {
     if (selectedFileType && !defaultValues?.kind) {
       setValue("fileType", "Manual");
     }
+    console.log(isOpen);
+
     return () => {
       dispatch.loadingState.endLoading();
     };
@@ -94,8 +81,6 @@ const FileEditModal: React.FC<Props> = ({
       });
       setValue("fileType", fileTypeSelectorDoctorConBot(defaultValues?.kind));
       setValue("file", defaultValues?.file);
-      // setValue('models', defaultValues?.models)
-      // setSelectedModels(defaultValues?.models)
     }
   }, [defaultValues]);
 
@@ -118,12 +103,10 @@ const FileEditModal: React.FC<Props> = ({
   };
 
   const onHandle = (data: IFormInput) => {
-    // if (selectedModels.length > 0) {
-    //     data.models = selectedModels;
-    // }
     if (file) {
       data.file = file;
     }
+    data.description = data?.description?.trim();
     onSubmit(data);
   };
 
@@ -166,10 +149,11 @@ const FileEditModal: React.FC<Props> = ({
                 >
                   <DialogTitle
                     as="h3"
-                    className="text-[24px] relative text-black font-medium flex justify-between leading-6 text-gray-900"
+                    className="text-[24px] relative font-medium flex justify-between leading-6 text-gray-900"
                   >
                     <Text>
-                      {isOpen?.type === "edit" ? "Edit File" : "Add file"}
+                      {/* {isOpen?.type === "edit" ? "Edit File" : "Add file"} */}
+                      Add File
                     </Text>
                     <button
                       className="absolute -right-4 -top-5"
@@ -185,6 +169,9 @@ const FileEditModal: React.FC<Props> = ({
                         <Toast type="error" />
                       </div>
                     )}
+                    <Text type="small" className="italic text-gray-400 mt-1">
+                      {title}
+                    </Text>
                     <div className="flex mt-3 flex-col gap-2">
                       {/* File upload and file type dropdown - Only show when NOT in edit mode */}
                       {isOpen?.type !== "edit" && (
