@@ -296,6 +296,19 @@ const ChatArea: React.FC<Props> = ({
     return DOMPurify.sanitize(dirtyHtml);
   };
 
+  const onFileAttachClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click(); // Programmatically click the hidden input
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]; // Get the selected file
+    if (file) {
+      // Handle the file upload logic here
+    }
+  };
+
   return (
     <div className="flex flex-col w-full position-fixed h-full bg-inherit">
       {toast?.status && toast?.type === "error" && pageError && (

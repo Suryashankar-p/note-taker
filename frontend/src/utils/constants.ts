@@ -1,4 +1,6 @@
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
+import { FaFile, FaGlobe, FaRobot } from "react-icons/fa6";
+import { IconType } from "react-icons/lib";
 
 export const months: string[] = [
   "January",
@@ -101,3 +103,30 @@ export const roleMappingWithoutReviewer = {
   Owner: "OWNER",
   Member: "MEMBER",
 } as const;
+
+
+
+export const roleMapping_sales = {
+  Owner: "OWNER",
+  Reviewer: "REVIEWER",
+  Member: "MEMBER",
+} as const;
+
+export const roleMapping_normal = {
+  Owner: "OWNER",
+  Member: "MEMBER",
+} as const;
+
+export const listValues_sales = [
+  { name: "Owner" },
+  { name: "Reviewer" },
+  { name: "Member" },
+];
+export const listValues_normal = [{ name: "Owner" }, { name: "Member" }];
+
+
+export const iconMapping: Record<string, IconType> = {
+  "Thermax GPT": FaRobot,
+  "Document Analyzer": FaFile,
+  "Deep Search": FaGlobe,
+};

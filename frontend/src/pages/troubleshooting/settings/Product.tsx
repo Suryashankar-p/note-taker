@@ -415,14 +415,14 @@ const Products = () => {
       </div>
       <div
         ref={scrollRef}
-        className=" self-center h-full items-center overflow-y-scroll w-full flex flex-col  gap-4 "
+        className=" self-center h-full items-center overflow-y-scroll w-full flex flex-col xl:mt-4 gap-4 xl:gap-8"
       >
         {products?.length > 0 ? (
           products.map((item: any, key: number) => (
             <div
               id={`product-${key}`}
               key={key}
-              className="w-[25rem] sm:w-[53vw] lg:w-[55rem] rounded-lg shadow-custom self-center flex flex-col items-betweeen justify-center border"
+              className="w-[25rem] sm:w-[53vw] lg:w-[55rem] xl:w-[65rem] rounded-lg shadow-custom self-center flex flex-col items-betweeen justify-center border"
             >
               <div className="flex lg:flex-row flex-row justify-between items-start sm:items-center px-8 pt-4 pb-4 min-h-20">
                 <Text

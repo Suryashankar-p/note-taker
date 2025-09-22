@@ -144,17 +144,17 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
       )}
 
       {/* Bar Chart */}
-      <div className="w-full md:w-[300px] lg:w-[300px] xl:w-[500px] h-[250px] md:h-[200px] lg:h-[300px] relative -top-8 lg:top-4 lg:-left-4">
-        <Bar className="lg:px-4 px-1" options={options} data={data} />
+      <div className="w-full md:w-[300px] lg:w-[300px] xl:w-[500px] h-[250px] md:h-[200px] lg:h-[300px] xl:h-[330px] relative -top-8 lg:top-4 lg:-left-4">
+        <Bar width={100} height={50} className="lg:px-4 px-1" options={options} data={data} />
       </div>
 
       {/* Doughnut Chart */}
       <div className="w-full md:w-1/2 lg:w-1/3 flex flex-col lg:flex-row top-1 relative justify-between items-between h-[300px] md:h-[150px] lg:h-[300px]">
         <Doughnut data={donutData} options={donutOptions} className="relative lg:-left-20 lg:top-0 -top-[4.5rem]"/>
-        <div className="absolute lg:top-[60%] lg:left-[25%] top-[38%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 text-center text-primary_text w-[80px] md:w-[100px]">
+        <div className="absolute lg:top-[60%] lg:left-[25%] top-[38%] left-[50%] xl:left-[28%] transform -translate-x-1/2 -translate-y-1/2 text-center text-primary_text w-[80px] md:w-[100px]">
           <Text type="header3">{percentage}%</Text>
         </div>
-        <div className="absolute flex flex-col items-center lg:-right-8 lg:bottom-4 md:bottom-10 -bottom-6 right-[75px] ">
+        <div className="absolute flex flex-col items-center lg:-right-8 xl:-right-4 lg:bottom-4 md:bottom-10 -bottom-6 xl:bottom-16 right-[75px] ">
           <Text type="header2">${totalCost}</Text>
           <Text className="text-primary_text" type="body">
             /${limit} limit

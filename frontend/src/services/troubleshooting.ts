@@ -174,7 +174,7 @@ export const ReadActivityUsage = async (year: string | number, month: string | n
   return response
 }
 
-export const ReadActivityUsageTopUsers = async (year: string | number, month: string | number, n: number) => {
-  const response = await TroubleshootAPI.get(BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/usage/activity/top?year=${year}&month=${month}&n=${n}`)
+export const ReadActivityUsageTopUsers = async (year: string | number, month: string | number, skip: number = 0, limit: number = 6) => {
+  const response = await TroubleshootAPI.get(BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/usage/activity/top?skip=${skip}&limit=${limit}&year=${year}&month=${month}`)
   return response
 }
