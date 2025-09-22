@@ -13,7 +13,7 @@ const Categories: React.FC = () => {
     setCurrentPage(page);
   };
 
-  re  turn (
+  return (
     <div>
       {currentPage === "CATEGORIES" ? (
         <Products onSwitch={handleSwitch} />
