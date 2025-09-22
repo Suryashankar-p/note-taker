@@ -7,23 +7,18 @@ import Button from "../../components/Button.tsx";
 import Text from "../../components/Text.tsx";
 import Link from "../../assets/link.svg";
 import Divide from "../../assets/divider.png";
-import Attach from "../../assets/attachment.svg";
 import { useSelector, useDispatch } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import {
+  CreateAgentChatHistory,
   CreateChat,
   CreateChatHistory,
   DeleteChatHistory,
   ReadChatHistories,
-  ReadFaqDocumentUrl,
 } from "../../services/doctor_conbot.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Trash from "../../assets/Trash.tsx";
-import Dislike from "../../assets/Dislike.tsx";
-import LikeIcon from "../../assets/Like.tsx";
 import CopyIcon from "../../assets/Copy.tsx";
-import DislikeReason from "../../components/Modals/DislikeReason.tsx";
 import Dollar from "../../assets/Dollar.tsx";
 import EmptyChat from "../../assets/EmptyChat.tsx";
 import Toast from "../../components/Toast.tsx";
@@ -33,10 +28,11 @@ import DOMPurify from "dompurify";
 import "github-markdown-css/github-markdown.css";
 import FileViewModal from "../../components/Modals/FileViewModal.tsx";
 import { getFileType } from "../../utils/functions.ts";
-import { useMutation } from "@tanstack/react-query";
-
-// import ReactMarkdown from "react-markdown";
-// import remarkGfm from "remark-gfm";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface Props {
   onNewChatAddition: () => void;
@@ -75,7 +71,6 @@ const ChatArea: React.FC<Props> = ({
   const [copySuccess, setCopySuccess] = useState(false);
   const [pageError, setPageError] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [pageSize, setPageSize] = useState({ skip: 0, limit: 100 });
   const [hasReachedEnd, setHasReachedEnd] = useState(false);
   const [showButton, setShowButton] = useState(false);
@@ -163,7 +158,7 @@ const ChatArea: React.FC<Props> = ({
     dispatch.chatContent.addQuestion([{ human: inputValue }]);
     try {
       if (chat_id) {
-        const chatResponse = await CreateChatHistory(inputValue, chat_id);
+        const chatResponse = await CreateAgentChatHistory(inputValue, chat_id);
         if (chatResponse?.ai) {
           dispatch.chatContent.removeQuestion();
           dispatch.chatContent.addQuestion([chatResponse]);
@@ -185,7 +180,7 @@ const ChatArea: React.FC<Props> = ({
         const newSessionResponse = await CreateChat(inputValue);
         if (newSessionResponse?.id) {
           try {
-            const chatResponse = await CreateChatHistory(
+            const chatResponse = await CreateAgentChatHistory(
               inputValue,
               newSessionResponse.id
             );
@@ -244,37 +239,6 @@ const ChatArea: React.FC<Props> = ({
     if (e.key === "Enter") handleSend();
   };
 
-  const onChatDelete = async (item: any) => {
-    try {
-      await DeleteChatHistory(item.id, item.chat_id);
-      getPageChat();
-    } catch (error) {
-      console.error("Error deleting chat history:", error);
-    }
-  };
-
-  const UpdateChat_history = async (
-    chat_history_id: number,
-    chat_id: number,
-    like: boolean
-  ) => {
-    // try {
-    //   let resp = await updateChatHistory(chat_history_id, chat_id, like);
-    //   if (resp?.id) {
-    //     getPageChat();
-    //   } else {
-    //     setCopySuccess(false);
-    //     dispatch.toast.openToast({
-    //       message: resp?.detail,
-    //       status: true,
-    //       type: "error",
-    //     });
-    //   }
-    // } catch (err) {
-    //   console.log("err", err);
-    // }
-  };
-
   const getInitials = (name: string) => {
     const nameParts = name.trim().split(" ");
     const initials = nameParts
@@ -284,33 +248,8 @@ const ChatArea: React.FC<Props> = ({
     return initials.toUpperCase();
   };
 
-  const onDislikeClick = (e: any, message: any) => {
-    setDefaultChatData(message);
-    e.stopPropagation();
-    if (message?.like === false) return;
-    else {
-      dispatch.modal.openDislikeReason("add");
-    }
-  };
-
-  const onLikeClick = (e: any, message: any) => {
-    e.stopPropagation();
-    if (message?.like) return;
-    else {
-      UpdateChat_history(message?.id, message?.chat_id, true);
-    }
-  };
-
-  const onDislikeSubmit = async (data: any) => {
-    const dislikeReason =
-      data?.dislikeReason === "Other"
-        ? data?.customReason
-        : data?.dislikeReason;
-  };
-
   const copyToClipboard = (index: number, message: any) => {
     const content: any = document.querySelector(`#message-${index}`); // Select the outer div by its id or another unique identifier
-    console.log("copied content", content);
     if (!content) return;
     copy(content.innerText); // Use clipboard-copy to copy the innerText of the div
     setCopySuccess(true);
@@ -319,16 +258,31 @@ const ChatArea: React.FC<Props> = ({
       message: "Copied to clipboard",
       type: "success",
     });
-
-    // Optionally provide feedback to the user
   };
 
   const onFileClick = async (file: any) => {
+    console.log("PDF file clicked:", file);
     try {
       let fileInfo: any = {
         name: file.name,
         type: getFileType(file?.name),
         url: file?.link,
+      };
+      setFileData(fileInfo);
+      setFileShow(true);
+    } catch (err) {
+      console.log("err", err);
+    }
+  };
+
+  const onOtherFileClick = async (file: any) => {
+    try {
+      const urlMatch = file.link.match(/link='(.*?)'/);
+      const extractedUrl = urlMatch ? urlMatch[1] : file.link;
+      let fileInfo: any = {
+        name: file.file_name,
+        type: getFileType(file?.file_name),
+        url: extractedUrl,
       };
       setFileData(fileInfo);
       setFileShow(true);
@@ -352,13 +306,11 @@ const ChatArea: React.FC<Props> = ({
     const file = event.target.files?.[0]; // Get the selected file
     if (file) {
       // Handle the file upload logic here
-      console.log("File selected:", file.name);
     }
   };
 
   return (
     <div className="flex flex-col w-full position-fixed h-full bg-inherit">
-      {/* {dislikeModalStatus && <DislikeReason onSubmit={onDislikeSubmit} />} */}
       {toast?.status && toast?.type === "error" && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
           <Toast type="error" />
@@ -382,7 +334,7 @@ const ChatArea: React.FC<Props> = ({
       >
         {chatContent?.length > 0 ? (
           chatContent.map((message: any, index: number) => (
-            <div key={index} className="flex flex-col bg-inherit w-full gap-4">
+            <div key={index} className="flex flex-col bg-inherit w-full gap-2">
               <div
                 key={index}
                 className={`flex items-end space-x-2 overflow-hidden self-end justify-end w-[50%]`}
@@ -416,17 +368,46 @@ const ChatArea: React.FC<Props> = ({
                 {message?.ai ? (
                   <div
                     id={`message-${index}`}
-                    className="max-w-[80%]  py-1 px-4 rounded-lg"
+                    className="w-full max-w-4xl  py-1 px-4 rounded-lg"
                   >
-                    <div
-                      className="prose text-[14px] font-normal text-primary_text"
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          message?.ai && convertMarkdownToHtml(message?.ai),
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                      className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
+                      components={{
+                        table: ({ node, ...props }) => (
+                          <div className="overflow-x-auto">
+                            <table className="w-full table-auto border-collapse break-words">
+                              {props.children}
+                            </table>
+                          </div>
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th className="border px-4 py-2 text-left font-semibold bg-gray-100">
+                            {props.children}
+                          </th>
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td className="border px-4 py-2 align-top">
+                            {props.children}
+                          </td>
+                        ),
+                        a: ({ node, ...props }) => (
+                          <a
+                            {...props}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {props.children}
+                          </a>
+                        ),
                       }}
-                    />
+                    >
+                      {message.ai}
+                    </ReactMarkdown>
                   </div>
                 ) : (
+                  !message.file_name &&
                   loading && (
                     <div className="-ml-12 w-full">
                       <Loading />
@@ -436,67 +417,30 @@ const ChatArea: React.FC<Props> = ({
               </div>
               <div className="flex flex-row flex-wrap gap-2">
                 {message?.ai?.replace(/\\n/g, "\n") &&
-                  message?.source?.sources?.map((file: any, index: number) => (
-                    <button
-                      key={index}
-                      className="rounded-full ml-[3.5vw] px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between"
-                      onClick={() => {
-                        if (file?.document_kind === "OTHER") {
-                          onFileClick(file);
-                        }
-                      }}
-                    >
-                      <img className="pb-1" src={Link} alt="Link" />
-                      <div className="flex flex-col">
-                        <Text
-                          className="text-primary_text mx-1 whitespace-normal max-w-[45rem] break-all text-start"
-                          type="small"
-                        >
-                          {file?.name}
-                        </Text>
-                      </div>
-                    </button>
-                  ))}
+                  message?.source?.sources?.map((file: any, index: number) =>
+                    (file?.name && file?.document_kind === "FAQ" || file?.document_kind === 'MANUAL') ? (
+                      <button
+                        key={index}
+                        className="rounded-full ml-[3.5vw] px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between"
+                        onClick={() => {
+                          if (file?.document_kind === "OTHER") {
+                            onFileClick(file);
+                          }
+                        }}
+                      >
+                        <img className="pb-1" src={Link} alt="Link" />
+                        <div className="flex flex-col">
+                          <Text
+                            className="text-primary_text mx-1 whitespace-normal max-w-[45rem] break-all text-start"
+                            type="small"
+                          >
+                            {file?.name}
+                          </Text>
+                        </div>
+                      </button>
+                    ) : null
+                  )}
               </div>
-              {message.ai && (
-                <button
-                  disabled={disabled}
-                  className="w-20 min-h-8 rounded-full ml-12 -mt-2 border border-grey"
-                >
-                  <div className="flex flex-row mx-2 justify-between">
-                    {/* <LikeIcon
-                      disabled={disabled}
-                      selected={message?.like}
-                      onClick={(e: any) => onLikeClick(e, message)}
-                    /> */}
-                    {/* <img src={Divide} alt="divide" loading="lazy" /> */}
-                    {/* <Dislike
-                      color="blue"
-                      disabled={disabled}
-                      selected={message?.like === false}
-                      onClick={(e: any) => onDislikeClick(e, message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" /> */}
-                    <CopyIcon
-                      disabled={disabled}
-                      onClick={() => copyToClipboard(index, message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" />
-                    {/* <img src={Delete} onClick={() => onChatDelete(message)} className='h-5' alt='delete' loading='lazy' />  */}
-                    {/* <Trash
-                      disabled={disabled}
-                      className="h-5"
-                      onClick={() => onChatDelete(message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" /> */}
-                    <Dollar
-                      className="h-5"
-                      disabled={disabled}
-                      data={message?.price}
-                    />
-                  </div>
-                </button>
-              )}
 
               {message.source &&
                 message.source.sources &&
@@ -507,12 +451,16 @@ const ChatArea: React.FC<Props> = ({
                       source.images.length > 0) ||
                     (source.videos &&
                       Array.isArray(source.videos) &&
-                      source.videos.length > 0)
+                      source.videos.length > 0) ||
+                    (source.other_files &&
+                      Array.isArray(source.other_files) &&
+                      source.other_files.length > 0)
                 ) && (
-                  <div className="flex flex-col mt-2 ml-14">
+                  <div className="flex flex-col mt-0 ml-14">
                     {message.source.sources.map((source, idx) => {
                       const images = source.images || [];
                       const videos = source.videos || [];
+                      const otherFiles = source.other_files || [];
                       const allMedia = [...images, ...videos];
 
                       const getMediaHeading = () => {
@@ -522,90 +470,147 @@ const ChatArea: React.FC<Props> = ({
                         return "Videos:";
                       };
 
-                      const preventContextMenu = (e) => {
+                      const preventContextMenu = (e: React.MouseEvent) => {
                         e.preventDefault();
                         return false;
                       };
 
-                      const preventDragStart = (e) => {
+                      const preventDragStart = (e: React.DragEvent) => {
                         e.preventDefault();
                       };
 
-                      return allMedia.length > 0 ? (
-                        <div key={`media-${idx}`} className="mb-4">
-                          <Text className="text-primary_text font-medium mb-1">
-                            {getMediaHeading()}
-                          </Text>
-                          {allMedia.map((mediaString, mediaIdx) => {
-                            const urlMatch = mediaString.match(/link='(.*?)'/);
-                            const extractedUrl = urlMatch ? urlMatch[1] : null;
-                            const isVideo = videos.includes(mediaString);
+                      return (
+                        <div key={`source-${idx}`} className="mb-4">
+                          {/* Display Images and Videos */}
+                          {allMedia.length > 0 && (
+                            <>
+                              <Text className="text-primary_text font-medium mb-1">
+                                {getMediaHeading()}
+                              </Text>
+                              {allMedia.map((mediaString, mediaIdx) => {
+                                const urlMatch =
+                                  mediaString.match(/link='(.*?)'/);
+                                const extractedUrl = urlMatch
+                                  ? urlMatch[1]
+                                  : null;
+                                  console.log("media string", urlMatch)
+                                const isVideo = videos.includes(mediaString);
 
-                            const processedUrl =
-                              !isVideo &&
-                              extractedUrl?.includes("blob.core.windows.net")
-                                ? extractedUrl
-                                : extractedUrl;
+                                const processedUrl =
+                                  !isVideo &&
+                                  extractedUrl?.includes(
+                                    "blob.core.windows.net"
+                                  )
+                                    ? extractedUrl
+                                    : extractedUrl;
 
-                            return extractedUrl ? (
-                              <div
-                                key={`${idx}-${mediaIdx}`}
-                                className="relative mt-2 flex justify-center items-center"
-                                onContextMenu={preventContextMenu}
-                              >
-                                <div className="max-w-[700px] max-h-[700px] overflow-hidden border border-gray-200 rounded-lg shadow-sm relative">
-                                  {isVideo ? (
-                                    <div className="relative">
-                                      <video
-                                        controls
-                                        className="w-full h-full object-contain"
-                                        style={{
-                                          maxWidth: "700px",
-                                          maxHeight: "700px",
-                                          WebkitUserSelect: "none",
-                                          userSelect: "none",
-                                        }}
-                                        controlsList="nodownload"
-                                        onContextMenu={preventContextMenu}
-                                        draggable="false"
-                                        onDragStart={preventDragStart}
-                                      >
-                                        <source
-                                          src={processedUrl}
-                                          type="video/mp4"
-                                        />
-                                        Your browser does not support the video
-                                        tag.
-                                      </video>
+                                return mediaString ? (
+                                  <div
+                                    key={`${idx}-${mediaIdx}`}
+                                    className="relative mt-2 flex justify-center items-center"
+                                    onContextMenu={preventContextMenu}
+                                  >
+                                    <div className="max-w-[700px] max-h-[700px] overflow-hidden border border-gray-200 rounded-lg shadow-sm relative">
+                                      {isVideo ? (
+                                        <div className="relative">
+                                          <video
+                                            controls
+                                            className="w-full h-full object-contain"
+                                            style={{
+                                              maxWidth: "700px",
+                                              maxHeight: "700px",
+                                              WebkitUserSelect: "none",
+                                              userSelect: "none",
+                                            }}
+                                            controlsList="nodownload"
+                                            onContextMenu={preventContextMenu}
+                                            draggable="false"
+                                            onDragStart={preventDragStart}
+                                          >
+                                            <source
+                                              src={mediaString}
+                                              type="video/mp4"
+                                            />
+                                            Your browser does not support the
+                                            video tag.
+                                          </video>
+                                        </div>
+                                      ) : (
+                                        <div className="relative">
+                                          <img
+                                            src={mediaString}
+                                            alt={`Media content ${
+                                              mediaIdx + 1
+                                            }`}
+                                            className="w-full h-full object-contain pointer-events-none"
+                                            style={{
+                                              maxWidth: "400px",
+                                              maxHeight: "500px",
+                                              WebkitUserSelect: "none",
+                                              userSelect: "none",
+                                            }}
+                                            onContextMenu={preventContextMenu}
+                                            draggable="false"
+                                            onDragStart={preventDragStart}
+                                          />
+                                          <div className="absolute inset-0 bg-transparent" />
+                                        </div>
+                                      )}
                                     </div>
-                                  ) : (
-                                    <div className="relative">
-                                      <img
-                                        src={processedUrl}
-                                        alt={`Media content ${mediaIdx + 1}`}
-                                        className="w-full h-full object-contain pointer-events-none"
-                                        style={{
-                                          maxWidth: "400px",
-                                          maxHeight: "500px",
-                                          WebkitUserSelect: "none",
-                                          userSelect: "none",
-                                        }}
-                                        onContextMenu={preventContextMenu}
-                                        draggable="false"
-                                        onDragStart={preventDragStart}
-                                      />
-                                      <div className="absolute inset-0 bg-transparent" />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ) : null;
-                          })}
+                                  </div>
+                                ) : null;
+                              })}
+                            </>
+                          )}
+
+                          {/* Display Other Files as Buttons */}
+                          {otherFiles.length > 0 && (
+                            <div className="flex flex-row flex-wrap gap-2 mt-2">
+                              {otherFiles.map((file, fileIdx) => (
+                                <button
+                                  key={fileIdx}
+                                  className="rounded-full px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between"
+                                  onClick={() => onOtherFileClick(file)}
+                                >
+                                  <img className="pb-1" src={Link} alt="Link" />
+                                  <div className="flex flex-col">
+                                    <Text
+                                      className="text-primary_text mx-1 whitespace-normal max-w-[45rem] break-all text-start"
+                                      type="small"
+                                    >
+                                      {file.file_name}
+                                    </Text>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ) : null;
+                      );
                     })}
                   </div>
                 )}
+
+              {message.ai && (
+                <button
+                  disabled={disabled}
+                  className="w-20 min-h-8 rounded-full ml-12 mt-1 border border-grey"
+                >
+                  <div className="flex flex-row mx-2 justify-between">
+                    <CopyIcon
+                      disabled={disabled}
+                      onClick={() => copyToClipboard(index, message)}
+                    />
+                    <img src={Divide} alt="divide" loading="lazy" />
+
+                    <Dollar
+                      className="h-5"
+                      disabled={disabled}
+                      data={message?.price}
+                    />
+                  </div>
+                </button>
+              )}
             </div>
           ))
         ) : (

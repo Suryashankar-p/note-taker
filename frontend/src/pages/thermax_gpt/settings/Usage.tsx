@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Text from "../../../components/Text";
 import Cost from "./Cost";
 import Activity from "./Activity";
@@ -16,16 +16,35 @@ import Toast from "../../../components/Toast";
 import { months } from "../../../utils/constants";
 import { getCurrentDate } from "../../../utils/functions";
 import { years } from "../../../utils/constants";
+import DropDownButton from "../../../components/DropDownButton";
 
 // Tabs configuration
 const tabs = [
   { key: "cost", label: "Cost" },
   { key: "activity", label: "Activity" },
 ];
+const modelType = [
+  { value: "Thermax-GPT", name: "Thermax-GPT" },
+  { value: "Deep Search", name: "Deep Search" },
+  { value: "Document Analyser", name: "Document Analyser" },
+  { value: "All", name: "All" },
+];
 
 type Calender = {
   year: string | number;
   month: string | number;
+};
+
+type ModelValue = "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All";
+
+type ModelType = {
+  value: ModelValue;
+  name: ModelValue;
+};
+
+type Page = {
+  skip: number;
+  limit: number;
 };
 
 // Main Usage component
@@ -43,27 +62,84 @@ const Usage = () => {
   const dispatch = useDispatch<Dispatch>();
   const [topUsers, setTopUsers] = useState<any | null>();
   const [pageError, setPageError] = useState<boolean>(false);
+  const [modelTypeFilter, setModelTypeFilter] = useState<ModelType>({
+    value: "All",
+    name: "All",
+  });
+  const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
-    getCostUsage(calender.year, calender.month);
+    getCostUsage(calender.year, calender.month, modelTypeFilter.value);
     getUsageLimit();
-    getActivityUsage(calender.year, calender.month);
-    getActivityTopUsers(calender.year, calender.month, 3);
+    getActivityUsage(calender.year, calender.month, modelTypeFilter.value);
+    getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);
   }, []);
+
+  // const getActivityTopUsers = async (
+  //   year: string | number,
+  //   month: string | number,
+  //   n: number
+  // ) => {
+  //   try {
+  //     const topUserResponse = await ReadActivityUsageTopUsers(year, month, n);
+  //     if (topUserResponse?.result) {
+  //       setTopUsers(topUserResponse?.result);
+  //     } else {
+  //       setPageError(true);
+  //       setTopUsers(null);
+  //       // if (topUserResponse?.detail) dispatch.toast.openToast({ status: true, message: topUserResponse?.detail });
+  //     }
+  //   } catch (err) {
+  //     console.log("err", err);
+  //   }
+  // };
+
+  const reachedBottom = async () => {
+    if (loadingRef.current) return;
+    if (!topUsers || topUsers.length >= totalUsers) return;
+
+    loadingRef.current = true;
+    const newSkip = topUsers.length;
+    setPage((prev) => ({ ...prev, skip: newSkip }));
+
+    await getActivityTopUsers(
+      calender.year,
+      calender.month,
+      newSkip,
+      page.limit
+    );
+    loadingRef.current = false;
+  };
 
   const getActivityTopUsers = async (
     year: string | number,
     month: string | number,
-    n: number
+    skip: number,
+    limit: number,
+    type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
   ) => {
+    if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
     try {
-      const topUserResponse = await ReadActivityUsageTopUsers(year, month, n);
+      const topUserResponse = await ReadActivityUsageTopUsers(
+        year,
+        month,
+        skip,
+        limit,
+        type
+      );
+
       if (topUserResponse?.result) {
-        setTopUsers(topUserResponse?.result);
+        setTopUsers((prevData) =>
+          skip === 0
+            ? topUserResponse.result
+            : [...prevData, ...topUserResponse.result]
+        );
+        setTotalUsers(topUserResponse.total);
       } else {
         setPageError(true);
         setTopUsers(null);
-        // if (topUserResponse?.detail) dispatch.toast.openToast({ status: true, message: topUserResponse?.detail });
       }
     } catch (err) {
       console.log("err", err);
@@ -72,10 +148,11 @@ const Usage = () => {
 
   const getActivityUsage = async (
     year: string | number,
-    month: string | number
+    month: string | number,
+    type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
   ) => {
     try {
-      const activityResponse = await ReadActivityUsage(year, month);
+      const activityResponse = await ReadActivityUsage(year, month, type);
       if (activityResponse?.question) {
         setActivityData(activityResponse);
       } else {
@@ -141,6 +218,7 @@ const Usage = () => {
             activityData={activityData}
             month={calender.month}
             topUsers={topUsers}
+            reachedBottom={reachedBottom}
           />
         );
       default:
@@ -150,10 +228,11 @@ const Usage = () => {
 
   const getCostUsage = async (
     year: string | number,
-    month: string | number
+    month: string | number,
+    type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
   ) => {
     try {
-      const usageResponse = await ReadCostUsage(year, month);
+      const usageResponse = await ReadCostUsage(year, month, type);
       if (usageResponse?.cost) {
         setUsageData(usageResponse);
       } else {
@@ -168,24 +247,48 @@ const Usage = () => {
   const onYearChange = (data: string) => {
     if (data !== calender?.year) {
       setCalender({ ...calender, year: data });
-      getCostUsage(data, calender.month);
-      getActivityUsage(data, calender.month);
-      getActivityTopUsers(data, calender.month, 3);
+      getCostUsage(data, calender.month, modelTypeFilter.value);
+      getActivityUsage(data, calender.month, modelTypeFilter.value);
+      getActivityTopUsers(data, calender.month, 0, 4), modelTypeFilter.value;
     }
   };
 
   const onMonthChange = (data: string) => {
     if (data !== calender?.month) {
       setCalender({ ...calender, month: data });
-      getCostUsage(calender.year, data);
-      getActivityUsage(calender.year, data);
-      getActivityTopUsers(calender.year, data, 3);
+      getCostUsage(calender.year, data, modelTypeFilter.value);
+      getActivityUsage(calender.year, data, modelTypeFilter.value);
+      getActivityTopUsers(calender.year,data, 0, 4, modelTypeFilter.value);
     }
   };
 
   return (
     <div className="flex flex-col h-full md:mx-8 mt-1 lg:mx-16 gap-8 relative">
-      <Text type="header2">Usage</Text>
+      <div className="flex justify-start items-center gap-16">
+        <Text type="header2">Usage</Text>
+        <div className="relative flex items-center">
+          <Text className="mr-2" type="small">
+            Model Type:
+          </Text>
+          <DropDownButton
+            className={`w-56`}
+            listValues={modelType}
+            value={modelTypeFilter || "All"}
+            onChange={(value) => {
+              getCostUsage(calender.year, calender.month, value?.value);
+              getActivityUsage(calender.year, calender.month, value?.value);
+              getActivityTopUsers(
+                calender.year,
+                calender.month,
+                page.skip,
+                page.limit,
+                value?.value
+              );
+              setModelTypeFilter(value);
+            }}
+          />
+        </div>
+      </div>
       {toastStatus && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
           <Toast type="error" />

@@ -6,6 +6,9 @@ import Thermax_GPT from '../assets/thermax_gpt.png'
 import doctor_conbot from '../assets/doctor_conbot.png'
 import troubleshooting from '../assets/troubleshooting.png'
 
+const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
+
+
 export const roundToFourDecimals = (number: any) => {
     return Number(number.toFixed(4));
 };
@@ -50,6 +53,15 @@ export function categorizeDate(inputDate: string): string {
         return "Earlier";
     }
 }
+
+// roleMapping.ts
+export const roleMapping = {
+    'Owner': 'OWNER',
+    'Reviewer': 'REVIEWER',
+    'Member': 'MEMBER',
+};
+
+
 
 export const getInitials = (name: string) => {
     if (!name) return '';
@@ -260,3 +272,14 @@ export const getKeyByValue = (object: any, value: any) => {
     return Object.entries(object).find(([key, val]) => val === value)?.[0];
   };
 
+export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number) => {
+    switch(type){
+        case "Thermax GPT":
+            return  BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}`
+        case "Deep Search":
+            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/perplexity/stream?chat_history_id=${chat_history_id}`
+        default:
+            return ''
+    }
+
+}

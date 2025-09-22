@@ -149,7 +149,7 @@ const ActivityDetailPage: React.FC = () => {
       });
     });
     const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+   const blob = new Blob([pdfBytes.slice().buffer], { type: "application/pdf" });
     const newUrl = URL.createObjectURL(blob);
     setPdfUrl(newUrl);
   };
@@ -160,7 +160,6 @@ const ActivityDetailPage: React.FC = () => {
   
       // Check if the response meets your condition to stop polling
       if (response?.reason) {
-        console.log("Response received:", response);
         setReason(response.reason);
       }
       else{

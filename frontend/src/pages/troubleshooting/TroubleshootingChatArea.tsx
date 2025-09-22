@@ -233,7 +233,6 @@ const ChatArea: React.FC<Props> = ({
               );
             }
           } catch (err) {
-            console.log("evde", err);
             setLoading(false);
           }
         } else {

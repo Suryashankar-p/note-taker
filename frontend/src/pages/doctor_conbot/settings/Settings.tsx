@@ -3,7 +3,6 @@ import Header from "../../../components/Header";
 import SettingsSidebar from "./Sidebar";
 import Products from "./Products";
 import Members from "./Members";
-// import Faq from "./Faq"
 import Faq from "./Faq";
 
 import useApiCheck from "../../../hooks/useApiCheck";
@@ -11,6 +10,7 @@ import { GetMemberDoctorConbotRole } from "../../../services/doctor_conbot";
 import store, { Dispatch, RootState } from "../../../redux/store";
 import Usage from "./Usage";
 import PageLoading from "../../../components/PageLoading";
+import Categories from "./Categories";
 
 const breadCrumbs = [
   {
@@ -18,7 +18,7 @@ const breadCrumbs = [
     url: "/ai-studio",
   },
   {
-    title: "Dr. ConBot.",
+    title: "Dr. ConBot",
     url: "/ai-studio/doctor_conbot",
   },
   {
@@ -31,7 +31,7 @@ const Settings = () => {
   const SettingsComponents: { [key: string]: any } = {
     knowledge: {
       title: "Knowledge",
-      component: <Products />,
+      component: <Categories />,
     },
     members: {
       title: "Members",
@@ -41,10 +41,7 @@ const Settings = () => {
       title: "Faq",
       component: <Faq />,
     },
-    // 'feedback': {
-    //     title: 'Feedback',
-    //     component: <Feedback />
-    // },
+
     usage: {
       title: "Usage",
       component: <Usage />,
@@ -58,11 +55,10 @@ const Settings = () => {
   const loading = useApiCheck("doctor_conbot");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
-    // Retrieve the selected section from local storage if it exists
     const savedSection = localStorage.getItem("selectedSettingsSection");
-    const initialSection = savedSection || "knowledge";
+    const initialSection = SettingsComponents[savedSection]  ? savedSection : "knowledge";
     setCurrentElement(SettingsComponents[initialSection]);
     setSelectedKey(initialSection);
     getDoctorConbotRole();
@@ -127,22 +123,20 @@ const Settings = () => {
 
           <SettingsSidebar selected={selectedKey} onSelect={onSelect} />
         </div>
-
-        {/* Main Content Area */}
-        <div className="pl-2 mt-12 sm:mt-10 md:mt-8 lg:mt-6 xl:mt-8 
+        <div
+          className="pl-2 mt-12 sm:mt-10 md:mt-8 lg:mt-6 xl:mt-8 
                 w-[12rem] sm:w-[24rem] md:w-[30rem] lg:w-[35rem] xl:w-[40rem] 
-                flex-1 bg-background overflow-y-auto h-[107.5vh] sm:h-[109vh] md:h-[80vh] lg:h-[85vh] xl:h-[125vh] relative z-0">
-  {/* Burger Button (Only for Mobile) */}
-  <button
-    onClick={() => setIsSidebarOpen(true)}
-    className="absolute top-1 left-4 z-50 text-3xl md:hidden"
-  >
-    ☰
-  </button>
+                flex-1 bg-background overflow-y-auto h-[107.5vh] sm:h-[109vh] md:h-[80vh] lg:h-[85vh] xl:h-[125vh] relative z-0"
+        >
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute top-1 left-4 z-50 text-3xl md:hidden"
+          >
+            ☰
+          </button>
 
-  {currentElement.component}
-</div>
-
+          {currentElement?.component}
+        </div>
       </div>
     </div>
   );
