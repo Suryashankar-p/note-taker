@@ -157,7 +157,7 @@ const AddProductModal: React.FC<Props> = ({ defaultValue, onSubmit, service = 's
                                             <TagInput
                                                 value={tags}
                                                 onChange={onTagChange}
-                                                register={register}
+                                                // register={register}
                                                 error={errors.models?.message}
                                                 placeholder='Enter models'
                                             />
