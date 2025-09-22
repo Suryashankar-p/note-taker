@@ -28,9 +28,10 @@ interface Props {
   activityData: any;
   month: any;
   topUsers: any;
+  reachedBottom: () => void;
 }
 
-export default function Activity({ activityData, month, topUsers }: Props) {
+export default function Activity({ activityData, month, topUsers, reachedBottom }: Props) {
   const totalQuestions = activityData?.total;
 
   const data = {
@@ -93,16 +94,23 @@ export default function Activity({ activityData, month, topUsers }: Props) {
     return findPercentage(user?.question, totalQuestions).toString()
   }
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollTop + clientHeight + 2 >= scrollHeight) {
+      reachedBottom()
+    }
+  };  
+
 
   return (
     <div className='flex justify-between h-full py-6 px-4'>
       <div className='w-2/3'>
         <Bar height={50} width={100} className='px-4' options={options} data={data} />
       </div>
-      <div className='w-1/2 flex flex-col justify-start items-center'>
+      <div className='w-1/2 flex flex-col justify-start items-center overflow-y-auto' onScroll={handleScroll}>
         <Text className='mb-1' type='header3'>Top Users</Text>
         {topUsers?.map((user: any, index: number) => (
-          <div key={index} className="px-3 py-2 flex items-center w-full max-w-xs">
+          <div key={index} className="px-3 xl:py-4 py-2 flex items-center w-full max-w-xs">
             <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
               <span className="text-gray-600">{user && getInitials(user.name)}</span>
             </div>
