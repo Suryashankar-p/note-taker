@@ -24,7 +24,7 @@ interface Props {
 }
 
 interface Tag {
-    id: number | null;
+    id: number | null | string;
     title: string;
 }
 

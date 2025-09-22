@@ -4,8 +4,6 @@ import store, { Dispatch } from "../redux/store.ts";
 import { ACTIVE_SERVICES } from "../config.ts";
 import { GetMemberSalesRole } from "../services/sales.ts";
 import { GetMemberOCRRole } from "../services/tbwes_ocr.ts";
-// import { GetTranslatorRole } from "../services/doc_translator.ts";
-//import { GetTrainingQARole } from "../services/training_qa.ts";
 import { GetMemberGPTRole } from "../services/thermax_gpt.ts";
 import { GetMemberDoctorConbotRole } from "../services/doctor_conbot.ts";
 import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
@@ -17,22 +15,19 @@ type Type =
   | "training_qa"
   | "thermax_gpt"
   | "doctor_conbot"
-  | "troubleshooting";
+  | "troubleshooting"
+  | "ciso_bot"
+  | "transmitter_ocr";
 
 const useApiCheck = (type?: Type) => {
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
-
   const selectApi = async (select: Type) => {
     switch (select) {
       case "sales":
         return await GetMemberSalesRole();
       case "tbwes_ocr":
         return await GetMemberOCRRole();
-   //   case "doc_translator":
-    //    return await GetTranslatorRole();
-    // case "training_qa":
-    //   return await GetTrainingQARole();
       case "thermax_gpt":
         return await GetMemberGPTRole();
       case "doctor_conbot":
@@ -43,7 +38,6 @@ const useApiCheck = (type?: Type) => {
         return null;
     }
   };
-
   useEffect(() => {
     const fetchData = async () => {
       if (ACTIVE_SERVICES[type]) {
@@ -56,20 +50,18 @@ const useApiCheck = (type?: Type) => {
               service: type,
               details: data,
             });
+
             setLoading(false);
           }
         } catch (error) {
-          console.error("Error fetching member sales role:", error);
+          console.error("Error fetching member role:", error);
         }
       } else {
         navigate("/ai-studio", { state: { message: "Service not available" } });
       }
     };
-
     fetchData();
-  }, [navigate]);
-
+  }, [navigate, type]);
   return loading;
 };
-
 export default useApiCheck;

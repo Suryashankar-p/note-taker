@@ -159,7 +159,6 @@ const Faq = () => {
       if (productResponse?.result) {
         setProducts(productResponse?.result);
         setProductTotal(productResponse?.total);
-        console.log("productTotal", productResponse.total);
       } else {
         setPageError(true);
         if (productResponse?.detail)
@@ -273,7 +272,6 @@ const Faq = () => {
         );
         setFaqTotal(resp?.total);
         setFiles(faqDocuments);
-        console.log("files", files.length);
       } else {
         setPageError(true);
         dispatch.toast.openToast({ status: true, message: resp?.detail });
@@ -289,7 +287,6 @@ const Faq = () => {
   ) => {
     try {
       const resp = await DeleteFaqDocument(file_id);
-      console.log("deleting the faq.....");
       getFaqDocuments(0, 100, "");
     } catch (err) {
       console.log("err", err);
@@ -333,7 +330,6 @@ const Faq = () => {
 
   const onFileUpload = async (data: any) => {
     if (data) {
-      console.log("onFileUpload.....");
       dispatch.loadingState.startLoading();
       try {
         const file = data?.file || null;

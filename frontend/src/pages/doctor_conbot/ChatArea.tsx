@@ -310,7 +310,6 @@ const ChatArea: React.FC<Props> = ({
 
   const copyToClipboard = (index: number, message: any) => {
     const content: any = document.querySelector(`#message-${index}`); // Select the outer div by its id or another unique identifier
-    console.log("copied content", content);
     if (!content) return;
     copy(content.innerText); // Use clipboard-copy to copy the innerText of the div
     setCopySuccess(true);
@@ -352,7 +351,6 @@ const ChatArea: React.FC<Props> = ({
     const file = event.target.files?.[0]; // Get the selected file
     if (file) {
       // Handle the file upload logic here
-      console.log("File selected:", file.name);
     }
   };
 

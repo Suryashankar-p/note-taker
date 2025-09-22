@@ -22,7 +22,7 @@ export type DefaultValue = {
     dislike_reason?: string
 }
 interface Tag {
-    id: number | null;
+    id: number | null | string;
     title: string;
 }
 
