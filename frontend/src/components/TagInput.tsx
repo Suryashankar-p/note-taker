@@ -6,16 +6,16 @@ interface TagInputProps {
     value: { id: number | null, title: string }[];
     onChange: (tags: { id: number | null, title: string }[]) => void;
     placeholder?: string;
-    register: UseFormRegister<IFormInput>;
+    // register?: UseFormRegister<T>;
     error?: string;
 }
 
-const TagInput: React.FC<TagInputProps> = ({ value, onChange, placeholder = 'Enter tags', register, error }) => {
+const TagInput: React.FC<TagInputProps> = ({ value, onChange, placeholder = 'Enter tags', error }) => {
     const [tagInput, setTagInput] = useState('');
 
-    useEffect(() => {
-        register('models', { required: 'Field is required' }); 
-    }, [register]);
+    // useEffect(() => {
+    //     register('models', { required: 'Field is required' }); 
+    // }, [register]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && tagInput.trim() !== '') {
