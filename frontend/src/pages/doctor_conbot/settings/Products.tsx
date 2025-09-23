@@ -475,7 +475,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   // Clean up all polling intervals when component unmounts
   useEffect(() => {
     return () => {
-      Object.values(pollingIntervalsRef.current).forEach((interval:number) => {
+      Object.values(pollingIntervalsRef.current).forEach((interval) => {
         clearInterval(interval);
       });
     };
