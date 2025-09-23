@@ -41,7 +41,7 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
       ? usageData?.day[usageData?.day.length - 1]
       : "N/A";
   const member = useSelector((state: RootState) => state.memberRole);
-  const thermaxMemberDetails = member.service === "thermax_gpt" ? member?.details : {};
+  const salesMemberDetails = member?.details ?? {};
 
   // Doughnut chart options
   const donutOptions = {
@@ -178,7 +178,7 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
             /${limit} limit
           </Text>
 
-          {thermaxMemberDetails?.role === "OWNER" && (
+          {salesMemberDetails?.role === "OWNER" && (
             <button
               onClick={() => dispatch.modal.openEditLimit()}
               className="bg-danger rounded-lg p-2 mt-2"

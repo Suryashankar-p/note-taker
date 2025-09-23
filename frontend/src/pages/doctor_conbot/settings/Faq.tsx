@@ -1,41 +1,25 @@
-import Header from "../../../components/Header.tsx";
-import SettingsSidebar from "./Sidebar.tsx";
 import "../styles.css";
 import Text from "../../../components/Text.tsx";
 import Button from "../../../components/Button.tsx";
 import AddIcon from "../../../assets/circle_plus.svg";
 import Input from "../../../components/Input.tsx";
+import Link from "../../../assets/link.svg";
 import SearchIcon from "../../../assets/search_icon.svg";
 import DropDownMenu from "../../../components/DropdownMenu.tsx";
 import Menu from "../../../assets/more.svg";
-import Edit from "../../../assets/edit.svg";
+import LoaderIcon from "../../../components/LoaderIcon";
 import Trash from "../../../assets/trash.svg";
 import { useEffect, useRef, useState } from "react";
-import Link from "../../../assets/link.svg";
-import Attach from "../../../assets/attachment.svg";
-import Line from "../../../assets/line .svg";
-import FileEditModal from "../../../components/Modals/FileEditModalDoctorConBot.tsx";
 import AddFaqModal from "../../../components/Modals/AddFaqModal.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store.ts";
-import AddProductModal, {
-  DefaultValue,
-} from "../../../components/Modals/AddProductModalDoctorConBot.tsx";
 import NoData from "../../../assets/no_data.tsx";
 import {
-  CreateProduct,
-  CreateProductDocument,
   CreateFaqDocument,
-  EditFaqDocument,
-  DeleteProduct,
-  DeleteProductDocument,
   ReadFaqDocuments,
-  ReadProductDocumentUrl,
   ReadFaqDocumentUrl,
-  ReadProductDocuments,
   DeleteFaqDocument,
-  ReadProducts,
-  UpdateProduct,
+  PollDocumentStatus,
 } from "../../../services/doctor_conbot.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal.tsx";
 import Toast from "../../../components/Toast.tsx";
@@ -44,22 +28,15 @@ import FileViewModal from "../../../components/Modals/FileViewModal.tsx";
 
 const MenuItems = [
   {
-    title: "Edit",
-    component: <img src={Edit} alt="edit" loading="lazy" />,
-  },
-  {
     title: "Delete",
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
 ];
 
 const Faq = () => {
-  const [filesExpanded, setFilesExpanded] = useState<number | null>(null);
-  const isOpen = useSelector((state: RootState) => state.modal.addProduct);
   const fileUpload = useSelector((state: RootState) => state.modal.isOpen);
-  const [products, setProducts] = useState([]);
-  const [files, setFiles] = useState<any>();
-  const [defaultProduct, setDefaultProduct] = useState<any>();
+  const [files, setFiles] = useState<any[]>([]);
+  const [defaultCategory, setDefaultCategory] = useState<any>();
   const member = useSelector((state: RootState) => state.memberRole);
   const doctorConBotMemberDetails =
     member.service === "doctor_conbot" ? member?.details : {};
@@ -68,13 +45,10 @@ const Faq = () => {
   const confirmationStatus = useSelector(
     (state: RootState) => state.modal.confirmation
   );
-  const [productTotal, setProductTotal] = useState(0);
   const [faqTotal, setFaqTotal] = useState(0);
-  const [fileTotal, setFileTotal] = useState(0);
   const toastStatus = useSelector((state: RootState) => state.toast);
-  const [defaultProductDocument, setDefaultProductDocument] = useState<any>();
+  const [defaultCategoryDocument, setDefaultCategoryDocument] = useState<any>();
   const [deleteType, setDeleteType] = useState<string | null>();
-  const [fileUrl, setFileUrl] = useState();
   const [fileName, setFileName] = useState<string | null>();
   const scrollRef = useRef(null);
   const [hasReachedEnd, setHasReachedEnd] = useState(false);
@@ -85,15 +59,50 @@ const Faq = () => {
   const [loading, setLoading] = useState(false);
   const [fileShow, setFileShow] = useState(false);
   const [fileData, setFileData] = useState();
-
+  const [status, setStatus] = useState("PENDING");
   useEffect(() => {
     getFaqDocuments(pageSize.skip, pageSize.limit, "");
   }, []);
 
+  const loadMore = async (skip: number, limit: number) => {
+    if (isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const faqResponse = await ReadFaqDocuments(skip, limit, searchTerm);
+      if (faqResponse?.result) {
+        const newFaqDocuments = faqResponse.result.filter(
+          (doc: { kind?: string }) => doc.kind === "FAQ"
+        );
+        setFiles((prevFiles) => [...prevFiles, ...newFaqDocuments]);
+        setFaqTotal(faqResponse?.total);
+        setLoading(false);
+      } else {
+        setPageError(true);
+        if (faqResponse?.detail)
+          dispatch.toast.openToast({
+            status: true,
+            message: faqResponse?.detail,
+          });
+        setLoading(false);
+      }
+    } catch (err) {
+      console.log("errr", err);
+      setLoading(false);
+    }
+    setIsLoadingMore(false);
+  };
+
+  // Update the hasMoreDocuments check
+  const hasMoreDocuments = (files?.length || 0) < faqTotal;
   useEffect(() => {
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      if (scrollTop + clientHeight >= scrollHeight && !loading) {
+      if (
+        scrollTop + clientHeight >= scrollHeight &&
+        !loading &&
+        hasMoreDocuments
+      ) {
         setHasReachedEnd(true);
         setLoading(true);
         setPageSize((prevPageSize) => {
@@ -117,149 +126,9 @@ const Faq = () => {
         refCurrent.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [loading]);
+  }, [loading, hasMoreDocuments]);
 
-  const loadMore = async (skip: number, limit: number) => {
-    if (isLoadingMore) return;
-
-    setIsLoadingMore(true);
-    try {
-      const productResponse = await ReadProducts(skip, limit, searchTerm);
-      if (productResponse?.result) {
-        setProducts((prevProducts) => [
-          ...prevProducts,
-          ...productResponse?.result,
-        ]);
-        setLoading(false);
-      } else {
-        setPageError(true);
-        if (productResponse?.detail)
-          dispatch.toast.openToast({
-            status: true,
-            message: productResponse?.detail,
-          });
-        setLoading(false);
-      }
-    } catch (err) {
-      console.log("errr", err);
-      setLoading(false);
-    }
-    setIsLoadingMore(false);
-  };
-  const hasMoreProducts = products.length < productTotal;
-  // const hasMoreFiles = files.length < fileTotal;
-
-  const getAllProducts = async (
-    skip: number,
-    limit: number,
-    search_term: string
-  ) => {
-    try {
-      const productResponse = await ReadProducts(skip, limit, search_term);
-      if (productResponse?.result) {
-        setProducts(productResponse?.result);
-        setProductTotal(productResponse?.total);
-        console.log("productTotal", productResponse.total);
-      } else {
-        setPageError(true);
-        if (productResponse?.detail)
-          dispatch.toast.openToast({
-            status: true,
-            message: productResponse?.detail,
-          });
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  const onProductOnChange = (item: any, title: string) => {
-    setDefaultProduct(item);
-    if (title === "Edit") {
-      dispatch.modal.openAddProduct("edit");
-    } else if (title === "Delete") {
-      dispatch.modal.openConfirmation();
-      setDeleteType("product");
-    }
-  };
-
-  const onProductCreate = async (data: any) => {
-    if (data) {
-      try {
-        const createResponse = await CreateProduct(
-          data?.title,
-          data?.short_title,
-          data?.description
-          // data?.models
-        );
-        if (createResponse?.id) {
-          getAllProducts(0, 20, "");
-          dispatch.modal.closeAddProduct();
-        } else {
-          setPageError(true);
-          if (createResponse?.detail)
-            dispatch.toast.openToast({
-              status: true,
-              message: createResponse?.detail,
-            });
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      console.log("error");
-    }
-  };
-
-  const onProductEdit = async (data: any) => {
-    if (data) {
-      try {
-        const editResponse = await UpdateProduct(
-          data?.id,
-          data?.title,
-          data?.short_title,
-          data?.description
-          // data?.models
-        );
-        if (editResponse?.id) {
-          getAllProducts(0, 20, "");
-          dispatch.modal.closeAddProduct();
-        } else {
-          setPageError(true);
-          if (editResponse?.detail)
-            dispatch.toast.openToast({
-              status: true,
-              message: editResponse?.detail,
-            });
-        }
-      } catch (err) {
-        console.log("err", err);
-      }
-    } else {
-      console.log("errror");
-    }
-  };
-  const onSubmit = (data: any) => {
-    if (isOpen?.type === "edit") {
-      onProductEdit(data);
-    } else if (isOpen?.type === "add") {
-      onProductCreate(data);
-    }
-  };
-
-  const onDeleteSubmit = async (value: any) => {
-    if (value?.id) {
-      try {
-        await DeleteProduct(value?.id);
-        getAllProducts(0, 20, "");
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      console.log("Failed");
-    }
-  };
   const getFaqDocuments = async (
-    // product_id: number | string,
     skip: number,
     limit: number,
     search_term: string
@@ -271,9 +140,8 @@ const Faq = () => {
         const faqDocuments = resp.result.filter(
           (doc: { kind?: string }) => doc.kind === "FAQ"
         );
-        setFaqTotal(resp?.total);
-        setFiles(faqDocuments);
-        console.log("files", files.length);
+        setFaqTotal(resp?.total || 0);
+        setFiles(faqDocuments || []);
       } else {
         setPageError(true);
         dispatch.toast.openToast({ status: true, message: resp?.detail });
@@ -283,36 +151,12 @@ const Faq = () => {
     }
   };
 
-  const deleteProductFile = async (
-    // product_id: string | number,
-    file_id: string | number
-  ) => {
+  const deleteCategoryFile = async (file_id: string | number) => {
     try {
       const resp = await DeleteFaqDocument(file_id);
-      console.log("deleting the faq.....");
       getFaqDocuments(0, 100, "");
     } catch (err) {
       console.log("err", err);
-    }
-  };
-
-  const expandFiles = (key: number, item: any) => {
-    if (filesExpanded === key) setFilesExpanded(null);
-    else {
-      setFilesExpanded(key);
-      // getProductDocuments(item?.id, 0, 100, "");
-      setTimeout(() => {
-        const productElement = document.getElementById(`product-${key}`);
-        if (productElement && scrollRef.current) {
-          const scrollContainer = scrollRef.current;
-          const containerTop = scrollContainer.getBoundingClientRect().top;
-          const elementTop = productElement.getBoundingClientRect().top;
-          scrollContainer.scrollBy({
-            top: elementTop - containerTop - 50,
-            behavior: "smooth",
-          });
-        }
-      }, 100);
     }
   };
 
@@ -333,32 +177,23 @@ const Faq = () => {
 
   const onFileUpload = async (data: any) => {
     if (data) {
-      console.log("onFileUpload.....");
       dispatch.loadingState.startLoading();
       try {
         const file = data?.file || null;
         const description = data?.description || null;
-        const filename = file ? file.name : defaultProductDocument?.filename; // Use current filename if no file is uploaded
+        const filename = file ? file.name : defaultCategoryDocument?.filename; // Use current filename if no file is uploaded
 
         let response;
-        if (fileUpload?.type === "edit") {
-          response = await EditFaqDocument(
-            description,
-            defaultProductDocument?.id
-            // file
-          );
-        } else {
           response = await CreateFaqDocument(
             description,
             file,
-            defaultProductDocument?.id
+            defaultCategoryDocument?.id
           );
-        }
 
         if (response?.id) {
           dispatch.modal.closeModal();
+          // CheckDocumentStatus(response?.id);
           getFaqDocuments(0, 100, "");
-          // getAllProducts(0, 50, "");
           dispatch.loadingState.endLoading();
         }
       } catch (err: any) {
@@ -373,13 +208,10 @@ const Faq = () => {
   };
 
   const fileMenuChange = (type: string, item: any) => {
-    setDefaultProductDocument(item);
+    setDefaultCategoryDocument(item);
     if (type === "Delete") {
       setDeleteType("file");
       dispatch.modal.openConfirmation();
-    }
-    if (type === "Edit") {
-      dispatch.modal.openModal("edit");
     }
   };
   const handleFileView = (fileUrl) => {
@@ -390,7 +222,6 @@ const Faq = () => {
   const onFileClick = async (file: any) => {
     try {
       const linkResp = await ReadFaqDocumentUrl(file.id);
-      console.log(linkResp);
 
       if (linkResp?.link) {
         let fileInfo: any = {
@@ -412,21 +243,27 @@ const Faq = () => {
     }
   };
 
+  const CheckDocumentStatus = async (category_document_id) => {
+    const polling = setInterval(async () => {
+      try {
+        const response = await PollDocumentStatus(category_document_id);
+        if (response.status === "COMPLETED") {
+          setStatus("COMPLETED");
+          getFaqDocuments(pageSize.skip, pageSize.limit, "");
+          clearInterval(polling);
+        }
+      } catch (error) {
+        console.error("Error polling document status:", error);
+      }
+    }, 5000);
+
+    return () => clearInterval(polling);
+  };
   return (
     <div className="flex h-screen w-full flex-col gap-8  overflow-y-hidden">
-      {/* {isOpen.status && (
-        <AddProductModal onSubmit={onSubmit} defaultValue={defaultProduct} />
-      )} */}
-      {/* {confirmationStatus && deleteType === "product" && (
-        <ConfirmationModal
-          onSubmit={() => onDeleteSubmit(defaultProduct)}
-          title="Remove Product"
-          content="Are you sure you want to remove this product?"
-        />
-      )} */}
       {confirmationStatus && deleteType === "file" && (
         <ConfirmationModal
-          onSubmit={() => deleteProductFile(defaultProductDocument?.id)}
+          onSubmit={() => deleteCategoryFile(defaultCategoryDocument?.id)}
           title="Remove File"
           content="Are you sure you want to remove this file?"
         />
@@ -462,8 +299,7 @@ const Faq = () => {
             <Button
               onClick={() => {
                 dispatch.modal.openModal("add");
-                // setDefaultProduct(item);
-                setDefaultProductDocument(null);
+                setDefaultCategoryDocument(null);
               }}
               custom_type="danger"
               className="bg-danger w-20 h-10 p-2 gap-2 rounded-lg"
@@ -476,8 +312,7 @@ const Faq = () => {
           {fileUpload.status && (
             <AddFaqModal
               onSubmit={onFileUpload}
-              defaultValues={defaultProductDocument}
-              options={defaultProduct?.models}
+              defaultValues={defaultCategoryDocument}
             />
           )}
           <Input
@@ -498,38 +333,19 @@ const Faq = () => {
             <div
               id={`file-${key}`}
               key={key}
-              className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200 p-6 w-[900px] h-[130px] flex justify-between items-center"
+              className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200 p-6 w-[900px] h-[90px] flex justify-between items-center"
             >
+              {item.status === "COMPLETED" ? (
+                <img src={Link} alt="Document" loading="lazy" />
+              ) : (
+                <LoaderIcon size={25} color="#42526e" />
+              )}
               <div className="flex-1 space-y-2">
                 <h3 className="font-bold text-lg text-gray-900 truncate">
                   {item?.filename}
                 </h3>
-
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {item?.description?.length > 50
-                    ? item.description.slice(0, 50) + "..."
-                    : item.description}
-                </p>
               </div>
-
-              <div className="flex flex-col items-center gap-2">
-                {doctorConBotMemberDetails?.role === "OWNER" && (
-                  <DropDownMenu
-                    onChange={(type: string) => {
-                      fileMenuChange(type, item);
-                      setDefaultProduct(item);
-                    }}
-                    content={
-                      <img
-                        src={Menu}
-                        className="w-9 h-9"
-                        alt="menu"
-                        loading="lazy"
-                      />
-                    }
-                    menuItems={MenuItems}
-                  />
-                )}
+              <div className="flex items-center gap-2">
                 {doctorConBotMemberDetails?.role === "OWNER" && (
                   <button
                     onClick={() => {
@@ -543,6 +359,23 @@ const Faq = () => {
                     </Text>
                   </button>
                 )}
+                {doctorConBotMemberDetails?.role === "OWNER" && (
+                  <DropDownMenu
+                    onChange={(type: string) => {
+                      fileMenuChange(type, item);
+                      setDefaultCategoryDocument(item);
+                    }}
+                    content={
+                      <img
+                        src={Menu}
+                        className="w-9 h-9"
+                        alt="menu"
+                        loading="lazy"
+                      />
+                    }
+                    menuItems={MenuItems}
+                  />
+                )}
               </div>
             </div>
           ))
@@ -553,7 +386,7 @@ const Faq = () => {
         )}
       </div>
 
-      {hasReachedEnd && hasMoreProducts && <p>Loading more...</p>}
+      {hasReachedEnd && hasMoreDocuments && <p>Loading more...</p>}
       {fileShow && (
         <FileViewModal
           fileUrl={fileData}

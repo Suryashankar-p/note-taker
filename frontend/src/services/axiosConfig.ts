@@ -1,5 +1,6 @@
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import store, { Dispatch } from '../redux/store';
+import { redirectToLogin } from './Axios';
 
 const dispatch = store.dispatch as Dispatch;
 
@@ -24,12 +25,20 @@ export const setInterceptors = (axiosInstance: AxiosInstance) => {
       const { response }: any = error;
 
       if (response) {
+        
         switch (response.status) {
           case 400:
+            break
           case 401:
+            redirectToLogin()
+            break
           case 403:
+            redirectToLogin()
+            break
           case 404:
+            break
           case 412:
+            break
           case 502:
             console.error(response.statusText, response.data);
             break;

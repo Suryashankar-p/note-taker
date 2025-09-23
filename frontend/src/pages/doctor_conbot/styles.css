@@ -36,22 +36,30 @@
   background-color: inherit;
 }
 
-/* Ensure ordered lists have numbers */
+/* Style for unordered lists (ul) */
 .prose ul {
-  list-style-type: disc; /* Keeps unordered lists as bullets */
+  list-style-type: disc; /* Bullets */
+  list-style-position: outside; /* Place bullets outside */
+  margin-left: 1rem; /* Indentation */
+  padding-left: 0; /* No padding */
 }
 
+/* Style for ordered lists (ol) */
 .prose ol {
-  list-style-type: decimal; /* Ensures ordered lists use numbers */
+  list-style-type: decimal; /* Numbers for ordered lists */
+  list-style-position: outside; /* Place numbers outside */
+  margin-left: 1rem; /* Indentation */
+  padding-left: 0; /* No extra padding */
 }
 
-.prose ul,
-.prose ol {
-  list-style-position: inside;
-  margin-left: 1.5rem;
-  padding-left: 0;
-}
-
+/* List items (li) spacing */
 .prose li {
-  margin-bottom: 0.5rem;
+  line-height: 2;
+  margin-bottom: 0.5rem; /* Space between items */
+  display: list-item; /* Ensure items are properly displayed */
+  padding-left: 1rem; /* Add padding to ensure space for bullets/numbers */
+}
+
+.prose p {
+  line-height: 1.6; /* Default line height for paragraphs */
 }

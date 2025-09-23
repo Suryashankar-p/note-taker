@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
-import { FaRobot, FaGlobe } from "react-icons/fa";
+import { FaRobot, FaGlobe, FaFileAlt } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
 import Sent from "../../assets/sent.png";
@@ -9,6 +9,7 @@ import Text from "../../components/Text.tsx";
 import Link from "../../assets/link.svg";
 import Divide from "../../assets/divider.png";
 import Attach from "../../assets/attachment.svg";
+import ChevronDown from "../../assets/chevron_down.svg";
 import { useSelector, useDispatch } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import {
@@ -17,6 +18,9 @@ import {
   DeleteChatHistory,
   ReadChatHistories,
   CreateChatHistoryPerplexity,
+  CreateDocumentAnalyserChatHistory,
+  CreateChatHistoryStream,
+  CreatePerplexityStream,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -30,17 +34,21 @@ import Dollar from "../../assets/Dollar.tsx";
 import EmptyChat from "../../assets/EmptyChat.tsx";
 import Toast from "../../components/Toast.tsx";
 import copy from "clipboard-copy";
-import { marked } from "marked";
+import { marked, use } from "marked";
 import DOMPurify from "dompurify";
 import "github-markdown-css/github-markdown.css";
 import FileViewModal from "../../components/Modals/FileViewModal.tsx";
-import { getFileType } from "../../utils/functions.ts";
+import { getFileType, selectEvensourceUrl } from "../../utils/functions.ts";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { useWebSocketConnection } from "../../services/hooks/useDocumentUploadWebSocket.ts";
+import UploadStatusIndicator from "../../components/UploadStatusIndicator";
+import { UploadFileModal } from "../../components/Modals/UploadFileModal";
+import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus";
+import { set } from "react-hook-form";
+import { iconMapping } from "../../utils/constants.ts";
 
 interface Props {
   onNewChatAddition: () => void;
@@ -70,6 +78,10 @@ const ChatArea: React.FC<Props> = ({
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const userDetails = JSON.parse(localStorage.getItem("user") || "{}");
+  const access_details = useSelector(
+    (state: RootState) => state.memberRole.details
+  ).thrmx_gpt_user_service_mapping;
+
   const chat_id = searchParams.get("chat_id");
   const dislikeModalStatus = useSelector(
     (state: RootState) => state.modal.dislikeReason.status
@@ -87,16 +99,36 @@ const ChatArea: React.FC<Props> = ({
   const [fileData, setFileData] = useState();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
+  const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
-  const [aiProvider, setAiProvider] = useState("Thermax-GPT");
+  const [isModalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [streamedData, setStreamedData] = useState<string>("");
+  const eventSourceRef = useRef<EventSource | null>(null);
 
-  const { connect, disconnect, status } = useWebSocketConnection(
-    "wss://devmobility.thermaxdomain.com/api2/api/thermax_gpt/chat/1/chat_history/document_analyser/upload"
-  );
+  const { upload, uploadState, fileId, status, statusState, isDone } =
+    useDocumentUploadWithStatus();
+
+  const [aiProvider, setAiProvider] = useState(() => {
+    return currentChatType || "Thermax GPT";
+  });
+  
+
+  useEffect(() => {
+    if (
+      currentChatType &&
+      access_details.some(
+        (d) => d.title.toLowerCase() === currentChatType.toLowerCase()
+      )
+    ) {
+      setAiProvider(currentChatType);
+    } else {
+      setAiProvider(access_details?.[0]?.title);
+    }
+  }, [currentChatType, access_details]);
 
   useEffect(() => {
     if (chat_id) {
@@ -136,11 +168,7 @@ const ChatArea: React.FC<Props> = ({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
       if (scrollTop === 0 && !loading && !hasReachedEnd) {
-        // setPageSize(prevPageSize => {
-        //   const newSkip = prevPageSize.limit + prevPageSize.skip;
-        //   //loadMore(newSkip, prevPageSize.limit);
-        //   return { ...prevPageSize, skip: newSkip };
-        // });
+        // Handle load more if needed
       } else if (scrollTop + clientHeight < scrollHeight - 100) {
         setShowButton(true);
       } else {
@@ -165,6 +193,16 @@ const ChatArea: React.FC<Props> = ({
     };
   }, [loading, hasReachedEnd]);
 
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -173,6 +211,7 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const getPageChat = async () => {
+    setStreamedData("");
     setShowButton(false);
     try {
       const response = await ReadChatHistories(
@@ -180,25 +219,41 @@ const ChatArea: React.FC<Props> = ({
         pageSize?.limit,
         chat_id
       );
-
       if (response?.result) {
         await dispatch.chatContent.clearChat();
-        const processedChatHistory = response.result.flatMap((chat: any) => {
-          const chats = [chat];
-          if (chat.document && chat.document?.document_id) {
-            chats.push({
+        setCurrentChatType(response.result[response.result.length - 1]?.type);
+        const documentLastIndexMap = new Map<string, number>();
+
+        response.result.forEach((chat: any, index: number) => {
+          const doc = chat.document;
+          if (doc?.document_id) {
+            documentLastIndexMap.set(doc.document_id, index);
+          }
+        });
+
+        const processedChatHistory: any[] = [];
+
+        response.result.forEach((chat: any, index: number) => {
+          processedChatHistory.push(chat);
+
+          const doc = chat.document;
+          const isLastAppearance =
+            doc?.document_id &&
+            documentLastIndexMap.get(doc.document_id) === index;
+
+          if (isLastAppearance) {
+            processedChatHistory.push({
               id: `${chat.id}-doc`,
               type: "document",
-              document_id: chat.document.document_id,
-              file_name: chat.document.file_name,
-              file_size: chat.document.chunk_length,
+              document_id: doc.document_id,
+              file_name: doc.file_name,
+              file_size: doc.chunk_length,
               chat_id: chat.chat_id,
               created_on: chat.created_on,
             });
           }
-
-          return chats;
         });
+
         dispatch.chatContent.addChat(processedChatHistory);
       } else {
         setCopySuccess(false);
@@ -218,11 +273,129 @@ const ChatArea: React.FC<Props> = ({
       console.error("Error fetching chat history:", error);
     }
   };
+  const handleFileAttachClick = () => {
+    if (uploadedFiles.length === 0 && aiProvider !== "Deep Search") {
+      setModalOpen(true);
+    }
+  };
+
+  // New function to handle streaming logic
+  const startStreaming = (
+    chatId: string,
+    chat_history_id: string,
+    localFiles: any[],
+    isNewChat = false
+  ) => {
+    let eventSource: EventSource;
+    const evenSourceUrl = selectEvensourceUrl(
+      aiProvider,
+      chatId,
+      chat_history_id
+    );
+
+    eventSource = new EventSource(evenSourceUrl);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      console.log("EventSource connection opened");
+    };
+
+    eventSource.onmessage = (event) => {
+      if (!event.data || event.data.trim() === "") {
+        // Ignore heartbeats/empty events
+        return;
+      }
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "text" && data.content) {
+          // Accumulate streaming content
+          if (data.content !== "") setLoading(false);
+          setStreamedData((prev) => prev + data.content);
+        } else if (data.type === "tool") {
+          // handleStreamEnd(data.content, chatId, localFiles, isNewChat)
+          if (data.tool === "image") {
+            // setStreamedData
+          }
+          // Handle tool usage if needed
+        } else if (data.type === "end") {
+          // Stream completed
+          handleStreamEnd(data.content, chatId, localFiles, isNewChat);
+          eventSource.close();
+          eventSourceRef.current = null;
+        } else if (data.type === "error") {
+          console.error("Streaming error:", data.content);
+          handleStreamError();
+          eventSource.close();
+          eventSourceRef.current = null;
+        }
+      } catch (parseError) {
+        console.error("Error parsing event data:", parseError);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("EventSource error:", error);
+      handleStreamError();
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  };
+  // Handle successful stream completion
+  const handleStreamEnd = (
+    data: any,
+    chatId: string,
+    localFiles: any[],
+    isNewChat: boolean
+  ) => {
+    setStreamedData(""); // Clear streamed data
+    setInputValue("");
+    setLoading(false);
+    setPageError(false);
+    setUploadedFiles([]);
+    const updatedChatHistory = [...localFiles, data];
+    // Store uploaded files if any
+    if (localFiles?.length > 0) {
+      const existingUploads = JSON.parse(
+        localStorage.getItem("uploadedFiles") || "{}"
+      );
+      const updatedUploads = {
+        ...existingUploads,
+        [chatId]: [...(existingUploads[chatId] || []), ...localFiles],
+      };
+      localStorage.setItem("uploadedFiles", JSON.stringify(updatedUploads));
+    }
+
+    if (isNewChat) {
+      dispatch.chatContent.replaceChatHistoryWithLocal({
+        apiHistory: updatedChatHistory,
+        localMessages: [],
+      });
+      navigate(`/ai-studio/thermax_gpt?chat_id=${chatId}`);
+      onNewChatAddition();
+    } else {
+      // Refresh chat content for existing chat
+      // getPageChat();
+      dispatch.chatContent.replaceChatHistoryWithLocal({
+        apiHistory: updatedChatHistory,
+        localMessages: [],
+      });
+    }
+  };
+
+  // Handle stream errors
+  const handleStreamError = () => {
+    setStreamedData("");
+    setLoading(false);
+    setPageError(true);
+    dispatch.toast.openToast({
+      status: true,
+      message: "Streaming failed. Please try again.",
+      type: "error",
+    });
+  };
 
   const handleSend = async () => {
-    if (!inputValue.trim()) return;
-    console.log("aiProvider", aiProvider);
-
+    if (!inputValue.trim() || !aiProvider) return;
     setLoading(true);
 
     const localFiles =
@@ -235,6 +408,7 @@ const ChatArea: React.FC<Props> = ({
         isPending: true,
       })) || [];
 
+    // Add local messages to chat
     localFiles.forEach((fileMessage) => {
       dispatch.chatContent.addQuestion([fileMessage]);
     });
@@ -243,19 +417,47 @@ const ChatArea: React.FC<Props> = ({
     const localMessages = [...localFiles, ...chatContent];
 
     try {
-      if (chat_id) {
+      if (chat_id && currentChatType === aiProvider) {
         let chatResponse;
-        if (aiProvider === "Thermax-GPT") {
-          chatResponse = await CreateChatHistory(
+        let streamResponse;
+
+        if (aiProvider === "Thermax GPT") {
+          streamResponse = await CreateChatHistoryStream(
             inputValue,
             chat_id,
             uploadedFiles?.length > 0 && uploadedFiles[0]
-          );
+          );            
+          if (streamResponse) {
+            startStreaming(chat_id, streamResponse?.id, localMessages, false);
+            return; // Exit early for streaming
+          }
         } else if (aiProvider === "Deep Search") {
-          chatResponse = await CreateChatHistoryPerplexity(inputValue, chat_id);
+          // chatResponse = await CreateChatHistoryPerplexity(inputValue, chat_id);
+          const perplexityStreamResponse = await CreatePerplexityStream(
+            inputValue,
+            chat_id
+          );
+          if (perplexityStreamResponse) {
+            startStreaming(
+              chat_id,
+              perplexityStreamResponse?.id,
+              localMessages,
+              false
+            );
+            return;
+          }
+        } else if (aiProvider === "Document Analyzer") {
+          let body = {
+            question: inputValue,
+            document_ids: fileId ? [fileId] : undefined,
+          };
+          chatResponse = await CreateDocumentAnalyserChatHistory(body, chat_id);
         }
+
+        // Handle non-streaming responses
         if (chatResponse?.ai) {
-          const updatedChatHistory = [...localMessages, chatResponse];
+          setInputValue("");
+          const updatedChatHistory = [...localFiles, chatResponse];
           if (localFiles?.length > 0) {
             const existingUploads = JSON.parse(
               localStorage.getItem("uploadedFiles") || "{}"
@@ -269,13 +471,10 @@ const ChatArea: React.FC<Props> = ({
               JSON.stringify(updatedUploads)
             );
           }
-          // dispatch.chatContent.removeQuestion();
-          // dispatch.chatContent.addQuestion([chatResponse]);
           dispatch.chatContent.replaceChatHistoryWithLocal({
             apiHistory: updatedChatHistory,
             localMessages: [],
           });
-          setInputValue("");
           setLoading(false);
           setPageError(false);
           setUploadedFiles([]);
@@ -288,29 +487,78 @@ const ChatArea: React.FC<Props> = ({
             });
           }
           setPageError(true);
+          setLoading(false);
           getPageChat();
         }
       } else {
-        const newSessionResponse = await CreateChat(inputValue);
+        // Create new chat
+        let payload = {
+          title: inputValue,
+          type: aiProvider,
+        };
+        const newSessionResponse = await CreateChat(payload);
+
         if (newSessionResponse?.id) {
           try {
             let chatResponse;
-            if (aiProvider === "Thermax-GPT") {
-              chatResponse = await CreateChatHistory(
+            let streamResponse;
+
+            if (aiProvider === "Thermax GPT") {
+              streamResponse = await CreateChatHistoryStream(
                 inputValue,
                 newSessionResponse.id,
                 uploadedFiles?.length > 0 && uploadedFiles[0]
               );
+
+              if (streamResponse) {
+                
+                startStreaming(
+                  newSessionResponse.id,
+                  streamResponse?.id,
+                  localFiles,
+                  true
+                );
+                return; // Exit early for streaming
+              }
             } else if (aiProvider === "Deep Search") {
-              chatResponse = await CreateChatHistoryPerplexity(
+              const perplexityStreamResponse = await CreatePerplexityStream(
                 inputValue,
                 newSessionResponse.id
               );
+              if (perplexityStreamResponse) {
+                startStreaming(
+                  newSessionResponse.id,
+                  perplexityStreamResponse?.id,
+                  localFiles,
+                  true
+                );
+              }
+            } else if (aiProvider === "Document Analyzer") {
+              if (uploadedFiles?.length > 0) {
+                let body = {
+                  question: inputValue,
+                  document_ids: fileId ? [fileId] : undefined,
+                };
+                chatResponse = await CreateDocumentAnalyserChatHistory(
+                  body,
+                  newSessionResponse.id
+                );
+              } else {
+                setCopySuccess(false);
+                setLoading(false);
+                dispatch.toast.openToast({
+                  status: true,
+                  message: "Please attach a document to analyze.",
+                  type: "error",
+                });
+                return;
+              }
             }
+
+            // Handle non-streaming responses for new chat
             if (chatResponse?.ai) {
               setInputValue("");
               if (localFiles?.length > 0) {
-                // Retrieve previously stored files
                 const existingUploads = JSON.parse(
                   localStorage.getItem("uploadedFiles") || "{}"
                 );
@@ -349,7 +597,7 @@ const ChatArea: React.FC<Props> = ({
               );
             }
           } catch (err) {
-            console.log("evde", err);
+            console.log("Error in new chat creation:", err);
             setLoading(false);
           }
         } else {
@@ -360,7 +608,6 @@ const ChatArea: React.FC<Props> = ({
             type: "error",
           });
           setLoading(false);
-          console.log("error");
         }
       }
     } catch (error) {
@@ -373,7 +620,6 @@ const ChatArea: React.FC<Props> = ({
         type: "error",
       });
     }
-    setLoading(false);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -382,6 +628,7 @@ const ChatArea: React.FC<Props> = ({
       handleSend();
     }
   };
+
   const onChatDelete = async (item: any) => {
     try {
       await DeleteChatHistory(item.id, item.chat_id);
@@ -396,21 +643,7 @@ const ChatArea: React.FC<Props> = ({
     chat_id: number,
     like: boolean
   ) => {
-    // try {
-    //   let resp = await updateChatHistory(chat_history_id, chat_id, like);
-    //   if (resp?.id) {
-    //     getPageChat();
-    //   } else {
-    //     setCopySuccess(false);
-    //     dispatch.toast.openToast({
-    //       message: resp?.detail,
-    //       status: true,
-    //       type: "error",
-    //     });
-    //   }
-    // } catch (err) {
-    //   console.log("err", err);
-    // }
+    // Implementation for updating chat history
   };
 
   const getInitials = (name: string) => {
@@ -439,13 +672,16 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  // const handleRemoveFile = (index: number) => {
-  //   setUploadedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
-  // };
   const handleRemoveFile = (index: number) => {
+    if (aiProvider === "Document Analyser") {
+      // cancelUpload if needed
+    }
     const newFiles = [...uploadedFiles];
     newFiles.splice(index, 1);
     setUploadedFiles(newFiles);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const onDislikeSubmit = async (data: any) => {
@@ -453,30 +689,7 @@ const ChatArea: React.FC<Props> = ({
       data?.dislikeReason === "Other"
         ? data?.customReason
         : data?.dislikeReason;
-    // try {
-    //   if (defaultChatData) {
-    //     const resp = await updateChatHistory(
-    //       defaultChatData.id,
-    //       defaultChatData?.chat_id,
-    //       false,
-    //       dislikeReason,
-    //       data?.suggestedAnswer
-    //     );
-    //     if (resp?.id) {
-    //       getPageChat();
-    //       dispatch.modal.CloseDislikeReason();
-    //     } else {
-    //       setCopySuccess(false);
-    //       dispatch.toast.openToast({
-    //         status: true,
-    //         message: resp?.detail,
-    //         type: "error",
-    //       });
-    //     }
-    //   }
-    // } catch (err) {
-    //   console.log("err", err);
-    // }
+    // Implementation for dislike submission
   };
 
   const copyToClipboard = (index: number, message: any) => {
@@ -491,26 +704,38 @@ const ChatArea: React.FC<Props> = ({
     });
   };
 
-  const onFileClick = async (file: any) => {};
+  const handleFileChange = async (file: any) => {
+    if (!file) return;
 
-  const convertMarkdownToHtml = (markdown: string) => {
-    const dirtyHtml = marked.parse(markdown, { gfm: true, breaks: true });
-    return DOMPurify.sanitize(dirtyHtml);
-  };
+    if (aiProvider === "Document Analyzer") {
+      const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
 
-  const onFileAttachClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+      if (!allowedTypes.includes(file.type)) {
+        alert(
+          "Invalid file type. Please upload a PDF or Word document (.doc/.docx)."
+        );
+        return;
+      }
+      try {
+        setLoadingIndex(uploadedFiles.length);
+        setProgress(0);
+        await upload(file);
+        setLoadingIndex(null);
+        setProgress(100);
+      } catch (err) {
+        console.error("Upload failed:", err);
+      }
+      setUploadedFiles((prevFiles) => [...prevFiles, file]);
+    } else {
       setUploadedFiles((prevFiles) => [...prevFiles, file]);
       const index = uploadedFiles.length;
       setLoadingIndex(index);
       setProgress(0);
+
       let progressValue = 0;
       const interval = setInterval(() => {
         progressValue += 5;
@@ -521,11 +746,12 @@ const ChatArea: React.FC<Props> = ({
         }
       }, 150);
     }
-    event.target.value = null;
   };
 
   const handleTabChange = (tab) => {
+    setUploadedFiles([]);
     setAiProvider(tab);
+    localStorage.setItem("aiProvider", tab);
   };
 
   const renderFileIcon = (file_name: string) => {
@@ -577,12 +803,30 @@ const ChatArea: React.FC<Props> = ({
         );
     }
   };
-  const tabs = [
-    { label: "Thermax-GPT", icon: <FaRobot className="mr-1" /> },
-    { label: "Deep Search", icon: <FaGlobe className="mr-1" /> },
-  ];
 
-  const activeIndex = tabs.findIndex((tab) => tab.label === aiProvider);
+  const tabs =
+    access_details?.map((service) => ({
+      label: service.title,
+      icon: iconMapping[service.title],
+    })) ?? []; // fallback to []
+
+  const activeIndex = Math.max(
+    tabs.findIndex((tab) => tab.label === aiProvider),
+    0
+  );
+
+  const renderAttachFile = () => {
+    switch (aiProvider) {
+      case "Thermax GPT":
+        return "Attach File (Up to 10MB)";
+      case "Deep Search":
+        return null;
+      case "Document Analyzer":
+        return "Attach PDF Document (No size limit)";
+      default:
+        return "Attach File (Up to 10MB)";
+    }
+  };
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -608,131 +852,215 @@ const ChatArea: React.FC<Props> = ({
         ref={scrollRef}
         className="flex-1 overflow-y-scroll smooth-scroll px-12 pt-8 space-y-2 bg-inherit"
       >
-        {chatContent?.length > 0 ? (
-          chatContent.map((message: any, index: number) => (
-            <div
-              key={message.id || message.tempId || index}
-              className="flex flex-col bg-inherit w-full gap-4"
-            >
+        <div
+          id={`message-`}
+          className="w-full max-w-4xl  py-1 px-4 rounded-lg"
+        ></div>
+        {chatContent?.length > 0 || streamedData ? (
+          <>
+            {chatContent.map((message: any, index: number) => (
               <div
-                key={message.id || message.tempId || index}
-                className={`flex items-end space-x-2 px-2 overflow-hidden self-end justify-end w-[70%]`}
+                key={message?.id || message?.tempId || index}
+                className="flex flex-col bg-inherit w-full gap-4"
               >
                 <div
-                  className={`inline-block p-2 rounded-lg ${
-                    message?.human
-                      ? "bg-gray-200 text-small break-words"
-                      : "bg-inherit text-small break-words"
-                  }`}
+                  key={message?.id || message?.tempId || index}
+                  className={`flex items-end space-x-2 px-2 overflow-hidden self-end justify-end w-[70%]`}
                 >
-                  {message?.human && (
-                    <Text className="text-primary_text" type="small">
-                      {message?.human}
-                    </Text>
-                  )}
-                  {message?.file_name && (
-                    <div className="flex items-center gap-2 border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
-                      {renderFileIcon(message.file_name)}
-                      <div className="flex flex-col">
-                        <Text
-                          className="text-primary_text text-sm font-medium break-all"
-                          type="small"
-                        >
-                          {message.file_name}
-                        </Text>
-                        <Text className="text-gray-500 text-xs" type="small">
-                          {/* {(message.file_size / 1024).toFixed(2)} KB */}
-                          {message?.file_size > 0
-                            ? message?.file_size < 1024
-                              ? `${message?.file_size.toFixed(2)} Bytes`
-                              : message?.file_size < 1048576
-                              ? `${(message?.file_size / 1024).toFixed(2)} KB`
-                              : `${(message?.file_size / 1048576).toFixed(
-                                  2
-                                )} MB`
-                            : ""}
-                        </Text>
+                  <div
+                    className={`inline-block p-2 rounded-lg ${
+                      message?.human
+                        ? "bg-gray-200 text-small break-words"
+                        : "bg-inherit text-small break-words"
+                    }`}
+                  >
+                    {message?.human && (
+                      <Text className="text-primary_text" type="small">
+                        {message?.human}
+                      </Text>
+                    )}
+                    {message?.file_name && (
+                      <div className="flex items-center gap-2 border border-gray-300 rounded-md px-3 py-2">
+                        {renderFileIcon(message.file_name)}
+                        <div className="flex flex-col">
+                          <Text
+                            className="text-primary_text text-sm font-medium break-all"
+                            type="small"
+                          >
+                            {message?.file_name}
+                          </Text>
+                          <Text className="text-gray-500 text-xs" type="small">
+                            {message?.file_size > 0
+                              ? message?.file_size < 1024
+                                ? `${message?.file_size.toFixed(2)} Bytes`
+                                : message?.file_size < 1048576
+                                ? `${(message?.file_size / 1024).toFixed(2)} KB`
+                                : `${(message?.file_size / 1048576).toFixed(
+                                    2
+                                  )} MB`
+                              : ""}
+                          </Text>
+                        </div>
                       </div>
-                      {/* <button
-                        onClick={() => onFileClick(message.file)}
-                        className="text-blue-500 hover:underline text-sm"
-                      >
-                        Download
-                      </button> */}
+                    )}
+                  </div>
+                  {(message?.human || message?.uploadedFiles?.length > 0) && (
+                    <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
+                      <span className="text-gray-600">
+                        {getInitials(userDetails?.name)}
+                      </span>
                     </div>
                   )}
                 </div>
-                {(message?.human || message?.uploadedFiles?.length > 0) && (
-                  <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600">
-                      {getInitials(userDetails?.name)}
-                    </span>
-                  </div>
+
+                <div className="flex flex-row items-start justify-start w-[100%]">
+                  {(message?.ai || loading) && !message.file_name && (
+                    <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
+                      <span className="text-gray-600">{"AI"}</span>
+                    </div>
+                  )}
+
+                  {message?.ai ? (
+                    <div
+                      id={`message-${index}`}
+                      className="w-full max-w-4xl py-1 px-4 rounded-lg"
+                    >
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
+                        components={{
+                          table: ({ node, ...props }) => (
+                            <div className="overflow-x-auto">
+                              <table className="w-full table-auto border-collapse break-words">
+                                {props.children}
+                              </table>
+                            </div>
+                          ),
+                          th: ({ node, ...props }) => (
+                            <th className="border px-4 py-2 text-left font-semibold bg-gray-100">
+                              {props.children}
+                            </th>
+                          ),
+                          td: ({ node, ...props }) => (
+                            <td className="border px-4 py-2 align-top">
+                              {props.children}
+                            </td>
+                          ),
+                          a: ({ node, href, children, ...props }) => {
+                            const isVideo =
+                              href?.endsWith(".mp4") ||
+                              href?.includes("generated_videos");
+
+                            const isImage =
+                              href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
+                              href?.includes("generated_videos");
+
+                            if (isVideo) {
+                              return (
+                                <div className="my-4">
+                                  <p className="mb-2 text-sm text-gray-600">
+                                    Here is the generated video:
+                                  </p>
+                                  <video
+                                    controls
+                                    src={href}
+                                    className="w-[70%] rounded shadow"
+                                  >
+                                    Your browser does not support the video tag.
+                                  </video>
+                                </div>
+                              );
+                            }
+
+                            if (isImage) {
+                              return (
+                                <div className="my-4">
+                                  <p className="mb-2 text-sm text-gray-600">
+                                    Here is the generated image:
+                                  </p>
+                                  <img
+                                    src={href}
+                                    alt="Generated visual"
+                                    className="w-[70%] rounded shadow"
+                                  />
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                {...props}
+                                className="text-blue-600 underline"
+                              >
+                                {children}
+                              </a>
+                            );
+                          },
+                        }}
+                      >
+                        {message?.ai}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    !message?.file_name &&
+                    loading && (
+                      <div className="-ml-12 w-full">
+                        <Loading />
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {message?.ai && (
+                  <button
+                    disabled={disabled}
+                    className="w-20 min-h-8 rounded-full ml-12 -mt-2 border border-grey"
+                  >
+                    <div className="flex flex-row mx-2 justify-between">
+                      <CopyIcon
+                        disabled={disabled}
+                        onClick={() => copyToClipboard(index, message)}
+                      />
+                      <img src={Divide} alt="divide" loading="lazy" />
+                      <Dollar
+                        className="h-5"
+                        disabled={disabled}
+                        data={message?.price}
+                      />
+                    </div>
+                  </button>
                 )}
               </div>
-              <div className="flex flex-row items-start justify-start w-full">
-                {(message?.ai || loading) && !message.file_name && (
+            ))}
+
+            {/* Streaming AI bubble */}
+            {streamedData && (
+              <div className="flex flex-col bg-inherit w-full gap-4">
+                <div className="flex flex-row items-start justify-start w-[100%]">
                   <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
                     <span className="text-gray-600">{"AI"}</span>
                   </div>
-                )}
-                {message?.ai ? (
-                  <div
-                    id={`message-${index}`}
-                    className="max-w-[80%]  py-1 px-4 rounded-lg"
-                  >
+                  <div className="w-full max-w-4xl py-1 px-4 rounded-lg">
                     <ReactMarkdown
-                      children={message.ai}
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
-                      className="prose text-[14px] font-normal text-primary_text"
-                      components={{
-                        a: ({ node, ...props }) => (
-                          <a
-                            {...props}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {props.children}
-                          </a>
-                        ),
-                      }}
-                    />
+                      className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
+                    >
+                      {streamedData}
+                    </ReactMarkdown>
                   </div>
-                ) : (
-                  !message.file_name &&
-                  loading && (
-                    <div className="-ml-12 w-full">
-                      <Loading />
-                    </div>
-                  )
-                )}
+                </div>
               </div>
-              {message.ai && (
-                <button
-                  disabled={disabled}
-                  className="w-20 min-h-8 rounded-full ml-12 -mt-2 border border-grey"
-                >
-                  <div className="flex flex-row mx-2 justify-between">
-                    <CopyIcon
-                      disabled={disabled}
-                      onClick={() => copyToClipboard(index, message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" />
-                    <Dollar
-                      className="h-5"
-                      disabled={disabled}
-                      data={message?.price}
-                    />
-                  </div>
-                </button>
-              )}
-            </div>
-          ))
+            )}
+          </>
         ) : (
           <EmptyChat />
         )}
-        <div ref={messagesEndRef}></div>
+        <div className="mt-12 mb-12" ref={messagesEndRef}></div>
       </div>
       <div className="relative">
         {showButton && (
@@ -751,7 +1079,7 @@ const ChatArea: React.FC<Props> = ({
                   {uploadedFiles.map((file, index) => (
                     <div
                       key={index}
-                      className="flex min-h-4 items-center max-w-xl gap-1 bg-gray-200 px-2 py-1 rounded-md text-lg relative"
+                      className="flex min-h-4 items-center max-w-xl gap-1 px-2 py-1 rounded-md text-lg relative"
                     >
                       <div className="relative">
                         {loadingIndex === index && (
@@ -793,20 +1121,23 @@ const ChatArea: React.FC<Props> = ({
                         {renderFileIcon(file.name)}
                       </div>
                       <span
-                        className="w-full truncate overflow-hidden whitespace-nowrap"
+                        className="w-32 text-sm truncate overflow-hidden whitespace-nowrap"
                         title={file.name}
                       >
                         {file.name}
                       </span>
-                      <button
-                        onClick={() => handleRemoveFile(index)}
-                        disabled={loading}
-                        className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
-                      >
-                        ✕
-                      </button>
+                      {uploadState?.status !== "success" && (
+                        <button
+                          onClick={() => handleRemoveFile(index)}
+                          disabled={loading}
+                          className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   ))}
+                  <UploadStatusIndicator uploadStatus={status} />
                 </div>
                 <textarea
                   disabled={loading || disabled}
@@ -815,9 +1146,11 @@ const ChatArea: React.FC<Props> = ({
                   onChange={(event) => setInputValue(event.target.value)}
                   value={inputValue}
                   placeholder={
-                    aiProvider === "Thermax-GPT"
-                      ? "Ask anything..."
-                      : "Search anything..."
+                    aiProvider === "Thermax GPT"
+                      ? "Ask anything ..."
+                      : aiProvider === "Deep Search"
+                      ? "Search anything..."
+                      : "Ask questions related to the uploaded document..."
                   }
                   rows={1}
                   className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${
@@ -831,64 +1164,70 @@ const ChatArea: React.FC<Props> = ({
                       <img
                         src={Attach}
                         className={`w-8 h-8 ${
-                          uploadedFiles.length > 0
-                            ? "cursor-default"
+                          uploadedFiles.length > 0 ||
+                          aiProvider === "Deep Search"
+                            ? "cursor-default opacity-50"
                             : "cursor-pointer"
                         }`}
                         alt="Attach file"
                         loading="lazy"
-                        onClick={onFileAttachClick}
+                        onClick={handleFileAttachClick}
                       />
+
                       <span
-                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-white bg-black rounded shadow-md opacity-0 ${
-                          uploadedFiles.length === 0
-                            ? "group-hover:opacity-100"
-                            : "group-hover:opacity-0"
-                        } transition-opacity duration-200 w-24 text-center`}
+                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${
+                          uploadedFiles.length === 0 &&
+                          aiProvider !== "Deep Search"
+                            ? "opacity-0 group-hover:opacity-70"
+                            : "hidden"
+                        }`}
                       >
-                        Attach file
+                        {renderAttachFile()}
                       </span>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        multiple={false}
-                        disabled={uploadedFiles.length > 0}
-                        style={{ display: "none" }}
-                        onChange={handleFileChange}
-                      />
                     </div>
+                    <UploadFileModal
+                      isOpen={isModalOpen}
+                      onClose={() => setModalOpen(false)}
+                      onFileUpload={(file) => handleFileChange(file)}
+                      aiProvider={aiProvider}
+                      disabled={loading}
+                    />
                   </div>
                   <div className="flex justify-start mb-2 ml-4 px-1">
-                    <div className="relative inline-flex rounded-lg overflow-hidden bg-gray-200">
+                    <div className="relative inline-flex bg-gray-200 rounded-lg overflow-hidden min-w-[200px]">
                       {/* Sliding background indicator */}
                       <div
-                        className="absolute top-0 bottom-0 left-0 w-1/2 bg-white rounded-lg border border-red-600 transition-transform duration-300 ease-in-out"
+                        className="absolute top-0 bottom-0 bg-white border border-red-600 transition-transform duration-300 ease-in-out rounded-lg"
                         style={{
+                          width: `${100 / tabs.length}%`,
                           transform: `translateX(${activeIndex * 100}%)`,
                           zIndex: 0,
                         }}
                       />
-                      {tabs.map((tab) => (
-                        <button
-                          key={tab.label}
-                          onClick={() => handleTabChange(tab.label)}
-                          className={`relative z-10 flex items-center justify-center  px-4 py-1 text-sm font-medium transition-colors duration-300 rounded-lg
-              ${
-                aiProvider === tab.label
-                  ? "text-red-600"
-                  : "text-red-300 hover:text-red-600"
-              }`}
-                        >
-                          {tab.icon}
-                          {tab.label}
-                        </button>
-                      ))}
+
+                      {/* Tab Buttons */}
+                      {tabs.map((tab) => {
+                        const isActive = aiProvider === tab.label;
+                        const Icon = tab.icon
+                        return (
+                          <button
+                            key={tab.label}
+                            onClick={() => handleTabChange(tab.label)}
+                            className={`relative z-10 flex items-center justify-center gap-2 px-5 py-1 text-sm font-medium transition-colors duration-300 whitespace-nowrap
+              ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
+                            style={{ width: "200px" }}
+                          >
+                             {Icon ? <Icon size={18} /> : null}
+                            <span>{tab.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               </div>
               <Button
-                disabled={loading}
+                disabled={loading || disabled}
                 onClick={handleSend}
                 custom_type="secondary"
                 className="flex-shrink-0 w-14 h-14 mt-1.5 flex items-center justify-center rounded-full bg-[#0061F3] text-white"

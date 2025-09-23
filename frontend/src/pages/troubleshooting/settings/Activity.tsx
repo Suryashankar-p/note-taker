@@ -27,9 +27,11 @@ interface Props {
   activityData: any;
   month: any;
   topUsers: any;
+  reachedBottom: () => void;
+
 }
 
-export default function Activity({ activityData, month, topUsers }: Props) {
+export default function Activity({ activityData, month, topUsers, reachedBottom }: Props) {
   const totalQuestions = activityData?.total;
 
   const data = {
@@ -91,15 +93,22 @@ export default function Activity({ activityData, month, topUsers }: Props) {
     return findPercentage(user?.question, totalQuestions).toString();
   };
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollTop + clientHeight + 2 >= scrollHeight) {
+     reachedBottom()
+    }
+  };
+  
   return (
-    <div className="flex flex-col justify-evenly md:flex-row lg:h-[24rem] sm:h-[48rem] h-[42rem] lg:flex-row xl:flex-row lg:py-6 py-1 justify-between px-4">
+    <div className="flex flex-col md:flex-row lg:h-[24rem] sm:h-[48rem] h-[42rem] lg:flex-row xl:flex-row lg:py-6 py-1 justify-between px-4">
       {/* Chart Section */}
-      <div className="w-full md:w-1/2 lg:w-[500px] h-[250px] md:h-[200px] lg:h-[300px] relative -top-8 lg:top-4 lg:-left-4">
+      <div className="w-full md:w-1/2 lg:w-[500px] h-[250px] md:h-[200px] lg:h-[300px] xl:h-[330px] relative -top-8 lg:top-4 lg:-left-4 xl:left-8">
         <Bar className="lg:px-4 px-1" options={options} data={data} />
       </div>
 
       {/* Top Users Section */}
-      <div className="w-full md:w-1/2 lg:w-1/3 flex flex-col top-1 relative justify-start items-between h-[300px] md:h-[150px] lg:h-[300px]">
+      <div className="w-full md:w-1/2 lg:w-1/3 flex flex-col top-1 relative justify-start items-between h-[300px] md:h-[150px] lg:h-[300px] overflow-y-auto" onScroll={handleScroll}>
         <Text className='mb-2 text-lg md:text-xl' type='header3'>Top Users</Text>
         {topUsers?.map((user: any, index: number) => (
           <div key={index} className="px-3 py-2 flex lg:items-center w-full max-w-sm md:max-w-md lg:max-w-xs">

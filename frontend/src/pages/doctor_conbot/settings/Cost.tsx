@@ -153,7 +153,7 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
             <div className='w-1/2 flex relative justify-center items-center'>
                 <Doughnut width={50} height={100} data={donutData} options={donutOptions} className=' absolute right-16' />
                 <div
-                    className='absolute top-[10.5rem] left-[90px] flex self-center justify-center items-center text-center text-primary_text w-[100px]'                >
+                    className='absolute top-[10.5rem] left-[90px] xl:top-[11.5rem] xl:left-[7rem] flex self-center justify-center items-center text-center text-primary_text w-[100px]'                >
                     <Text type='header3'>{percentage}%</Text>
                 </div>
                 <div className='absolute flex flex-col ml-4 top-70 items-center right-2'>

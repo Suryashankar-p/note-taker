@@ -1,5 +1,3 @@
-import Header from "../../../components/Header";
-import SettingsSidebar from "./Sidebar";
 import "../styles.css";
 import Text from "../../../components/Text";
 import Button from "../../../components/Button";
@@ -13,24 +11,26 @@ import Trash from "../../../assets/trash.svg";
 import { useEffect, useRef, useState } from "react";
 import Link from "../../../assets/link.svg";
 import Attach from "../../../assets/attachment.svg";
+import LoaderIcon from "../../../components/LoaderIcon";
 import Line from "../../../assets/line .svg";
 import FileEditModal from "../../../components/Modals/FileEditModalDoctorConBot.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store";
-import AddProductModal, {
+import AddcategoryModal, {
   DefaultValue,
 } from "../../../components/Modals/AddProductModalDoctorConBot.tsx";
 import NoData from "../../../assets/no_data";
 import {
-  CreateProduct,
-  CreateProductDocument,
-  EditProductDocument,
-  DeleteProduct,
-  DeleteProductDocument,
-  ReadProductDocumentUrl,
-  ReadProductDocuments,
-  ReadProducts,
-  UpdateProduct,
+  CreateCategory,
+  CreateCategoryDocument,
+  // EditcategoryDocument,
+  DeleteCategory,
+  DeleteCategoryDocument,
+  ReadCategoryDocumentUrl,
+  ReadCategoryDocuments,
+  ReadCategories,
+  // Updatecategory,
+  PollDocumentStatus,
 } from "../../../services/doctor_conbot.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
 import Toast from "../../../components/Toast";
@@ -38,23 +38,29 @@ import { getFileType } from "../../../utils/functions.ts";
 import FileViewModal from "../../../components/Modals/FileViewModal.tsx";
 
 const MenuItems = [
-  {
-    title: "Edit",
-    component: <img src={Edit} alt="edit" loading="lazy" />,
-  },
+  // {
+  //   title: "Edit",
+  //   component: <img src={Edit} alt="edit" loading="lazy" />,
+  // },
   {
     title: "Delete",
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
 ];
 
-const Products = () => {
+type CurrentPage = "CATEGORIES" | "SUBPACKAGE"
+
+interface categorysProps {
+  onSwitch: (page: "CATEGORIES" | "SUBPACKAGE", data?: any) => void;
+}
+
+const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   const [filesExpanded, setFilesExpanded] = useState<number | null>(null);
   const isOpen = useSelector((state: RootState) => state.modal.addProduct);
   const fileUpload = useSelector((state: RootState) => state.modal.isOpen);
-  const [products, setProducts] = useState([]);
+  const [categorys, setcategorys] = useState([]);
   const [files, setFiles] = useState<any>();
-  const [defaultProduct, setDefaultProduct] = useState<any>();
+  const [defaultcategory, setDefaultcategory] = useState<any>();
   const member = useSelector((state: RootState) => state.memberRole);
   const doctorConBotMemberDetails =
     member.service === "doctor_conbot" ? member?.details : {};
@@ -63,9 +69,9 @@ const Products = () => {
   const confirmationStatus = useSelector(
     (state: RootState) => state.modal.confirmation
   );
-  const [productTotal, setProductTotal] = useState(0);
+  const [categoryTotal, setcategoryTotal] = useState(0);
   const toastStatus = useSelector((state: RootState) => state.toast);
-  const [defaultProductDocument, setDefaultProductDocument] = useState<any>();
+  const [defaultcategoryDocument, setDefaultcategoryDocument] = useState<any>();
   const [deleteType, setDeleteType] = useState<string | null>();
   const [fileUrl, setFileUrl] = useState();
   const [fileName, setFileName] = useState<string | null>();
@@ -78,15 +84,22 @@ const Products = () => {
   const [loading, setLoading] = useState(false);
   const [fileShow, setFileShow] = useState(false);
   const [fileData, setFileData] = useState();
+  const [status, setStatus] = useState("PENDING");
+  const [pollStatus, setPollStatus] = useState("PENDING");
+  const [documentStatuses, setDocumentStatuses] = useState({});
+  const pollingIntervalsRef = useRef<Record<number, NodeJS.Timeout>>({});
+  const [currentPage, setCurrentpage] = useState<CurrentPage>('CATEGORIES')
+  const [categoryDetails, setCategoryDetails] = useState<any>({})
 
   useEffect(() => {
-    getAllProducts(pageSize.skip, pageSize.limit, "");
+    getAllCategories(pageSize.skip, pageSize.limit, "");
   }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      if (scrollTop + clientHeight >= scrollHeight && !loading) {
+      const THRESHOLD = 0.98;
+      if ((scrollTop + clientHeight) / scrollHeight >= THRESHOLD && !loading) {
         setHasReachedEnd(true);
         setLoading(true);
         setPageSize((prevPageSize) => {
@@ -117,19 +130,19 @@ const Products = () => {
 
     setIsLoadingMore(true);
     try {
-      const productResponse = await ReadProducts(skip, limit, searchTerm);
-      if (productResponse?.result) {
-        setProducts((prevProducts) => [
-          ...prevProducts,
-          ...productResponse?.result,
+      const categoryResponse = await ReadCategories(skip, limit, searchTerm);
+      if (categoryResponse?.result) {
+        setcategorys((prevcategorys) => [
+          ...prevcategorys,
+          ...categoryResponse?.result,
         ]);
         setLoading(false);
       } else {
         setPageError(true);
-        if (productResponse?.detail)
+        if (categoryResponse?.detail)
           dispatch.toast.openToast({
             status: true,
-            message: productResponse?.detail,
+            message: categoryResponse?.detail,
           });
         setLoading(false);
       }
@@ -139,51 +152,51 @@ const Products = () => {
     }
     setIsLoadingMore(false);
   };
-  const hasMoreProducts = products.length < productTotal;
+  const hasMorecategorys = categorys.length < categoryTotal;
 
-  const getAllProducts = async (
+  const getAllCategories= async (
     skip: number,
     limit: number,
     search_term: string
   ) => {
     try {
-      const productResponse = await ReadProducts(skip, limit, search_term);
-      if (productResponse?.result) {
-        setProducts(productResponse?.result);
-        setProductTotal(productResponse?.total);
+      const categoryResponse = await ReadCategories(skip, limit, search_term);
+      if (categoryResponse?.result) {
+        setcategorys(categoryResponse?.result);
+        setcategoryTotal(categoryResponse?.total);
       } else {
         setPageError(true);
-        if (productResponse?.detail)
+        if (categoryResponse?.detail)
           dispatch.toast.openToast({
             status: true,
-            message: productResponse?.detail,
+            message: categoryResponse?.detail,
           });
       }
     } catch (err) {
       console.log(err);
     }
   };
-  const onProductOnChange = (item: any, title: string) => {
-    setDefaultProduct(item);
+  const onCategoryOnChange = (item: any, title: string) => {
+    setDefaultcategory(item);
     if (title === "Edit") {
       dispatch.modal.openAddProduct("edit");
     } else if (title === "Delete") {
       dispatch.modal.openConfirmation();
-      setDeleteType("product");
+      setDeleteType("category");
     }
   };
 
-  const onProductCreate = async (data: any) => {
+  const onCategoryCreate = async (data: any) => {
     if (data) {
+      let body = {
+        title: data?.title,
+        other_names: data?.other_names ? data?.other_names : "",
+        description: data?.description,
+      };
       try {
-        const createResponse = await CreateProduct(
-          data?.title,
-          data?.short_title,
-          data?.description
-          // data?.models
-        );
+        const createResponse = await CreateCategory(body);
         if (createResponse?.id) {
-          getAllProducts(0, 20, "");
+          getAllCategories(0, 20, "");
           dispatch.modal.closeAddProduct();
         } else {
           setPageError(true);
@@ -201,46 +214,46 @@ const Products = () => {
     }
   };
 
-  const onProductEdit = async (data: any) => {
-    if (data) {
-      try {
-        const editResponse = await UpdateProduct(
-          data?.id,
-          data?.title,
-          data?.short_title,
-          data?.description
-        );
-        if (editResponse?.id) {
-          getAllProducts(0, 20, "");
-          dispatch.modal.closeAddProduct();
-        } else {
-          setPageError(true);
-          if (editResponse?.detail)
-            dispatch.toast.openToast({
-              status: true,
-              message: editResponse?.detail,
-            });
-        }
-      } catch (err) {
-        console.log("err", err);
-      }
-    } else {
-      console.log("errror");
-    }
-  };
+  // const onProductEdit = async (data: any) => {
+  //   if (data) {
+  //     try {
+  //       const editResponse = await UpdateProduct(
+  //         data?.id,
+  //         data?.title,
+  //         data?.short_title,
+  //         data?.description
+  //       );
+  //       if (editResponse?.id) {
+  //         getAllProducts(0, 20, "");
+  //         dispatch.modal.closeAddProduct();
+  //       } else {
+  //         setPageError(true);
+  //         if (editResponse?.detail)
+  //           dispatch.toast.openToast({
+  //             status: true,
+  //             message: editResponse?.detail,
+  //           });
+  //       }
+  //     } catch (err) {
+  //       console.log("err", err);
+  //     }
+  //   } else {
+  //     console.log("errror");
+  //   }
+  // };
   const onSubmit = (data: any) => {
     if (isOpen?.type === "edit") {
-      onProductEdit(data);
+      // onProductEdit(data);
     } else if (isOpen?.type === "add") {
-      onProductCreate(data);
+      onCategoryCreate(data);
     }
   };
 
   const onDeleteSubmit = async (value: any) => {
     if (value?.id) {
       try {
-        await DeleteProduct(value?.id);
-        getAllProducts(0, 20, "");
+        await DeleteCategory(value?.id);
+        getAllCategories(0, 20, "");
       } catch (err) {
         console.log(err);
       }
@@ -248,21 +261,22 @@ const Products = () => {
       console.log("Failed");
     }
   };
-  const getProductDocuments = async (
-    product_id: number | string,
+  const getCategoryDocuments = async (
+    category_id: number | string,
     skip: number,
     limit: number,
     search_term: string
   ) => {
     try {
-      const resp = await ReadProductDocuments(
-        product_id,
+      const resp = await ReadCategoryDocuments(
+        category_id,
         skip,
         limit,
         search_term
       );
       if (resp?.result) {
         setFiles(resp.result);
+        return resp.result;
       } else {
         setPageError(true);
         dispatch.toast.openToast({ status: true, message: resp?.detail });
@@ -272,29 +286,44 @@ const Products = () => {
     }
   };
 
-  const deleteProductFile = async (
-    product_id: string | number,
+  const deletecategoryFile = async (
+    category_id: string | number,
     file_id: string | number
   ) => {
     try {
-      const resp = await DeleteProductDocument(product_id, file_id);
-      getProductDocuments(product_id, 0, 100, "");
+      const resp = await DeleteCategoryDocument(category_id, file_id);
+      getCategoryDocuments(category_id, 0, 100, "");
+      getAllCategories(0, 20, "");
     } catch (err) {
       console.log("err", err);
     }
   };
 
-  const expandFiles = (key: number, item: any) => {
+  const expandFiles = async (key: number, item: any) => {
     if (filesExpanded === key) setFilesExpanded(null);
     else {
       setFilesExpanded(key);
-      getProductDocuments(item?.id, 0, 100, "");
+
+      try {
+        const documents = await getCategoryDocuments(item?.id, 0, 100, ""); // Await the result
+
+        if (documents && Array.isArray(documents)) {
+          documents.forEach((doc) => {
+            if (doc.id) {
+              checkDocumentStatus(doc.id);
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching documents:", error);
+      }
+
       setTimeout(() => {
-        const productElement = document.getElementById(`product-${key}`);
-        if (productElement && scrollRef.current) {
+        const categoryElement = document.getElementById(`category-${key}`);
+        if (categoryElement && scrollRef.current) {
           const scrollContainer = scrollRef.current;
           const containerTop = scrollContainer.getBoundingClientRect().top;
-          const elementTop = productElement.getBoundingClientRect().top;
+          const elementTop = categoryElement.getBoundingClientRect().top;
           scrollContainer.scrollBy({
             top: elementTop - containerTop - 50,
             behavior: "smooth",
@@ -311,7 +340,7 @@ const Products = () => {
     }
     timeoutId = setTimeout(() => {
       setSearchTerm(searchTerm);
-      getAllProducts(
+      getAllCategories(
         0,
         pageSize?.skip === 0 ? pageSize?.limit : pageSize?.skip,
         searchTerm
@@ -320,30 +349,28 @@ const Products = () => {
   };
 
   const onFileUpload = async (data: any) => {
-    if (data && defaultProduct?.id) {
+    if (data && defaultcategory?.id) {
       dispatch.loadingState.startLoading();
       try {
         const file = data?.file || null;
         const description = data?.description || null;
-        // const filename = file ? file.name : defaultProductDocument?.filename; // Use current filename if no file is uploaded
-        const kind = file ? data?.fileType : defaultProductDocument?.kind; // Retain current kind if no file is uploaded
+        const kind = file ? data?.fileType : defaultcategoryDocument?.kind; // Retain current kind if no file is uploaded
 
         let response;
 
         if (fileUpload?.type === "edit") {
-          // Call EditProductDocument when editing
+          // Call EditcategoryDocument when editing
 
-          response = await EditProductDocument(
-            defaultProduct?.id,
-            description,
-            kind,
-            defaultProductDocument?.id // Existing document ID
-            // file
-          );
+          // response = await EditcategoryDocument(
+          //   defaultcategory?.id,
+          //   description,
+          //   kind,
+          //   defaultcategoryDocument?.id // Existing document ID
+          // );
         } else {
-          // Call CreateProductDocument when adding a new file
-          response = await CreateProductDocument(
-            defaultProduct?.id,
+          // Call CreatecategoryDocument when adding a new file
+          response = await CreateCategoryDocument(
+            defaultcategory?.id,
             description,
             kind,
             file
@@ -352,8 +379,8 @@ const Products = () => {
 
         if (response?.id) {
           dispatch.modal.closeModal();
-          getProductDocuments(defaultProduct?.id, 0, 100, "");
-          getAllProducts(0, 50, "");
+          getCategoryDocuments(defaultcategory?.id, 0, 100, "");
+          getAllCategories(0, 50, "");
           dispatch.loadingState.endLoading();
         }
       } catch (err: any) {
@@ -368,7 +395,7 @@ const Products = () => {
   };
 
   const fileMenuChange = (type: string, item: any) => {
-    setDefaultProductDocument(item);
+    setDefaultcategoryDocument(item);
     if (type === "Delete") {
       setDeleteType("file");
       dispatch.modal.openConfirmation();
@@ -380,8 +407,7 @@ const Products = () => {
 
   const onFileClick = async (file: any) => {
     try {
-      const linkResp = await ReadProductDocumentUrl(file.product_id, file.id);
-      console.log(file);
+      const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
 
       if (linkResp?.link) {
         let fileInfo: any = {
@@ -403,24 +429,80 @@ const Products = () => {
     }
   };
 
+  // Function to check document status with proper polling
+  const checkDocumentStatus = async (documentId) => {
+    // Clear any existing polling for this document
+    if (pollingIntervalsRef.current[documentId]) {
+      clearInterval(pollingIntervalsRef.current[documentId]);
+    }
+
+    // Set initial status to PENDING
+    setDocumentStatuses((prev) => ({
+      ...prev,
+      [documentId]: "COMPLETED",
+    }));
+
+    // Create a new polling interval
+    const pollingInterval = setInterval(async () => {
+      try {
+        const response = await PollDocumentStatus(documentId);
+
+        if (response.status === "COMPLETED") {
+          // Update status to COMPLETED
+          setDocumentStatuses((prev) => ({
+            ...prev,
+            [documentId]: "COMPLETED",
+          }));
+
+          // Clear this polling interval
+          clearInterval(pollingInterval);
+          delete pollingIntervalsRef.current[documentId];
+        } else {
+          // Ensure status remains PENDING if not completed
+          setDocumentStatuses((prev) => ({
+            ...prev,
+            [documentId]: "PENDING",
+          }));
+        }
+      } catch (error) {
+        console.error(`Error polling document ${documentId} status:`, error);
+      }
+    }, 5000);
+
+    // Store the interval reference for cleanup
+    pollingIntervalsRef.current[documentId] = pollingInterval;
+  };
+  // Clean up all polling intervals when component unmounts
+  useEffect(() => {
+    return () => {
+      Object.values(pollingIntervalsRef.current).forEach((interval) => {
+        clearInterval(interval);
+      });
+    };
+  }, []);
+
+  const onCategoryClicked = (categoryDetails: any) => {
+    onSwitch("SUBPACKAGE", categoryDetails)
+  };
+
   return (
-    <div className="flex h-screen w-full flex-col gap-8  overflow-y-hidden">
+    <div className="flex h-screen w-full flex-col gap-8  overflow-y-hidden max-h-[800px]">
       {isOpen.status && (
-        <AddProductModal onSubmit={onSubmit} defaultValue={defaultProduct} />
+        <AddcategoryModal onSubmit={onSubmit} defaultValue={defaultcategory} modalType="CATEGORY" />
       )}
-      {confirmationStatus && deleteType === "product" && (
+      {confirmationStatus && deleteType === "category" && (
         <ConfirmationModal
-          onSubmit={() => onDeleteSubmit(defaultProduct)}
-          title="Remove Product"
-          content="Are you sure you want to remove this product?"
+          onSubmit={() => onDeleteSubmit(defaultcategory)}
+          title="Remove category"
+          content="Are you sure you want to remove this category?"
         />
       )}
       {confirmationStatus && deleteType === "file" && (
         <ConfirmationModal
           onSubmit={() =>
-            deleteProductFile(
-              defaultProductDocument?.product_id,
-              defaultProductDocument?.id
+            deletecategoryFile(
+              defaultcategoryDocument?.product_id,
+              defaultcategoryDocument?.id
             )
           }
           title="Remove File"
@@ -439,25 +521,25 @@ const Products = () => {
           onClose={() => setFileShow(false)}
         />
       )}
-      <div className="mx-16 flex mt-1 flex-col sm:flex-row sm:justify-between">
+      <div className="mx-16 lg:mx-16 flex mt-1 flex-col sm:flex-row sm:justify-between">
         <div className="flex flex-col">
           <Text className="text-[#091E42] ml-1" type="header2">
-            Products
+            Categories
           </Text>
-          {products && (
+          {categorys && (
             <Text type="small" className="text-faint_text ml-1">{`(${
-              products?.length > 1
-                ? products?.length + " Results"
-                : products?.length + " Result"
-            } of ${productTotal})`}</Text>
+              categorys?.length > 1
+                ? categorys?.length + " Results"
+                : categorys?.length + " Result"
+            } of ${categoryTotal})`}</Text>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-5 mt-1 sm:mt-0">
+        <div className="flex flex-col sm:flex-row items-center gap-5 mt-1 sm:mt-0 lg:mr-4">
           {doctorConBotMemberDetails?.role === "OWNER" && (
             <Button
               onClick={() => {
                 dispatch.modal.openAddProduct("add");
-                setDefaultProduct(undefined);
+                setDefaultcategory(undefined);
               }}
               custom_type="danger"
               className="bg-danger w-20 h-10 p-2 gap-2 rounded-lg"
@@ -477,14 +559,15 @@ const Products = () => {
       </div>
       <div
         ref={scrollRef}
-        className=" self-center h-fit items-center overflow-y-scroll w-full flex flex-col mb-20 gap-4 "
+        className=" self-center h-fit items-center overflow-y-scroll w-full flex flex-col mb-10 gap-2 "
       >
-        {products?.length > 0 ? (
-          products.map((item: any, key: number) => (
+        {categorys?.length > 0 ? (
+          categorys.map((item: any, key: number) => (
             <div
-              id={`product-${key}`}
+              id={`category-${key}`}
               key={key}
-              className="w-full sm:w-[73vw] h-fit rounded-lg shadow-custom self-center flex flex-col border"
+              className="w-full sm:w-[73vw] h-fit rounded-lg shadow-custom self-center flex flex-col border hover:border-red-500 cursor-pointer"
+              onClick={() => onCategoryClicked(item)}
             >
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-8 pt-3">
                 <Text
@@ -492,11 +575,11 @@ const Products = () => {
                   className="max-w-full sm:max-w-[60vw] text-ellipsis overflow-hidden whitespace-nowrap"
                   type="header3"
                 >
-                  {item.title} {`(${item.short_title})`}
+                  {item.title}
                 </Text>
                 {doctorConBotMemberDetails?.role === "OWNER" && (
                   <DropDownMenu
-                    onChange={(title: string) => onProductOnChange(item, title)}
+                    onChange={(title: string) => { onCategoryOnChange(item, title)}}
                     content={
                       <img
                         src={Menu}
@@ -510,7 +593,14 @@ const Products = () => {
                 )}
               </div>
 
-              <div className="px-8">
+              <div className="px-8 flex-row">
+                <div className="flex flex-row flex-wrap gap-2 my-2">
+                {item?.other_names.map((name:string) => (
+                <Text className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
+                 {name}
+              </Text>))
+}
+</div>
                 <Text
                   title={item?.description}
                   className="text-[#505F79] max-w-full sm:mr-[20vw] text-[12px] line-clamp-3"
@@ -518,17 +608,13 @@ const Products = () => {
                   {item.description}
                 </Text>
               </div>
-              {/* <div className="px-8 pt-2">
-                  <Text
-                    title={item.models.map((item: any) => item.title)}
-                    className="text-[#505F79] max-w-full sm:mr-[20vw] font-medium text-[14px]"
-                  >
-                    Models: {displayModels(item.models)}
-                  </Text>
-                </div> */}
+
               <div className="my-2 gap-2 mb-4 px-8 mt-[2vh] flex items-center">
                 <button
-                  onClick={() => expandFiles(key, item)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    expandFiles(key, item);
+                  }}
                   className="w-28 h-10 rounded-full bg-[#F3F1FF]"
                 >
                   <Text className="text-[#0061F3] text-[16px] leading-[18px]">
@@ -546,10 +632,11 @@ const Products = () => {
                 {doctorConBotMemberDetails?.role === "OWNER" && (
                   <div className="flex flex-row items-center ml-auto">
                     <label
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         dispatch.modal.openModal("add");
-                        setDefaultProduct(item);
-                        setDefaultProductDocument(null);
+                        setDefaultcategory(item);
+                        setDefaultcategoryDocument(null);
                       }}
                       htmlFor="file-upload"
                       className="w-36 h-10 rounded-full bg-[#F3F1FF] flex items-center justify-center cursor-pointer"
@@ -575,13 +662,23 @@ const Products = () => {
                               {doctorConBotMemberDetails?.role === "OWNER" && (
                                 <button
                                   title="Click to open/download"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation()
                                     onFileClick(fileItem);
                                     setFileName(fileItem?.filename);
                                   }}
                                   className="flex border rounded-full my-4 w-max h-10 px-4 py-2"
                                 >
-                                  <img src={Link} alt="link" loading="lazy" />
+                                  {documentStatuses[fileItem.id] ===
+                                  "PENDING" ? (
+                                    <LoaderIcon size={25} color="#42526e" />
+                                  ) : (
+                                    <img
+                                      src={Link}
+                                      alt="Document"
+                                      loading="lazy"
+                                    />
+                                  )}
                                   <Text className="text-primary_text">
                                     {fileItem?.filename}
                                   </Text>
@@ -600,7 +697,7 @@ const Products = () => {
                                   menuItems={MenuItems}
                                   onChange={(type: string) => {
                                     fileMenuChange(type, fileItem);
-                                    setDefaultProduct(item);
+                                    setDefaultcategory(item);
                                   }}
                                 />
                               )}
@@ -631,8 +728,9 @@ const Products = () => {
               {fileUpload.status && (
                 <FileEditModal
                   onSubmit={onFileUpload}
-                  defaultValues={defaultProductDocument}
-                  options={defaultProduct?.models}
+                  defaultValues={defaultcategoryDocument}
+                 title={isOpen?.type === "add" ? `Add file for ${defaultcategory?.name ?? "the category"}` : "Edit file"}
+
                 />
               )}
               {fileUrl && (
@@ -650,9 +748,9 @@ const Products = () => {
           </div>
         )}
       </div>
-      {hasReachedEnd && hasMoreProducts && <p>Loading more...</p>}
+      {hasReachedEnd && hasMorecategorys && <p>Loading more...</p>}
     </div>
   );
 };
 
-export default Products;
+export default categorys;
