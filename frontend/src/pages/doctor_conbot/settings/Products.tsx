@@ -596,7 +596,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
               <div className="px-8 flex-row">
                 <div className="flex flex-row flex-wrap gap-2 my-2">
                   {item?.other_names.map((name:string, key: number) => (
-                  <Text id={key} className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
+                  <Text key={key} className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
                     {name}
                   </Text>))
                   }
