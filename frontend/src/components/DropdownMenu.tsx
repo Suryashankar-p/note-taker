@@ -79,7 +79,7 @@ const DropDownMenu: React.FC<DropDownMenuProps> = ({ content, menuItems, positio
                             menuItems?.map((item, index) => (
                                 <MenuItem key={index}>
                                     <button
-                                        onClick={() => onChange(item?.title)}
+                                        onClick={(e) => {onChange(item?.title); e.stopPropagation()} }
                                         className="group flex w-full items-center gap-2 rounded-lg py-1.5 px-3 data-[focus]:bg-[#0061F3] data-[focus]:bg-opacity-10 data-[focus]:text-[#0061F3]"
                                     >
                                         {item.component}
