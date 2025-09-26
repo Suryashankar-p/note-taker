@@ -7,25 +7,14 @@ import {
   TransitionChild,
 } from "@headlessui/react";
 import { Fragment, useState, useRef, useEffect } from "react";
-import DropDownButton from "../DropDownButton";
 import Text from "../Text";
 import Close from "../../assets/close.svg";
 import { useSelector, useDispatch } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store";
 import { useForm } from "react-hook-form";
-import SelectTagInput from "../SelectTagInput";
 import Toast from "../Toast";
-import {
-  fileTypeSelctor,
-  fileTypeSelectorDoctorConBot,
-} from "../../utils/functions";
 
-const listValues = [
-  // { name: 'Manual' },
-  // { name: 'Image' },
-  // { name: 'Video' },
-  { name: "FAQ" },
-];
+const listValues = [{ name: "FAQ" }];
 
 interface Tag {
   id: number | null;
@@ -35,9 +24,7 @@ interface Tag {
 interface IFormInput {
   fileName: string;
   description: string;
-  // fileType: string;
   file: any;
-  // models: Tag[]; // Adding models field
 }
 
 interface Props {
@@ -52,7 +39,6 @@ const AddFaqModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
   const initialFocusRef = useRef<HTMLButtonElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const toastStatus = useSelector((state: RootState) => state.toast);
-  // const [selectedFileType, setSelectedFileType] = useState({ name: "Manual" });
   const [selectedModels, setSelectedModels] = useState<Tag[]>([]); // State for selected models
   const [file, setFile] = useState<File | null>(null);
   const loading = useSelector((state: RootState) => state.loadingState.status);
@@ -65,32 +51,11 @@ const AddFaqModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
     getValues,
   } = useForm<IFormInput>();
 
-  // useEffect(() => {
-  //     if (options?.length > 0) {
-  //         setSelectedModels(options)
-  //     }
-  // }, [options])
-
-  // useEffect(() => {
-  //   if (selectedFileType && !defaultValues?.kind) {
-  //     setValue("fileType", "Manual");
-  //   }
-  //   return () => {
-  //     dispatch.loadingState.endLoading();
-  //   };
-  // }, []);
-
   useEffect(() => {
     if (defaultValues) {
       setValue("description", defaultValues?.description);
       setValue("fileName", defaultValues?.filename);
-      // setSelectedFileType({
-      //   name: fileTypeSelectorDoctorConBot(defaultValues?.kind),
-      // });
-      // setValue("fileType", fileTypeSelectorDoctorConBot(defaultValues?.kind));
       setValue("file", defaultValues?.file);
-      // setValue('models', defaultValues?.models)
-      // setSelectedModels(defaultValues?.models)
     }
   }, [defaultValues]);
 
@@ -113,9 +78,6 @@ const AddFaqModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
   };
 
   const onHandle = (data: IFormInput) => {
-    // if (selectedModels.length > 0) {
-    //     data.models = selectedModels;
-    // }
     if (file) {
       data.file = file;
     }
@@ -161,7 +123,7 @@ const AddFaqModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
                 >
                   <DialogTitle
                     as="h3"
-                    className="text-[24px] relative text-black font-medium flex justify-between leading-6 text-gray-900"
+                    className="text-[24px] relative font-medium flex justify-between leading-6 text-gray-900"
                   >
                     <Text>
                       {isOpen?.type === "edit" ? "Edit File" : "Add file"}

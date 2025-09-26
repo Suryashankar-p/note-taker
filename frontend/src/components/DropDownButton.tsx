@@ -14,7 +14,6 @@ interface Props {
 }
 
 const DropDownButton: React.FC<Props> = ({ label, listValues = [{ name: '' }], value, onChange, error, className }) => {
-  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className={`relative ${className} flex flex-col gap-1`}>
@@ -27,7 +26,9 @@ const DropDownButton: React.FC<Props> = ({ label, listValues = [{ name: '' }], v
             className={`text-center cursor-pointer relative w-full h-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left border focus:outline-none focus:ring-none focus:ring-offset-2 focus:ring-none ${
               error ? 'border-red-500' : ''
             }`}
+            onClick={(e) => e.stopPropagation()} 
           >
+
             <span className="block truncate">{value?.name}</span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
               <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />

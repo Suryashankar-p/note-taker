@@ -6,10 +6,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   prefixIcon?: React.ReactNode;
   suffixIcon?: React.ReactNode;
   className?: string;
-    ref?: LegacyRef<HTMLInputElement>
+  ref?: LegacyRef<HTMLInputElement>
   inputClasssName?: string;
   maxLength?: number;
-  onChange?: (event) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -56,7 +56,7 @@ const Input: React.FC<InputProps> = ({
       heightClass = "h-10";
       break;
     case "full":
-      widthClass = "md:w-[20rem] lg:w-[40rem] xl:w-[60rem] xl:landscape:w-[60] sm:w-[40rem] w-[25rem]";
+      widthClass = "md:w-[20rem] lg:w-[40rem] xl:w-[66rem] xl:landscape:w-[60] sm:w-[40rem] xs:w-[22rem] w-[23rem]";
       heightClass = "h-16";
       break;
     default:
@@ -73,7 +73,7 @@ const Input: React.FC<InputProps> = ({
         } pr-10 border ${fixed_size === "very_large" && "shadow-xl"}`}
       >
         {prefixIcon && (
-          <span className="absolute left-0 pl-4">{prefixIcon}</span>
+          <span className="absolute left-0 pl-6 md:pl-4">{prefixIcon}</span>
         )}
         <input
           type={type}

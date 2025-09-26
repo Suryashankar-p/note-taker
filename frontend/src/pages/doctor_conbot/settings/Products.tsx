@@ -729,8 +729,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
                 <FileEditModal
                   onSubmit={onFileUpload}
                   defaultValues={defaultcategoryDocument}
-                 title={isOpen?.type === "add" ? `Add file for ${defaultcategory?.name ?? "the category"}` : "Edit file"}
-
+                  title={isOpen?.type === "add" ? `Add file for ${defaultcategory?.name ?? "the category"}` : "Edit file"}
                 />
               )}
               {fileUrl && (
