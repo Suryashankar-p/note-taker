@@ -15,6 +15,7 @@ import {
   ReadCategoryDocuments,
   ReadSubPackageDocuments,
   ReadSubpackages,
+  PollSubpackageDocumentStatus,
 } from "../../../services/doctor_conbot";
 import AddProductModal from "../../../components/Modals/AddProductModalDoctorConBot";
 import FileEditModal from "../../../components/Modals/FileEditModalDoctorConBot";
@@ -75,6 +76,8 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
   const [filesExpanded, setFilesExpanded] = useState<number | null>(null);
   const [defaultSubpackage, setDefaultSubpackage] = useState<any>();
   const isOpen = useSelector((state: RootState) => state.modal.addProduct);
+  const pollingIntervalsRef = useRef<Record<number, NodeJS.Timeout>>({});
+  const [documentStatuses, setDocumentStatuses] = useState({});
   const [fileUploadType, setFileUploadType] = useState<
     "CATEGORY" | "SUBPACKAGE"
   >("CATEGORY");
@@ -239,11 +242,11 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
 
       try {
         const documents = await getSubPackageDocuments(item?.id, 0, 100, ""); // Await the result
-
+        console.log("Fetched documents:", documents); // Debugging log  
         if (documents && Array.isArray(documents)) {
           documents.forEach((doc) => {
             if (doc.id) {
-              //   checkDocumentStatus(doc.id);
+              checkDocumentStatus(doc.sub_package_id, doc.id);
             }
           });
         }
@@ -298,6 +301,49 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
       getSubPackages(productData?.id,0, pageSize?.skip === 0 ? pageSize?.limit : pageSize?.skip, searchTerm
       );
     }, 500); // Adjust the delay time (in milliseconds) as needed
+  };
+
+  const checkDocumentStatus = async (subPackageId, documentId) => {
+    // Clear any existing polling for this document
+    if (pollingIntervalsRef.current[documentId]) {
+      clearInterval(pollingIntervalsRef.current[documentId]);
+    }
+
+    // Set initial status to PENDING
+    setDocumentStatuses((prev) => ({
+      ...prev,
+      [documentId]: "COMPLETED",
+    }));
+
+    // Create a new polling interval
+    const pollingInterval = setInterval(async () => {
+      try {
+        const response = await PollSubpackageDocumentStatus(subPackageId, documentId);
+
+        if (response.status === "COMPLETED") {
+          // Update status to COMPLETED
+          setDocumentStatuses((prev) => ({
+            ...prev,
+            [documentId]: "COMPLETED",
+          }));
+
+          // Clear this polling interval
+          clearInterval(pollingInterval);
+          delete pollingIntervalsRef.current[documentId];
+        } else {
+          // Ensure status remains PENDING if not completed
+          setDocumentStatuses((prev) => ({
+            ...prev,
+            [documentId]: "PENDING",
+          }));
+        }
+      } catch (error) {
+        console.error(`Error polling document ${documentId} status:`, error);
+      }
+    }, 5000);
+
+    // Store the interval reference for cleanup
+    pollingIntervalsRef.current[documentId] = pollingInterval;
   };
 
   return (

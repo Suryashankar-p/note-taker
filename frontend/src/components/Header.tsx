@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../redux/store";
 import { GetUserDetails } from "../services/common.ts";
 import { useLocalStorageListener } from "../hooks/useLocalStorage.ts";
+import { useNavigate } from "react-router-dom";
 // Assuming you have the Avatar component as a separate file or component
 
 type breadCrumbs = {
@@ -26,12 +27,13 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
     getUserInfo();
   });
   const dispatch = useDispatch<Dispatch>();
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (Object.keys(userData).length < 1) {
       getUserInfo();
     }
-  }, [userData]);
+  }, []);
 
   let userDetails = userData;
 
@@ -90,11 +92,11 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
   };
 
   return (
-    <header className="bg-white shadow-md z-[100] w-full fixed h-16">
+    <header className="bg-white shadow-md  w-full fixed h-16">
       <div className="w-full max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         {/* Logo */}
         <div className="flex absolute top-[1vh] left-[3vw] md:left-[5vw]">
-          <img loading="lazy" src={logo} alt="Logo" className="h-10 mr-2" />
+          <img loading="lazy" src={logo} alt="Logo" onClick={() => navigate('/ai-studio')} className="h-10 mr-2" />
         </div>
   
         {/* Breadcrumb Navigation */}
