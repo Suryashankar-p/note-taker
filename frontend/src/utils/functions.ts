@@ -168,6 +168,10 @@ export const fileTypeSelectorDoctorConBot = (type: string) => {
             return 'FAQ'    
         case 'Faq':
             return 'FAQ'
+        case 'Other':
+            return 'OTHER'
+        case 'OTHER':
+            return 'Other'
         
     }
 }

@@ -348,6 +348,11 @@ export const ReadCategoryDocumentUrl = async (category_id: string | number, cate
   return response
 }
 
+export const PollCategoryDocumentStatus = async (category_id: string | number, category_document_id: string | number) => {
+  const response = await DoctorBotAPI.get(BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/category/${category_id}/document/${category_document_id}/status`);
+  return response;
+};
+
 //<====================================Dr. Conbot FAQ========================================>
 
 export const ReadFaqDocuments = async ( skip: number = 0, limit: number = 0, search_term?: string) => {
@@ -461,3 +466,7 @@ export const DeleteSubPackageDocument = async (sub_package_document_id: string |
   return response
 }
 
+export const PollSubpackageDocumentStatus = async (sub_package_id: string | number, sub_package_document_id: string | number) => {
+  const response = await DoctorBotAPI.get(BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/category/sub_package/${sub_package_id}/document/${sub_package_document_id}/status`);
+  return response;
+};
