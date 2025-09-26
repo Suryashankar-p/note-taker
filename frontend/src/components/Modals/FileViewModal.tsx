@@ -10,6 +10,7 @@ import Text from "../Text";
 import Close from "../../assets/close.svg";
 import download from "../../assets/download.svg";
 import { getIframeSrc } from "../../utils/functions.ts";
+import { PdfViewer } from "../PdfViewer";
 
 const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
