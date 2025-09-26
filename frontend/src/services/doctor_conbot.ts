@@ -348,6 +348,11 @@ export const ReadCategoryDocumentUrl = async (category_id: string | number, cate
   return response
 }
 
+export const PollCategoryDocumentStatus = async (category_id: string | number, category_document_id: string | number) => {
+  const response = await DoctorBotAPI.get(BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/category/${category_id}/document/${category_document_id}/status`);
+  return response;
+};
+
 //<====================================Dr. Conbot FAQ========================================>
 
 export const ReadFaqDocuments = async ( skip: number = 0, limit: number = 0, search_term?: string) => {
