@@ -2,14 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import Text from "../../../components/Text";
 import Cost from "./Cost";
 import Activity from "./Activity";
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels, Input } from "@headlessui/react";
 import {
   ReadActivityUsage,
   ReadActivityUsageTopUsers,
   ReadCostUsage,
   ReadUsageLimit,
   UpdateUsageLimit,
+  DownloadUsageActivity,
 } from "../../../services/doctor_conbot";
+import DownloadUsageDetails from "../../../components/Modals/DownloadUsageDetails.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store";
 import Toast from "../../../components/Toast";
@@ -50,6 +52,7 @@ const Usage = () => {
   const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const loadingRef = useRef(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     getCostUsage(calender.year, calender.month);
@@ -217,12 +220,50 @@ const Usage = () => {
     }
   };
 
+  const handleModalSubmit = async (fromDate: string, toDate: string) => {
+    try {
+      const response = await DownloadUsageActivity(fromDate, toDate);      
+
+      if (!response)
+        return;
+
+      // Generate filename from toDate
+      let filename = "Dr_conbot_usage_details.xlsx";
+      if (toDate) {
+        const [year, month, day] = toDate.split("-");
+        filename = `Dr_conbot_usage_details_${day}_${month}_${year.slice(2)}.xlsx`;
+      }
+
+      // Create blob from response data and download
+      const blob = new Blob([response], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Failed to download Excel:", err);
+    }
+  };
+
+
   return (
     <div className="flex flex-col h-full md:mx-8 lg:mx-16 gap-8 relative">
-      <Text type="header2">Usage</Text>
+      <div className="flex items-center justify-between">
+        <Text type="header2">Usage</Text>
+        <button
+          className="bg-danger rounded-lg p-2 m-2"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <Text className='text-white' type='body'>Download</Text>
+        </button>
+      </div>
       {toastStatus && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
-          {/* Assuming Toast component renders appropriately */}
           <Toast type="error" />
         </div>
       )}
@@ -258,6 +299,11 @@ const Usage = () => {
           ))}
         </TabPanels>
       </TabGroup>
+      <DownloadUsageDetails
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleModalSubmit}
+      />
     </div>
   );
 };

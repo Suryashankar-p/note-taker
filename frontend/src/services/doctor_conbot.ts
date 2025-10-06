@@ -150,6 +150,17 @@ export const ReadActivityUsageTopUsers = async (year: string | number, month: st
   return response
 }
 
+export const DownloadUsageActivity = async (fromDate: string, toDate: string) => {
+  let body={
+    from_date: fromDate,
+    to_date: toDate,
+  }
+  const response = await DoctorBotAPI.post(
+    BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/usage/download`, body, {responseType: "blob"}
+  );
+  return response;
+};
+
 //<====================================Dr. Conbot product========================================>
 
 export const ReadProducts = async (skip: number = 0, limit: number = 100, search_term?: string) => {
