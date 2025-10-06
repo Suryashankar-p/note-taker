@@ -262,6 +262,7 @@ const Usage = () => {
           <button
             className="bg-danger rounded-lg p-2 m-2"
             onClick={() => setIsModalOpen(true)}
+            title="Download Usage Details"
           >
             <IoMdDownload className="text-white w-5 h-5" />
           </button>
