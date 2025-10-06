@@ -22,8 +22,8 @@ import { setInterceptors } from "./axiosConfig";
 // Reusable wrapper for standard HTTP methods
 const createAPI = (instance: any) => ({
   get: (path: string) => instance.get(path).then((res) => res.data),
-  post: (path: string, body?: any) =>
-    instance.post(path, body).then((res) => res.data),
+  post: (path: string, body?: any, responseType?: any) =>
+    instance.post(path, body, responseType).then((res) => res.data),
   patch: (path: string, body?: any) =>
     instance.patch(path, body).then((res) => res.data),
   put: (path: string, body?: any) =>
