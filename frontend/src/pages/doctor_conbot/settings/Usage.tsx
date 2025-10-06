@@ -17,6 +17,7 @@ import { Dispatch, RootState } from "../../../redux/store";
 import Toast from "../../../components/Toast";
 import { months, years } from "../../../utils/constants";
 import { getCurrentDate } from "../../../utils/functions";
+import { IoMdDownload } from "react-icons/io";
 import { set } from "react-hook-form";
 
 // Tabs configuration
@@ -53,6 +54,8 @@ const Usage = () => {
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const loadingRef = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const member = useSelector((state: RootState) => state.memberRole);
+  const doctorConBotMemberDetails = member.service === 'doctor_conbot' ? member?.details : {};
 
   useEffect(() => {
     getCostUsage(calender.year, calender.month);
@@ -255,12 +258,14 @@ const Usage = () => {
     <div className="flex flex-col h-full md:mx-8 lg:mx-16 gap-8 relative">
       <div className="flex items-center justify-between">
         <Text type="header2">Usage</Text>
-        <button
-          className="bg-danger rounded-lg p-2 m-2"
-          onClick={() => setIsModalOpen(true)}
-        >
-          <Text className='text-white' type='body'>Download</Text>
-        </button>
+        {doctorConBotMemberDetails?.role === 'OWNER' && 
+          <button
+            className="bg-danger rounded-lg p-2 m-2"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <IoMdDownload className="text-white w-5 h-5" />
+          </button>
+        }
       </div>
       {toastStatus && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
