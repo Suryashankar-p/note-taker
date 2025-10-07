@@ -3,12 +3,14 @@ import Text from '../../../components/Text';
 import Cost from './Cost';
 import Activity from './Activity';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { ReadActivityUsage, ReadActivityUsageTopUsers, ReadCostUsage, ReadUsageLimit, UpdateUsageLimit } from '../../../services/troubleshooting';
+import { ReadActivityUsage, ReadActivityUsageTopUsers, ReadCostUsage, ReadUsageLimit, UpdateUsageLimit, DownloadUsageActivity } from '../../../services/troubleshooting';
+import DownloadUsageDetails from "../../../components/Modals/DownloadUsageDetails.tsx";
 import { useDispatch, useSelector } from 'react-redux';
 import { Dispatch, RootState } from '../../../redux/store';
 import Toast from '../../../components/Toast';
 import { months } from '../../../utils/constants';
 import { getCurrentDate } from '../../../utils/functions';
+import { IoMdDownload } from "react-icons/io";
 
 const tabs = [
   { key: 'cost', label: 'Cost' },
@@ -39,6 +41,9 @@ const Usage = () => {
   const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const loadingRef = useRef(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const member = useSelector((state: RootState) => state.memberRole);
+  const TroubleshootingMemberDetails = member.service === "troubleshooting" ? member?.details : {};
 
   useEffect(() => {
     getCostUsage(calender.year, calender.month)
@@ -188,17 +193,55 @@ const Usage = () => {
     }
   }
 
+  const handleModalSubmit = async (fromDate: string, toDate: string) => {
+    try {
+      const response = await DownloadUsageActivity(fromDate, toDate);      
+
+      if (!response)
+        return;
+
+      // Generate filename from toDate
+      let filename = "Smart_Troubleshooting_App_usage_details.xlsx";
+      if (toDate) {
+        const [year, month, day] = toDate.split("-");
+        filename = `Smart_Troubleshooting_App_usage_details_${day}_${month}_${year.slice(2)}.xlsx`;
+      }
+
+      // Create blob from response data and download
+      const blob = new Blob([response], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Failed to download Excel:", err);
+    }
+  };
+
   return (
-    <div className="flex flex-col md:mx-8 mt-1 lg:mx-16 mx-12 gap-4 xl:gap-8 relative">
-      <Text type="header2">Usage</Text>
-  
-      {/* Toast Notification */}
+    <div className="flex flex-col h-full md:mx-8 lg:mx-16 gap-8 relative">
+      <div className="flex items-center justify-between">
+        <Text type="header2">Usage</Text>
+        {TroubleshootingMemberDetails?.role === 'OWNER' && 
+          <button
+            className="bg-danger rounded-lg p-2 m-2"
+            onClick={() => setIsModalOpen(true)}
+            title="Download Usage Details"
+          >
+            <IoMdDownload className="text-white w-5 h-5" />
+          </button>
+        }
+      </div>
       {toastStatus && pageError && (
-        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
           <Toast type="error" />
         </div>
       )}
-  
       <TabGroup className="h-full flex flex-col gap-2">
         {/* Tabs and Buttons */}
         <div className="flex flex-wrap md:flex-nowrap justify-between items-center mt-1 gap-3 border-gray-300 mb-4 relative">
@@ -234,6 +277,11 @@ const Usage = () => {
           ))}
         </TabPanels>
       </TabGroup>
+      <DownloadUsageDetails
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleModalSubmit}
+      />
     </div>
   );
   };
