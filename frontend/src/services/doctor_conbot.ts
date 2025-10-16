@@ -215,6 +215,17 @@ export const ReadActivityUsageTopUsers = async (
   return response;
 };
 
+export const DownloadUsageActivity = async (fromDate: string, toDate: string) => {
+  let body={
+    from_date: fromDate,
+    to_date: toDate,
+  }
+  const response = await DoctorBotAPI.post(
+    BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/usage/download`, body, {responseType: "blob"}
+  );
+  return response;
+};
+
 //<====================================Dr. Conbot product========================================>
 
 export const ReadProducts = async (
@@ -519,6 +530,11 @@ export const ReadCategoryDocumentUrl = async (
   return response;
 };
 
+export const PollCategoryDocumentStatus = async (category_id: string | number, category_document_id: string | number) => {
+  const response = await DoctorBotAPI.get(BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/category/${category_id}/document/${category_document_id}/status`);
+  return response;
+};
+
 //<====================================Dr. Conbot FAQ========================================>
 
 export const ReadFaqDocuments = async (
@@ -704,4 +720,9 @@ export const getFileBlobUrl = async (file: any) => {
   );
   console.log("api", response)
   return response
+}
+
+export const PollSubpackageDocumentStatus = async (sub_package_id: string | number, sub_package_document_id: string | number) => {
+  const response = await DoctorBotAPI.get(BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/category/sub_package/${sub_package_id}/document/${sub_package_document_id}/status`);
+  return response;
 };

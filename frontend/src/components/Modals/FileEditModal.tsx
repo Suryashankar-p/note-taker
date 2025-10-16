@@ -119,7 +119,7 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, options, onSubmit }) =>
             <Transition appear show={isOpen?.status} as={Fragment}>
                 <Dialog
                     as="div"
-                    className="relative z-100"
+                    className="relative z-110"
                     onClose={closeModal}
                     initialFocus={initialFocusRef}
                 >

@@ -32,6 +32,7 @@ import {
   // Updatecategory,
   PollDocumentStatus,
   getFileBlobUrl,
+  PollCategoryDocumentStatus,
 } from "../../../services/doctor_conbot.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
 import Toast from "../../../components/Toast";
@@ -182,8 +183,8 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
     if (title === "Edit") {
       dispatch.modal.openAddProduct("edit");
     } else if (title === "Delete") {
-      dispatch.modal.openConfirmation();
       setDeleteType("category");
+      dispatch.modal.openConfirmation();
     }
   };
 
@@ -312,6 +313,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
           documents.forEach((doc) => {
             if (doc.id) {
               // checkDocumentStatus(doc.id);
+              checkDocumentStatus(doc.category_id, doc.id);
             }
           });
         }
@@ -357,25 +359,12 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
         const description = data?.description || null;
         const kind = file ? data?.fileType : defaultcategoryDocument?.kind; // Retain current kind if no file is uploaded
 
-        let response;
-
-        if (fileUpload?.type === "edit") {
-          // Call EditcategoryDocument when editing
-          // response = await EditcategoryDocument(
-          //   defaultcategory?.id,
-          //   description,
-          //   kind,
-          //   defaultcategoryDocument?.id // Existing document ID
-          // );
-        } else {
-          // Call CreatecategoryDocument when adding a new file
-          response = await CreateCategoryDocument(
-            defaultcategory?.id,
-            description,
-            kind,
-            file
-          );
-        }
+        const response = await CreateCategoryDocument(
+          defaultcategory?.id,
+          description,
+          kind,
+          file,
+        )
 
         if (response?.id) {
           dispatch.modal.closeModal();
@@ -442,7 +431,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   };
 
   // Function to check document status with proper polling
-  const checkDocumentStatus = async (documentId) => {
+  const checkDocumentStatus = async (categoryId, documentId) => {
     // Clear any existing polling for this document
     if (pollingIntervalsRef.current[documentId]) {
       clearInterval(pollingIntervalsRef.current[documentId]);
@@ -457,7 +446,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
     // Create a new polling interval
     const pollingInterval = setInterval(async () => {
       try {
-        const response = await PollDocumentStatus(documentId);
+        const response = await PollCategoryDocumentStatus(categoryId, documentId);
 
         if (response.status === "COMPLETED") {
           // Update status to COMPLETED
@@ -487,7 +476,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   // Clean up all polling intervals when component unmounts
   useEffect(() => {
     return () => {
-      Object.values(pollingIntervalsRef.current).forEach((interval) => {
+      Object.values(pollingIntervalsRef.current).forEach((interval: any) => {
         clearInterval(interval);
       });
     };
@@ -613,11 +602,11 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
 
               <div className="px-8 flex-row">
                 <div className="flex flex-row flex-wrap gap-2 my-2">
-                  {item?.other_names.map((name: string) => (
-                    <Text className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
-                      {name}
-                    </Text>
-                  ))}
+                  {item?.other_names.map((name:string, key: number) => (
+                  <Text key={key} className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
+                    {name}
+                  </Text>))
+                  }
                 </div>
                 <Text
                   title={item?.description}
@@ -747,13 +736,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
                 <FileEditModal
                   onSubmit={onFileUpload}
                   defaultValues={defaultcategoryDocument}
-                  title={
-                    isOpen?.type === "add"
-                      ? `Add file for ${
-                          defaultcategory?.name ?? "the category"
-                        }`
-                      : "Edit file"
-                  }
+                  title={isOpen?.type === "add" ? `Add file for ${defaultcategory?.name ?? "the category"}` : "Edit file"}
                 />
               )}
               {fileUrl && (

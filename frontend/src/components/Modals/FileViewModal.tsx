@@ -10,6 +10,7 @@ import Text from "../Text";
 import Close from "../../assets/close.svg";
 import download from "../../assets/download.svg";
 import { getIframeSrc } from "../../utils/functions.ts";
+import { PdfViewer } from "../PdfViewer";
 
 const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
@@ -27,8 +28,6 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
     a.click();
     document.body.removeChild(a);
   };
-
- 
 
   return (
     <>
@@ -65,13 +64,21 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
                     as="h3"
                     className="text-[24px] relative text-black font-medium flex justify-between leading-6 text-gray-900"
                   >
-                    <Text className="lg:w-[55rem] w-[15rem] truncate ellipsis">{fileUrl?.name}</Text>
-                    <button
-                      className="absolute right-12 -top-5"
-                      onClick={onDownload}
-                    >
-                      <img src={download} alt="close" loading="lazy" />
-                    </button>
+                    <Text className="lg:w-[55rem] md:w-[50rem] sm:w-[30rem] xs:w-[10rem] w-[10rem] truncate ellipsis">
+                      {fileUrl?.name}
+                    </Text>
+                    {!location.pathname.endsWith("/doctor_conbot") &&
+                      !location.pathname.endsWith(
+                        "/doctor_conbot/settings"
+                      ) && (
+                        <button
+                          className="absolute right-12 -top-5"
+                          onClick={onDownload}
+                        >
+                          <img src={download} alt="close" loading="lazy" />
+                        </button>
+                      )}
+
                     <button
                       className="absolute -right-4 -top-5"
                       onClick={closeModal}
@@ -80,56 +87,69 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
                     </button>
                   </DialogTitle>
                   <div className="h-[calc(100vh-150px)] mt-8 w-full overflow-y-scroll">
-                  <div className="relative w-full h-full">
-                    {loading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-                        <div className="flex flex-col items-center">
-                          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent border-solid rounded-full animate-spin"></div>
-                          <p className="mt-2 text-gray-700">Loading...</p>
+                    <div className="relative w-full h-full">
+                      {loading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+                          <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent border-solid rounded-full animate-spin"></div>
+                            <p className="mt-2 text-gray-700">Loading...</p>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {fileUrl?.type?.toLowerCase() === "jpg" ||
-                    fileUrl?.type?.toLowerCase() === "jpeg" ||
-                    fileUrl?.type?.toLowerCase() === "png" ? (
-                      <img
-                        src={fileUrl?.url}
-                        alt={fileUrl?.name || "Image"}
-                        className="w-full h-full object-contain"
-                        onLoad={() => setLoading(false)}
-                      />
-                    ) : fileUrl?.type?.toLowerCase() === "mp4" ||
-                      fileUrl?.type?.toLowerCase() === "webm" ||
-                      fileUrl?.type?.toLowerCase() === "ogg" ? (
-                      <video
-                        src={fileUrl?.url}
-                        className="w-full h-full object-contain"
-                        controls
-                        autoPlay
-                        onCanPlay={() => setLoading(false)}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    ) : (
-                      <iframe
-                        id="file-iframe"
-                        title="file-iframe"
-                        src={getIframeSrc(fileUrl?.url, fileUrl?.type)}
-                        className={`w-full h-full ${loading ? "hidden" : "block"}`}
-                        allowTransparency={true}
-                        onLoad={() => setLoading(false)}
-                      />
-                    )}
+                      )}
+
+                      {fileUrl?.type?.toLowerCase() === "jpg" ||
+                      fileUrl?.type?.toLowerCase() === "jpeg" ||
+                      fileUrl?.type?.toLowerCase() === "png" ? (
+                        <img
+                          src={fileUrl?.url}
+                          alt={fileUrl?.name || "Image"}
+                          className="w-full h-full object-contain"
+                          onLoad={() => setLoading(false)}
+                        />
+                      ) : fileUrl?.type?.toLowerCase() === "mp4" ||
+                        fileUrl?.type?.toLowerCase() === "webm" ||
+                        fileUrl?.type?.toLowerCase() === "ogg" ? (
+                        <video
+                          src={fileUrl?.url}
+                          className="w-full h-full object-contain"
+                          controls
+                          autoPlay
+                          onCanPlay={() => setLoading(false)}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : fileUrl?.type?.toLowerCase() === "pdf" ? (
+                        <div
+                          className="w-full h-full"
+                          onContextMenu={(e) => e.preventDefault()} // Optional: block right-click
+                        >
+                          <PdfViewer
+                            fileUrl={fileUrl?.url}
+                            onLoad={() => setLoading(false)}
+                          />
+                        </div>
+                      ) : (
+                        <iframe
+                          id="file-iframe"
+                          title="file-iframe"
+                          src={getIframeSrc(fileUrl?.url, fileUrl?.type)}
+                          className={`w-full h-full ${
+                            loading ? "hidden" : "block"
+                          }`}
+                          allowTransparency={true}
+                          onLoad={() => setLoading(false)}
+                        />
+                      )}
+                    </div>
                   </div>
-                                    </div>
-                                  </DialogPanel>
-                                </TransitionChild>
-                              </div>
-                            </div>
-                          </Dialog>
-                        </Transition>
-                      </>
-                    );
-                  };
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+    </>
+  );
+};
 
 export default FileViewModal;

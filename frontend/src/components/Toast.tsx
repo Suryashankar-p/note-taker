@@ -29,7 +29,7 @@ const Toast: React.FC<ToastProps> = ({ duration = 3000, type, onClose }) => {
 
   const handleClose = () => {
     dispatch.toast.openToast({ message: '', status: false, type: 'error' })
-  //  onClose()
+    // onClose()
   };
 
   return (
