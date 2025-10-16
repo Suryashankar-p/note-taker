@@ -31,6 +31,7 @@ import {
   ReadCategories,
   // Updatecategory,
   PollDocumentStatus,
+  getFileBlobUrl,
 } from "../../../services/doctor_conbot.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
 import Toast from "../../../components/Toast";
@@ -48,7 +49,7 @@ const MenuItems = [
   },
 ];
 
-type CurrentPage = "CATEGORIES" | "SUBPACKAGE"
+type CurrentPage = "CATEGORIES" | "SUBPACKAGE";
 
 interface categorysProps {
   onSwitch: (page: "CATEGORIES" | "SUBPACKAGE", data?: any) => void;
@@ -88,8 +89,8 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   const [pollStatus, setPollStatus] = useState("PENDING");
   const [documentStatuses, setDocumentStatuses] = useState({});
   const pollingIntervalsRef = useRef<Record<number, NodeJS.Timeout>>({});
-  const [currentPage, setCurrentpage] = useState<CurrentPage>('CATEGORIES')
-  const [categoryDetails, setCategoryDetails] = useState<any>({})
+  const [currentPage, setCurrentpage] = useState<CurrentPage>("CATEGORIES");
+  const [categoryDetails, setCategoryDetails] = useState<any>({});
 
   useEffect(() => {
     getAllCategories(pageSize.skip, pageSize.limit, "");
@@ -154,7 +155,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   };
   const hasMorecategorys = categorys.length < categoryTotal;
 
-  const getAllCategories= async (
+  const getAllCategories = async (
     skip: number,
     limit: number,
     search_term: string
@@ -310,7 +311,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
         if (documents && Array.isArray(documents)) {
           documents.forEach((doc) => {
             if (doc.id) {
-              checkDocumentStatus(doc.id);
+              // checkDocumentStatus(doc.id);
             }
           });
         }
@@ -360,7 +361,6 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
 
         if (fileUpload?.type === "edit") {
           // Call EditcategoryDocument when editing
-
           // response = await EditcategoryDocument(
           //   defaultcategory?.id,
           //   description,
@@ -408,15 +408,27 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   const onFileClick = async (file: any) => {
     try {
       const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
-
-      if (linkResp?.link) {
-        let fileInfo: any = {
-          name: file.filename,
-          type: getFileType(file?.filename),
-          url: linkResp?.link,
-        };
-        setFileData(fileInfo);
-        setFileShow(true);
+      if (linkResp) {
+        if (linkResp?.type === "base64") {
+          let fileInfo: any = {
+            name: file.filename,
+            type: getFileType(file?.filename),
+            url: linkResp?.link,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        } else {
+          const response: any = await getFileBlobUrl(file)
+          const blobUrl = URL.createObjectURL(response.data);
+          console.log(blobUrl)
+          let fileInfo: any = {
+            name: file.filename,
+            type: getFileType(file?.filename),
+            url: blobUrl,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        }
       } else {
         dispatch.toast.openToast({
           status: true,
@@ -482,13 +494,17 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   }, []);
 
   const onCategoryClicked = (categoryDetails: any) => {
-    onSwitch("SUBPACKAGE", categoryDetails)
+    onSwitch("SUBPACKAGE", categoryDetails);
   };
 
   return (
     <div className="flex h-screen w-full flex-col gap-8  overflow-y-hidden max-h-[800px]">
       {isOpen.status && (
-        <AddcategoryModal onSubmit={onSubmit} defaultValue={defaultcategory} modalType="CATEGORY" />
+        <AddcategoryModal
+          onSubmit={onSubmit}
+          defaultValue={defaultcategory}
+          modalType="CATEGORY"
+        />
       )}
       {confirmationStatus && deleteType === "category" && (
         <ConfirmationModal
@@ -579,7 +595,9 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
                 </Text>
                 {doctorConBotMemberDetails?.role === "OWNER" && (
                   <DropDownMenu
-                    onChange={(title: string) => { onCategoryOnChange(item, title)}}
+                    onChange={(title: string) => {
+                      onCategoryOnChange(item, title);
+                    }}
                     content={
                       <img
                         src={Menu}
@@ -595,12 +613,12 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
 
               <div className="px-8 flex-row">
                 <div className="flex flex-row flex-wrap gap-2 my-2">
-                {item?.other_names.map((name:string) => (
-                <Text className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
-                 {name}
-              </Text>))
-}
-</div>
+                  {item?.other_names.map((name: string) => (
+                    <Text className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
+                      {name}
+                    </Text>
+                  ))}
+                </div>
                 <Text
                   title={item?.description}
                   className="text-[#505F79] max-w-full sm:mr-[20vw] text-[12px] line-clamp-3"
@@ -663,7 +681,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
                                 <button
                                   title="Click to open/download"
                                   onClick={(e) => {
-                                    e.stopPropagation()
+                                    e.stopPropagation();
                                     onFileClick(fileItem);
                                     setFileName(fileItem?.filename);
                                   }}
@@ -729,8 +747,13 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
                 <FileEditModal
                   onSubmit={onFileUpload}
                   defaultValues={defaultcategoryDocument}
-                 title={isOpen?.type === "add" ? `Add file for ${defaultcategory?.name ?? "the category"}` : "Edit file"}
-
+                  title={
+                    isOpen?.type === "add"
+                      ? `Add file for ${
+                          defaultcategory?.name ?? "the category"
+                        }`
+                      : "Edit file"
+                  }
                 />
               )}
               {fileUrl && (
