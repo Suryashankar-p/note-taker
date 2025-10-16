@@ -316,6 +316,9 @@ const ChatArea: React.FC<Props> = ({
           if (data.tool === "image") {
             // setStreamedData
           }
+          if(data.tool === 'video'){
+
+          }
           // Handle tool usage if needed
         } else if (data.type === "end") {
           // Stream completed
@@ -949,13 +952,13 @@ const ChatArea: React.FC<Props> = ({
                           ),
                           a: ({ node, href, children, ...props }) => {
                             const isVideo =
-                              href?.endsWith(".mp4") ||
-                              href?.includes("generated_videos");
+                                href?.endsWith(".mp4") ||
+                                href?.includes("generated_videos") ||
+                                href?.includes("/chat_history/video/");
 
                             const isImage =
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
-                              href?.includes("generated_videos");
-
+                              href?.includes("generated_images");
                             if (isVideo) {
                               return (
                                 <div className="my-4">
