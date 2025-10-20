@@ -22,6 +22,7 @@ import { GetServices } from "../services/common.ts";
 import { GetMemberSalesRole } from "../services/sales.ts";
 import { GetMemberOCRRole } from "../services/tbwes_ocr.ts";
 import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
+import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
 
 interface Card {
   title: string;
@@ -153,76 +154,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // const getDoctorConbotRole = async () => {
-  //   console.log("Function getDoctorConbotRole called"); // Entry point log
-  //   try {
-  //       const response = await GetMemberDoctorConbotRole();
-  //       console.log("API response:", response); // Log API response
-  //       if (response?.email) {
-  //           console.log("Navigating to doctor_conbot"); // Log navigation
-  //           navigate("./doctor_conbot");
-  //           console.log("Current URL:", window.location.href);
-  //       } else {
-  //           setPageError(true);
-  //           console.log("Response does not contain email. Error detail:", response?.detail);
-  //           if (response?.detail)
-  //               dispatch.toast.openToast({ status: true, message: response?.detail });
-  //       }
-  //   } catch (err) {
-  //       console.error("Error caught in getDoctorConbotRole:", err); // Log error
-  //   }
-  // };
-
-  // const getTranslatorRole = async () => {
-  //   try {
-  //     const translatorRole = await GetTranslatorRole();
-  //     if (translatorRole?.email) {
-  //       navigate("./doc_translator");
-  //     } else {
-  //       if (translatorRole?.detail) {
-  //         setPageError(true);
-  //         dispatch.toast.openToast({
-  //           status: true,
-  //           message: translatorRole?.detail,
-  //         });
-  //       } else {
-  //         setPageError(true);
-  //         dispatch.toast.openToast({
-  //           status: true,
-  //           message: "Server failed to respond",
-  //         });
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
-  // const getTrainingQARole = async () => {
-  //   try {
-  //     const trainingQARole = await GetTrainingQARole();
-  //     if (trainingQARole?.email) {
-  //       navigate("./training_qa");
-  //     } else {
-  //       if (trainingQARole?.detail) {
-  //         setPageError(true);
-  //         dispatch.toast.openToast({
-  //           status: true,
-  //           message: trainingQARole?.detail,
-  //         });
-  //       } else {
-  //         setPageError(true);
-  //         dispatch.toast.openToast({
-  //           status: true,
-  //           message: "Server failed to respond",
-  //         });
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
   const getTroubleshootingRole = async () => {
     try {
       const response = await GetMemberTroubleshootingRole();
@@ -238,6 +169,22 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const getCyberBuddyRole = async () => {
+    try {
+      const response = await GetMemberCyberBuddyRole();
+      if (response?.role) {
+        navigate("./cyberbuddy");
+      } else {
+        setPageError(true);
+        if (response?.detail)
+          dispatch.toast.openToast({ status: true, message: response?.detail });
+      }
+    } catch (err) {
+      console.log("my err");
+    }
+  };
+
+
   const openService = (title: string) => {
     switch (title) {
       case "Sales Enablement Tool":
@@ -249,17 +196,14 @@ const Dashboard: React.FC = () => {
       case "Thermax-GPT":
         getGPTRole();
         break;
-      // case "Document Translator":
-      //   getTranslatorRole();
-      //   break;
-      // case "Training QA":
-      //   getTrainingQARole();
-      //   break;
       case "Dr. ConBot":
         getDoctorConbotRole();
         break;
       case "Smart Troubleshooting App":
         getTroubleshootingRole();
+        break;
+      case "CyberBuddy":
+        getCyberBuddyRole();
         break;
     }
   };

@@ -5,6 +5,7 @@ import TrainingQA from '../assets/training_qa.jpg'
 import Thermax_GPT from '../assets/thermax_gpt.png'
 import doctor_conbot from '../assets/doctor_conbot.png'
 import troubleshooting from '../assets/troubleshooting.png'
+import cyberbuddy from '../assets/cyberbuddy.png'
 
 const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 
@@ -176,6 +177,20 @@ export const fileTypeSelectorDoctorConBot = (type: string) => {
     }
 }
 
+export const fileTypeSelectorCyberBuddy = (type: string) => {
+    switch (type) {
+        case 'pdf': 
+            return 'PDF';
+        case 'xlsx':
+            return 'Excel';
+        case 'docx':
+            return 'DOC';
+        case 'OTHER':
+            return 'Other'
+        
+    }
+}
+
 export function getFileType(fileName: string): string | null {
     // Extract the file extension
     const fileExtension = fileName?.split('.').pop()?.toLowerCase();
@@ -260,6 +275,8 @@ export const selectImage = (title: string) => {
             return doctor_conbot;
         case 'Smart Troubleshooting App':
             return troubleshooting;
+        case 'CyberBuddy':
+            return cyberbuddy;
     }
 }
 
