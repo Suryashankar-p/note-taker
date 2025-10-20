@@ -69,14 +69,17 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
   const isTroubleshootingPath = location.pathname.endsWith(
     "/troubleshooting/settings"
   );
+  const isCyberBuddyPath = location.pathname.endsWith(
+    "/cyberbuddy/settings"
+  );
   const isSpecialPath =
     isOcrPath || isTroubleshootingPath || isDoctorConBotPath;
 
   const listValuesToUse =
-    isSalesPath || isCisoBotPath ? listValues_sales : listValues_normal;
+    isSalesPath || isCyberBuddyPath ? listValues_sales : listValues_normal;
 
   const roleMappingToUse =
-    isSalesPath || isCisoBotPath ? roleMapping_sales : roleMapping_normal;
+    isSalesPath || isCyberBuddyPath ? roleMapping_sales : roleMapping_normal;
 
   const addMember = useSelector(
     (state: RootState) => state.modal.addMember.status
