@@ -1,0 +1,65 @@
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: inherit;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Custom Scrollbar Classes */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background-color: inherit;
+  border-radius: 4px;
+}
+
+.scrollbar-thumb-gray-600:hover::-webkit-scrollbar-thumb {
+  background-color: #888;
+}
+
+.scrollbar-track-gray-300::-webkit-scrollbar-track {
+  background-color: inherit;
+}
+
+/* Style for unordered lists (ul) */
+.prose ul {
+  list-style-type: disc; /* Bullets */
+  list-style-position: outside; /* Place bullets outside */
+  margin-left: 1rem; /* Indentation */
+  padding-left: 0; /* No padding */
+}
+
+/* Style for ordered lists (ol) */
+.prose ol {
+  list-style-type: decimal; /* Numbers for ordered lists */
+  list-style-position: outside; /* Place numbers outside */
+  margin-left: 1rem; /* Indentation */
+  padding-left: 0; /* No extra padding */
+}
+
+/* List items (li) spacing */
+.prose li {
+  line-height: 2;
+  margin-bottom: 0.5rem; /* Space between items */
+  display: list-item; /* Ensure items are properly displayed */
+  padding-left: 1rem; /* Add padding to ensure space for bullets/numbers */
+}
+
+.prose p {
+  line-height: 1.6; /* Default line height for paragraphs */
+}
