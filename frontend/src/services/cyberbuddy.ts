@@ -7,7 +7,6 @@ const BACKEND_CYBERBUDDY_URL = import.meta.env.VITE_BACKEND_CYBERBUDDY_URL || wi
 //<====================================CyberBuddy Auth========================================>
 
 export const GetMemberCyberBuddyRole = async () => {
-  console.log("BACKEND_CYBERBUDDY_URL:", BACKEND_CYBERBUDDY_URL);
   const response = await CyberbuddyAPI.get(BACKEND_CYBERBUDDY_URL + "/cyberbuddy/member/me");
   return response;
 };
