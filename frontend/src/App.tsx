@@ -29,8 +29,6 @@ const ProtectedRoute = ({ element }: any) => {
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ChatPage = lazy(() => import("./pages/sales/ChatPageMain"));
 const Settings = lazy(() => import("./pages/sales/settings/Settings"));
-// const Translator = lazy(() => import("./pages/doc_translator/TranslationMain"));
-// const TrainingQA = lazy(() => import("./pages/training_qa/TrainingQAMain"));
 const TBWES_OCR = lazy(() => import("./pages/tbwes_ocr/OcrMain.tsx"));
 const Thermax_GPT = lazy(() => import("./pages/thermax_gpt/GPTMain.tsx"));
 const Thermax_GPT_Settings = lazy(
@@ -48,6 +46,12 @@ const TroubleshootingMain = lazy(
 );
 const TroubleshootingSettings = lazy(
   () => import("./pages/troubleshooting/settings/Settings.tsx")
+);
+const CyberBuddyMain = lazy(
+  () => import("./pages/cyberbuddy/CyberBuddyMain.tsx")
+);
+const CyberBuddySettings = lazy(
+  () => import("./pages/cyberbuddy/settings/Settings.tsx")
 );
 
 const App = () => (
@@ -94,6 +98,14 @@ const App = () => (
       <Route
         path="/ai-studio/troubleshooting/settings"
         element={<ProtectedRoute element={<TroubleshootingSettings />} />}
+      />
+      <Route
+        path="/ai-studio/cyberbuddy"
+        element={<ProtectedRoute element={<CyberBuddyMain />} />}
+      /> 
+      <Route
+        path="/ai-studio/cyberbuddy/settings"
+        element={<ProtectedRoute element={<CyberBuddySettings />} />}
       />
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>
