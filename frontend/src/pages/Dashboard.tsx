@@ -180,7 +180,6 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("err", err);
       console.log("my err");
     }
   };
