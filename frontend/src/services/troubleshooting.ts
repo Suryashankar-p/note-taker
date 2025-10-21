@@ -178,3 +178,14 @@ export const ReadActivityUsageTopUsers = async (year: string | number, month: st
   const response = await TroubleshootAPI.get(BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/usage/activity/top?skip=${skip}&limit=${limit}&year=${year}&month=${month}`)
   return response
 }
+
+export const DownloadUsageActivity = async (fromDate: string, toDate: string) => {
+  let body={
+    from_date: fromDate,
+    to_date: toDate,
+  }
+  const response = await TroubleshootAPI.post(
+    BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/usage/download`, body, {responseType: "blob"}
+  );
+  return response;
+};
