@@ -5,6 +5,7 @@ import {
   axiosTBWES,
   axiosTroubleshoot,
   axiosDoctorBot,
+  axiosCyberbuddy,
 } from "./axiosInstances";
 
 import { setInterceptors } from "./axiosConfig";
@@ -17,6 +18,7 @@ import { setInterceptors } from "./axiosConfig";
   axiosTBWES,
   axiosTroubleshoot,
   axiosDoctorBot,
+  axiosCyberbuddy,
 ].forEach(setInterceptors);
 
 // Reusable wrapper for standard HTTP methods
@@ -44,6 +46,7 @@ export const SalesAPI = createAPI(axiosSales);
 export const TBWESAPI = createAPI(axiosTBWES);
 export const TroubleshootAPI = createAPI(axiosTroubleshoot);
 export const DoctorBotAPI = createAPI(axiosDoctorBot);
+export const CyberbuddyAPI = createAPI(axiosCyberbuddy);
 
 export async function redirectToLogin(): Promise<void> {
   const basePath = window.env?.ROOT_PATH || import.meta.env.VITE_ROOT_PATH;
