@@ -317,6 +317,7 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
         linkResp = await ReadSubpackageDocumentUrl(file.sub_package_id, file.id);
       }
       if (linkResp) {
+        console.log("Type:", linkResp?.type)
         if (linkResp?.type === "base64") {
           let fileInfo: any = {
             name: file.filename,
@@ -333,6 +334,7 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
             } else {
               response = await getSubpackageFileBlobUrl(file);
             }
+          console.log("Respose:",response)
           const blobUrl = URL.createObjectURL(response.data);
           console.log(blobUrl);
           let fileInfo: any = {
