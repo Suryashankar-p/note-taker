@@ -147,6 +147,22 @@ export const ReadDocumentUrl = async (product_id: string | number) => {
   return response
 }
 
+export const getFileBlobUrl = async (product_id: string | number) => {
+  const token = localStorage.getItem("access_token");
+
+  const response = await axios.get(
+    BACKEND_TROUBLESHOOTING_URL +
+      `/troubleshooting/document/${product_id}/link`,
+    {
+      responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response;
+};
+
 export const PollDocumentStatus = async (product_id: string | number) => {
   const response = await TroubleshootAPI.get(BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/document/${product_id}/status`);
   return response;
