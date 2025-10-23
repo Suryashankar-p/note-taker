@@ -505,7 +505,7 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
                     onChange={(action: string) => {
                       setDefaultCategoryDocument(file);
                       console.log(action);
-                      if (action === "Edit") {
+                      if (action === "Open") {
                         onFileClick(file, "CATEGORY");
                       }
                       if (action === "Delete") {
