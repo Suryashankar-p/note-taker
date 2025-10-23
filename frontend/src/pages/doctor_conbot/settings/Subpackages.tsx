@@ -326,6 +326,7 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
             type: getFileType(file?.filename),
             url: linkResp?.link,
           };
+          console.log("Base link:",fileInfo.url)
           setFileData(fileInfo);
           setFileShow(true);
         } else {
