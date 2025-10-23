@@ -530,6 +530,22 @@ export const ReadCategoryDocumentUrl = async (
   return response;
 };
 
+export const getCategoryFileBlobUrl = async (file: any) => {
+  const token = localStorage.getItem("access_token");
+
+  const response = await axios.get(
+    BACKEND_DOCTOR_CONBOT_URL +`/doctor_conbot/category/${file.category_id}/document/${file.id}/link`,
+    {
+      responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  console.log("api", response)
+  return response
+}
+
 export const PollCategoryDocumentStatus = async (category_id: string | number, category_document_id: string | number) => {
   const response = await DoctorBotAPI.get(BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/category/${category_id}/document/${category_document_id}/status`);
   return response;
@@ -706,11 +722,23 @@ export const DeleteSubPackageDocument = async (
   return response;
 };
 
-export const getFileBlobUrl = async (file: any) => {
+export const ReadSubpackageDocumentUrl = async (
+  sub_package_id: string | number,
+  sub_package_document_id: string | number
+) => {
+  const response = await DoctorBotAPI.get(
+    BACKEND_DOCTOR_CONBOT_URL +
+      `/doctor_conbot/category/sub_package/${sub_package_id}/document/${sub_package_document_id}/link`
+  );
+  return response;
+};
+
+export const getSubpackageFileBlobUrl = async (file: any) => {
   const token = localStorage.getItem("access_token");
 
   const response = await axios.get(
-    BACKEND_DOCTOR_CONBOT_URL +`/doctor_conbot/category/${file.category_id}/document/${file.id}/link`,
+    BACKEND_DOCTOR_CONBOT_URL +
+      `/doctor_conbot/category/sub_package/${file.sub_package_id}/document/${file.id}/link`,
     {
       responseType: "blob",
       headers: {
