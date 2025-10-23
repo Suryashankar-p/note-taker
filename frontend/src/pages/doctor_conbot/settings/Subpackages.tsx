@@ -316,36 +316,15 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
       } else {
         linkResp = await ReadSubpackageDocumentUrl(file.sub_package_id, file.id);
       }
-      console.log("LinkResp",linkResp)
-      if (linkResp) {
-        console.log("Type:", linkResp?.type)
-        if (linkResp?.type === "base64") {
-          let fileInfo: any = {
-            name: file.filename,
-            type: getFileType(file?.filename),
-            url: linkResp?.link,
-          };
-          console.log("Base link:",fileInfo.url)
-          setFileData(fileInfo);
-          setFileShow(true);
-        } else {
-          let response;
-            if (fileType === "CATEGORY") {
-              response = await getCategoryFileBlobUrl(file);
-            } else {
-              response = await getSubpackageFileBlobUrl(file);
-            }
-          console.log("Respose:",response.data)
-          const blobUrl = URL.createObjectURL(response.data);
-          console.log(blobUrl);
-          let fileInfo: any = {
-            name: file.filename,
-            type: getFileType(file?.filename),
-            url: blobUrl,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
-        }
+      const responseData = linkResp?.data;
+      if (responseData?.link) {
+        let fileInfo: any = {
+          name: file.filename,
+          type: getFileType(file?.filename),
+          url: responseData.link,
+        };
+        setFileData(fileInfo);
+        setFileShow(true);
       } else {
         dispatch.toast.openToast({
           status: true,
@@ -354,7 +333,7 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
         });
       }
     } catch (err) {
-      console.log("err", err);
+      console.error("Error opening file:", err);
       dispatch.toast.openToast({
         status: true,
         message: "Failed to open file",
