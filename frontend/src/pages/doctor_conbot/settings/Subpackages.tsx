@@ -313,35 +313,69 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
   const onFileClick = async (file: any, fileType: "CATEGORY" | "SUBPACKAGE") => {
     console.log("File clicked:", file);
     try {
-      let linkResp;
       if (fileType === "CATEGORY") {
-        linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
+        const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
+        if (linkResp) {
+          if (linkResp?.type === "base64") {
+            let fileInfo: any = {
+              name: file.filename,
+              type: getFileType(file?.filename),
+              url: linkResp?.link,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          } else {
+            const response: any = await getCategoryFileBlobUrl(file)
+            const blobUrl = URL.createObjectURL(response.data);
+            console.log(blobUrl)
+            let fileInfo: any = {
+              name: file.filename,
+              type: getFileType(file?.filename),
+              url: blobUrl,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          }
+        } else {
+          dispatch.toast.openToast({
+            status: true,
+            message: "File not found",
+            type: "error",
+          });
+        }
       } else {
-        linkResp = await ReadSubpackageDocumentUrl(file.sub_package_id, file.id);
-      }
-      const responseData = linkResp?.data;
-      if (responseData?.link) {
-        let fileInfo: any = {
-          name: file.filename,
-          type: getFileType(file?.filename),
-          url: responseData.link,
-        };
-        setFileData(fileInfo);
-        setFileShow(true);
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
+        const linkResp = await ReadSubpackageDocumentUrl(file.sub_package_id, file.id);
+        if (linkResp) {
+          if (linkResp?.type === "base64") {
+            let fileInfo: any = {
+              name: file.filename,
+              type: getFileType(file?.filename),
+              url: linkResp?.link,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          } else {
+            const response: any = await getSubpackageFileBlobUrl(file)
+            const blobUrl = URL.createObjectURL(response.data);
+            console.log(blobUrl)
+            let fileInfo: any = {
+              name: file.filename,
+              type: getFileType(file?.filename),
+              url: blobUrl,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          }
+        } else {
+          dispatch.toast.openToast({
+            status: true,
+            message: "File not found",
+            type: "error",
+          });
+        }
       }
     } catch (err) {
-      console.error("Error opening file:", err);
-      dispatch.toast.openToast({
-        status: true,
-        message: "Failed to open file",
-        type: "error",
-      });
+      console.log("err", err);
     }
   };
 
