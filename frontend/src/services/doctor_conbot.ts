@@ -765,7 +765,6 @@ export const getSubpackageFileBlobUrl = async (file: any) => {
     BACKEND_DOCTOR_CONBOT_URL +
       `/doctor_conbot/category/sub_package/${file.sub_package_id}/document/${file.id}/link`,
     {
-      responseType: "blob",
       headers: {
         Authorization: `Bearer ${token}`,
       },
