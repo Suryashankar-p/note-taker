@@ -31,7 +31,7 @@ import {
   ReadCategories,
   // Updatecategory,
   PollDocumentStatus,
-  getFileBlobUrl,
+  getCategoryFileBlobUrl,
   PollCategoryDocumentStatus,
 } from "../../../services/doctor_conbot.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
@@ -407,7 +407,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
           setFileData(fileInfo);
           setFileShow(true);
         } else {
-          const response: any = await getFileBlobUrl(file)
+          const response: any = await getCategoryFileBlobUrl(file)
           const blobUrl = URL.createObjectURL(response.data);
           console.log(blobUrl)
           let fileInfo: any = {
