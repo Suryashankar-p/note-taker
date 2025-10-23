@@ -27,6 +27,7 @@ import {
   ReadDocuments,
   DeleteDocument,
   ReadDocumentUrl,
+  getFileBlobUrl,
   PollDocumentStatus,
 } from "../../../services/troubleshooting.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
@@ -287,37 +288,34 @@ const Products = () => {
   const onFileClick = async (prod: any) => {
     try {
       const linkResp = await ReadDocumentUrl(prod.id);
-
-      if (linkResp?.link) {
-        const fileType = getFileType(prod?.filename);
-        
-        if (fileType?.toLowerCase() === "xls" || fileType?.toLowerCase() === "xlsx") {
-          const base64Response = await fetch(linkResp.link);
-          const blob = await base64Response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          
+      
+      if (linkResp?.type === "base64") {
+        if (linkResp?.link) {
           let fileInfo: any = {
             name: prod.filename,
-            type: fileType,
-            url: blobUrl,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
-        } else {
-          let fileInfo: any = {
-            name: prod.filename,
-            type: fileType,
+            type: getFileType(prod?.filename),
             url: linkResp?.link,
           };
           setFileData(fileInfo);
           setFileShow(true);
+        } else {
+          dispatch.toast.openToast({
+            status: true,
+            message: "File not found",
+            type: "error",
+          });
         }
       } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
+        const response: any = await getFileBlobUrl(prod.id)
+        const blobUrl = URL.createObjectURL(response.data);
+        console.log(blobUrl)
+        let fileInfo: any = {
+          name: prod.filename,
+          type: getFileType(prod?.filename),
+          url: blobUrl,
+        };
+        setFileData(fileInfo);
+        setFileShow(true);
       }
     } catch (err) {
       console.log("err", err);
