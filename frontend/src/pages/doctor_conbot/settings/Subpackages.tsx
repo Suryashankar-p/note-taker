@@ -15,10 +15,16 @@ import {
   ReadCategoryDocuments,
   ReadSubPackageDocuments,
   ReadSubpackages,
+  ReadCategoryDocumentUrl,
+  ReadSubpackageDocumentUrl,
+  getCategoryFileBlobUrl,
+  getSubpackageFileBlobUrl,
   PollSubpackageDocumentStatus,
 } from "../../../services/doctor_conbot";
+import { getFileType } from "../../../utils/functions.ts";
 import AddProductModal from "../../../components/Modals/AddProductModalDoctorConBot";
 import FileEditModal from "../../../components/Modals/FileEditModalDoctorConBot";
+import FileViewModal from "../../../components/Modals/FileViewModal.tsx";
 import DropDownMenu from "../../../components/DropdownMenu";
 import Menu from "../../../assets/more.svg";
 import Edit from "../../../assets/edit.svg";
@@ -37,10 +43,6 @@ interface SubpackagesProps {
 }
 
 const MenuItems = [
-  // {
-  //   title: "Edit",
-  //   component: <img src={Edit} alt="edit" loading="lazy" />,
-  // },
   {
     title: "Delete",
     component: <img src={Trash} alt="trash" loading="lazy" />,
@@ -60,6 +62,8 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
   const dispatch = useDispatch<Dispatch>();
   const [subpackages, setSubpackages] = useState<any>();
   const [files, setFiles] = useState<any[]>([]);
+  const [fileShow, setFileShow] = useState(false);
+  const [fileData, setFileData] = useState();
   const [pageError, setPageError] = useState<boolean>(false);
   const isAdmin = doctorConBotMemberDetails?.role === "OWNER";
   const fileUpload = useSelector((state: RootState) => state.modal.isOpen);
@@ -303,6 +307,59 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
     }, 500); // Adjust the delay time (in milliseconds) as needed
   };
 
+  const onFileClick = async (file: any, fileType: "CATEGORY" | "SUBPACKAGE") => {
+    console.log("File clicked:", file);
+    try {
+      let linkResp;
+      if (fileType === "CATEGORY") {
+        linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
+      } else {
+        linkResp = await ReadSubpackageDocumentUrl(file.sub_package_id, file.id);
+      }
+      if (linkResp) {
+        if (linkResp?.type === "base64") {
+          let fileInfo: any = {
+            name: file.filename,
+            type: getFileType(file?.filename),
+            url: linkResp?.link,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        } else {
+          let response;
+            if (fileType === "CATEGORY") {
+              response = await getCategoryFileBlobUrl(file);
+            } else {
+              response = await getSubpackageFileBlobUrl(file);
+            }
+          const blobUrl = URL.createObjectURL(response.data);
+          console.log(blobUrl);
+          let fileInfo: any = {
+            name: file.filename,
+            type: getFileType(file?.filename),
+            url: blobUrl,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        }
+      } else {
+        dispatch.toast.openToast({
+          status: true,
+          message: "File not found",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      console.log("err", err);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Failed to open file",
+        type: "error",
+      });
+    }
+  };
+
+
   const checkDocumentStatus = async (subPackageId, documentId) => {
     // Clear any existing polling for this document
     if (pollingIntervalsRef.current[documentId]) {
@@ -379,21 +436,22 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
           }
         />
       )}
-
       {fileUpload.status && (
         <FileEditModal
           onSubmit={onFileUpload}
           defaultValues={null}
-          // title={
-          //   fileUpload?.type === "add"
-          //     ? `Add file for ${defaultSubpackage?.title ?? "the sub-packge"}`
-          //     : "Edit file"
-          // }
           title={
             fileUploadType === "CATEGORY"
               ? `Add file for the category ${productData?.title}`
               : `Add file for the sub-package ${defaultSubpackage?.title}`
           }
+        />
+      )}
+      {fileShow && (
+        <FileViewModal
+          fileUrl={fileData}
+          isOpen={fileShow}
+          onClose={() => setFileShow(false)}
         />
       )}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b pb-3">
@@ -428,15 +486,12 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
                       setDefaultCategoryDocument(file);
                       console.log(action);
                       if (action === "Edit") {
-                        console.log("Edit clicked", file);
-                        // dispatch.modal.openModal("edit");
-                        // handle edit logic
+                        onFileClick(file, "CATEGORY");
                       }
                       if (action === "Delete") {
                         console.log("Delete clicked", file);
                         setDeleteType("FILE");
                         dispatch.modal.openConfirmation();
-                        // handle delete logic
                       }
                     }}
                   />
@@ -570,11 +625,11 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
               {/* -------- Description -------- */}
               <div className="px-8">
                 <div className="flex flex-row flex-wrap gap-2 my-2">
-                                {item?.other_names.map((name:string) => (
-                                <Text className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
-                                 {name}
-                              </Text>))
-                }
+                  {item?.other_names.map((name:string) => (
+                    <Text className="text-[#505F79] border rounded-full bg-gray-200 max-w-fit text-[12px] line-clamp-3 px-2 ">
+                      {name}
+                    </Text>))
+                  }
                 </div>
                 <Text
                   title={item?.description}
@@ -652,15 +707,13 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
                             menuItems={MenuItems}
                             onChange={(action: string) => {
                               setDefaultSubPackageDocument(file);
-                              setDefaultSubpackage(item)
-                              if (action === "Edit") {
-                                // dispatch.modal.openModal("edit");
-                                // handle edit logic
+                              setDefaultSubpackage(item);
+                              if (action === "Open") {
+                                onFileClick(file, "SUBPACKAGE");
                               }
                               if (action === "Delete") {
                                 setDeleteType("SUBPACKAGEFILE");
                                 dispatch.modal.openConfirmation();
-                                // handle delete logic
                               }
                             }}
                           />
