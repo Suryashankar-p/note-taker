@@ -410,7 +410,8 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
             url: linkResp?.link,
           };
           setFileData(fileInfo);
-        } else {       
+          setFileShow(true);
+        } else {
           const response: any = await getCategoryFileBlobUrl(file)
           const blobUrl = URL.createObjectURL(response.data);
           let fileInfo: any = {
