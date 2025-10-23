@@ -343,33 +343,26 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
       } else {
         const linkResp = await ReadSubpackageDocumentUrl(file.sub_package_id, file.id);
         if (linkResp) {
-          let fileInfo: any = {
-            name: file.filename,
-            type: getFileType(file?.filename),
-            url: linkResp.link,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
-          // if (linkResp?.type === "base64") {
-          //   let fileInfo: any = {
-          //     name: file.filename,
-          //     type: getFileType(file?.filename),
-          //     url: linkResp?.link,
-          //   };
-          //   setFileData(fileInfo);
-          //   setFileShow(true);
-          // } else {
-          //   const response: any = await getSubpackageFileBlobUrl(file)
-          //   const blobUrl = URL.createObjectURL(response.data);
-          //   console.log(blobUrl)
-          //   let fileInfo: any = {
-          //     name: file.filename,
-          //     type: getFileType(file?.filename),
-          //     url: blobUrl,
-          //   };
-          //   setFileData(fileInfo);
-          //   setFileShow(true);
-          // }
+          if (linkResp?.type === "base64") {
+            let fileInfo: any = {
+              name: file.filename,
+              type: getFileType(file?.filename),
+              url: linkResp?.link,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          } else {
+            const response: any = await getSubpackageFileBlobUrl(file)
+            const blobUrl = URL.createObjectURL(response.data);
+            console.log(blobUrl)
+            let fileInfo: any = {
+              name: file.filename,
+              type: getFileType(file?.filename),
+              url: blobUrl,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          }
         } else {
           dispatch.toast.openToast({
             status: true,
