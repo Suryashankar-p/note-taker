@@ -27,6 +27,7 @@ import {
   ReadDocuments,
   DeleteDocument,
   ReadDocumentUrl,
+  getFileBlobUrl,
   PollDocumentStatus,
 } from "../../../services/troubleshooting.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
@@ -246,26 +247,6 @@ const Products = () => {
     }
   };
 
-  // const expandFiles = (key: number, item: any) => {
-  //   if (filesExpanded === key) setFilesExpanded(null);
-  //   else {
-  //     setFilesExpanded(key);
-  //     getProductDocuments(item?.id, 0, 100, "");
-  //     setTimeout(() => {
-  //       const productElement = document.getElementById(`product-${key}`);
-  //       if (productElement && scrollRef.current) {
-  //         const scrollContainer = scrollRef.current;
-  //         const containerTop = scrollContainer.getBoundingClientRect().top;
-  //         const elementTop = productElement.getBoundingClientRect().top;
-  //         scrollContainer.scrollBy({
-  //           top: elementTop - containerTop - 50,
-  //           behavior: "smooth",
-  //         });
-  //       }
-  //     }, 100);
-  //   }
-  // };
-
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchTerm: string = e.target.value;
     if (timeoutId) {
@@ -307,21 +288,34 @@ const Products = () => {
   const onFileClick = async (prod: any) => {
     try {
       const linkResp = await ReadDocumentUrl(prod.id);
-
-      if (linkResp?.link) {
+      
+      if (linkResp?.type === "base64") {
+        if (linkResp?.link) {
+          let fileInfo: any = {
+            name: prod.filename,
+            type: getFileType(prod?.filename),
+            url: linkResp?.link,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        } else {
+          dispatch.toast.openToast({
+            status: true,
+            message: "File not found",
+            type: "error",
+          });
+        }
+      } else {
+        const response: any = await getFileBlobUrl(prod.id)
+        const blobUrl = URL.createObjectURL(response.data);
+        console.log(blobUrl)
         let fileInfo: any = {
           name: prod.filename,
           type: getFileType(prod?.filename),
-          url: linkResp?.link,
+          url: blobUrl,
         };
         setFileData(fileInfo);
         setFileShow(true);
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
       }
     } catch (err) {
       console.log("err", err);
