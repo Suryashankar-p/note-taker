@@ -23,6 +23,8 @@ import {
   getChatHistoryFileBlobUrl,
   getChatHistoryFileUrl,
   ReadChatHistories,
+  getChatHistoryFileUrl,
+  getChatHistoryFileBlobUrl,
 } from "../../services/doctor_conbot.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -293,12 +295,125 @@ useEffect(() => {
     });
   };
 
-  const preventContextMenu = (e: React.MouseEvent) => e.preventDefault();
-  const preventDragStart = (e: React.DragEvent) => e.preventDefault();
+  const onFileClick = async (file: any) => {
+    console.log("PDF file clicked:", file);
+    try {
+      let fileInfo: any = {
+        name: file.name,
+        type: getFileType(file?.name),
+        url: file?.link,
+      };
+      setFileData(fileInfo);
+      setFileShow(true);
+    } catch (err) {
+      console.log("err", err);
+    }
+  };
 
-  // ───────────────────────────────
-  // JSX
-  // ───────────────────────────────
+  const onOtherFileClick = async (source: any, fileIndex: number) => {
+    try {
+      const otherFile = source.other_files[fileIndex];
+      const sourceRequest = {
+        name: source.name,
+        document_kind: 'OTHER',
+        images: null,
+        videos: null,
+        other_files: [otherFile],
+        link: null,
+      };
+
+      const linkResp = await getChatHistoryFileUrl(sourceRequest);
+      
+      if (linkResp?.data) {
+        if (linkResp.data.type === "base64") {
+          let fileInfo: any = {
+            name: linkResp.data.file_name || otherFile.file_name,
+            type: getFileType(otherFile?.file_name),
+            url: linkResp.data.link,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        } else {
+          const blobResponse: any = await getChatHistoryFileBlobUrl(sourceRequest);
+          const blobUrl = URL.createObjectURL(blobResponse.data);
+          
+          let fileInfo: any = {
+            name: otherFile.file_name,
+            type: getFileType(otherFile?.file_name),
+            url: blobUrl,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        }
+      } else {
+        dispatch.toast.openToast({
+          status: true,
+          message: "File not found",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      console.log("Error loading file:", err);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Failed to load file",
+        type: "error",
+      });
+    }
+  };
+
+  const onMediaClick = async (source: any, mediaIndex: number, isVideo: boolean) => {
+    try {
+      // Build the source request object with the specific media item
+      const sourceRequest = {
+        name: source.name,
+        document_kind: isVideo ? 'VIDEO' : 'IMAGE',
+        images: isVideo ? null : [source.images[mediaIndex]],
+        videos: isVideo ? [source.videos[mediaIndex]] : null,
+        other_files: null,
+        link: null,
+      };
+
+      const linkResp = await getChatHistoryFileUrl(sourceRequest);
+      
+      if (linkResp?.data) {
+        if (linkResp.data.type === "base64") {
+          let fileInfo: any = {
+            name: linkResp.data.file_name || source.name || `media_${Date.now()}`,
+            type: isVideo ? 'video' : 'image',
+            url: linkResp.data.link,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        } else {
+          const blobResponse: any = await getChatHistoryFileBlobUrl(sourceRequest);
+          const blobUrl = URL.createObjectURL(blobResponse.data);
+          
+          let fileInfo: any = {
+            name: source.name || `media_${Date.now()}`,
+            type: isVideo ? 'video' : 'image',
+            url: blobUrl,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        }
+      } else {
+        dispatch.toast.openToast({
+          status: true,
+          message: "Media not found",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      console.log("Error loading media:", err);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Failed to load media",
+        type: "error",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col w-full h-full bg-inherit">
       {/* Toasts */}
@@ -383,87 +498,112 @@ useEffect(() => {
                         ? "Images:"
                         : "Videos:";
 
-                    return (
-                      <div key={`source-${idx}`} className="mb-4">
-                        {allMedia.length > 0 && (
-                          <>
-                            <Text className="text-primary_text font-medium mb-1">
-                              {heading}
-                            </Text>
-                            {allMedia.map((mediaString, mediaIdx) => {
-                              const extractedUrl = mediaString?.startsWith(
-                                "http"
-                              )
-                                ? mediaString
-                                : null;
-                              const isVideo =
-                                Array.isArray(videos) &&
-                                videos.includes(mediaString);
-                              const key = `${idx}-${mediaIdx}`;
+                      return (
+                        <div key={`source-${idx}`} className="mb-4">
+                          {/* Display Images and Videos */}
+                          {allMedia.length > 0 && (
+                            <>
+                              <Text className="text-primary_text font-medium mb-1">
+                                {getMediaHeading()}
+                              </Text>
+                              {allMedia.map((mediaString, mediaIdx) => {
+                                const urlMatch = mediaString.match(/link='(.*?)'/);
+                                const extractedUrl = urlMatch ? urlMatch[1] : null;
+                                console.log("media string", urlMatch);
+                                const isVideo = videos.includes(mediaString);
+                                
+                                // Determine the actual index in the images or videos array
+                                const actualIndex = isVideo 
+                                  ? videos.indexOf(mediaString)
+                                  : images.indexOf(mediaString);
+                                const processedUrl =
+                                  !isVideo &&
+                                  extractedUrl?.includes("blob.core.windows.net")
+                                    ? extractedUrl
+                                    : extractedUrl;
 
-                              if (
-                                isVideo &&
-                                extractedUrl &&
-                                !videoUrls[key] &&
-                                !pendingVideos[key]
-                              ) {
-                                setPendingVideos((prev) => ({
-                                  ...prev,
-                                  [key]: extractedUrl,
-                                }));
-                              }
-
-                              return (
-                                <div
-                                  key={key}
-                                  className="relative mt-2 flex justify-center items-center"
-                                >
-                                  <div className="max-w-[700px] max-h-[700px] overflow-hidden border rounded-lg shadow-sm">
-                                    {isVideo ? (
-                                      <video
-                                        controls
-                                        className="w-full h-full object-contain"
-                                        src={videoUrls[key] || ""}
-                                      />
-                                    ) : (
-                                      <img
-                                        src={extractedUrl || ""}
-                                        alt={`Media ${mediaIdx + 1}`}
-                                        className="w-full h-full object-contain"
-                                      />
-                                    )}
+                                return mediaString ? (
+                                  <div
+                                    key={`${idx}-${mediaIdx}`}
+                                    className="relative mt-2 flex justify-center items-center cursor-pointer"
+                                    onContextMenu={preventContextMenu}
+                                    onClick={() => onMediaClick(source, actualIndex, isVideo)}
+                                  >
+                                    <div className="max-w-[700px] max-h-[700px] overflow-hidden border border-gray-200 rounded-lg shadow-sm relative hover:border-gray-400 transition-colors">
+                                      {isVideo ? (
+                                        <div className="relative">
+                                          <video
+                                            controls
+                                            className="w-full h-full object-contain"
+                                            style={{
+                                              maxWidth: "700px",
+                                              maxHeight: "700px",
+                                              WebkitUserSelect: "none",
+                                              userSelect: "none",
+                                            }}
+                                            controlsList="nodownload"
+                                            onContextMenu={preventContextMenu}
+                                            draggable="false"
+                                            onDragStart={preventDragStart}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <source src={mediaString} type="video/mp4" />
+                                            Your browser does not support the video tag.
+                                          </video>
+                                        </div>
+                                      ) : (
+                                        <div className="relative">
+                                          <img
+                                            src={mediaString}
+                                            alt={`Media content ${mediaIdx + 1}`}
+                                            className="w-full h-full object-contain pointer-events-none"
+                                            style={{
+                                              maxWidth: "400px",
+                                              maxHeight: "500px",
+                                              WebkitUserSelect: "none",
+                                              userSelect: "none",
+                                            }}
+                                            onContextMenu={preventContextMenu}
+                                            draggable="false"
+                                            onDragStart={preventDragStart}
+                                          />
+                                          <div className="absolute inset-0 bg-transparent" />
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </>
-                        )}
-
-                        {/* Other Files */}
-                        {otherFiles.length > 0 && (
-                          <div className="flex flex-row flex-wrap gap-2 mt-2">
-                            {otherFiles.map((file, fileIdx) => (
-                              <button
-                                key={fileIdx}
-                                className="rounded-full px-2 p-1 border border-grey flex items-center hover:bg-gray-50"
-                                onClick={() => onOtherFileClick(source)}
-                              >
-                                <img className="pb-1" src={Link} alt="Link" />
-                                <Text
-                                  className="text-primary_text mx-1 whitespace-normal break-all text-start"
-                                  type="small"
+                                ) : null;
+                              })}
+                            </>
+                          )}
+                          {/* Display Other Files as Buttons */}
+                          {otherFiles.length > 0 && (
+                            <div className="flex flex-row flex-wrap gap-2 mt-2">
+                              {otherFiles.map((file, fileIdx) => (
+                                <button
+                                  key={fileIdx}
+                                  className="rounded-full px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between hover:bg-gray-50 transition-colors"
+                                  onClick={() => onOtherFileClick(source, fileIdx)}
                                 >
-                                  {file.file_name}
-                                </Text>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                                  <img className="pb-1" src={Link} alt="Link" />
+                                  <div className="flex flex-col">
+                                    <Text
+                                      className="text-primary_text mx-1 whitespace-normal max-w-[45rem] break-all text-start"
+                                      type="small"
+                                    >
+                                      {file.file_name}
+                                    </Text>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              }
 
               {/* Copy + Price */}
               {message.ai && (
