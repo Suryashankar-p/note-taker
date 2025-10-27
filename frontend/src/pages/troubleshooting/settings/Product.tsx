@@ -288,34 +288,21 @@ const Products = () => {
   const onFileClick = async (prod: any) => {
     try {
       const linkResp = await ReadDocumentUrl(prod.id);
-      
-      if (linkResp?.type === "base64") {
-        if (linkResp?.link) {
-          let fileInfo: any = {
-            name: prod.filename,
-            type: getFileType(prod?.filename),
-            url: linkResp?.link,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
-        } else {
-          dispatch.toast.openToast({
-            status: true,
-            message: "File not found",
-            type: "error",
-          });
-        }
-      } else {
-        const response: any = await getFileBlobUrl(prod.id)
-        const blobUrl = URL.createObjectURL(response.data);
-        console.log(blobUrl)
+
+      if (linkResp?.link) {
         let fileInfo: any = {
           name: prod.filename,
           type: getFileType(prod?.filename),
-          url: blobUrl,
+          url: linkResp?.link,
         };
         setFileData(fileInfo);
         setFileShow(true);
+      } else {
+        dispatch.toast.openToast({
+          status: true,
+          message: "File not found",
+          type: "error",
+        });
       }
     } catch (err) {
       console.log("err", err);
