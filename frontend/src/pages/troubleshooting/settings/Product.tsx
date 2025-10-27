@@ -27,7 +27,6 @@ import {
   ReadDocuments,
   DeleteDocument,
   ReadDocumentUrl,
-  getFileBlobUrl,
   PollDocumentStatus,
 } from "../../../services/troubleshooting.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
@@ -290,13 +289,29 @@ const Products = () => {
       const linkResp = await ReadDocumentUrl(prod.id);
 
       if (linkResp?.link) {
-        let fileInfo: any = {
-          name: prod.filename,
-          type: getFileType(prod?.filename),
-          url: linkResp?.link,
-        };
-        setFileData(fileInfo);
-        setFileShow(true);
+        const fileType = getFileType(prod?.filename);
+        
+        if (fileType?.toLowerCase() === "xls" || fileType?.toLowerCase() === "xlsx") {
+          const base64Response = await fetch(linkResp.link);
+          const blob = await base64Response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          
+          let fileInfo: any = {
+            name: prod.filename,
+            type: fileType,
+            url: blobUrl,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        } else {
+          let fileInfo: any = {
+            name: prod.filename,
+            type: fileType,
+            url: linkResp?.link,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        }
       } else {
         dispatch.toast.openToast({
           status: true,
