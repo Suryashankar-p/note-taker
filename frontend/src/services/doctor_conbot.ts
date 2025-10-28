@@ -128,7 +128,7 @@ export const getChatHistoryFileUrl = async (sourceRequest: any) => {
 export const getChatHistoryFileBlobUrl = async (sourceRequest: any) => {
   const token = localStorage.getItem("access_token");
 
-  const response = await axios.get(
+  const response = await axios.post(
     BACKEND_DOCTOR_CONBOT_URL +`/doctor_conbot/chat/{chat_id}/chat_history/link`,
     sourceRequest,
     {
@@ -785,6 +785,7 @@ export const ReadSubpackageDocumentUrl = async (
 
 export const getSubpackageFileBlobUrl = async (file: any) => {
   const token = localStorage.getItem("access_token");
+  console.log("file:",file);
 
   const response = await axios.get(
     BACKEND_DOCTOR_CONBOT_URL +
