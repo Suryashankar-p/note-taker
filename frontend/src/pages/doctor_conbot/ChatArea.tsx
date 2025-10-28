@@ -277,100 +277,49 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  const onOtherFileClick = async (source: any, fileIndex: number) => {
+  const onOtherFileClick = async (file: any) => {
     try {
-      const otherFile = source.other_files[fileIndex];
-      const sourceRequest = {
-        name: source.name,
-        document_kind: 'OTHER',
-        images: null,
-        videos: null,
-        other_files: [otherFile],
-        link: null,
-      };
-
-      const linkResp = await getChatHistoryFileUrl(sourceRequest);
-      
-      if (linkResp?.data) {
-        if (linkResp.data.type === "base64") {
-          let fileInfo: any = {
-            name: linkResp.data.file_name || otherFile.file_name,
-            type: getFileType(otherFile?.file_name),
-            url: linkResp.data.link,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
+        const linkResp = await getChatHistoryFileUrl(file);
+        if (linkResp) {
+          if (linkResp?.type === "base64") {
+            let fileInfo: any = {
+              name: linkResp?.file_name,
+              type: getFileType(linkResp?.file_name),
+              url: linkResp?.link,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          } else {
+            const response = await getChatHistoryFileBlobUrl(file)
+            const blobUrl = URL.createObjectURL(response.data);
+            console.log(blobUrl)
+            let fileInfo: any = {
+              name: file.name,
+              type: getFileType(file?.name),
+              url: blobUrl,
+            };
+            setFileData(fileInfo);
+            setFileShow(true);
+          }
         } else {
-          const blobResponse: any = await getChatHistoryFileBlobUrl(sourceRequest);
-          const blobUrl = URL.createObjectURL(blobResponse.data);
-          
-          let fileInfo: any = {
-            name: otherFile.file_name,
-            type: getFileType(otherFile?.file_name),
-            url: blobUrl,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: "File not found",
+            type: "error",
+          });
         }
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
+      } catch (err) {
+        console.log("err", err);
       }
-    } catch (err) {
-      console.log("Error loading file:", err);
-      dispatch.toast.openToast({
-        status: true,
-        message: "Failed to load file",
-        type: "error",
-      });
-    }
-  };
+    };
 
-  const onMediaClick = async (source: any, mediaIndex: number, isVideo: boolean) => {
+  const onMediaClick = async (source: any) => {    
     try {
-      // Build the source request object with the specific media item
-      const sourceRequest = {
-        name: source.name,
-        document_kind: isVideo ? 'VIDEO' : 'IMAGE',
-        images: isVideo ? null : [source.images[mediaIndex]],
-        videos: isVideo ? [source.videos[mediaIndex]] : null,
-        other_files: null,
-        link: null,
-      };
-
-      const linkResp = await getChatHistoryFileUrl(sourceRequest);
+      const blobResponse = await getChatHistoryFileBlobUrl(source);
+      const blobUrl = URL.createObjectURL(blobResponse.data);
+      console.log(blobUrl);
       
-      if (linkResp?.data) {
-        if (linkResp.data.type === "base64") {
-          let fileInfo: any = {
-            name: linkResp.data.file_name || source.name || `media_${Date.now()}`,
-            type: isVideo ? 'video' : 'image',
-            url: linkResp.data.link,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
-        } else {
-          const blobResponse: any = await getChatHistoryFileBlobUrl(sourceRequest);
-          const blobUrl = URL.createObjectURL(blobResponse.data);
-          
-          let fileInfo: any = {
-            name: source.name || `media_${Date.now()}`,
-            type: isVideo ? 'video' : 'image',
-            url: blobUrl,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
-        }
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "Media not found",
-          type: "error",
-        });
-      }
+      return blobUrl
     } catch (err) {
       console.log("Error loading media:", err);
       dispatch.toast.openToast({
@@ -516,41 +465,27 @@ const ChatArea: React.FC<Props> = ({
 
               {message.source &&
                 message.source.sources &&
-                message.source.sources.some(
-                  (source) =>
-                    (source.images &&
-                      Array.isArray(source.images) &&
-                      source.images.length > 0) ||
-                    (source.videos &&
-                      Array.isArray(source.videos) &&
-                      source.videos.length > 0) ||
-                    (source.other_files &&
-                      Array.isArray(source.other_files) &&
-                      source.other_files.length > 0)
-                ) && (
+                Array.isArray(message.source.sources) &&
+                message.source.sources.length > 0 && (
                   <div className="flex flex-col mt-0 ml-14">
                     {message.source.sources.map((source, idx) => {
                       const images = source.images || [];
                       const videos = source.videos || [];
                       const otherFiles = source.other_files || [];
                       const allMedia = [...images, ...videos];
-
                       const getMediaHeading = () => {
                         if (images.length > 0 && videos.length > 0)
                           return "Images and Videos:";
                         if (images.length > 0) return "Images:";
                         return "Videos:";
                       };
-
                       const preventContextMenu = (e: React.MouseEvent) => {
                         e.preventDefault();
                         return false;
                       };
-
                       const preventDragStart = (e: React.DragEvent) => {
                         e.preventDefault();
                       };
-
                       return (
                         <div key={`source-${idx}`} className="mb-4">
                           {/* Display Images and Videos */}
@@ -580,7 +515,7 @@ const ChatArea: React.FC<Props> = ({
                                     key={`${idx}-${mediaIdx}`}
                                     className="relative mt-2 flex justify-center items-center cursor-pointer"
                                     onContextMenu={preventContextMenu}
-                                    onClick={() => onMediaClick(source, actualIndex, isVideo)}
+                                    onClick={() => onMediaClick(source)}
                                   >
                                     <div className="max-w-[700px] max-h-[700px] overflow-hidden border border-gray-200 rounded-lg shadow-sm relative hover:border-gray-400 transition-colors">
                                       {isVideo ? (
@@ -600,7 +535,7 @@ const ChatArea: React.FC<Props> = ({
                                             onDragStart={preventDragStart}
                                             onClick={(e) => e.stopPropagation()}
                                           >
-                                            <source src={mediaString} type="video/mp4" />
+                                            <source src={() => onMediaClick(source)} type="video/mp4" />
                                             Your browser does not support the video tag.
                                           </video>
                                         </div>
@@ -636,7 +571,7 @@ const ChatArea: React.FC<Props> = ({
                                 <button
                                   key={fileIdx}
                                   className="rounded-full px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between hover:bg-gray-50 transition-colors"
-                                  onClick={() => onOtherFileClick(source, fileIdx)}
+                                  onClick={() => onOtherFileClick(source)}
                                 >
                                   <img className="pb-1" src={Link} alt="Link" />
                                   <div className="flex flex-col">
@@ -669,7 +604,6 @@ const ChatArea: React.FC<Props> = ({
                       onClick={() => copyToClipboard(index, message)}
                     />
                     <img src={Divide} alt="divide" loading="lazy" />
-
                     <Dollar
                       className="h-5"
                       disabled={disabled}
