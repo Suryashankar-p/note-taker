@@ -1,4 +1,10 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import React, {
+  ChangeEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
 import Sent from "../../assets/sent.png";
@@ -14,6 +20,8 @@ import {
   CreateChat,
   CreateChatHistory,
   DeleteChatHistory,
+  getChatHistoryFileBlobUrl,
+  getChatHistoryFileUrl,
   ReadChatHistories,
 } from "../../services/doctor_conbot.ts";
 import Loading from "../../components/ChatLoading.tsx";
@@ -41,10 +49,6 @@ interface Props {
 }
 
 type Event = ChangeEvent<HTMLInputElement>;
-type Message = {
-  sender: string;
-  text: string;
-};
 
 const ChatArea: React.FC<Props> = ({
   onNewChatAddition,
@@ -54,70 +58,88 @@ const ChatArea: React.FC<Props> = ({
   const [inputValue, setInputValue] = useState("");
   const dispatch = useDispatch<Dispatch>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const chatContent = useSelector(
     (state: RootState) => state.chatContent.chatContent
   );
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState<boolean>(false);
-  const userDetails = JSON.parse(localStorage.getItem("user") || "{}");
-  const chat_id = searchParams.get("chat_id");
+  const toast = useSelector((state: RootState) => state.toast);
   const dislikeModalStatus = useSelector(
     (state: RootState) => state.modal.dislikeReason.status
   );
-  const toast = useSelector((state: RootState) => state.toast);
-  const [defaultChatData, setDefaultChatData] = useState<any>();
+
+  const [loading, setLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [pageError, setPageError] = useState<boolean>(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [pageSize, setPageSize] = useState({ skip: 0, limit: 100 });
-  const [hasReachedEnd, setHasReachedEnd] = useState(false);
-  const [showButton, setShowButton] = useState(false);
+  const [pageError, setPageError] = useState(false);
   const [fileShow, setFileShow] = useState(false);
-  const [fileData, setFileData] = useState();
+  const [fileData, setFileData] = useState<any>();
+  const [showButton, setShowButton] = useState(false);
+  const [videoUrls, setVideoUrls] = useState<{ [key: string]: string }>({});
+  const [pendingVideos, setPendingVideos] = useState<{ [key: string]: string }>(
+    {}
+  );
+
+  const userDetails = JSON.parse(localStorage.getItem("user") || "{}");
+  const token = userDetails?.access_token;
+  const chat_id = searchParams.get("chat_id");
+
+  const [pageSize] = useState({ skip: 0, limit: 100 });
+  const [hasReachedEnd] = useState(false);
 
   useEffect(() => {
-    if (chat_id) {
-      getPageChat();
+  Object.entries(pendingVideos).forEach(([key, url]) => {
+    if (url && !videoUrls[key]) {
+      loadVideoBlob(url, key);
     }
+  });
+}, [pendingVideos]);
+
+useEffect(() => {
+  return () => {
+    Object.values(videoUrls).forEach((url) => URL.revokeObjectURL(url));
+  };
+}, []);
+
+  // ───────────────────────────────
+  // Chat Loading
+  // ───────────────────────────────
+  const getPageChat = useCallback(async () => {
+    try {
+      const response = await ReadChatHistories(
+        pageSize.skip,
+        pageSize.limit,
+        chat_id
+      );
+      if (response?.result) {
+        dispatch.chatContent.clearChat();
+        dispatch.chatContent.addChat(response.result);
+      } else {
+        setPageError(true);
+        dispatch.toast.openToast({
+          status: true,
+          message: response?.detail || "Failed to load chat",
+          type: "error",
+        });
+        navigate(`/ai-studio/doctor_conbot`);
+      }
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+    }
+  }, [chat_id, pageSize, dispatch, navigate]);
+
+  useEffect(() => {
+    if (chat_id) getPageChat();
   }, [chat_id]);
 
   useEffect(() => {
-    if (pageSize.skip === 0) {
-      scrollToBottom();
-    }
+    if (pageSize.skip === 0) scrollToBottom();
   }, [chatContent]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      if (scrollTop === 0 && !loading && !hasReachedEnd) {
-        // setPageSize(prevPageSize => {
-        //   const newSkip = prevPageSize.limit + prevPageSize.skip;
-        //   //loadMore(newSkip, prevPageSize.limit);
-        //   return { ...prevPageSize, skip: newSkip };
-        // });
-      } else if (scrollTop + clientHeight < scrollHeight - 100) {
-        setShowButton(true);
-      } else {
-        setShowButton(false);
-      }
-    };
-
-    const refCurrent = scrollRef.current;
-
-    if (refCurrent) {
-      refCurrent.addEventListener("scroll", handleScroll);
-    }
-
-    return () => {
-      if (refCurrent) {
-        refCurrent.removeEventListener("scroll", handleScroll);
-      }
-    };
-  }, [loading, hasReachedEnd]);
-
+  // ───────────────────────────────
+  // Scrolling Logic
+  // ───────────────────────────────
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -125,133 +147,144 @@ const ChatArea: React.FC<Props> = ({
     });
   };
 
-  const getPageChat = async () => {
-    try {
-      const response = await ReadChatHistories(
-        pageSize?.skip,
-        pageSize?.limit,
-        chat_id
-      );
-      if (response?.result) {
-        dispatch.chatContent.clearChat();
-        dispatch.chatContent.addChat(response.result);
-      } else {
-        setCopySuccess(false);
-        setPageError(true);
-        if (response?.detail) {
-          dispatch.toast.openToast({
-            status: true,
-            message: response?.detail,
-            type: "error",
-          });
-        }
-        navigate(`/ai-studio/doctor_conbot`);
-      }
-    } catch (error) {
-      console.error("Error fetching chat history:", error);
-    }
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current!;
+      setShowButton(scrollTop + clientHeight < scrollHeight - 100);
+    };
+    const current = scrollRef.current;
+    if (current) current.addEventListener("scroll", handleScroll);
+    return () => current?.removeEventListener("scroll", handleScroll);
+  }, []);
 
+  // ───────────────────────────────
+  // Message Sending
+  // ───────────────────────────────
   const handleSend = async () => {
     if (!inputValue.trim()) return;
     setLoading(true);
     dispatch.chatContent.addQuestion([{ human: inputValue }]);
+
     try {
       if (chat_id) {
         const chatResponse = await CreateAgentChatHistory(inputValue, chat_id);
         if (chatResponse?.ai) {
           dispatch.chatContent.removeQuestion();
           dispatch.chatContent.addQuestion([chatResponse]);
-          setLoading(false);
           setInputValue("");
           setPageError(false);
         } else {
-          if (chatResponse?.detail) {
-            dispatch.toast.openToast({
-              status: true,
-              message: chatResponse?.detail,
-              type: "error",
-            });
-          }
           setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: chatResponse?.detail || "Error sending message",
+            type: "error",
+          });
           getPageChat();
         }
       } else {
-        const newSessionResponse = await CreateChat(inputValue);
-        if (newSessionResponse?.id) {
-          try {
-            const chatResponse = await CreateAgentChatHistory(
-              inputValue,
-              newSessionResponse.id
-            );
-            if (chatResponse?.ai) {
-              navigate(
-                `/ai-studio/doctor_conbot?chat_id=${newSessionResponse?.id}`
-              );
-              setInputValue("");
-              setLoading(false);
-              setPageError(false);
-              onNewChatAddition();
-            } else {
-              setCopySuccess(false);
-              setLoading(false);
-              if (chatResponse?.detail) {
-                setPageError(true);
-                dispatch.toast.openToast({
-                  status: true,
-                  message: chatResponse?.detail,
-                  type: "error",
-                });
-              }
-              navigate(
-                `/ai-studio/doctor_conbot?chat_id=${newSessionResponse?.id}`
-              );
-            }
-          } catch (err) {
-            console.log("evde", err);
-            setLoading(false);
+        const newChat = await CreateChat(inputValue);
+        if (newChat?.id) {
+          const chatResponse = await CreateAgentChatHistory(
+            inputValue,
+            newChat.id
+          );
+          if (chatResponse?.ai) {
+            setInputValue("");
+            navigate(`/ai-studio/doctor_conbot?chat_id=${newChat.id}`);
+            dispatch.chatContent.addQuestion([chatResponse]);
+            onNewChatAddition();
           }
-        } else {
-          setCopySuccess(false);
-          dispatch.toast.openToast({
-            status: true,
-            message: newSessionResponse?.detail,
-            type: "error",
-          });
-          setLoading(false);
-          console.log("error");
         }
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      setLoading(false);
-      setCopySuccess(false);
       dispatch.toast.openToast({
         status: true,
-        message: "Failed",
+        message: "Failed to send message",
         type: "error",
       });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Enter") handleSend();
   };
 
-  const getInitials = (name: string) => {
-    const nameParts = name.trim().split(" ");
-    const initials = nameParts
-      ?.slice(0, 2)
-      .map((part) => part.charAt(0))
-      .join("");
-    return initials.toUpperCase();
+  // ───────────────────────────────
+  // File Handling
+  // ───────────────────────────────
+  const onOtherFileClick = async (file: any) => {
+    try {
+      const linkResp = await getChatHistoryFileUrl(file);
+      if (linkResp) {
+        if (linkResp?.type === "base64") {
+          setFileData({
+            name: linkResp?.file_name,
+            type: getFileType(linkResp?.file_name),
+            url: linkResp?.link,
+          });
+        } else {
+          const response = await getChatHistoryFileBlobUrl(file);
+          const blobUrl = URL.createObjectURL(response.data);
+          setFileData({
+            name: file.name,
+            type: getFileType(file?.name),
+            url: blobUrl,
+          });
+        }
+        setFileShow(true);
+      } else {
+        dispatch.toast.openToast({
+          status: true,
+          message: "File not found",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      console.error("File click error:", err);
+    }
   };
 
+  // ───────────────────────────────
+  // Video Authorization Loader
+  // ───────────────────────────────
+  const loadVideoBlob = async (url: string, key: string) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch video");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);      
+      setVideoUrls((prev) => ({ ...prev, [key]: blobUrl }));
+    } catch (err) {
+      console.error("Error loading video:", err);
+    }
+  };
+
+  // ───────────────────────────────
+  // Utility Helpers
+  // ───────────────────────────────
+  const getInitials = (name: string) =>
+    name
+      ?.trim()
+      ?.split(" ")
+      ?.slice(0, 2)
+      ?.map((part) => part[0])
+      ?.join("")
+      ?.toUpperCase() || "";
+
   const copyToClipboard = (index: number, message: any) => {
-    const content: any = document.querySelector(`#message-${index}`); // Select the outer div by its id or another unique identifier
+    const content: any = document.querySelector(`#message-${index}`);
     if (!content) return;
-    copy(content.innerText); // Use clipboard-copy to copy the innerText of the div
+    copy(content.innerText);
     setCopySuccess(true);
     dispatch.toast.openToast({
       status: true,
@@ -260,67 +293,22 @@ const ChatArea: React.FC<Props> = ({
     });
   };
 
-  const onFileClick = async (file: any) => {
-    console.log("PDF file clicked:", file);
-    try {
-      let fileInfo: any = {
-        name: file.name,
-        type: getFileType(file?.name),
-        url: file?.link,
-      };
-      setFileData(fileInfo);
-      setFileShow(true);
-    } catch (err) {
-      console.log("err", err);
-    }
-  };
+  const preventContextMenu = (e: React.MouseEvent) => e.preventDefault();
+  const preventDragStart = (e: React.DragEvent) => e.preventDefault();
 
-  const onOtherFileClick = async (file: any) => {
-    try {
-      const urlMatch = file.link.match(/link='(.*?)'/);
-      const extractedUrl = urlMatch ? urlMatch[1] : file.link;
-      let fileInfo: any = {
-        name: file.file_name,
-        type: getFileType(file?.file_name),
-        url: extractedUrl,
-      };
-      setFileData(fileInfo);
-      setFileShow(true);
-    } catch (err) {
-      console.log("err", err);
-    }
-  };
-
-  const convertMarkdownToHtml = (markdown: string) => {
-    const dirtyHtml = marked.parse(markdown, { gfm: true, breaks: true });
-    return DOMPurify.sanitize(dirtyHtml);
-  };
-
-  const onFileAttachClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click(); // Programmatically click the hidden input
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]; // Get the selected file
-    if (file) {
-      // Handle the file upload logic here
-    }
-  };
-
+  // ───────────────────────────────
+  // JSX
+  // ───────────────────────────────
   return (
-    <div className="flex flex-col w-full position-fixed h-full bg-inherit">
-      {toast?.status && toast?.type === "error" && pageError && (
+    <div className="flex flex-col w-full h-full bg-inherit">
+      {/* Toasts */}
+      {toast?.status && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
           <Toast type="error" />
         </div>
       )}
-      {toast?.status && toast?.type === "success" && (
-        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
-          <Toast type="success" />
-        </div>
-      )}
+
+      {/* File Preview Modal */}
       {fileShow && (
         <FileViewModal
           fileUrl={fileData}
@@ -328,269 +316,156 @@ const ChatArea: React.FC<Props> = ({
           onClose={() => setFileShow(false)}
         />
       )}
+
+      {/* Chat Scroll Container */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-scroll smooth-scroll p-4 pb-2 space-y-8  bg-inherit"
+        className="flex-1 overflow-y-scroll smooth-scroll p-4 pb-2 space-y-8 bg-inherit"
       >
-        {chatContent?.length > 0 ? (
+        {chatContent?.length ? (
           chatContent.map((message: any, index: number) => (
             <div key={index} className="flex flex-col bg-inherit w-full gap-2">
-              <div
-                key={index}
-                className={`flex items-end space-x-2 overflow-hidden self-end justify-end w-[50%]`}
-              >
-                <div
-                  className={`inline-block p-2 rounded-lg ${
-                    message?.human
-                      ? "bg-gray-200 text-small break-words"
-                      : "bg-inherit text-small pl-14 break-words"
-                  }`}
-                >
-                  <Text className="text-primary_text" type="small">
-                    {message?.human}
-                  </Text>
-                </div>
-                {message?.human && (
-                  <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
+              {/* Human Message */}
+              {message?.human && (
+                <div className="flex items-end justify-end w-[50%] self-end space-x-2">
+                  <div className="bg-gray-200 p-2 rounded-lg break-words">
+                    <Text className="text-primary_text" type="small">
+                      {message?.human}
+                    </Text>
+                  </div>
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                     <span className="text-gray-600">
                       {getInitials(userDetails?.name)}
                     </span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
+              {/* AI Message */}
               <div className="flex flex-row items-start justify-start w-full">
                 {(message?.ai || loading) && (
-                  <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600">{"AI"}</span>
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-gray-600">AI</span>
                   </div>
                 )}
+
                 {message?.ai ? (
                   <div
                     id={`message-${index}`}
-                    className="w-full max-w-4xl  py-1 px-4 rounded-lg"
+                    className="w-full max-w-4xl py-1 px-4 rounded-lg"
                   >
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
                       className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
-                      components={{
-                        table: ({ node, ...props }) => (
-                          <div className="overflow-x-auto">
-                            <table className="w-full table-auto border-collapse break-words">
-                              {props.children}
-                            </table>
-                          </div>
-                        ),
-                        th: ({ node, ...props }) => (
-                          <th className="border px-4 py-2 text-left font-semibold bg-gray-100">
-                            {props.children}
-                          </th>
-                        ),
-                        td: ({ node, ...props }) => (
-                          <td className="border px-4 py-2 align-top">
-                            {props.children}
-                          </td>
-                        ),
-                        a: ({ node, ...props }) => (
-                          <a
-                            {...props}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {props.children}
-                          </a>
-                        ),
-                      }}
                     >
                       {message.ai}
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  !message.file_name &&
-                  loading && (
-                    <div className="-ml-12 w-full">
-                      <Loading />
-                    </div>
-                  )
+                  loading && <Loading />
                 )}
               </div>
-              <div className="flex flex-row flex-wrap gap-2">
-                {message?.ai?.replace(/\\n/g, "\n") &&
-                  message?.source?.sources?.map((file: any, index: number) =>
-                    (file?.name && file?.document_kind === "FAQ" || file?.document_kind === 'MANUAL') ? (
-                      <button
-                        key={index}
-                        className="rounded-full ml-[3.5vw] px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between"
-                        onClick={() => {
-                          if (file?.document_kind === "OTHER") {
-                            onFileClick(file);
-                          }
-                        }}
-                      >
-                        <img className="pb-1" src={Link} alt="Link" />
-                        <div className="flex flex-col">
-                          <Text
-                            className="text-primary_text mx-1 whitespace-normal max-w-[45rem] break-all text-start"
-                            type="small"
-                          >
-                            {file?.name}
-                          </Text>
-                        </div>
-                      </button>
-                    ) : null
-                  )}
-              </div>
 
-              {message.source &&
-                message.source.sources &&
-                message.source.sources.some(
-                  (source) =>
-                    (source.images &&
-                      Array.isArray(source.images) &&
-                      source.images.length > 0) ||
-                    (source.videos &&
-                      Array.isArray(source.videos) &&
-                      source.videos.length > 0) ||
-                    (source.other_files &&
-                      Array.isArray(source.other_files) &&
-                      source.other_files.length > 0)
-                ) && (
-                  <div className="flex flex-col mt-0 ml-14">
-                    {message.source.sources.map((source, idx) => {
-                      const images = source.images || [];
-                      const videos = source.videos || [];
-                      const otherFiles = source.other_files || [];
-                      const allMedia = [...images, ...videos];
+              {/* Media Section */}
+              {message.source?.sources?.length > 0 && (
+                <div className="flex flex-col mt-0 ml-14">
+                  {message.source.sources.map((source, idx) => {
+                    const images = source.images || [];
+                    const videos = source.videos || [];
+                    const otherFiles = source.other_files || [];
+                    const allMedia = [...images, ...videos];
 
-                      const getMediaHeading = () => {
-                        if (images.length > 0 && videos.length > 0)
-                          return "Images and Videos:";
-                        if (images.length > 0) return "Images:";
-                        return "Videos:";
-                      };
+                    const heading =
+                      images.length && videos.length
+                        ? "Images and Videos:"
+                        : images.length
+                        ? "Images:"
+                        : "Videos:";
 
-                      const preventContextMenu = (e: React.MouseEvent) => {
-                        e.preventDefault();
-                        return false;
-                      };
+                    return (
+                      <div key={`source-${idx}`} className="mb-4">
+                        {allMedia.length > 0 && (
+                          <>
+                            <Text className="text-primary_text font-medium mb-1">
+                              {heading}
+                            </Text>
+                            {allMedia.map((mediaString, mediaIdx) => {
+                              const extractedUrl = mediaString?.startsWith(
+                                "http"
+                              )
+                                ? mediaString
+                                : null;
+                              const isVideo =
+                                Array.isArray(videos) &&
+                                videos.includes(mediaString);
+                              const key = `${idx}-${mediaIdx}`;
 
-                      const preventDragStart = (e: React.DragEvent) => {
-                        e.preventDefault();
-                      };
+                              if (
+                                isVideo &&
+                                extractedUrl &&
+                                !videoUrls[key] &&
+                                !pendingVideos[key]
+                              ) {
+                                setPendingVideos((prev) => ({
+                                  ...prev,
+                                  [key]: extractedUrl,
+                                }));
+                              }
 
-                      return (
-                        <div key={`source-${idx}`} className="mb-4">
-                          {/* Display Images and Videos */}
-                          {allMedia.length > 0 && (
-                            <>
-                              <Text className="text-primary_text font-medium mb-1">
-                                {getMediaHeading()}
-                              </Text>
-                              {allMedia.map((mediaString, mediaIdx) => {
-                                const urlMatch =
-                                  mediaString.match(/link='(.*?)'/);
-                                const extractedUrl = urlMatch
-                                  ? urlMatch[1]
-                                  : null;
-                                  console.log("media string", urlMatch)
-                                const isVideo = videos.includes(mediaString);
-
-                                const processedUrl =
-                                  !isVideo &&
-                                  extractedUrl?.includes(
-                                    "blob.core.windows.net"
-                                  )
-                                    ? extractedUrl
-                                    : extractedUrl;
-
-                                return mediaString ? (
-                                  <div
-                                    key={`${idx}-${mediaIdx}`}
-                                    className="relative mt-2 flex justify-center items-center"
-                                    onContextMenu={preventContextMenu}
-                                  >
-                                    <div className="max-w-[700px] max-h-[700px] overflow-hidden border border-gray-200 rounded-lg shadow-sm relative">
-                                      {isVideo ? (
-                                        <div className="relative">
-                                          <video
-                                            controls
-                                            className="w-full h-full object-contain"
-                                            style={{
-                                              maxWidth: "700px",
-                                              maxHeight: "700px",
-                                              WebkitUserSelect: "none",
-                                              userSelect: "none",
-                                            }}
-                                            controlsList="nodownload"
-                                            onContextMenu={preventContextMenu}
-                                            draggable="false"
-                                            onDragStart={preventDragStart}
-                                          >
-                                            <source
-                                              src={mediaString}
-                                              type="video/mp4"
-                                            />
-                                            Your browser does not support the
-                                            video tag.
-                                          </video>
-                                        </div>
-                                      ) : (
-                                        <div className="relative">
-                                          <img
-                                            src={mediaString}
-                                            alt={`Media content ${
-                                              mediaIdx + 1
-                                            }`}
-                                            className="w-full h-full object-contain pointer-events-none"
-                                            style={{
-                                              maxWidth: "400px",
-                                              maxHeight: "500px",
-                                              WebkitUserSelect: "none",
-                                              userSelect: "none",
-                                            }}
-                                            onContextMenu={preventContextMenu}
-                                            draggable="false"
-                                            onDragStart={preventDragStart}
-                                          />
-                                          <div className="absolute inset-0 bg-transparent" />
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : null;
-                              })}
-                            </>
-                          )}
-
-                          {/* Display Other Files as Buttons */}
-                          {otherFiles.length > 0 && (
-                            <div className="flex flex-row flex-wrap gap-2 mt-2">
-                              {otherFiles.map((file, fileIdx) => (
-                                <button
-                                  key={fileIdx}
-                                  className="rounded-full px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between"
-                                  onClick={() => onOtherFileClick(file)}
+                              return (
+                                <div
+                                  key={key}
+                                  className="relative mt-2 flex justify-center items-center"
                                 >
-                                  <img className="pb-1" src={Link} alt="Link" />
-                                  <div className="flex flex-col">
-                                    <Text
-                                      className="text-primary_text mx-1 whitespace-normal max-w-[45rem] break-all text-start"
-                                      type="small"
-                                    >
-                                      {file.file_name}
-                                    </Text>
+                                  <div className="max-w-[700px] max-h-[700px] overflow-hidden border rounded-lg shadow-sm">
+                                    {isVideo ? (
+                                      <video
+                                        controls
+                                        className="w-full h-full object-contain"
+                                        src={videoUrls[key] || ""}
+                                      />
+                                    ) : (
+                                      <img
+                                        src={extractedUrl || ""}
+                                        alt={`Media ${mediaIdx + 1}`}
+                                        className="w-full h-full object-contain"
+                                      />
+                                    )}
                                   </div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
 
+                        {/* Other Files */}
+                        {otherFiles.length > 0 && (
+                          <div className="flex flex-row flex-wrap gap-2 mt-2">
+                            {otherFiles.map((file, fileIdx) => (
+                              <button
+                                key={fileIdx}
+                                className="rounded-full px-2 p-1 border border-grey flex items-center hover:bg-gray-50"
+                                onClick={() => onOtherFileClick(source)}
+                              >
+                                <img className="pb-1" src={Link} alt="Link" />
+                                <Text
+                                  className="text-primary_text mx-1 whitespace-normal break-all text-start"
+                                  type="small"
+                                >
+                                  {file.file_name}
+                                </Text>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Copy + Price */}
               {message.ai && (
                 <button
                   disabled={disabled}
@@ -601,8 +476,7 @@ const ChatArea: React.FC<Props> = ({
                       disabled={disabled}
                       onClick={() => copyToClipboard(index, message)}
                     />
-                    <img src={Divide} alt="divide" loading="lazy" />
-
+                    <img src={Divide} alt="divide" />
                     <Dollar
                       className="h-5"
                       disabled={disabled}
@@ -616,32 +490,28 @@ const ChatArea: React.FC<Props> = ({
         ) : (
           <EmptyChat />
         )}
-        <div ref={messagesEndRef}></div>
+        <div ref={messagesEndRef} />
       </div>
+
+      {/* Scroll-to-bottom Button */}
       {showButton && (
         <button
-          className="w-fit bottom-2 self-center h-7 bg-white absolute border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white"
+          className="w-fit bottom-2 self-center absolute h-7 bg-white border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white"
           onClick={scrollToBottom}
         >
           <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
         </button>
       )}
-      <div className="top-[84vh] left-84 px-4 self-center w-100 fixed bg-inherit flex ">
+
+      {/* Input Bar */}
+      <div className="fixed lg:bottom-10 lg:left-60 right-0 flex justify-center bg-inherit">
         <Input
           disabled={loading || disabled}
           onKeyDown={onKeyDown}
-          inputClasssName={`${disabled && "bg-[#0061F3] bg-opacity-10"}`}
-          onChange={(event: Event) => setInputValue(event.target.value)}
+          onChange={(e: Event) => setInputValue(e.target.value)}
           value={inputValue}
           placeholder="Ask your query here..."
-          prefixIcon={
-            <img
-              src={ThermaxIcon}
-              className="pr-4"
-              alt="thermax"
-              loading="lazy"
-            />
-          }
+          prefixIcon={<img src={ThermaxIcon} className="pr-4" alt="thermax" />}
           suffixIcon={
             <Button
               disabled={loading}
@@ -651,7 +521,7 @@ const ChatArea: React.FC<Props> = ({
               size="very_small"
               rounded
             >
-              <img src={Sent} alt="Sent" loading="lazy" />
+              <img src={Sent} alt="Sent" />
             </Button>
           }
           fixed_size="full"
