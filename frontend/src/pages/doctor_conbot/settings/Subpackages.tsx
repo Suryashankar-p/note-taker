@@ -311,7 +311,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
   };
 
   const onFileClick = async (file: any, fileType: "CATEGORY" | "SUBPACKAGE") => {
-    console.log("File clicked:", file);
     try {
       if (fileType === "CATEGORY") {
         const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);

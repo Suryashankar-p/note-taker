@@ -295,74 +295,12 @@ useEffect(() => {
     });
   };
 
-  const onFileClick = async (file: any) => {
-    console.log("PDF file clicked:", file);
-    try {
-      let fileInfo: any = {
-        name: file.name,
-        type: getFileType(file?.name),
-        url: file?.link,
-      };
-      setFileData(fileInfo);
-      setFileShow(true);
-    } catch (err) {
-      console.log("err", err);
-    }
-  };
+  const preventContextMenu = (e: React.MouseEvent) => e.preventDefault();
+  const preventDragStart = (e: React.DragEvent) => e.preventDefault();
 
-  const onOtherFileClick = async (file: any) => {
-    try {
-        const linkResp = await getChatHistoryFileUrl(file);
-        if (linkResp) {
-          if (linkResp?.type === "base64") {
-            let fileInfo: any = {
-              name: linkResp?.file_name,
-              type: getFileType(linkResp?.file_name),
-              url: linkResp?.link,
-            };
-            setFileData(fileInfo);
-            setFileShow(true);
-          } else {
-            const response = await getChatHistoryFileBlobUrl(file)
-            const blobUrl = URL.createObjectURL(response.data);
-            console.log(blobUrl)
-            let fileInfo: any = {
-              name: file.name,
-              type: getFileType(file?.name),
-              url: blobUrl,
-            };
-            setFileData(fileInfo);
-            setFileShow(true);
-          }
-        } else {
-          dispatch.toast.openToast({
-            status: true,
-            message: "File not found",
-            type: "error",
-          });
-        }
-      } catch (err) {
-        console.log("err", err);
-      }
-    };
-
-  const onMediaClick = async (source: any) => {    
-    try {
-      const blobResponse = await getChatHistoryFileBlobUrl(source);
-      const blobUrl = URL.createObjectURL(blobResponse.data);
-      console.log(blobUrl);
-      
-      return blobUrl
-    } catch (err) {
-      console.log("Error loading media:", err);
-      dispatch.toast.openToast({
-        status: true,
-        message: "Failed to load media",
-        type: "error",
-      });
-    }
-  };
-
+  // ───────────────────────────────
+  // JSX
+  // ───────────────────────────────
   return (
     <div className="flex flex-col w-full h-full bg-inherit">
       {/* Toasts */}
@@ -431,135 +369,103 @@ useEffect(() => {
                 )}
               </div>
 
-              {message.source &&
-                message.source.sources &&
-                Array.isArray(message.source.sources) &&
-                message.source.sources.length > 0 && (
-                  <div className="flex flex-col mt-0 ml-14">
-                    {message.source.sources.map((source, idx) => {
-                      const images = source.images || [];
-                      const videos = source.videos || [];
-                      const otherFiles = source.other_files || [];
-                      const allMedia = [...images, ...videos];
-                      const getMediaHeading = () => {
-                        if (images.length > 0 && videos.length > 0)
-                          return "Images and Videos:";
-                        if (images.length > 0) return "Images:";
-                        return "Videos:";
-                      };
-                      const preventContextMenu = (e: React.MouseEvent) => {
-                        e.preventDefault();
-                        return false;
-                      };
-                      const preventDragStart = (e: React.DragEvent) => {
-                        e.preventDefault();
-                      };
-                      return (
-                        <div key={`source-${idx}`} className="mb-4">
-                          {/* Display Images and Videos */}
-                          {allMedia.length > 0 && (
-                            <>
-                              <Text className="text-primary_text font-medium mb-1">
-                                {getMediaHeading()}
-                              </Text>
-                              {allMedia.map((mediaString, mediaIdx) => {
-                                const urlMatch = mediaString.match(/link='(.*?)'/);
-                                const extractedUrl = urlMatch ? urlMatch[1] : null;
-                                console.log("media string", urlMatch);
-                                const isVideo = videos.includes(mediaString);
-                                
-                                // Determine the actual index in the images or videos array
-                                const actualIndex = isVideo 
-                                  ? videos.indexOf(mediaString)
-                                  : images.indexOf(mediaString);
-                                const processedUrl =
-                                  !isVideo &&
-                                  extractedUrl?.includes("blob.core.windows.net")
-                                    ? extractedUrl
-                                    : extractedUrl;
+              {/* Media Section */}
+              {message.source?.sources?.length > 0 && (
+                <div className="flex flex-col mt-0 ml-14">
+                  {message.source.sources.map((source, idx) => {
+                    const images = source.images || [];
+                    const videos = source.videos || [];
+                    const otherFiles = source.other_files || [];
+                    const allMedia = [...images, ...videos];
 
-                                return mediaString ? (
-                                  <div
-                                    key={`${idx}-${mediaIdx}`}
-                                    className="relative mt-2 flex justify-center items-center cursor-pointer"
-                                    onContextMenu={preventContextMenu}
-                                    onClick={() => onMediaClick(source)}
-                                  >
-                                    <div className="max-w-[700px] max-h-[700px] overflow-hidden border border-gray-200 rounded-lg shadow-sm relative hover:border-gray-400 transition-colors">
-                                      {isVideo ? (
-                                        <div className="relative">
-                                          <video
-                                            controls
-                                            className="w-full h-full object-contain"
-                                            style={{
-                                              maxWidth: "700px",
-                                              maxHeight: "700px",
-                                              WebkitUserSelect: "none",
-                                              userSelect: "none",
-                                            }}
-                                            controlsList="nodownload"
-                                            onContextMenu={preventContextMenu}
-                                            draggable="false"
-                                            onDragStart={preventDragStart}
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            <source src={() => onMediaClick(source)} type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                          </video>
-                                        </div>
-                                      ) : (
-                                        <div className="relative">
-                                          <img
-                                            src={mediaString}
-                                            alt={`Media content ${mediaIdx + 1}`}
-                                            className="w-full h-full object-contain pointer-events-none"
-                                            style={{
-                                              maxWidth: "400px",
-                                              maxHeight: "500px",
-                                              WebkitUserSelect: "none",
-                                              userSelect: "none",
-                                            }}
-                                            onContextMenu={preventContextMenu}
-                                            draggable="false"
-                                            onDragStart={preventDragStart}
-                                          />
-                                          <div className="absolute inset-0 bg-transparent" />
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : null;
-                              })}
-                            </>
-                          )}
-                          {/* Display Other Files as Buttons */}
-                          {otherFiles.length > 0 && (
-                            <div className="flex flex-row flex-wrap gap-2 mt-2">
-                              {otherFiles.map((file, fileIdx) => (
-                                <button
-                                  key={fileIdx}
-                                  className="rounded-full px-2 p-1 w-fit h-fit border border-grey items-center flex flex-row justify-between hover:bg-gray-50 transition-colors"
-                                  onClick={() => onOtherFileClick(source)}
+                    const heading =
+                      images.length && videos.length
+                        ? "Images and Videos:"
+                        : images.length
+                        ? "Images:"
+                        : "Videos:";
+
+                    return (
+                      <div key={`source-${idx}`} className="mb-4">
+                        {allMedia.length > 0 && (
+                          <>
+                            <Text className="text-primary_text font-medium mb-1">
+                              {heading}
+                            </Text>
+                            {allMedia.map((mediaString, mediaIdx) => {
+                              const extractedUrl = mediaString?.startsWith(
+                                "http"
+                              )
+                                ? mediaString
+                                : null;
+                              const isVideo =
+                                Array.isArray(videos) &&
+                                videos.includes(mediaString);
+                              const key = `${idx}-${mediaIdx}`;
+
+                              if (
+                                isVideo &&
+                                extractedUrl &&
+                                !videoUrls[key] &&
+                                !pendingVideos[key]
+                              ) {
+                                setPendingVideos((prev) => ({
+                                  ...prev,
+                                  [key]: extractedUrl,
+                                }));
+                              }
+
+                              return (
+                                <div
+                                  key={key}
+                                  className="relative mt-2 flex justify-center items-center"
                                 >
-                                  <img className="pb-1" src={Link} alt="Link" />
-                                  <div className="flex flex-col">
-                                    <Text
-                                      className="text-primary_text mx-1 whitespace-normal max-w-[45rem] break-all text-start"
-                                      type="small"
-                                    >
-                                      {file.file_name}
-                                    </Text>
+                                  <div className="max-w-[700px] max-h-[700px] overflow-hidden border rounded-lg shadow-sm">
+                                    {isVideo ? (
+                                      <video
+                                        controls
+                                        className="w-full h-full object-contain"
+                                        src={videoUrls[key] || ""}
+                                      />
+                                    ) : (
+                                      <img
+                                        src={extractedUrl || ""}
+                                        alt={`Media ${mediaIdx + 1}`}
+                                        className="w-full h-full object-contain"
+                                      />
+                                    )}
                                   </div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
-              }
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Other Files */}
+                        {otherFiles.length > 0 && (
+                          <div className="flex flex-row flex-wrap gap-2 mt-2">
+                            {otherFiles.map((file, fileIdx) => (
+                              <button
+                                key={fileIdx}
+                                className="rounded-full px-2 p-1 border border-grey flex items-center hover:bg-gray-50"
+                                onClick={() => onOtherFileClick(source)}
+                              >
+                                <img className="pb-1" src={Link} alt="Link" />
+                                <Text
+                                  className="text-primary_text mx-1 whitespace-normal break-all text-start"
+                                  type="small"
+                                >
+                                  {file.file_name}
+                                </Text>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Copy + Price */}
               {message.ai && (
@@ -572,7 +478,7 @@ useEffect(() => {
                       disabled={disabled}
                       onClick={() => copyToClipboard(index, message)}
                     />
-                    <img src={Divide} alt="divide" loading="lazy" />
+                    <img src={Divide} alt="divide" />
                     <Dollar
                       className="h-5"
                       disabled={disabled}
