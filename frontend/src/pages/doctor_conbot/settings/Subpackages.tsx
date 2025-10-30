@@ -150,12 +150,15 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
       description: data?.description,
     };
     try {
+      dispatch.loadingState.startLoading();
       const response = await CreateSubpackage(body, productData?.id);
       if (response) {
         getSubPackages(productData?.id, 0, 20, "");
+        dispatch.loadingState.endLoading();
         dispatch.modal.closeAddProduct();
       } else {
         setPageError(true);
+        dispatch.loadingState.endLoading();
         dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
@@ -308,7 +311,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
   };
 
   const onFileClick = async (file: any, fileType: "CATEGORY" | "SUBPACKAGE") => {
-    console.log("File clicked:", file);
     try {
       if (fileType === "CATEGORY") {
         const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
