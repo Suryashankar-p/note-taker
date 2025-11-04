@@ -196,12 +196,15 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
         description: data?.description,
       };
       try {
+        dispatch.loadingState.startLoading();
         const createResponse = await CreateCategory(body);
         if (createResponse?.id) {
           getAllCategories(0, 20, "");
           dispatch.modal.closeAddProduct();
+          dispatch.loadingState.endLoading();
         } else {
           setPageError(true);
+          dispatch.loadingState.endLoading();
           if (createResponse?.detail)
             dispatch.toast.openToast({
               status: true,
@@ -396,6 +399,8 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
 
   const onFileClick = async (file: any) => {
     try {
+      setFileShow(true)
+      dispatch.loadingState.startLoading();
       const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
       if (linkResp) {
         if (linkResp?.type === "base64") {
@@ -405,18 +410,16 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
             url: linkResp?.link,
           };
           setFileData(fileInfo);
-          setFileShow(true);
-        } else {
+        } else {       
           const response: any = await getCategoryFileBlobUrl(file)
           const blobUrl = URL.createObjectURL(response.data);
-          console.log(blobUrl)
           let fileInfo: any = {
             name: file.filename,
             type: getFileType(file?.filename),
             url: blobUrl,
           };
           setFileData(fileInfo);
-          setFileShow(true);
+          
         }
       } else {
         dispatch.toast.openToast({
