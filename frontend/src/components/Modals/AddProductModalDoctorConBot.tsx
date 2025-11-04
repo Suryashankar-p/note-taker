@@ -58,13 +58,15 @@ const AddProductModal: React.FC<Props> = ({
   } = useForm<IFormInput>();
   const toastStatus = useSelector((state: RootState) => state.toast);
   const [tags, setTags] = useState<{ id: number | null; title: string }[]>([]);
+  const loading = useSelector((state: RootState) => state.loadingState.status)
+  
   const closeModal = () => {
     dispatch.modal.closeAddProduct();
   };
 
   const onProductSubmit = (data: IFormInput) => {
     const body = {
-      title: data.title?.trim(), 
+      title: data.title?.trim(),
       other_names: data.other_names || [],
       description: data.description?.trim(),
       id: defaultValue?.id,
@@ -87,15 +89,15 @@ const AddProductModal: React.FC<Props> = ({
   };
 
   const onTagChange = (data: { id: number | null; title: string }[]) => {
-  if (data) {
-    clearErrors("other_names");
-    setTags(data);
-    setValue(
-      "other_names",
-      data.map((tag) => tag.title) // ✅ extract only titles
-    );
-  }
-};
+    if (data) {
+      clearErrors("other_names");
+      setTags(data);
+      setValue(
+        "other_names",
+        data.map((tag) => tag.title) // ✅ extract only titles
+      );
+    }
+  };
 
   return (
     <Transition appear show={addProduct} as={Fragment}>
@@ -164,34 +166,34 @@ const AddProductModal: React.FC<Props> = ({
                     {title}
                   </Text>
                   <div className="flex flex-col mt-5 gap-2">
-                        <label>
-                          <Text className="text-primary_text">Full name*</Text>
-                        </label>
+                    <label>
+                      <Text className="text-primary_text">Full name*</Text>
+                    </label>
                     <div className="flex flex-row space-x-2">
-                        <input
-                          type="text"
-                          className={`w-full h-12 border rounded-md focus:outline-none p-4 ${
-                            errors.title ? "border-red-500" : "border-gray-300"
-                          }`}
-                          onClick={(e) => e.stopPropagation()}
-                          placeholder="Full name"
-                          defaultValue={
-                            type === "edit" ? defaultValue?.title : ""
-                          }
-                          {...register("title", {
-                            required: "Field is required",
-                          })}
-                        />
-                        {errors.title && (
-                          <span className="text-red-500">
-                            {errors.title.message}
-                          </span>
-                        )}
+                      <input
+                        type="text"
+                        className={`w-full h-12 border rounded-md focus:outline-none p-4 ${
+                          errors.title ? "border-red-500" : "border-gray-300"
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="Full name"
+                        defaultValue={
+                          type === "edit" ? defaultValue?.title : ""
+                        }
+                        {...register("title", {
+                          required: "Field is required",
+                        })}
+                      />
+                      {errors.title && (
+                        <span className="text-red-500">
+                          {errors.title.message}
+                        </span>
+                      )}
                       {/* <div className="w-1/2 flex-col space-y-2">
                         <label>
                           <Text className="text-primary_text">Short name*</Text>
                         </label> */}
-                        {/* <input
+                      {/* <input
                           type="text"
                           className={`w-full h-12 border rounded-md focus:outline-none p-4 ${
                             errors.short_title
@@ -207,7 +209,7 @@ const AddProductModal: React.FC<Props> = ({
                             required: "Field is required",
                           })}
                         /> */}
-                        {/* <input
+                      {/* <input
                           type="text"
                           className="w-full h-12 border rounded-md focus:outline-none p-4 border-gray-300"
                           placeholder="Short name (optional)"
@@ -221,15 +223,23 @@ const AddProductModal: React.FC<Props> = ({
                       </div> */}
                     </div>
                     <div className="w-full flex-col space-y-2">
-                      <label><Text className='text-primary_text'>Aliases and abbrevaiations</Text></label>
+                      <label>
+                        <Text className="text-primary_text">
+                          Aliases and abbrevaiations
+                        </Text>
+                      </label>
                       <TagInput
-                          value={tags}
-                          onChange={onTagChange}
-                          error={errors.other_names?.message}
-                          placeholder='Enter aliases and abbreviations'
+                        value={tags}
+                        onChange={onTagChange}
+                        error={errors.other_names?.message}
+                        placeholder="Enter aliases and abbreviations"
                       />
-                      {errors.other_names && <span className="text-red-500">{errors.other_names?.message}</span>}
-                                        </div>
+                      {errors.other_names && (
+                        <span className="text-red-500">
+                          {errors.other_names?.message}
+                        </span>
+                      )}
+                    </div>
                     <div className="w-full flex-col space-y-2 h-[15vh]">
                       <label>
                         <Text className="text-primary_text">Description*</Text>
@@ -268,7 +278,33 @@ const AddProductModal: React.FC<Props> = ({
                       type="submit"
                       className="inline-flex justify-center rounded-md border border-transparent bg-[#0061F3] px-4 py-2 text-sm font-medium text-background focus:outline-none focus-visible:ring-offset-2"
                     >
-                      <Text type="small">Save</Text>
+                      {loading ? (
+                        <div className="flex items-center">
+                          <div className="mr-2">Saving...</div>
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8H4z"
+                            ></path>
+                          </svg>
+                        </div>
+                      ) : (
+                        <span>Save</span>
+                      )}
                     </button>
                   </div>
                 </form>
