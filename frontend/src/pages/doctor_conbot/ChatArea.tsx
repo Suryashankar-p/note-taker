@@ -20,8 +20,6 @@ import {
   CreateChat,
   CreateChatHistory,
   DeleteChatHistory,
-  getChatHistoryFileBlobUrl,
-  getChatHistoryFileUrl,
   ReadChatHistories,
   getChatHistoryFileUrl,
   getChatHistoryFileBlobUrl,
