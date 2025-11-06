@@ -63,55 +63,58 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
         let html = XLSX.utils.sheet_to_html(workbook.Sheets[firstSheet]);
         // Add borders to the table
        html = `
-<style>
-  /* General table style */
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    table-layout: fixed;
-    background-color: #fff;
-  }
+        <style>
+          /* General table style */
+          table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            table-layout: auto; /* Changed from fixed to auto */
+            background-color: #fff;
+          }
 
-  /* Header row */
-  th {
-    background-color: #f3f3f3;
-    font-weight: bold;
-    text-align: center;
-    padding: 8px;
-    border: 1px solid #ccc;
-    color: #333;
-  }
+          /* Header row */
+          th {
+            background-color: #f3f3f3;
+            font-weight: bold;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #ccc;
+            color: #333;
+            white-space: normal; /* Allow wrapping in headers */
+            min-width: 100px; /* Ensure minimum readable width */
+          }
 
-  /* Table cells */
-  td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: left;
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+          /* Table cells */
+          td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            color: #333;
+            white-space: normal; /* Changed from nowrap to normal - allows wrapping */
+            word-wrap: break-word; /* Break long words if needed */
+            min-width: 100px; /* Ensure minimum readable width */
+            max-width: 300px; /* Optional: prevent cells from getting too wide */
+          }
 
-  /* Alternating row colors */
-  tr:nth-child(even) td {
-    background-color: #fafafa;
-  }
+          /* Alternating row colors */
+          tr:nth-child(even) td {
+            background-color: #fafafa;
+          }
 
-  /* Hover highlight */
-  tr:hover td {
-    background-color: #e6f2ff;
-  }
+          /* Hover highlight */
+          tr:hover td {
+            background-color: #e6f2ff;
+          }
 
-  /* Fix width for table container */
-  div {
-    overflow-x: auto;
-    width: 100%;
-  }
-</style>
-<div>${html}</div>
-`;
+          /* Fix width for table container */
+          div {
+            overflow-x: auto;
+            width: 100%;
+          }
+        </style>
+        <div>${html}</div>
+        `;
         setExcelHtml(html);
       } catch (err) {
         console.error("Error rendering Excel:", err);
