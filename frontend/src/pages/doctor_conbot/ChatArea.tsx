@@ -80,6 +80,10 @@ const ChatArea: React.FC<Props> = ({
   const [pendingVideos, setPendingVideos] = useState<{ [key: string]: string }>(
     {}
   );
+  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
+  const [pendingImages, setPendingImages] = useState<{ [key: string]: string }>(
+    {}
+  );
 
   const userDetails = JSON.parse(localStorage.getItem("user") || "{}");
   const token = userDetails?.access_token;
@@ -89,18 +93,27 @@ const ChatArea: React.FC<Props> = ({
   const [hasReachedEnd] = useState(false);
 
   useEffect(() => {
-  Object.entries(pendingVideos).forEach(([key, url]) => {
-    if (url && !videoUrls[key]) {
-      loadVideoBlob(url, key);
-    }
-  });
-}, [pendingVideos]);
+    // Handle pending videos
+    Object.entries(pendingVideos).forEach(([key, url]) => {
+      if (url && !videoUrls[key]) {
+        loadVideoBlob(url, key);
+      }
+    });
+    
+    // Handle pending images
+    Object.entries(pendingImages).forEach(([key, url]) => {
+      if (url && !imageUrls[key]) {
+        loadImageBlob(url, key);
+      }
+    });
+  }, [pendingVideos, pendingImages]);
 
-useEffect(() => {
-  return () => {
-    Object.values(videoUrls).forEach((url) => URL.revokeObjectURL(url));
-  };
-}, []);
+  useEffect(() => {
+    return () => {
+      Object.values(videoUrls).forEach((url) => URL.revokeObjectURL(url));
+      Object.values(imageUrls).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   // ───────────────────────────────
   // Chat Loading
@@ -270,6 +283,27 @@ useEffect(() => {
   };
 
   // ───────────────────────────────
+  // Image Authorization Loader
+  // ───────────────────────────────
+  const loadImageBlob = async (url: string, key: string) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch image");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);      
+      setImageUrls((prev) => ({ ...prev, [key]: blobUrl }));
+    } catch (err) {
+      console.error("Error loading image:", err);
+    }
+  };
+
+  // ───────────────────────────────
   // Utility Helpers
   // ───────────────────────────────
   const getInitials = (name: string) =>
@@ -391,16 +425,18 @@ useEffect(() => {
                               {heading}
                             </Text>
                             {allMedia.map((mediaString, mediaIdx) => {
-                              const extractedUrl = mediaString?.startsWith(
-                                "http"
-                              )
+                              const extractedUrl = mediaString?.startsWith("http")
                                 ? mediaString
                                 : null;
                               const isVideo =
                                 Array.isArray(videos) &&
                                 videos.includes(mediaString);
+                              const isImage =
+                                Array.isArray(images) &&
+                                images.includes(mediaString);
                               const key = `${idx}-${mediaIdx}`;
 
+                              // Queue video for loading
                               if (
                                 isVideo &&
                                 extractedUrl &&
@@ -413,6 +449,19 @@ useEffect(() => {
                                 }));
                               }
 
+                              // Queue image for loading
+                              if (
+                                isImage &&
+                                extractedUrl &&
+                                !imageUrls[key] &&
+                                !pendingImages[key]
+                              ) {
+                                setPendingImages((prev) => ({
+                                  ...prev,
+                                  [key]: extractedUrl,
+                                }));
+                              }
+
                               return (
                                 <div
                                   key={key}
@@ -420,18 +469,19 @@ useEffect(() => {
                                 >
                                   <div className="max-w-[700px] max-h-[700px] overflow-hidden border rounded-lg shadow-sm">
                                     {isVideo ? (
-                                      <video
-                                        controls
-                                        className="w-full h-full object-contain"
-                                        src={videoUrls[key] || ""}
-                                      />
-                                    ) : (
-                                      <img
-                                        src={extractedUrl || ""}
-                                        alt={`Media ${mediaIdx + 1}`}
-                                        className="w-full h-full object-contain"
-                                      />
-                                    )}
+                                        <video
+                                          controls
+                                          className="w-full h-full object-contain"
+                                          src={videoUrls[key] || ""}
+                                        />
+                                      ) : isImage ? (
+                                        <img
+                                          src={imageUrls[key] || ""}
+                                          alt={`Image ${mediaIdx + 1}`}
+                                          className="w-full h-full object-contain"
+                                        />
+                                      ) : null
+                                    }
                                   </div>
                                 </div>
                               );
