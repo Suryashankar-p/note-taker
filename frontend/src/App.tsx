@@ -53,6 +53,9 @@ const CyberBuddyMain = lazy(
 const CyberBuddySettings = lazy(
   () => import("./pages/cyberbuddy/settings/Settings.tsx")
 );
+const HeatingOCRMain = lazy(
+  () => import("./pages/heating_ocr/OcrMain.tsx")
+);
 
 const App = () => (
   <Suspense fallback={<PageLoading />}>
@@ -106,6 +109,10 @@ const App = () => (
       <Route
         path="/ai-studio/cyberbuddy/settings"
         element={<ProtectedRoute element={<CyberBuddySettings />} />}
+      />
+      <Route
+        path="/ai-studio/heating_ocr"
+        element={<ProtectedRoute element={<HeatingOCRMain />} />}
       />
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>
