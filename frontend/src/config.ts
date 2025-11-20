@@ -6,5 +6,6 @@ export const ACTIVE_SERVICES = {
     "thermax_gpt": true,
     "doctor_conbot": true,
     "troubleshooting": true,
-    "cyberbuddy": true
+    "cyberbuddy": true,
+    "heating_ocr": true,
 }

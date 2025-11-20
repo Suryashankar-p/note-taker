@@ -7,6 +7,7 @@ const tbwes_BaseURL = import.meta.env.VITE_BACKEND_TBWES_OCR_URL || window.env?.
 const troubleshoot_BaseURL = import.meta.env.VITE_BACKEND_SMART_TROUBLESHOOT_URL || window.env?.BACKEND_SMART_TROUBLESHOOT_URL;
 const doctorBot_BaseURL = import.meta.env.VITE_BACKEND_DOCTOR_CONBOT_URL || window.env?.BACKEND_DOCTOR_CONBOT_URL;
 const cyberbuddy_BaseURL = import.meta.env.VITE_BACKEND_CYBERBUDDY_URL || window.env?.BACKEND_CYBERBUDDY_URL;
+const heatingOCR_BaseURL = import.meta.env.VITE_BACKEND_HEATING_OCR_URL || window.env?.BACKEND_HEATING_OCR_URL;
 
 export const axiosSSO: AxiosInstance = axios.create({
   baseURL: sso_BaseURL,
@@ -40,5 +41,10 @@ export const axiosDoctorBot: AxiosInstance = axios.create({
 
 export const axiosCyberbuddy: AxiosInstance = axios.create({
   baseURL: cyberbuddy_BaseURL,
+  timeout: 300000,
+});
+
+export const axiosHeatingOCR: AxiosInstance = axios.create({
+  baseURL: heatingOCR_BaseURL,
   timeout: 300000,
 });
