@@ -18,6 +18,7 @@ services:
         VITE_BACKEND_SALES_URL: "http://sales-service:3005"
         VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
         VITE_BACKEND_CYBERBUDDY_URL: "http://cyberbuddy-service:3007"
+        VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008"
         VITE_ROOT_PATH: "genaistudio"
     environment:
       VITE_ENABLE_SSO: "true"
@@ -31,6 +32,7 @@ services:
       VITE_BACKEND_SALES_URL: "http://sales-service:3005"
       VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
       VITE_BACKEND_CYBERBUDDY_URL: "http://cyberbuddy-service:3007"
+      VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008"
       VITE_ROOT_PATH: "genaistudio"
     ports:
       - "3000:80" 
