@@ -293,11 +293,29 @@ const ChatArea: React.FC<Props> = ({
           Authorization: `Bearer ${token}`,
         },
       });
-      
-      if (!response.ok) throw new Error("Failed to fetch image");
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);      
-      setImageUrls((prev) => ({ ...prev, [key]: blobUrl }));
+      if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);      
+      const contentType = response.headers.get('content-type');      
+      if (contentType && contentType.includes('application/json')) {
+        const jsonData = await response.json();        
+        if (jsonData.type === "base64" && jsonData.link) {
+          setImageUrls((prev) => ({ ...prev, [key]: jsonData.link }));
+        } else if (jsonData.link || jsonData.url || jsonData.image_url) {
+          const actualImageUrl = jsonData.link || jsonData.url || jsonData.image_url;
+          const imageResponse = await fetch(actualImageUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (!imageResponse.ok) throw new Error("Failed to fetch actual image");
+          const imageBlob = await imageResponse.blob();
+          const blobUrl = URL.createObjectURL(imageBlob);
+          setImageUrls((prev) => ({ ...prev, [key]: blobUrl }));
+        }
+      } else {
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        setImageUrls((prev) => ({ ...prev, [key]: blobUrl }));
+      }
     } catch (err) {
       console.error("Error loading image:", err);
     }
