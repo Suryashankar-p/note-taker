@@ -293,10 +293,12 @@ const ChatArea: React.FC<Props> = ({
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log("Response:", response);      
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);      
       const contentType = response.headers.get('content-type');      
       if (contentType && contentType.includes('application/json')) {
-        const jsonData = await response.json();        
+        const jsonData = await response.json();
+        console.log("JSON Data:", jsonData);
         if (jsonData.type === "base64" && jsonData.link) {
           setImageUrls((prev) => ({ ...prev, [key]: jsonData.link }));
         } else if (jsonData.link || jsonData.url || jsonData.image_url) {
