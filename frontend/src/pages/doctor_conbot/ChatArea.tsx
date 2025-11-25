@@ -297,10 +297,7 @@ const ChatArea: React.FC<Props> = ({
       // });
       const response =  await DoctorBotAPI.get(url);
       console.log("Response:", response);
-      if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
-      const jsonData = await response.json();
-      console.log("JSON Data:", jsonData);
-      setImageUrls((prev) => ({ ...prev, [key]: jsonData.link }));
+      setImageUrls((prev) => ({ ...prev, [key]: response.link }));
     } catch (err) {
       console.error("Error loading image:", err);
     }
