@@ -41,6 +41,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { DoctorBotAPI } from "../../services/Axios.ts";
 
 interface Props {
   onNewChatAddition: () => void;
@@ -289,11 +290,12 @@ const ChatArea: React.FC<Props> = ({
     console.log("In the function loadImageBlob");
     try {
       const token = localStorage.getItem("access_token");
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // const response = await fetch(url, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // });
+      const response =  await DoctorBotAPI.get(url);
       console.log("Response:", response);
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
       const jsonData = await response.json();
