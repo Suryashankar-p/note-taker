@@ -237,22 +237,15 @@ const Documents = () => {
   const onFileClick = async (file: any) => {
     try {
       const linkResp = await ReadDocumentUrl(file.id);
-
-      if (linkResp?.link) {
-        let fileInfo: any = {
-          name: file.filename,
-          type: getFileType(file?.filename),
-          url: linkResp?.link,
-        };
-        setFileData(fileInfo);
-        setFileShow(true);
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
-      }
+      const blobUrl = URL.createObjectURL(linkResp.data);
+      console.log(blobUrl)
+      let fileInfo: any = {
+        name: file.filename,
+        type: getFileType(file?.filename),
+        url: blobUrl,
+      };
+      setFileData(fileInfo);
+      setFileShow(true);
     } catch (err) {
       console.log("err", err);
     }

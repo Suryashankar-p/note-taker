@@ -20,6 +20,7 @@ import {
   DeleteChatHistory,
   ReadChatHistories,
   updateChatHistory,
+  ReadDocumentUrl,
 } from "../../services/cyberbuddy.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -305,14 +306,13 @@ const ChatArea: React.FC<Props> = ({
 
   const onFileClick = async (file: any) => {
     console.log("PDF file clicked:", file);
-    if (!file?.link) {
-      return;
-    }
     try {
+      const linkResp = await ReadDocumentUrl(file.id);
+      const blobUrl = URL.createObjectURL(linkResp.data);
       let fileInfo: any = {
         name: file.name,
         type: getFileType(file?.name),
-        url: file?.link,
+        url: blobUrl,
       };
       setFileData(fileInfo);
       setFileShow(true);
