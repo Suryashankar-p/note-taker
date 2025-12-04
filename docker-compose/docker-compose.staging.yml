@@ -19,7 +19,7 @@ services:
         VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
         VITE_BACKEND_CYBERBUDDY_URL: "http://cyberbuddy-service:3007"
         VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008"
-        VITE_ROOT_PATH: "genaistudio"
+        VITE_ROOT_PATH: "genaistudio1"
     environment:
         ENABLE_SSO: ${VITE_ENABLE_SSO}
         ADMIN_USER_EMAIL: ${VITE_FIRST_USER_EMAIL}
