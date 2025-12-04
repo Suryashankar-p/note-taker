@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Text from '../../components/Text';
 import Cost from './Cost';
 import Activity from './ActivityPage';
 import Topactivity from './Topactivity';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import {ReadOCRActivityStatus, ReadOCRActivityUsage, ReadOCRCostUsage, ReadOCRTopUsers, ReadOCRUsageLimit, UpdateOCRUsageLimit } from '../../services/tbwes_ocr.ts';
+import {ReadOCRActivityStatus, ReadOCRActivityUsage, ReadOCRCostUsage, ReadOCRTopUsers, ReadOCRUsageLimit, UpdateOCRUsageLimit } from '../../services/heating_ocr.ts';
 import { useDispatch, useSelector } from 'react-redux';
 import { Dispatch, RootState } from '../../redux/store';
 import Toast from '../../components/Toast';
@@ -20,6 +20,12 @@ type Calendar = {
   year: string;
   month: string;
 }
+
+type Page = {
+  skip: number;
+  limit: number;
+};
+
 
 const Usage = () => {
   
@@ -37,12 +43,16 @@ const Usage = () => {
   const [topUsers, setTopUsers] = useState<any | null>(null);
   const [pageError, setPageError] = useState<boolean>(false)
   const [activityStatus, setActivityStatus] = useState<any | null>(null);
+  const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
+
     getCostUsage(currentYear, currentMonth);
     getUsageLimit();
     getActivityUsage(currentYear, currentMonth);
-    getActivityTopUsers(currentYear, currentMonth, 3);
+    getActivityTopUsers(calendar.year, calendar.month, page.skip, page.limit);
     getActivityStatus(currentYear, currentMonth)
   }, []);
 
@@ -63,27 +73,42 @@ const Usage = () => {
     }
   }
 
-  const getActivityTopUsers = async (year: string | number, month: string | number, n: number) => {
+  const getActivityTopUsers = async (
+    year: string | number,
+    month: string | number,
+    skip: number,
+    limit: number
+  ) => {
+    if (totalUsers !== 0 && skip >= totalUsers) return; // Prevent unnecessary fetch
+
     try {
-      const topUserResponse = await ReadOCRTopUsers(year, month, n)
+      const topUserResponse = await ReadOCRTopUsers(year, month, skip, limit);
+
       if (topUserResponse?.result) {
-        setTopUsers(topUserResponse?.result)
-      }
-      else {
+        setTopUsers((prevData: any) =>
+          skip === 0
+            ? topUserResponse.result
+            : [...(prevData || []), ...topUserResponse.result]
+        );
+        setTotalUsers(topUserResponse.total || 0);
+      } else {
         setPageError(true);
-        setTopUsers(null)
-      //  if (topUserResponse?.detail) dispatch.toast.openToast({ status: true, message: topUserResponse?.detail });
+        setTopUsers(null);
+        // Optionally show detail in a toast
+        // if (topUserResponse?.detail) {
+        //   dispatch.toast.openToast({ status: true, message: topUserResponse.detail });
+        // }
       }
-    }
-    catch (err) {
-      setPageError(true)
+    } catch (err) {
+      setPageError(true);
       dispatch.toast.openToast({
         status: true,
         message: "Error fetching data",
         type: "error",
       });
     }
-  }
+  };
+
   const getActivityUsage = async (year: string | number, month: string | number) => {
     try {
       const activityResponse = await ReadOCRActivityUsage(year, month)
@@ -152,12 +177,24 @@ const Usage = () => {
     }
   }
 
+  const reachedBottom = async () => {
+    if (loadingRef.current) return;
+    if (!topUsers || topUsers.length >= totalUsers) return;
+
+    loadingRef.current = true;
+    const newSkip = topUsers.length;
+    setPage((prev) => ({ ...prev, skip: newSkip }));
+
+    await getActivityTopUsers(calendar.year, calendar.month, newSkip, page.limit);
+    loadingRef.current = false;
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'cost':
         return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calendar.month} />;
       case 'activity':
-        return <Topactivity activityData={activityData} month={calendar.month} topUsers={topUsers} activityStatus={activityStatus} />;
+        return <Topactivity activityData={activityData} month={calendar.month} topUsers={topUsers} activityStatus={activityStatus} reachedBottom={reachedBottom}/>;
       default:
         return null;
     }
@@ -191,7 +228,7 @@ const Usage = () => {
       getCostUsage(data, calendar.month);
       getActivityUsage(data, calendar.month);
       getActivityStatus(data, calendar.month);
-      getActivityTopUsers(data, calendar.month, 3);
+      getActivityTopUsers(data, calendar.month, 0, 4);
     }
   };
 
@@ -201,7 +238,7 @@ const Usage = () => {
       getCostUsage(calendar.year, data);
       getActivityUsage(calendar.year, data);
       getActivityStatus(calendar.year, data);
-      getActivityTopUsers(calendar.year, data, 3);
+      getActivityTopUsers(calendar.year, data, 0, 4);
     }
   };
 
@@ -214,7 +251,7 @@ const Usage = () => {
         </div>
       )}
       <TabGroup>
-        <div className="flex relative justify-between items-center mt-5 mb-6">
+        <div className="flex relative justify-between items-center mt-5 mb-6 xl:gap-12">
           <TabList className="flex space-x-2">
             {tabs.map(tab => (
               <Tab
@@ -235,7 +272,7 @@ const Usage = () => {
             <MonthButton onSubmit={onMonthChange} />
           </div>
         </div>
-        <TabPanels className="bg-white h-[22rem] rounded-lg shadow-lg border border-gray-200">
+        <TabPanels className="bg-white h-[22rem] xl:h-[24rem] rounded-lg shadow-lg border border-gray-200">
           {tabs.map(tab => (
             <TabPanel key={tab.key} className='h-full'>
               {renderContent()}

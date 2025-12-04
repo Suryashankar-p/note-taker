@@ -7,6 +7,8 @@ import { GetMemberOCRRole } from "../services/tbwes_ocr.ts";
 import { GetMemberGPTRole } from "../services/thermax_gpt.ts";
 import { GetMemberDoctorConbotRole } from "../services/doctor_conbot.ts";
 import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
+import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
+import { GetHeatingOCRRole} from "../services/heating_ocr.ts"
 
 type Type =
   | "sales"
@@ -17,7 +19,9 @@ type Type =
   | "doctor_conbot"
   | "troubleshooting"
   | "ciso_bot"
-  | "transmitter_ocr";
+  | "transmitter_ocr"
+  | "cyberbuddy"
+  | "heating_ocr";
 
 const useApiCheck = (type?: Type) => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -34,6 +38,10 @@ const useApiCheck = (type?: Type) => {
         return await GetMemberDoctorConbotRole();
       case "troubleshooting":
         return await GetMemberTroubleshootingRole();
+      case "cyberbuddy":
+        return await GetMemberCyberBuddyRole();
+      case "heating_ocr":
+        return await GetHeatingOCRRole();
       default:
         return null;
     }

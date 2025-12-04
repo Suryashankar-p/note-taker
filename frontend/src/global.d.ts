@@ -14,6 +14,8 @@ declare global {
       BACKEND_SMART_TROUBLESHOOT_URL: string;
       BACKEND_SALES_URL: string;
       BACKEND_TBWES_OCR_URL: string;
+      BACKEND_CYBERBUDDY_URL: string;
+      BACKEND_HEATING_OCR_URL: string;
     };
   }
 }

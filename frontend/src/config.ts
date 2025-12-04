@@ -5,5 +5,7 @@ export const ACTIVE_SERVICES = {
     "training_qa": true,
     "thermax_gpt": true,
     "doctor_conbot": true,
-    "troubleshooting": true
+    "troubleshooting": true,
+    "cyberbuddy": true,
+    "heating_ocr": true,
 }
