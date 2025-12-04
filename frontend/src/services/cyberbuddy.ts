@@ -183,6 +183,7 @@ export const PollDocumentStatus = async (document_id: string | number) => {
 };
 
 export const ReadDocumentUrl = async (document_id: string | number) => {
+  console.log("hereeeee", document_id);
   const response = await CyberbuddyAPI.get(BACKEND_CYBERBUDDY_URL + `/cyberbuddy/document/${document_id}/link`)
   return response
 }
