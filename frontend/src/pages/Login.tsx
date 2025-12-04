@@ -22,9 +22,13 @@ const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const toastStatus = useSelector((state: RootState) => state.toast);
   const dispatch = useDispatch<Dispatch>();
+  const redirectTo = searchParams.get("redirect") || "/ai-studio";
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  const state = urlParams.get("state");
 
   useEffect(() => {
-    if (searchParams.toString() !== "" && ENABLE_SSO === "true") {
+    if (code !== null && ENABLE_SSO === "true") {
       onAuth(searchParams.toString());
       dispatch.toast.openToast({
         status: true,
@@ -40,14 +44,15 @@ const LoginPage = () => {
       if (response?.access_token) {
         localStorage.setItem("access_token", response?.access_token);
         localStorage.removeItem("chat_id");
-        navigate("/ai-studio");
+        // navigate("/ai-studio");
+        navigate(state, { replace: true });
       } else {
         dispatch.toast.openToast({
           status: true,
           message: "Login Failed",
           type: "error",
         });
-        navigate("/");
+        navigate(state);
       }
     } catch (err) {
       console.log(err);
@@ -59,10 +64,11 @@ const LoginPage = () => {
     }
   };
 
+
   const onLoginClick = async () => {
     if (ENABLE_SSO === "true") {
       try {
-        const response = await getAuthUrl();
+        const response = await getAuthUrl(redirectTo);
         if (response) {
           window.location.href = response;
         }
@@ -98,7 +104,8 @@ const LoginPage = () => {
         if (response) {
           localStorage.setItem("access_token", response?.access_token);
           localStorage.removeItem("chat_id");
-          navigate("/ai-studio");
+          const redirectTo = searchParams.get("redirect") || "/ai-studio";
+          navigate(redirectTo, { replace: true });
         } else {
           dispatch.toast.openToast({
             status: true,
