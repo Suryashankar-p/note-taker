@@ -308,6 +308,7 @@ const ChatArea: React.FC<Props> = ({
     console.log("PDF file clicked:", file);
     try {
       const linkResp = await ReadDocumentUrl(file.product_id);
+      console.log("Got API response");      
       const blobUrl = URL.createObjectURL(linkResp.data);
       let fileInfo: any = {
         name: file.name,
