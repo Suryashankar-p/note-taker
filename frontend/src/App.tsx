@@ -5,6 +5,7 @@ import {
   Routes,
   useNavigate,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import LoginPage from "./pages/Login";
 import PageNotFound from "./assets/PageNotFound";
@@ -16,16 +17,21 @@ const isAuthenticated = () => {
 };
 
 const ProtectedRoute = ({ element }: any) => {
-  const navigate = useNavigate();
+  const location = useLocation();
 
   if (isAuthenticated()) {
     return element;
   } else {
-    navigate("/", { replace: true });
-    return <Navigate to="/" replace />;
+    // Remove the base path `/genaistudio` if present
+    const currentPath = location.pathname.replace(/^\/genaistudio/, "");
+    return (
+      <Navigate
+        to={`/login?redirect=${encodeURIComponent(currentPath)}`}
+        replace
+      />
+    );
   }
 };
-
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ChatPage = lazy(() => import("./pages/sales/ChatPageMain"));
 const Settings = lazy(() => import("./pages/sales/settings/Settings"));
