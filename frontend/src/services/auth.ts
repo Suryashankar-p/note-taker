@@ -35,8 +35,12 @@ export const loginApi = async (body: any): Promise<LoginResponse | null> => {
   }
 };
 
-export const getAuthUrl = async () => {
-  const response = await SSOAPI.get(BACKEND_SSO_URL + "/microsoft/login");
+// export const getAuthUrl = async () => {
+//   const response = await SSOAPI.get(BACKEND_SSO_URL + "/microsoft/login");
+//   return response;
+// }
+export const getAuthUrl = async (redirectUrl: string) => {
+  const response = await SSOAPI.get(BACKEND_SSO_URL + `/microsoft/login?redirect=${redirectUrl}`);
   return response;
 }
 

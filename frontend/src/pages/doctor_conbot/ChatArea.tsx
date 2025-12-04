@@ -554,7 +554,7 @@ const ChatArea: React.FC<Props> = ({
       )}
 
       {/* Input Bar */}
-      <div className="fixed lg:bottom-10 lg:left-60 right-0 flex justify-center bg-inherit">
+      <div className="top-[84vh] left-84 px-4 self-center w-100 fixed bg-inherit flex">
         <Input
           disabled={loading || disabled}
           onKeyDown={onKeyDown}
