@@ -18,7 +18,7 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   // const env = loadEnv(mode, process.cwd(), '')
-  const basePath = 'genaistudio'
+  const basePath = 'genaistudio1'
 
   return {
     plugins: [react()],
