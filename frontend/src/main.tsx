@@ -7,11 +7,11 @@ import store from "./redux/store.ts";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Need to change this line
-const ROOT_PATH = 'genaistudio1'
+// const ROOT_PATH = 'genaistudio1'
 
 const queryClient = new QueryClient();
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <BrowserRouter basename={`/${ROOT_PATH}/`}> 
+  <BrowserRouter basename={`/`}> 
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <App />
