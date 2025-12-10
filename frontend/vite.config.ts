@@ -18,13 +18,13 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   // const env = loadEnv(mode, process.cwd(), '')
-  const basePath = 'genaistudio1'
+  // const basePath = '/'
 
   return {
     plugins: [react()],
-    base: `/${basePath}/`,
+    base: `/`,
     build: {
-      outDir: `dist/${basePath}`, // dynamic output folder
+      outDir: `dist/`, // dynamic output folder
       assetsDir: 'assets',
     },
     preview: {
