@@ -1,10 +1,5 @@
 import {SSOAPI } from "./Axios";
-
-// const ROOT_PATH = 'http://localhost/api'
-// const BACKEND_SSO_URL = import.meta.env.VITE_BACKEND_SSO_URL;
 const BACKEND_SSO_URL = window.env?.BACKEND_SSO_URL || import.meta.env.VITE_BACKEND_SSO_URL;
-
-
 
 //<======================User details and services and roles====================>
 

@@ -52,7 +52,6 @@ export const CyberbuddyAPI = createAPI(axiosCyberbuddy);
 export const HeatingOCRAPI = createAPI(axiosHeatingOCR);
 
 export async function redirectToLogin(): Promise<void> {
-  const basePath = window.env?.ROOT_PATH || import.meta.env.VITE_ROOT_PATH;
-  window.location.href = `/${basePath}/`;
+  window.location.href = `/`;
   localStorage.clear();
 }
