@@ -11,6 +11,13 @@ services:
         VITE_FIRST_USER_EMAIL: "admin@example.com"
         VITE_DOMAIN: "staging.thermax.thoughtmlabs.com"
         VITE_URL_PREFIX: "/thermax"
+        VITE_THERMAX_GPT: "true"
+        VITE_SALES: "true"
+        VITE_TBWES_OCR: "true"
+        VITE_SMART_TROUBLESHOOT: "true"
+        VITE_DOCTOR_CONBOT: "true"
+        VITE_CYBERBUDDY: "true"
+        VITE_HEATING_OCR: "true"
         VITE_BACKEND_SSO_URL: "http://sso-service:3001"
         VITE_BACKEND_THERMAX_GPT_URL: "http://gpt-service:3002"
         VITE_BACKEND_DOCTOR_CONBOT_URL: "http://doctor-service:3003"
@@ -19,12 +26,18 @@ services:
         VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
         VITE_BACKEND_CYBERBUDDY_URL: "http://cyberbuddy-service:3007"
         VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008"
-        VITE_ROOT_PATH: "genaistudio1"
     environment:
         ENABLE_SSO: ${VITE_ENABLE_SSO}
         ADMIN_USER_EMAIL: ${VITE_FIRST_USER_EMAIL}
         DOMAIN: ${VITE_DOMAIN}
         URL_PREFIX: ${VITE_URL_PREFIX}
+        THERMAX_GPT: ${VITE_THERMAX_GPT}
+        SALES: ${VITE_SALES}
+        TBWES_OCR: ${VITE_TBWES_OCR}
+        SMART_TROUBLESHOOT: ${VITE_SMART_TROUBLESHOOT}
+        DOCTOR_CONBOT: ${VITE_DOCTOR_CONBOT}
+        CYBERBUDDY: ${VITE_CYBERBUDDY}
+        HEATING_OCR: ${VITE_HEATING_OCR}
         BACKEND_SSO_URL: ${VITE_BACKEND_SSO_URL}
         BACKEND_THERMAX_GPT_URL: ${VITE_BACKEND_THERMAX_GPT_URL}
         BACKEND_DOCTOR_CONBOT_URL: ${VITE_BACKEND_DOCTOR_CONBOT_URL}
@@ -33,7 +46,6 @@ services:
         BACKEND_TBWES_OCR_URL: ${VITE_BACKEND_TBWES_OCR_URL}
         BACKEND_CYBERBUDDY_URL: ${VITE_BACKEND_CYBERBUDDY_URL}
         BACKEND_HEATING_OCR_URL: ${VITE_BACKEND_HEATING_OCR_URL}
-        ROOT_PATH: ${VITE_ROOT_PATH}
     ports:
       - "3000:80"  
     restart: unless-stopped

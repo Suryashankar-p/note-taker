@@ -593,7 +593,7 @@ const ActivityDetailPage: React.FC = () => {
             <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
               <Toast
                 onClose={() =>
-                  (window.location.href = "/genaistudio/ai-studio/heating_ocr")
+                  (window.location.href = "/ai-studio/heating_ocr")
                 }
                 type="success"
               />

@@ -22,8 +22,7 @@ const ProtectedRoute = ({ element }: any) => {
   if (isAuthenticated()) {
     return element;
   } else {
-    // Remove the base path `/genaistudio` if present
-    const currentPath = location.pathname.replace(/^\/genaistudio/, "");
+    const currentPath = location.pathname;
     return (
       <Navigate
         to={`/login?redirect=${encodeURIComponent(currentPath)}`}

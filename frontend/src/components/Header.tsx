@@ -9,7 +9,6 @@ import { Dispatch, RootState } from "../redux/store";
 import { GetUserDetails } from "../services/common.ts";
 import { useLocalStorageListener } from "../hooks/useLocalStorage.ts";
 import { useNavigate } from "react-router-dom";
-// Assuming you have the Avatar component as a separate file or component
 
 type breadCrumbs = {
   title: string;
@@ -22,12 +21,11 @@ interface InputProps {
 
 const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
-  const baseUrl = "/genaistudio1";
   useLocalStorageListener("user", (newValue, oldValue) => {
     getUserInfo();
   });
   const dispatch = useDispatch<Dispatch>();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (Object.keys(userData).length < 1) {
@@ -41,7 +39,6 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
     try {
       const user = await GetUserDetails();
       if (user?.id) {
-        // dispatch.userDetails.setUser(user)
         localStorage.setItem("user", JSON.stringify(user));
         userDetails = user;
       }
@@ -78,10 +75,7 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
 
     return (
       <div className="relative flex items-center justify-center mr-3">
-        {/* Green dot for online status */}
         <div className="absolute -bottom-1 right-0 border-2 border-white w-3 h-3 bg-green-500 rounded-full"></div>
-
-        {/* User initials */}
         <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
           <span className="text-background">
             {userDetails && getInitials(userDetails?.name)}
@@ -107,7 +101,7 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
                 <React.Fragment key={key}>
                   <li>
                     <a
-                      href={baseUrl + item.url}
+                      href={item.url}
                       className={`text-${
                         key < breadCrumbs?.length - 1 ? "gray-600" : "link_text"
                       } hover:text-gray-800`}
