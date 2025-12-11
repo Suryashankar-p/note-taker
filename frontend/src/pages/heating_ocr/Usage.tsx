@@ -3,8 +3,9 @@ import Text from '../../components/Text';
 import Cost from './Cost';
 import Activity from './ActivityPage';
 import Topactivity from './Topactivity';
+import DropDownButton from '../../components/DropDownButton';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import {ReadOCRActivityStatus, ReadOCRActivityUsage, ReadOCRCostUsage, ReadOCRTopUsers, ReadOCRUsageLimit, UpdateOCRUsageLimit } from '../../services/heating_ocr.ts';
+import {ReadOCRActivityStatus, ReadOCRActivityUsage, ReadOCRCostUsage, ReadOCRTopUsers, ReadOCRUsageLimit, UpdateOCRUsageLimit, ReadOCRActivityUsageByYear, ReadOCRCostUsageByYear } from '../../services/heating_ocr.ts';
 import { useDispatch, useSelector } from 'react-redux';
 import { Dispatch, RootState } from '../../redux/store';
 import Toast from '../../components/Toast';
@@ -26,18 +27,20 @@ type Page = {
   limit: number;
 };
 
+type PeriodType = 'monthly' | 'yearly';
 
 const Usage = () => {
   
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
-  const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth is zero-indexed, so add 1
+  const currentMonth = (currentDate.getMonth() + 1).toString();
 
   const [activeTab, setActiveTab] = useState<'cost' | 'activity'>('cost');
   const [calendar, setCalendar] = useState<Calendar>({ year: currentYear, month: currentMonth });
   const [usageData, setUsageData] = useState<any | null>(null);
   const [activityData, setActivityData] = useState<any | null>(null);
   const [limit, setLimit] = useState<number | null>(null);
+  const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const toastStatus = useSelector((state: RootState) => state.toast.status);
   const dispatch = useDispatch<Dispatch>();
   const [topUsers, setTopUsers] = useState<any | null>(null);
@@ -48,13 +51,19 @@ const Usage = () => {
   const loadingRef = useRef(false);
 
   useEffect(() => {
-
-    getCostUsage(currentYear, currentMonth);
-    getUsageLimit();
-    getActivityUsage(currentYear, currentMonth);
-    getActivityTopUsers(calendar.year, calendar.month, page.skip, page.limit);
-    getActivityStatus(currentYear, currentMonth)
-  }, []);
+    if (periodType === 'monthly') {
+      getCostUsage(currentYear, currentMonth);
+      getUsageLimit();
+      getActivityUsage(currentYear, currentMonth);
+      getActivityTopUsers(calendar.year, calendar.month, page.skip, page.limit);
+      getActivityStatus(currentYear, currentMonth)
+    } else {
+      getYearCostUsage(currentYear);
+      getUsageLimit();
+      getYearActivityUsage(currentYear);
+      getActivityTopUsers(calendar.year, calendar.month, page.skip, page.limit);
+    }
+  }, [periodType]);
 
   const getActivityStatus = async (year: string | number, month: string | number,) => {
     try {
@@ -79,7 +88,7 @@ const Usage = () => {
     skip: number,
     limit: number
   ) => {
-    if (totalUsers !== 0 && skip >= totalUsers) return; // Prevent unnecessary fetch
+    if (totalUsers !== 0 && skip >= totalUsers) return;
 
     try {
       const topUserResponse = await ReadOCRTopUsers(year, month, skip, limit);
@@ -94,10 +103,6 @@ const Usage = () => {
       } else {
         setPageError(true);
         setTopUsers(null);
-        // Optionally show detail in a toast
-        // if (topUserResponse?.detail) {
-        //   dispatch.toast.openToast({ status: true, message: topUserResponse.detail });
-        // }
       }
     } catch (err) {
       setPageError(true);
@@ -118,7 +123,27 @@ const Usage = () => {
       else {
         setPageError(true);
         setActivityData(null)
-     //   if (activityResponse?.detail) dispatch.toast.openToast({ status: true, message: activityResponse?.detail });
+      }
+    }
+    catch (err) {
+      setPageError(true)
+      dispatch.toast.openToast({
+        status: true,
+        message: "Error fetching data",
+        type: "error",
+      });
+    }
+  }
+
+  const getYearActivityUsage = async (year: string | number) => {
+    try {
+      const activityResponse = await ReadOCRActivityUsageByYear(year)
+      if (activityResponse?.activity) {
+        setActivityData(activityResponse)
+      }
+      else {
+        setPageError(true);
+        setActivityData(null)
       }
     }
     catch (err) {
@@ -139,7 +164,6 @@ const Usage = () => {
       }
       else {
         setPageError(true)
-    //    if(limitResponse?.detail) dispatch.toast.openToast({ message: limitResponse?.detail, status: true })
       }
     }
     catch (err) {
@@ -153,7 +177,6 @@ const Usage = () => {
   }
 
   const onLimitEdit = async (data: any) => {
-
     if (data?.limit) {
       try {
         const response = await UpdateOCRUsageLimit(data?.limit)
@@ -163,7 +186,6 @@ const Usage = () => {
         }
         else {
           setPageError(true)
-      //    if (response?.detail) dispatch.toast.openToast({ message: response?.detail, status: true, type:'error' })
         }
       }
       catch (err) {
@@ -192,9 +214,9 @@ const Usage = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'cost':
-        return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calendar.month} />;
+        return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calendar.month} periodType={periodType} />;
       case 'activity':
-        return <Topactivity activityData={activityData} month={calendar.month} topUsers={topUsers} activityStatus={activityStatus} reachedBottom={reachedBottom}/>;
+        return <Topactivity activityData={activityData} month={calendar.month} topUsers={topUsers} activityStatus={activityStatus} reachedBottom={reachedBottom} />;
       default:
         return null;
     }
@@ -209,7 +231,27 @@ const Usage = () => {
       else {
         setPageError(true)
         setUsageData(null)
-      //  if(usageResponse?.detail) dispatch.toast.openToast({message: usageResponse?.detail, status: true, type: 'error'})
+      }
+    }
+    catch (err) {
+      setPageError(true)
+      dispatch.toast.openToast({
+        status: true,
+        message: "Error fetching data",
+        type: "error",
+      });
+    }
+  }
+
+  const getYearCostUsage = async (year: string) => {
+    try {
+      const usageResponse = await ReadOCRCostUsageByYear(year)
+      if (usageResponse?.cost) {
+        setUsageData(usageResponse)
+      }
+      else {
+        setPageError(true)
+        setUsageData(null)
       }
     }
     catch (err) {
@@ -225,10 +267,16 @@ const Usage = () => {
   const onYearChange = (data: string) => {
     if (data !== calendar?.year) {
       setCalendar({ ...calendar, year: data });
-      getCostUsage(data, calendar.month);
-      getActivityUsage(data, calendar.month);
-      getActivityStatus(data, calendar.month);
-      getActivityTopUsers(data, calendar.month, 0, 4);
+      if (periodType === 'monthly') {
+        getCostUsage(data, calendar.month);
+        getActivityUsage(data, calendar.month);
+        getActivityStatus(data, calendar.month);
+        getActivityTopUsers(data, calendar.month, 0, 4);
+      } else {
+        getYearCostUsage(data);
+        getYearActivityUsage(data);
+        getActivityTopUsers(data, calendar.month, 0, 4);
+      }
     }
   };
 
@@ -240,6 +288,10 @@ const Usage = () => {
       getActivityStatus(calendar.year, data);
       getActivityTopUsers(calendar.year, data, 0, 4);
     }
+  };
+
+  const onPeriodChange = (data: string) => {
+    setPeriodType(data as PeriodType);
   };
 
   return (
@@ -268,8 +320,23 @@ const Usage = () => {
             ))}
           </TabList>
           <div className='flex gap-4 items-center'>
-            <YearButton onSubmit={onYearChange} />
-            <MonthButton onSubmit={onMonthChange} />
+            <DropDownButton 
+              options={[
+                { label: 'Monthly', value: 'monthly' },
+                { label: 'Yearly', value: 'yearly' }
+              ]}
+              onSelect={onPeriodChange}
+              defaultValue='monthly'
+            />
+            {periodType === 'monthly' && (
+              <>
+                <YearButton onSubmit={onYearChange} />
+                <MonthButton onSubmit={onMonthChange} />
+              </>
+            )}
+            {periodType === 'yearly' && (
+              <YearButton onSubmit={onYearChange} />
+            )}
           </div>
         </div>
         <TabPanels className="bg-white h-[22rem] xl:h-[24rem] rounded-lg shadow-lg border border-gray-200">
@@ -292,18 +359,16 @@ interface ButtonProps {
 
 const MonthButton: React.FC<ButtonProps> = ({ onSubmit }) => {
 
-  const currentMonth = new Date().getMonth(); // Get current month (0-indexed)
+  const currentMonth = new Date().getMonth();
   const [monthIndex, setMonthIndex] = useState<number>(currentMonth);
 
   const handlePrevMonth = () => {
-
     const newIndex = monthIndex === 0 ? 11 : monthIndex - 1;
     setMonthIndex(newIndex);
     onSubmit((newIndex + 1).toString());
   };
 
   const handleNextMonth = () => {
-
     const newIndex = monthIndex === 11 ? 0 : monthIndex + 1;
     setMonthIndex(newIndex);
     onSubmit((newIndex + 1).toString());
@@ -326,14 +391,12 @@ const YearButton: React.FC<ButtonProps> = ({ onSubmit }) => {
   const [yearIndex, setYearIndex] = useState<number>(currentYearIndex);
 
   const handlePrevYear = () => {
-
     const newIndex = yearIndex === 0 ? yearIndex : yearIndex - 1;
     setYearIndex(newIndex);
     onSubmit(years[newIndex]);
   };
 
   const handleNextYear = () => {
-
     const newIndex = yearIndex === years.length - 1 ? yearIndex : yearIndex + 1;
     setYearIndex(newIndex);
     onSubmit(years[newIndex]);

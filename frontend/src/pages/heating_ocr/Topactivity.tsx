@@ -24,13 +24,15 @@ ChartJS.register(
   ArcElement
 );
 
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 interface Props {
   activityData: any;
   month: any;
   topUsers: any;
   activityStatus: any;
   reachedBottom: () => void;
-
+  periodType: 'monthly' | 'yearly';
 }
 
 export default function Activity1({
@@ -38,22 +40,36 @@ export default function Activity1({
   month,
   topUsers,
   activityStatus,
-  reachedBottom
+  reachedBottom,
+  periodType
 }: Props) {
   const totalQuestions = activityData?.total || 0;
 
+  // Get labels based on period type
+  const getLabels = () => {
+    if (periodType === 'yearly') {
+      return monthNames; // Jan, Feb, Mar, etc.
+    }
+    return activityData?.day || [];
+  };
+
+  // Get chart data
+  const getChartData = () => {
+    return activityData?.activity || [];
+  };
+
   const data = {
-    labels: activityData?.day || [],
+    labels: getLabels(),
     datasets: [
       {
         label: "activities",
-        data: activityData?.activity || [],
+        data: getChartData(),
         backgroundColor: "rgba(255, 99, 132, 0.5)",
       },
     ],
   };
 
-  const options = {
+  const options: any = {
     responsive: true,
     plugins: {
       legend: {
@@ -62,12 +78,16 @@ export default function Activity1({
       },
       title: {
         display: true,
-        text: `Monthly Activities: ${totalQuestions}`,
+        text: periodType === 'yearly' 
+          ? `Annual Activities: ${totalQuestions}`
+          : `Monthly Activities: ${totalQuestions}`,
       },
       tooltip: {
         callbacks: {
           title: (tooltipItems: any) => {
-            // Assuming the x-axis labels are dates, you can customize the title
+            if (periodType === 'yearly') {
+              return `Month: ${tooltipItems[0].label}`;
+            }
             const date = tooltipItems[0].label + " " + months[month - 1];
             return `Date: ${date}`;
           },
@@ -78,7 +98,9 @@ export default function Activity1({
       x: {
         title: {
           display: true,
-          text: `Days of ${months[month - 1]}`,
+          text: periodType === 'yearly' 
+            ? 'Months of Year'
+            : `Days of ${months[month - 1]}`,
           font: {
             size: 14,
           },
@@ -162,8 +184,6 @@ export default function Activity1({
 
   const activityStatusMapper = (status: string) => {
     switch (status) {
-      // case "submitted":
-      //   return "Submitted";
       case "submitted_success":
         return "Submitted";
       case "submitted_waiting":
@@ -188,19 +208,21 @@ export default function Activity1({
         return "In Progress";
       case "DELETED":
         return "Deleted";
-
+      default:
+        return status;
     }
   };
 
   return (
    <div className="flex relative py-6 px-4 flex-row justify-between items-start xl:space-x-20">
-  <div className="w-2/3">
+  <div className="w-2/3" key={`activity-chart-${periodType}`}>
     <Bar
       width={100}
       height={50}
       className="pl-4"
       options={options}
       data={data}
+      key={`bar-${periodType}`}
     />
   </div>
 

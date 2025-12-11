@@ -57,6 +57,11 @@ export const GetHeatingOCRRole = async () => {
     return response
   }
 
+  export const ReadOCRActivityUsageByYear = async (year: string | number) => {
+    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/usage/year-activity?year=${year}`)
+    return response
+  }
+
   export const ReadOCRTopUsers = async (year: string | number, month: string | number, skip: number = 0, limit: number = 6) => {
     const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/usage/activity/top?skip=${skip}&limit=${limit}&year=${year}&month=${month}`)
     return response
@@ -64,6 +69,11 @@ export const GetHeatingOCRRole = async () => {
   
   export const ReadOCRCostUsage = async (year: string | number, month: string | number) => {
     const response = await HeatingOCRAPI.post(BACKEND_HEATING_OCR_URL + `/heating_ocr/usage/cost?year=${year}&month=${month}`)
+    return response
+  }
+
+  export const ReadOCRCostUsageByYear = async (year: string | number) => {
+    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/usage/year-cost?year=${year}`)
     return response
   }
   
@@ -136,4 +146,3 @@ export const GetHeatingOCRRole = async () => {
     const response = await HeatingOCRAPI.put(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}/transfer?user_id=${user_id}`)
     return response
   }
-  

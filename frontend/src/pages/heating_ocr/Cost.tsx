@@ -28,7 +28,9 @@ ChartJS.register(
   ArcElement
 );
 
-export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export default function Cost({ usageData, limit, onLimitEdit, month, periodType }: any) {
   const totalCost = usageData?.total
     ? roundToFourDecimals(usageData?.total)
     : 0;
@@ -37,9 +39,9 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
   const percentage = findPercentage(totalCost, limit);
   const percentageRef = useRef<HTMLDivElement>(null);
   const [percentageWidth, setPercentageWidth] = useState(0);
-  const startDate = usageData?.day[0] || "N/A";
+  const startDate = usageData?.day?.[0] || "N/A";
   const endDate =
-    usageData?.day.length > 0
+    usageData?.day?.length > 0
       ? usageData?.day[usageData?.day.length - 1]
       : "N/A";
   const member = useSelector((state: RootState) => state.memberRole);
@@ -51,24 +53,41 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
     }
   }, [percentage]);
 
+  // Get labels based on period type
+  const getLabels = () => {
+    if (periodType === 'yearly') {
+      return monthNames; // Jan, Feb, Mar, etc.
+    }
+    return usageData?.day || [];
+  };
+
+  // Get chart data
+  const getChartData = () => {
+    return usageData?.cost || [];
+  };
+
   // Doughnut chart options
   const donutOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        radius: 100,
-        cutout: '60%', // Adjust the cutout percentage to reduce the doughnut width
-        plugins: {
-            legend: {
-                position: 'top' as const,
-            },
-            title: {
-                display: true,
-                text: (startDate !== 'N/A' && endDate !== 'N/A') ? `Monthly bill ${months[month - 1]} ${startDate} - ${endDate}` : 'N/A',
-            },
-        },
-    };
+    responsive: true,
+    maintainAspectRatio: false,
+    radius: 100,
+    cutout: '60%',
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: periodType === 'yearly' 
+          ? 'Annual bill'
+          : (startDate !== 'N/A' && endDate !== 'N/A') 
+            ? `Monthly bill ${months[month - 1]} ${startDate} - ${endDate}` 
+            : 'N/A',
+      },
+    },
+  };
 
-  const options = {
+  const options: any = {
     responsive: true,
     plugins: {
       legend: {
@@ -77,23 +96,23 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
       },
       title: {
         display: true,
-        text: `Monthly Spend $ ${totalCost}`,
+        text: periodType === 'yearly' 
+          ? `Annual Spend $ ${totalCost}` 
+          : `Monthly Spend $ ${totalCost}`,
       },
       tooltip: {
         callbacks: {
-          // Customize the tooltip title
           title: (tooltipItems: any) => {
-            // Assuming the x-axis labels are dates, you can customize the title
+            if (periodType === 'yearly') {
+              return `Month: ${tooltipItems[0].label}`;
+            }
             const date = tooltipItems[0].label + " " + months[month - 1];
             return `Date: ${date}`;
           },
-          // Customize the tooltip label
           label: (tooltipItem: any) => {
-            // Tooltip item represents the data point
             const value = tooltipItem.raw.toFixed(4);
             return `Cost: $${value}`;
           },
-          // Customize the tooltip footer (optional)
         },
       },
     },
@@ -101,7 +120,9 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
       x: {
         title: {
           display: true,
-          text: `Days of ${months[month - 1]}`,
+          text: periodType === 'yearly' 
+            ? 'Months of Year' 
+            : `Days of ${months[month - 1]}`,
           font: {
             size: 14,
           },
@@ -121,11 +142,11 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
   };
 
   const data = {
-    labels: usageData?.day,
+    labels: getLabels(),
     datasets: [
       {
         label: "Cost",
-        data: usageData?.cost,
+        data: getChartData(),
         backgroundColor: "rgba(255, 99, 132, 0.5)",
       },
     ],
@@ -154,7 +175,7 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
           <EditLimitModal defaultValue={limit} onSubmit={onLimitEdit} />
         </div>
       )}
-      <div className="w-2/3">
+      <div className="w-2/3" key={`cost-chart-${periodType}`}>
         <Bar
           width={100}
           height={50}
