@@ -104,6 +104,14 @@ export default function Activity1({
             size: 14,
           },
         },
+        ticks: {
+          autoSkip: false,
+          maxRotation: 0,
+          minRotation: 0,
+        },
+        grid: {
+          display: true,
+        },
       },
       y: {
         title: {
@@ -114,6 +122,14 @@ export default function Activity1({
           },
         },
         beginAtZero: true,
+        min: 0,
+        suggestedMax: 25,
+        ticks: {
+          stepSize: 5,
+        },
+        grid: {
+          display: true,
+        },
       },
     },
   };  

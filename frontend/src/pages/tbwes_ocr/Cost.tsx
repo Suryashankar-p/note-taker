@@ -125,6 +125,14 @@ export default function Cost({ usageData, limit, onLimitEdit, month, periodType 
             size: 14,
           },
         },
+        ticks: {
+          autoSkip: false,
+          maxRotation: 0,
+          minRotation: 0,
+        },
+        grid: {
+          display: true,
+        },
       },
       y: {
         title: {
@@ -135,6 +143,17 @@ export default function Cost({ usageData, limit, onLimitEdit, month, periodType 
           },
         },
         beginAtZero: true,
+        min: 0,
+        max: 1,
+        ticks: {
+          stepSize: 0.1,
+          callback: function(value: any) {
+            return Number(value).toFixed(1);
+          },
+        },
+        grid: {
+          display: true,
+        },
       },
     },
   };

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Text from '../../components/Text';
+import DropDownButton from '../../components/DropDownButton';
 import Cost from './Cost';
 import Activity from './ActivityPage';
 import Topactivity from './Topactivity';
@@ -25,7 +26,6 @@ type Page = {
   skip: number;
   limit: number;
 };
-
 
 const Usage = () => {
   
@@ -265,6 +265,8 @@ const Usage = () => {
   const onYearChange = (data: any) => {
     if (data?.value !== calendar?.year) {
       setCalendar({ ...calendar, year: data.value });
+      setTopUsers(null); // Reset top users
+      setPage({ skip: 0, limit: 4 }); // Reset pagination
       if (periodType === 'monthly') {
         getCostUsage(data.value, calendar.month);
         getActivityUsage(data.value, calendar.month);
@@ -281,6 +283,8 @@ const Usage = () => {
   const onMonthChange = (data: any) => {
     if (data?.value !== calendar?.month) {
       setCalendar({ ...calendar, month: data.value });
+      setTopUsers(null); // Reset top users
+      setPage({ skip: 0, limit: 4 }); // Reset pagination
       getCostUsage(calendar.year, data.value);
       getActivityUsage(calendar.year, data.value);
       getActivityStatus(calendar.year, data.value);
@@ -288,9 +292,30 @@ const Usage = () => {
     }
   };
 
-  const onPeriodTypeChange = (data: string) => {
-    setPeriodType(data as 'monthly' | 'yearly');
+  const onPeriodTypeChange = (data: any) => {
+    setPeriodType(data.value as 'monthly' | 'yearly');
   };
+
+  // Prepare dropdown data
+  const periodTypeOptions = [
+    { name: 'Monthly', value: 'monthly' },
+    { name: 'Yearly', value: 'yearly' }
+  ];
+
+  const monthOptions = months.map((month, index) => ({
+    name: month,
+    value: (index + 1).toString()
+  }));
+
+  const yearOptions = years.map(year => ({
+    name: year,
+    value: year
+  }));
+
+  // Get selected values for dropdowns
+  const selectedPeriodType = periodTypeOptions.find(opt => opt.value === periodType) || periodTypeOptions[0];
+  const selectedMonth = monthOptions.find(opt => opt.value === calendar.month) || monthOptions[0];
+  const selectedYear = yearOptions.find(opt => opt.value === calendar.year) || yearOptions[0];
 
   return (
     <div className="flex flex-col relative -p-1 mt-6 ml-3 mx-0 md:mx-3 lg:mx-7 gap-4">
@@ -318,9 +343,26 @@ const Usage = () => {
             ))}
           </TabList>
           <div className='flex gap-4 items-center'>
-            <PeriodTypeDropdown onSubmit={onPeriodTypeChange} />
-            <YearButton onSubmit={onYearChange} />
-            {periodType === 'monthly' && <MonthButton onSubmit={onMonthChange} />}
+            <DropDownButton
+              listValues={periodTypeOptions}
+              value={selectedPeriodType}
+              onChange={onPeriodTypeChange}
+              className="w-40"
+            />
+            <DropDownButton
+              listValues={yearOptions}
+              value={selectedYear}
+              onChange={onYearChange}
+              className="w-40"
+            />
+            {periodType === 'monthly' && (
+              <DropDownButton
+                listValues={monthOptions}
+                value={selectedMonth}
+                onChange={onMonthChange}
+                className="w-40"
+              />
+            )}
           </div>
         </div>
         <TabPanels className="bg-white h-[22rem] xl:h-[24rem] rounded-lg shadow-lg border border-gray-200">
@@ -336,88 +378,3 @@ const Usage = () => {
 };
 
 export default Usage;
-
-interface ButtonProps {
-  onSubmit: any;
-}
-
-const PeriodTypeDropdown: React.FC<ButtonProps> = ({ onSubmit }) => {
-  const [periodType, setPeriodType] = useState<'monthly' | 'yearly'>('monthly');
-
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as 'monthly' | 'yearly';
-    setPeriodType(value);
-    onSubmit(value);
-  };
-
-  return (
-    <select
-      value={periodType}
-      onChange={handleChange}
-      className="px-4 py-2 bg-gray-200 text-gray-700 rounded border border-gray-300 hover:bg-gray-300 transition duration-300"
-    >
-      <option value="monthly">Monthly</option>
-      <option value="yearly">Yearly</option>
-    </select>
-  );
-};
-
-const MonthButton: React.FC<ButtonProps> = ({ onSubmit }) => {
-
-  const currentMonth = new Date().getMonth(); // Get current month (0-indexed)
-  const [monthIndex, setMonthIndex] = useState<number>(currentMonth);
-
-  const handlePrevMonth = () => {
-
-    const newIndex = monthIndex === 0 ? 11 : monthIndex - 1;
-    setMonthIndex(newIndex);
-    onSubmit((newIndex + 1).toString());
-  };
-
-  const handleNextMonth = () => {
-
-    const newIndex = monthIndex === 11 ? 0 : monthIndex + 1;
-    setMonthIndex(newIndex);
-    onSubmit((newIndex + 1).toString());
-  };
-
-  return (
-    <div className="relative flex items-center">
-      <button className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handlePrevMonth}>&lt;</button>
-      <span className="px-4 w-48 text-center overflow-hidden">
-        <Text className='text-primary_text' type='body'>{months[monthIndex]}</Text>
-      </span>
-      <button className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handleNextMonth}>&gt;</button>
-    </div>
-  );
-};
-
-const YearButton: React.FC<ButtonProps> = ({ onSubmit }) => {
-
-  const currentYearIndex = years.indexOf(new Date().getFullYear().toString());
-  const [yearIndex, setYearIndex] = useState<number>(currentYearIndex);
-
-  const handlePrevYear = () => {
-
-    const newIndex = yearIndex === 0 ? yearIndex : yearIndex - 1;
-    setYearIndex(newIndex);
-    onSubmit(years[newIndex]);
-  };
-
-  const handleNextYear = () => {
-
-    const newIndex = yearIndex === years.length - 1 ? yearIndex : yearIndex + 1;
-    setYearIndex(newIndex);
-    onSubmit(years[newIndex]);
-  };
-
-  return (
-    <div className="relative flex items-center">
-      <button className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handlePrevYear}>&lt;</button>
-      <span className="px-4 w-48 text-center overflow-hidden">
-        <Text className='text-primary_text' type='body'>{years[yearIndex]}</Text>
-      </span>
-      <button className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handleNextYear}>&gt;</button>
-    </div>
-  );
-};
