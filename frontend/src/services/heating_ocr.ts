@@ -8,6 +8,7 @@ const BACKEND_HEATING_OCR_URL=import.meta.env.VITE_BACKEND_HEATING_OCR_URL  || w
 
 export const GetHeatingOCRRole = async () => {
     console.log("Getting Heating OCR Role", BACKEND_HEATING_OCR_URL);
+
     const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + '/heating_ocr/member/me')
     return response
   }

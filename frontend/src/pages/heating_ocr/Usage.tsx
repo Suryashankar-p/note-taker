@@ -17,6 +17,11 @@ const tabs = [
   { key: 'activity', label: 'Activity' }
 ];
 
+const periodOptions = [
+  { name: 'Monthly' },
+  { name: 'Yearly' }
+];
+
 type Calendar = {
   year: string;
   month: string;
@@ -34,6 +39,7 @@ const Usage = () => {
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
   const currentMonth = (currentDate.getMonth() + 1).toString();
+  const currentMonthName = months[currentDate.getMonth()];
 
   const [activeTab, setActiveTab] = useState<'cost' | 'activity'>('cost');
   const [calendar, setCalendar] = useState<Calendar>({ year: currentYear, month: currentMonth });
@@ -41,6 +47,9 @@ const Usage = () => {
   const [activityData, setActivityData] = useState<any | null>(null);
   const [limit, setLimit] = useState<number | null>(null);
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
+  const [selectedPeriod, setSelectedPeriod] = useState(periodOptions[0]);
+  const [selectedMonth, setSelectedMonth] = useState({ name: currentMonthName });
+  const [selectedYear, setSelectedYear] = useState({ name: currentYear });
   const toastStatus = useSelector((state: RootState) => state.toast.status);
   const dispatch = useDispatch<Dispatch>();
   const [topUsers, setTopUsers] = useState<any | null>(null);
@@ -50,22 +59,40 @@ const Usage = () => {
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const loadingRef = useRef(false);
 
-  useEffect(() => {
-    if (periodType === 'monthly') {
-      getCostUsage(currentYear, currentMonth);
-      getUsageLimit();
-      getActivityUsage(currentYear, currentMonth);
-      getActivityTopUsers(calendar.year, calendar.month, page.skip, page.limit);
-      getActivityStatus(currentYear, currentMonth)
-    } else {
-      getYearCostUsage(currentYear);
-      getUsageLimit();
-      getYearActivityUsage(currentYear);
-      getActivityTopUsers(calendar.year, calendar.month, page.skip, page.limit);
-    }
-  }, [periodType]);
+  // Create dropdown options from months and years
+  const monthOptions = months.map(month => ({ name: month }));
+  const yearOptions = years.map(year => ({ name: year }));
 
-  const getActivityStatus = async (year: string | number, month: string | number,) => {
+  // Main useEffect to fetch data when period, year, or month changes
+  useEffect(() => {
+    // Always get usage limit
+    getUsageLimit();
+
+    if (periodType === 'monthly') {
+      // Fetch monthly data
+      if (activeTab === 'cost') {
+        getCostUsage(calendar.year, calendar.month);
+      } else {
+        getActivityUsage(calendar.year, calendar.month);
+        getActivityStatus(calendar.year, calendar.month);
+      }
+      getActivityTopUsers(calendar.year, calendar.month, 0, 4);
+    } else {
+      // Fetch yearly data
+      if (activeTab === 'cost') {
+        getYearCostUsage(calendar.year);
+      } else {
+        getYearActivityUsage(calendar.year);
+      }
+      getActivityTopUsers(calendar.year, calendar.month, 0, 4);
+    }
+    
+    // Reset pagination when period/year/month changes
+    setTopUsers(null);
+    setPage({ skip: 0, limit: 4 });
+  }, [periodType, calendar.year, calendar.month, activeTab]);
+
+  const getActivityStatus = async (year: string | number, month: string | number) => {
     try {
       const response = await ReadOCRActivityStatus(year, month)
       if (response.result) {
@@ -214,9 +241,9 @@ const Usage = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'cost':
-        return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calendar.month} periodType={periodType} />;
+        return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={parseInt(calendar.month)} periodType={periodType} />;
       case 'activity':
-        return <Topactivity activityData={activityData} month={calendar.month} topUsers={topUsers} activityStatus={activityStatus} reachedBottom={reachedBottom} />;
+        return <Topactivity activityData={activityData} month={parseInt(calendar.month)} topUsers={topUsers} activityStatus={activityStatus} reachedBottom={reachedBottom} periodType={periodType} />;
       default:
         return null;
     }
@@ -264,34 +291,31 @@ const Usage = () => {
     }
   }
 
-  const onYearChange = (data: string) => {
-    if (data !== calendar?.year) {
-      setCalendar({ ...calendar, year: data });
-      if (periodType === 'monthly') {
-        getCostUsage(data, calendar.month);
-        getActivityUsage(data, calendar.month);
-        getActivityStatus(data, calendar.month);
-        getActivityTopUsers(data, calendar.month, 0, 4);
-      } else {
-        getYearCostUsage(data);
-        getYearActivityUsage(data);
-        getActivityTopUsers(data, calendar.month, 0, 4);
-      }
+  const onYearChange = (selectedOption: any) => {
+    const yearValue = selectedOption.name;
+    if (yearValue !== calendar?.year) {
+      setSelectedYear(selectedOption);
+      setCalendar({ ...calendar, year: yearValue });
+      // useEffect will handle the data fetching
     }
   };
 
-  const onMonthChange = (data: string) => {
-    if (data !== calendar?.month) {
-      setCalendar({ ...calendar, month: data });
-      getCostUsage(calendar.year, data);
-      getActivityUsage(calendar.year, data);
-      getActivityStatus(calendar.year, data);
-      getActivityTopUsers(calendar.year, data, 0, 4);
+  const onMonthChange = (selectedOption: any) => {
+    const monthIndex = months.indexOf(selectedOption.name);
+    const monthValue = (monthIndex + 1).toString();
+    
+    if (monthValue !== calendar?.month) {
+      setSelectedMonth(selectedOption);
+      setCalendar({ ...calendar, month: monthValue });
+      // useEffect will handle the data fetching
     }
   };
 
-  const onPeriodChange = (data: string) => {
-    setPeriodType(data as PeriodType);
+  const onPeriodChange = (selectedOption: any) => {
+    setSelectedPeriod(selectedOption);
+    const newPeriodType = selectedOption.name.toLowerCase() as PeriodType;
+    setPeriodType(newPeriodType);
+    // useEffect will handle the data fetching
   };
 
   return (
@@ -321,21 +345,34 @@ const Usage = () => {
           </TabList>
           <div className='flex gap-4 items-center'>
             <DropDownButton 
-              options={[
-                { label: 'Monthly', value: 'monthly' },
-                { label: 'Yearly', value: 'yearly' }
-              ]}
-              onSelect={onPeriodChange}
-              defaultValue='monthly'
+              listValues={periodOptions}
+              value={selectedPeriod}
+              onChange={onPeriodChange}
+              className="w-40"
             />
             {periodType === 'monthly' && (
               <>
-                <YearButton onSubmit={onYearChange} />
-                <MonthButton onSubmit={onMonthChange} />
+                <DropDownButton 
+                  listValues={yearOptions}
+                  value={selectedYear}
+                  onChange={onYearChange}
+                  className="w-40"
+                />
+                <DropDownButton 
+                  listValues={monthOptions}
+                  value={selectedMonth}
+                  onChange={onMonthChange}
+                  className="w-40"
+                />
               </>
             )}
             {periodType === 'yearly' && (
-              <YearButton onSubmit={onYearChange} />
+              <DropDownButton 
+                listValues={yearOptions}
+                value={selectedYear}
+                onChange={onYearChange}
+                className="w-40"
+              />
             )}
           </div>
         </div>
@@ -352,63 +389,3 @@ const Usage = () => {
 };
 
 export default Usage;
-
-interface ButtonProps {
-  onSubmit: any;
-}
-
-const MonthButton: React.FC<ButtonProps> = ({ onSubmit }) => {
-
-  const currentMonth = new Date().getMonth();
-  const [monthIndex, setMonthIndex] = useState<number>(currentMonth);
-
-  const handlePrevMonth = () => {
-    const newIndex = monthIndex === 0 ? 11 : monthIndex - 1;
-    setMonthIndex(newIndex);
-    onSubmit((newIndex + 1).toString());
-  };
-
-  const handleNextMonth = () => {
-    const newIndex = monthIndex === 11 ? 0 : monthIndex + 1;
-    setMonthIndex(newIndex);
-    onSubmit((newIndex + 1).toString());
-  };
-
-  return (
-    <div className="relative flex items-center">
-      <button className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handlePrevMonth}>&lt;</button>
-      <span className="px-4 w-48 text-center overflow-hidden">
-        <Text className='text-primary_text' type='body'>{months[monthIndex]}</Text>
-      </span>
-      <button className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handleNextMonth}>&gt;</button>
-    </div>
-  );
-};
-
-const YearButton: React.FC<ButtonProps> = ({ onSubmit }) => {
-
-  const currentYearIndex = years.indexOf(new Date().getFullYear().toString());
-  const [yearIndex, setYearIndex] = useState<number>(currentYearIndex);
-
-  const handlePrevYear = () => {
-    const newIndex = yearIndex === 0 ? yearIndex : yearIndex - 1;
-    setYearIndex(newIndex);
-    onSubmit(years[newIndex]);
-  };
-
-  const handleNextYear = () => {
-    const newIndex = yearIndex === years.length - 1 ? yearIndex : yearIndex + 1;
-    setYearIndex(newIndex);
-    onSubmit(years[newIndex]);
-  };
-
-  return (
-    <div className="relative flex items-center">
-      <button className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handlePrevYear}>&lt;</button>
-      <span className="px-4 w-48 text-center overflow-hidden">
-        <Text className='text-primary_text' type='body'>{years[yearIndex]}</Text>
-      </span>
-      <button className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handleNextYear}>&gt;</button>
-    </div>
-  );
-};
