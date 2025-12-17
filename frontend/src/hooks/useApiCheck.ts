@@ -13,8 +13,6 @@ import { GetHeatingOCRRole} from "../services/heating_ocr.ts"
 type Type =
   | "sales"
   | "tbwes_ocr"
-  | "doc_translator"
-  | "training_qa"
   | "thermax_gpt"
   | "doctor_conbot"
   | "troubleshooting"

@@ -3,7 +3,6 @@ export {};
 declare global {
   interface Window {
     env: {
-      ROOT_PATH: string;
       ENABLE_SSO: string;
       ADMIN_USER_EMAIL: string;
       DOMAIN: string;
