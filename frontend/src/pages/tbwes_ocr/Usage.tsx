@@ -89,7 +89,8 @@ const Usage = () => {
     if (totalUsers !== 0 && skip >= totalUsers) return;
 
     try {
-      const topUserResponse = await ReadOCRTopUsers(year, month, skip);
+      // Changed: Pass limit instead of skip to the API
+      const topUserResponse = await ReadOCRTopUsers(year, month, limit);
 
       if (topUserResponse?.result) {
         setTopUsers((prevData: any) =>
