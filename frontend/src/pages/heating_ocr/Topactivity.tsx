@@ -136,26 +136,33 @@ export default function Activity1({
 
   const activityStatusMapper = (status: string) => {
     switch (status) {
+      // case "submitted":
+      //   return "Submitted";
       case "submitted_success":
-      case "SUBMITTED_SUCCESS":
         return "Submitted";
       case "submitted_waiting":
-      case "SUBMITTED_WAITING":
         return "Waiting";
       case "submitted_failed":
-      case "SUBMITTED_FAILED":
         return "Failed";
+      case "deleted":
+        return "Deleted";
       case "rejected":
-      case "REJECTED":
         return "Rejected";
       case "in_progress":
+        return "In Progress";
+      case "SUBMITTED_SUCCESS":
+        return "Submitted";
+      case "SUBMITTED_WAITING":
+        return "Waiting";
+      case "SUBMITTED_FAILED":
+        return "Failed";
+      case "REJECTED":
+        return "Rejected";
       case "IN_PROGRESS":
         return "In Progress";
-      case "deleted":
       case "DELETED":
         return "Deleted";
-      default:
-        return status;
+
     }
   };
 

@@ -45,7 +45,7 @@ export default function Cost({ usageData, limit, onLimitEdit, month, periodType 
       ? usageData?.day[usageData?.day.length - 1]
       : "N/A";
   const member = useSelector((state: RootState) => state.memberRole);
-  const ocrMemberDetails = member.service === "tbwes_ocr" ? member?.details : {};
+  const ocrMemberDetails = member.service === "heating_ocr" ? member?.details : {};
 
   useEffect(() => {
     if (percentageRef.current) {
