@@ -46,7 +46,9 @@ const useApiCheck = (type?: Type) => {
   };
   useEffect(() => {
     const fetchData = async () => {
-      if (ACTIVE_SERVICES[type]) {
+      if (ACTIVE_SERVICES[type] === "true") {
+        console.log("Type: ",type);
+        console.log("ACTIVE_SERVICES[type]: ",ACTIVE_SERVICES[type]);
         try {
           const data: any = await selectApi(type);
           if (!data?.email && !data?.role) {
