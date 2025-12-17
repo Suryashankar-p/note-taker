@@ -7,13 +7,6 @@ declare global {
       ADMIN_USER_EMAIL: string;
       DOMAIN: string;
       URL_PREFIX: string;
-      THERMAX_GPT: string;
-      SALES: string;
-      TBWES_OCR: string;
-      SMART_TROUBLESHOOT: string;
-      DOCTOR_CONBOT: string;
-      CYBERBUDDY: string;
-      HEATING_OCR: string;
       BACKEND_SSO_URL: string;
       BACKEND_THERMAX_GPT_URL: string;
       BACKEND_DOCTOR_CONBOT_URL: string;
