@@ -24,11 +24,15 @@ ChartJS.register(
   ArcElement
 );
 
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 interface Props {
   activityData: any;
   month: any;
   topUsers: any;
   activityStatus: any;
+  reachedBottom?: () => void;
+  periodType?: 'monthly' | 'yearly';
 }
 
 export default function Activity1({
@@ -36,21 +40,39 @@ export default function Activity1({
   month,
   topUsers,
   activityStatus,
+  reachedBottom,
+  periodType,
 }: Props) {
   const totalQuestions = activityData?.total || 0;
 
+  // Transform labels based on period type
+  const getLabels = () => {
+    if (periodType === 'yearly') {
+      return activityData?.month?.map((monthNum: number) => monthNames[monthNum - 1]) || [];
+    }
+    return activityData?.day || [];
+  };
+
+  // Transform data for chart
+  const getChartData = () => {
+    if (periodType === 'yearly') {
+      return activityData?.activity || [];
+    }
+    return activityData?.activity || [];
+  };
+
   const data = {
-    labels: activityData?.day || [],
+    labels: getLabels(),
     datasets: [
       {
         label: "activities",
-        data: activityData?.activity || [],
+        data: getChartData(),
         backgroundColor: "rgba(255, 99, 132, 0.5)",
       },
     ],
   };
 
-  const options = {
+  const options: any = {
     responsive: true,
     plugins: {
       legend: {
@@ -59,12 +81,14 @@ export default function Activity1({
       },
       title: {
         display: true,
-        text: `Monthly Activities: ${totalQuestions}`,
+        text: `${periodType === 'yearly' ? 'Annual' : 'Monthly'} Activities: ${totalQuestions}`,
       },
       tooltip: {
         callbacks: {
           title: (tooltipItems: any) => {
-            // Assuming the x-axis labels are dates, you can customize the title
+            if (periodType === 'yearly') {
+              return `Month: ${tooltipItems[0].label}`;
+            }
             const date = tooltipItems[0].label + " " + months[month - 1];
             return `Date: ${date}`;
           },
@@ -75,10 +99,18 @@ export default function Activity1({
       x: {
         title: {
           display: true,
-          text: `Days of ${months[month - 1]}`,
+          text: periodType === 'yearly' ? 'Months of Year' : `Days of ${months[month - 1]}`,
           font: {
             size: 14,
           },
+        },
+        ticks: {
+          autoSkip: false,
+          maxRotation: 0,
+          minRotation: 0,
+        },
+        grid: {
+          display: true,
         },
       },
       y: {
@@ -90,6 +122,14 @@ export default function Activity1({
           },
         },
         beginAtZero: true,
+        min: 0,
+        suggestedMax: 25,
+        ticks: {
+          stepSize: 5,
+        },
+        grid: {
+          display: true,
+        },
       },
     },
   };  
@@ -178,14 +218,13 @@ export default function Activity1({
         return "In Progress";
       case "DELETED":
         return "Deleted";
-
     }
   };
 
   return (
     <div className="relative flex flex-col lg:flex-row justify-between py-2 px-4">
       <div className="w-full lg:w-2/3 mb-6 lg:mb-0">
-        <Bar className="px-4" options={options} data={data} />
+        <Bar key={periodType} className="px-4" options={options} data={data} />
       </div>
 
       <div className="absolute top-1 right-6 mt-1 mr-4 flex flex-col gap-3 w-full lg:w-60">
