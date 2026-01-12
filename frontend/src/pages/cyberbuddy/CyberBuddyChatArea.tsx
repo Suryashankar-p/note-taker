@@ -2,6 +2,7 @@ import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm"
 import Input from "../../components/Input.tsx";
+import TextArea from "../../components/TextArea.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
 import Sent from "../../assets/sent.png";
 import "./styles.css";
@@ -32,7 +33,7 @@ import copy from "clipboard-copy";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import "github-markdown-css/github-markdown.css";
-import FileViewModal from "../../components/Modals/FileViewModal.tsx";
+import FileViewModal from "../../components/Modals/OpenFileModal.tsx";
 import { getFileType } from "../../utils/functions.ts";
 
 interface Props {
@@ -456,7 +457,7 @@ const ChatArea: React.FC<Props> = ({
                   </div>
                 </button>
               )}
-      {/* Dislike Reason Modal */}
+              {/* Dislike Reason Modal */}
       {dislikeModalStatus && <DislikeReason onSubmit={onDislikeSubmit} />}
             </div>
           ))
@@ -474,11 +475,10 @@ const ChatArea: React.FC<Props> = ({
         </button>
       )}
       <div className="top-[84vh] left-84 px-4 self-center w-100 fixed bg-inherit flex ">
-        <Input
+        <TextArea
           disabled={loading || disabled}
           onKeyDown={onKeyDown}
-          inputClasssName={`${disabled && "bg-[#0061F3] bg-opacity-10"}`}
-          onChange={(event: Event) => setInputValue(event.target.value)}
+          onChange={setInputValue}
           value={inputValue}
           placeholder="Ask your query here..."
           prefixIcon={
