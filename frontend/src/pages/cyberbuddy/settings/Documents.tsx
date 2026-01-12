@@ -26,7 +26,7 @@ import {
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal.tsx";
 import Toast from "../../../components/Toast.tsx";
 import { getFileType } from "../../../utils/functions.ts";
-import FileViewModal from "../../../components/Modals/FileViewModal.tsx";
+import FileViewModal from "../../../components/Modals/OpenFileModal.tsx";
 
 const MenuItems = [
   {
