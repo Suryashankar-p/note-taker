@@ -55,6 +55,11 @@ export const GetMemberOCRRole = async () => {
     const response = await TBWESAPI.get(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/usage/activity?year=${year}&month=${month}`)
     return response
   }
+
+  export const ReadOCRYearActivityUsage = async (year: string | number) => {
+    const response = await TBWESAPI.get(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/usage/year-usage?year=${year}`)
+    return response
+  }
   
   export const ReadOCRTopUsers = async (year: string | number, month: string | number, n: number) => {
     const response = await TBWESAPI.get(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/usage/activity/top?year=${year}&month=${month}&n=${n}`)
@@ -63,6 +68,11 @@ export const GetMemberOCRRole = async () => {
   
   export const ReadOCRCostUsage = async (year: string | number, month: string | number) => {
     const response = await TBWESAPI.post(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/usage/cost?year=${year}&month=${month}`)
+    return response
+  }
+
+  export const ReadOCRYearCostUsage = async (year: string | number) => {
+    const response = await TBWESAPI.get(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/usage/year-cost?year=${year}`)
     return response
   }
   
