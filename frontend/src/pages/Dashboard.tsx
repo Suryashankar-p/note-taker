@@ -143,7 +143,7 @@ const Dashboard: React.FC = () => {
   const getDoctorConbotRole = async () => {
     try {
       const response = await GetMemberDoctorConbotRole();
-      if (response?.email) {
+      if (response?.role) {
         navigate("./doctor_conbot");
       } else {
         setPageError(true);
@@ -234,7 +234,7 @@ const Dashboard: React.FC = () => {
     <div>
       <Header />
       {toastStatus.status && pageError && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-90 space-y-4">
           <Toast type="error" />
         </div>
       )}
@@ -263,7 +263,7 @@ const Dashboard: React.FC = () => {
         {services?.length > 0 ? (
           <div
           className="relative top-5 left-2 w-full 
-          max-h-[70vh] overflow-y-auto 
+          max-h-[60vh] overflow-y-auto 
           md:max-h-[65vh] 
           lg:max-h-[70vh] 
           sm:max-h-[60vh]"           >
