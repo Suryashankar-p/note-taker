@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     container_name: thermax-frontend-local
@@ -22,7 +20,7 @@ services:
       VITE_BACKEND_CYBERBUDDY_URL: "${BACKEND_SERVICE_CYBERBUDDY_URL}"
       VITE_BACKEND_HEATING_OCR_URL: "${BACKEND_SERVICE_HEATING_OCR_URL}"
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "3000:3000"
     volumes:
       - ../frontend/src:/frontend/src
       - ../frontend/public:/frontend/public

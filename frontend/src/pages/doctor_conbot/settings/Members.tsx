@@ -37,7 +37,7 @@ const Members = () => {
   const [skip, setSkip] = useState(0);
 
 const getAllMembers = async (newSkip: number, limit: number, search_term = '') => {
-  if (loading || !hasMore) return;
+  if (loading || (newSkip !== 0 && !hasMore)) return;
 
   try {
     setLoading(true);
