@@ -1,30 +1,21 @@
+SHELL := /bin/bash
+
 all: help
 
-DOCKER_COMPOSE=sudo docker compose
-DEV_COMPOSE_FILE=docker-compose.yml
-PROD_COMPOSE_FILE=docker-compose-prod.yml
+DOCKER_COMPOSE=sudo --preserve-env docker compose
+COMPOSE_FILE=./docker-compose/docker-compose.local.yml
 
 help:
 	@echo "Usage:"
-	@echo "  make up [env=dev|prod]       - Start and restart services (default: dev)"
-	@echo "  make down [env=dev|prod]     - Stop and remove services (default: dev)"
-	@echo "  make build [env=dev|prod]    - Build or rebuild services (default: dev)"
-	@echo "  make build_up [env=dev|prod] - Build or rebuild services and start services (default: dev)"
-	@echo "  make start [env=dev|prod]    - Start previously stopped services (default: dev)"
-	@echo "  make stop [env=dev|prod]     - Stop services (default: dev)"
-	@echo "  make restart [env=dev|prod]  - Restart services (default: dev)"
-	@echo "  make logs [env=dev|prod]     - View logs from services (default: dev)"
-	@echo "  make clean                   - Clean the local database and python cache"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make up env=dev     - Use development compose file"
-	@echo "  make up env=prod    - Use production compose file"
-
-# Default to development environment
-env ?= dev
-
-# Determine the compose file based on the environment
-COMPOSE_FILE=$(if $(filter prod,$(env)),$(PROD_COMPOSE_FILE),$(DEV_COMPOSE_FILE))
+	@echo "  make up        - Start services"
+	@echo "  make down      - Stop and remove services"
+	@echo "  make build     - Build or rebuild services"
+	@echo "  make build_up  - Load env and build + start services"
+	@echo "  make start     - Start stopped services"
+	@echo "  make stop      - Stop services"
+	@echo "  make restart  - Restart services"
+	@echo "  make logs      - View logs"
+	@echo "  make clean     - Clean the local database and python cache"
 
 up:
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up -d
@@ -36,6 +27,11 @@ build:
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) build
 
 build_up:
+	@echo "Loading environment variables from .env"
+	@test -f .env || (echo ".env file not found!" && exit 1)
+	@set -a && \
+	source .env && \
+	set +a && \
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up --build
 
 start:
@@ -49,6 +45,3 @@ restart:
 
 logs:
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) logs -f
-
-clean:
-	bash ./backend/clean_db.sh
