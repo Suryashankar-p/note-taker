@@ -18,6 +18,7 @@ export const months: string[] = [
 ];
 
 export const years: string[] = [
+  "2026",
   "2025",
   "2024",
   "2023",

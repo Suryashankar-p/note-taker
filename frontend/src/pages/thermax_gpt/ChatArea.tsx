@@ -45,8 +45,9 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import UploadStatusIndicator from "../../components/UploadStatusIndicator";
-import { UploadFileModal } from "../../components/Modals/UploadFileModal";
-import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus";
+import { UploadFileModal } from "../../components/Modals/UploadFileModal.tsx";
+// import { useDocumentUploadWebSocket } from "../../services/hooks/useDocumentUploadWebSocket.ts";
+import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus.ts";
 import { set } from "react-hook-form";
 import { iconMapping } from "../../utils/constants.ts";
 
@@ -162,57 +163,37 @@ const ChatArea: React.FC<Props> = ({
     }
   }, [inputValue]);
 
-  // useEffect(() => {
-  //   setShowButton(false);
-  //   const handleScroll = () => {
-  //     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-  //     if (scrollTop === 0 && !loading && !hasReachedEnd) {
-  //       // Handle load more if needed
-  //     } else if (scrollTop + clientHeight < scrollHeight - 100) {
-  //       setShowButton(true);
-  //     } else {
-  //       setShowButton(false);
-  //     }
-  //   };
+  useEffect(() => {
+    setShowButton(false);
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      if (scrollTop === 0 && !loading && !hasReachedEnd) {
+        // Handle load more if needed
+      } else if (scrollTop + clientHeight < scrollHeight - 100) {
+        setShowButton(true);
+      } else {
+        setShowButton(false);
+      }
+    };
 
-  //   const refCurrent = scrollRef.current;
+    const refCurrent = scrollRef.current;
 
-  //   if (refCurrent) {
-  //     refCurrent.addEventListener("scroll", handleScroll);
-  //   }
+    if (refCurrent) {
+      refCurrent.addEventListener("scroll", handleScroll);
+    }
 
-  //   if (currentChatContent.length < 0) {
-  //     setShowButton(false);
-  //   }
+    if (currentChatContent.length < 0) {
+      setShowButton(false);
+    }
 
-  //   return () => {
-  //     if (refCurrent) {
-  //       refCurrent.removeEventListener("scroll", handleScroll);
-  //     }
-  //   };
-  // }, [loading, hasReachedEnd]);
+    return () => {
+      if (refCurrent) {
+        refCurrent.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [loading, hasReachedEnd]);
 
   // Cleanup EventSource on unmount
-
-useEffect(() => {
-  const handleScroll = () => {
-    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const btn = document.getElementById("scrollToBottomBtn");
-    if (!btn) return;
-
-    if (scrollTop + clientHeight < scrollHeight - 100) {
-      btn.classList.remove("hidden");
-    } else {
-      btn.classList.add("hidden");
-    }
-  };
-
-  const ref = scrollRef.current;
-  if (ref) ref.addEventListener("scroll", handleScroll);
-
-  return () => ref && ref.removeEventListener("scroll", handleScroll);
-}, []);
-
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
@@ -334,8 +315,6 @@ useEffect(() => {
           // handleStreamEnd(data.content, chatId, localFiles, isNewChat)
           if (data.tool === "image") {
             // setStreamedData
-          }
-          if (data.tool === "video") {
           }
           // Handle tool usage if needed
         } else if (data.type === "end") {
@@ -693,7 +672,7 @@ useEffect(() => {
   };
 
   const handleRemoveFile = (index: number) => {
-    if (aiProvider === "Document Analyser") {
+    if (aiProvider === "Document Analyzer") {
       // cancelUpload if needed
     }
     const newFiles = [...uploadedFiles];
@@ -970,12 +949,12 @@ useEffect(() => {
                           a: ({ node, href, children, ...props }) => {
                             const isVideo =
                               href?.endsWith(".mp4") ||
-                              href?.includes("generated_videos") ||
-                              href?.includes("/chat_history/video/");
+                              href?.includes("generated_videos");
 
                             const isImage =
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
-                              href?.includes("generated_images");
+                              href?.includes("generated_videos");
+
                             if (isVideo) {
                               return (
                                 <div className="my-4">
@@ -1083,23 +1062,14 @@ useEffect(() => {
         <div className="mt-12 mb-12" ref={messagesEndRef}></div>
       </div>
       <div className="relative">
-        {/* {showButton && (
+        {showButton && (
           <button
             className="w-fit top-[-2.5rem] left-[45%] self-center h-7 bg-white absolute border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white"
             onClick={scrollToBottom}
-             id="scrollToBottomBtn"
-             style={{ display: "none" }}
           >
             <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
           </button>
-        )} */}
-        <button
-          id="scrollToBottomBtn"
-          className="w-fit top-[-2.5rem] left-[45%] self-center h-7 bg-white absolute border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white hidden"
-          onClick={scrollToBottom}
-        >
-          <Text className="text-[14px] font-medium">Scroll to bottom</Text>
-        </button>
+        )}
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex items-center justify-start bg-inherit">
           <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
             <div className="w-full flex items-center gap-2">
@@ -1171,7 +1141,7 @@ useEffect(() => {
                 <textarea
                   disabled={loading || disabled}
                   onKeyDown={onKeyDown}
-                  maxLength={500}
+                  maxLength={5000}
                   onChange={(event) => setInputValue(event.target.value)}
                   value={inputValue}
                   placeholder={
@@ -1237,7 +1207,6 @@ useEffect(() => {
                       {/* Tab Buttons */}
                       {tabs.map((tab) => {
                         const isActive = aiProvider === tab.label;
-                        const Icon = tab.icon;
                         return (
                           <button
                             key={tab.label}
@@ -1246,7 +1215,7 @@ useEffect(() => {
               ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
                             style={{ width: "200px" }}
                           >
-                            {Icon ? <Icon size={18} /> : null}
+                            {tab.icon}
                             <span>{tab.label}</span>
                           </button>
                         );
