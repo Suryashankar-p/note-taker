@@ -253,11 +253,11 @@ const YearButton: React.FC<ButtonProps> = ({ onSubmit, year }) => {
 
   return (
     <div className="relative flex items-center">
-      <button className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handleNextYear}>&lt;</button>
+      <button className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handlePrevYear}>&lt;</button>
       <span className={`px-4 w-48 text-center overflow-hidden`}>
         <Text className='text-primary_text' type='body'>{years[yearIndex]}</Text>
       </span>
-      <button className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handlePrevYear}>&gt;</button>
+      <button className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300" onClick={handleNextYear}>&gt;</button>
     </div>
   );
 };
