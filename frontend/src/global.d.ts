@@ -6,6 +6,7 @@ declare global {
       ENABLE_SSO: string;
       ADMIN_USER_EMAIL: string;
       DOMAIN: string;
+      SUB_DOMAIN: string;
       URL_PREFIX: string;
       BACKEND_SSO_URL: string;
       BACKEND_THERMAX_GPT_URL: string;
