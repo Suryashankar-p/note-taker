@@ -22,7 +22,7 @@ const ProtectedRoute = ({ element }: any) => {
   if (isAuthenticated()) {
     return element;
   } else {
-    const currentPath = location.pathname;
+    const currentPath = location.pathname.replace(/^\/genaistudio/, "");
     return (
       <Navigate
         to={`/login?redirect=${encodeURIComponent(currentPath)}`}
@@ -31,6 +31,7 @@ const ProtectedRoute = ({ element }: any) => {
     );
   }
 };
+
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ChatPage = lazy(() => import("./pages/sales/ChatPageMain"));
 const Settings = lazy(() => import("./pages/sales/settings/Settings"));

@@ -52,6 +52,6 @@ export const CyberbuddyAPI = createAPI(axiosCyberbuddy);
 export const HeatingOCRAPI = createAPI(axiosHeatingOCR);
 
 export async function redirectToLogin(): Promise<void> {
-  window.location.href = `/`;
+  window.location.href = `/genaistudio/`;
   localStorage.clear();
 }
