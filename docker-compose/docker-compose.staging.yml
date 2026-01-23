@@ -10,6 +10,7 @@ services:
         VITE_ENABLE_SSO: "true"
         VITE_FIRST_USER_EMAIL: "admin@example.com"
         VITE_DOMAIN: "staging.thermax.thoughtmlabs.com"
+        VITE_SUB_DOMAIN: "genaistudio"
         VITE_URL_PREFIX: "/thermax"
         VITE_BACKEND_SSO_URL: "http://sso-service:3001"
         VITE_BACKEND_THERMAX_GPT_URL: "http://gpt-service:3002"
@@ -23,6 +24,7 @@ services:
         ENABLE_SSO: ${VITE_ENABLE_SSO}
         ADMIN_USER_EMAIL: ${VITE_FIRST_USER_EMAIL}
         DOMAIN: ${VITE_DOMAIN}
+        SUB_DOMAIN: ${VITE_SUB_DOMAIN}
         URL_PREFIX: ${VITE_URL_PREFIX}
         BACKEND_SSO_URL: ${VITE_BACKEND_SSO_URL}
         BACKEND_THERMAX_GPT_URL: ${VITE_BACKEND_THERMAX_GPT_URL}
