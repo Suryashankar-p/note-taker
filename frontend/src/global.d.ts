@@ -16,6 +16,7 @@ declare global {
       BACKEND_TBWES_OCR_URL: string;
       BACKEND_CYBERBUDDY_URL: string;
       BACKEND_HEATING_OCR_URL: string;
+      BACKEND_TRANSMITTER_OCR_URL: string;
     };
   }
 }

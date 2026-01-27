@@ -6,4 +6,5 @@ export const ACTIVE_SERVICES = {
     "troubleshooting": true,
     "cyberbuddy": true,
     "heating_ocr": true,
+    "transmitter_ocr": true,
 }

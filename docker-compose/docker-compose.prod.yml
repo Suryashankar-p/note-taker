@@ -20,6 +20,7 @@ services:
         VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
         VITE_BACKEND_CYBERBUDDY_URL: "http://cyberbuddy-service:3007"
         VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008"
+        VITE_BACKEND_TRANSMITTER_OCR_URL: "http://transmitter-ocr-service:3009"
     environment:
       VITE_ENABLE_SSO: "true"
       VITE_FIRST_USER_EMAIL: "admin@example.com"
@@ -34,6 +35,7 @@ services:
       VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006"
       VITE_BACKEND_CYBERBUDDY_URL: "http://cyberbuddy-service:3007"
       VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008"
+      VITE_BACKEND_TRANSMITTER_OCR_URL: "http://transmitter-ocr-service:3009"
     ports:
       - "3000:80" 
     restart: unless-stopped

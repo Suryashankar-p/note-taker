@@ -37,6 +37,7 @@ const ChatPage = lazy(() => import("./pages/sales/ChatPageMain"));
 const Settings = lazy(() => import("./pages/sales/settings/Settings"));
 const TBWES_OCR = lazy(() => import("./pages/tbwes_ocr/OcrMain.tsx"));
 const Thermax_GPT = lazy(() => import("./pages/thermax_gpt/GPTMain.tsx"));
+const TRANSMITTER_OCR = lazy(() => import("./pages/transmitter_ocr/TransmitterOcrMain.tsx"));
 const Thermax_GPT_Settings = lazy(
   () => import("./pages/thermax_gpt/settings/Settings.tsx")
 );
@@ -75,6 +76,10 @@ const App = () => (
       <Route
         path="/ai-studio/tbwes_ocr"
         element={<ProtectedRoute element={<TBWES_OCR />} />}
+      />
+      <Route
+        path="/ai-studio/transmitter_ocr"
+        element={<ProtectedRoute element={<TRANSMITTER_OCR />} />}
       />
       <Route
         path="/ai-studio/sales"

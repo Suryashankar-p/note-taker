@@ -8,7 +8,8 @@ import { GetMemberGPTRole } from "../services/thermax_gpt.ts";
 import { GetMemberDoctorConbotRole } from "../services/doctor_conbot.ts";
 import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
 import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
-import { GetHeatingOCRRole} from "../services/heating_ocr.ts"
+import { GetHeatingOCRRole} from "../services/heating_ocr.ts";
+import { TransmitterGetMemberOCRRole} from "../services/transmitter_ocr.ts";
 
 type Type =
   | "sales"
@@ -40,6 +41,8 @@ const useApiCheck = (type?: Type) => {
         return await GetMemberCyberBuddyRole();
       case "heating_ocr":
         return await GetHeatingOCRRole();
+      case "transmitter_ocr":
+        return await TransmitterGetMemberOCRRole();
       default:
         return null;
     }

@@ -24,6 +24,7 @@ import { GetMemberOCRRole } from "../services/tbwes_ocr.ts";
 import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
 import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
 import { GetHeatingOCRRole } from "../services/heating_ocr.ts";
+import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
 
 interface Card {
   title: string;
@@ -115,6 +116,21 @@ const Dashboard: React.FC = () => {
       const response = await GetMemberOCRRole();
       if (response?.role) {
         navigate("./tbwes_ocr");
+      } else {
+        setPageError(true);
+        if (response?.detail)
+          dispatch.toast.openToast({ status: true, message: response?.detail });
+      }
+    } catch (err) {
+      console.log("my err");
+    }
+  };
+
+  const TransmittergetOCRRole = async () => {
+    try {
+      const response = await TransmitterGetMemberOCRRole();
+      if (response?.role) {
+        navigate("./transmitter_ocr");
       } else {
         setPageError(true);
         if (response?.detail)
@@ -222,6 +238,9 @@ const Dashboard: React.FC = () => {
         break;
       case "Heating OCR":
         getHeatingOCRRole();
+        break;
+      case "Transmitter OCR":
+        TransmittergetOCRRole();
         break;
     }
   };
