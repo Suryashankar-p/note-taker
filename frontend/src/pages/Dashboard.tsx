@@ -25,6 +25,7 @@ import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
 import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
 import { GetHeatingOCRRole } from "../services/heating_ocr.ts";
 import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
+import { GetTranslatorRole } from "../services/doc_translator.ts";
 
 interface Card {
   title: string;
@@ -171,6 +172,32 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const getTranslatorRole = async () => {
+    try {
+      const translatorRole = await GetTranslatorRole();
+      if (translatorRole?.email) {
+        navigate("./doc_translator");
+      } else {
+        if (translatorRole?.detail) {
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: translatorRole?.detail,
+          });
+        } else {
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: "Server failed to respond",
+          });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+
   const getTroubleshootingRole = async () => {
     try {
       const response = await GetMemberTroubleshootingRole();
@@ -226,6 +253,9 @@ const Dashboard: React.FC = () => {
         break;
       case "Thermax-GPT":
         getGPTRole();
+        break;
+      case "Document Translator":
+        getTranslatorRole();
         break;
       case "Dr. ConBot":
         getDoctorConbotRole();
