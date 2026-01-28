@@ -7,7 +7,8 @@ import {
   axiosDoctorBot,
   axiosCyberbuddy,
   axiosHeatingOCR,
-  axiosTransmitterOCR
+  axiosTransmitterOCR,
+  axiosDocumentTranslator,
 } from "./axiosInstances";
 
 import { setInterceptors } from "./axiosConfig";
@@ -22,7 +23,8 @@ import { setInterceptors } from "./axiosConfig";
   axiosDoctorBot,
   axiosCyberbuddy,
   axiosHeatingOCR,
-  axiosTransmitterOCR
+  axiosTransmitterOCR,
+  axiosDocumentTranslator,
 ].forEach(setInterceptors);
 
 // Reusable wrapper for standard HTTP methods
@@ -53,6 +55,7 @@ export const DoctorBotAPI = createAPI(axiosDoctorBot);
 export const CyberbuddyAPI = createAPI(axiosCyberbuddy);
 export const HeatingOCRAPI = createAPI(axiosHeatingOCR);
 export const TransmitterOCRAPI = createAPI(axiosTransmitterOCR);
+export const DocumentTranslatorAPI = createAPI(axiosDocumentTranslator);
 
 export async function redirectToLogin(): Promise<void> {
   window.location.href = `/genaistudio/`;

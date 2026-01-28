@@ -35,6 +35,7 @@ const ProtectedRoute = ({ element }: any) => {
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ChatPage = lazy(() => import("./pages/sales/ChatPageMain"));
 const Settings = lazy(() => import("./pages/sales/settings/Settings"));
+const Translator = lazy(() => import("./pages/doc_translator/TranslationMain"));
 const TBWES_OCR = lazy(() => import("./pages/tbwes_ocr/OcrMain.tsx"));
 const Thermax_GPT = lazy(() => import("./pages/thermax_gpt/GPTMain.tsx"));
 const TRANSMITTER_OCR = lazy(() => import("./pages/transmitter_ocr/TransmitterOcrMain.tsx"));
@@ -88,6 +89,10 @@ const App = () => (
       <Route
         path="/ai-studio/sales/settings"
         element={<ProtectedRoute element={<Settings />} />}
+      />
+      <Route
+        path="/ai-studio/doc_translator"
+        element={<ProtectedRoute element={<Translator />} />}
       />
       <Route
         path="/ai-studio/thermax_gpt"
