@@ -411,6 +411,11 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     }
   };
 
+  const handleCreateActivity = async (title: string, file: File) => {
+    const masterId = masterFilter.value !== "all" ? parseInt(masterFilter.value) : 0;
+    await handleCreate(title, file, masterId);
+  };
+
   const onChange = (item: string, activity: Activity) => {
     setDefaultActivity(activity);
     if (item === "Edit") {
@@ -703,10 +708,9 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
       <CreateActivity
         isOpen={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
-        onCreate={handleCreate}
+        onCreate={handleCreateActivity}
         defaultValues={defaultActivity}
         onUpdate={onUpdate}
-        isChildActivity={true} // Explicitly set for child activity context
       />
       {tranferModal && (
         <TranferActivityModal
