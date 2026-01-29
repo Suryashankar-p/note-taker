@@ -20,7 +20,7 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
   const loader= useSelector((state: RootState) => state.loadingState.status)
 
   const [loading, setLoading] = useState(loader ?? true);
-  const [excelHtml, setExcelHtml] = useState(""); // 👈 to store rendered Excel HTML
+  const [excelHtml, setExcelHtml] = useState("");
 
   const closeModal = () => {
     onClose();
@@ -36,7 +36,6 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
     document.body.removeChild(a);
   };
 
-  // 👇 When modal opens, check if file is Excel and render it
   useEffect(() => {
     const loadExcel = async () => {
       if (!fileUrl?.url) return;
@@ -44,36 +43,29 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
 
       try {
         let workbook;
-        const base64Data = fileUrl.url.split(",")[1]; // remove data: prefix
+        const base64Data = fileUrl.url.split(",")[1];
 
         if (fileUrl.name.endsWith(".xlsx")) {
-          // New Excel format
           workbook = XLSX.read(base64Data, { type: "base64" });
         } else if (fileUrl.name.endsWith(".xls")) {
-          // Old Excel format
-          // Convert base64 to binary string
           const binary = atob(base64Data);
           workbook = XLSX.read(binary, { type: "binary" });
         } else {
           throw new Error("Unsupported Excel file type");
         }
 
-        // Render first sheet (or all sheets)
         const firstSheet = workbook.SheetNames[0];
         let html = XLSX.utils.sheet_to_html(workbook.Sheets[firstSheet]);
-        // Add borders to the table
        html = `
         <style>
-          /* General table style */
           table {
             border-collapse: collapse;
             width: 100%;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            table-layout: auto; /* Changed from fixed to auto */
+            table-layout: auto;
             background-color: #fff;
           }
 
-          /* Header row */
           th {
             background-color: #f3f3f3;
             font-weight: bold;
@@ -81,33 +73,28 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
             padding: 8px;
             border: 1px solid #ccc;
             color: #333;
-            white-space: normal; /* Allow wrapping in headers */
-            min-width: 100px; /* Ensure minimum readable width */
+            white-space: normal;
+            min-width: 100px;
           }
 
-          /* Table cells */
           td {
             border: 1px solid #ccc;
             padding: 8px;
             text-align: left;
             color: #333;
-            white-space: normal; /* Changed from nowrap to normal - allows wrapping */
-            word-wrap: break-word; /* Break long words if needed */
-            min-width: 100px; /* Ensure minimum readable width */
-            max-width: 300px; /* Optional: prevent cells from getting too wide */
+            white-space: normal;
+            word-wrap: break-word;
+            min-width: 100px;
+            max-width: 300px;
           }
 
-          /* Alternating row colors */
           tr:nth-child(even) td {
             background-color: #fafafa;
           }
-
-          /* Hover highlight */
           tr:hover td {
             background-color: #e6f2ff;
           }
 
-          /* Fix width for table container */
           div {
             overflow-x: auto;
             width: 100%;
