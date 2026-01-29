@@ -24,6 +24,8 @@ import { GetMemberOCRRole } from "../services/tbwes_ocr.ts";
 import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
 import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
 import { GetHeatingOCRRole } from "../services/heating_ocr.ts";
+import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
+import { GetTranslatorRole } from "../services/doc_translator.ts";
 
 interface Card {
   title: string;
@@ -125,6 +127,21 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const TransmittergetOCRRole = async () => {
+    try {
+      const response = await TransmitterGetMemberOCRRole();
+      if (response?.role) {
+        navigate("./transmitter_ocr");
+      } else {
+        setPageError(true);
+        if (response?.detail)
+          dispatch.toast.openToast({ status: true, message: response?.detail });
+      }
+    } catch (err) {
+      console.log("my err");
+    }
+  };
+
   const getGPTRole = async () => {
     try {
       const response = await GetMemberGPTRole();
@@ -154,6 +171,32 @@ const Dashboard: React.FC = () => {
       console.log("my err");
     }
   };
+
+  const getTranslatorRole = async () => {
+    try {
+      const translatorRole = await GetTranslatorRole();
+      if (translatorRole?.email) {
+        navigate("./doc_translator");
+      } else {
+        if (translatorRole?.detail) {
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: translatorRole?.detail,
+          });
+        } else {
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: "Server failed to respond",
+          });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
 
   const getTroubleshootingRole = async () => {
     try {
@@ -211,6 +254,9 @@ const Dashboard: React.FC = () => {
       case "Thermax-GPT":
         getGPTRole();
         break;
+      case "Document Translator":
+        getTranslatorRole();
+        break;
       case "Dr. ConBot":
         getDoctorConbotRole();
         break;
@@ -222,6 +268,9 @@ const Dashboard: React.FC = () => {
         break;
       case "Heating OCR":
         getHeatingOCRRole();
+        break;
+      case "Transmitter OCR":
+        TransmittergetOCRRole();
         break;
     }
   };

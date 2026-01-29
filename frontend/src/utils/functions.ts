@@ -7,6 +7,7 @@ import doctor_conbot from '../assets/doctor_conbot.png'
 import troubleshooting from '../assets/troubleshooting.png'
 import cyberbuddy from '../assets/cyberbuddy.png'
 import heatingocr from '../assets/heating_ocr.png'
+import transmitter_ocr from '../assets/transmitter_ocr.jpg'
 
 const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 
@@ -266,6 +267,8 @@ export const selectImage = (title: string) => {
             return sales;
         case "TBWES OCR":
             return ocr;
+        case "Transmitter OCR":
+            return transmitter_ocr;
         case 'Document Translator':
             return translate;
         case 'Training QA':
