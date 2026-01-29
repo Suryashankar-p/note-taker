@@ -15,7 +15,7 @@ import { TransmitterGetMemberOCRRole} from "../services/transmitter_ocr.ts";
 type Type =
   | "sales"
   | "tbwes_ocr"
-    "doc_translator"
+  | "doc_translator"
   | "thermax_gpt"
   | "doctor_conbot"
   | "troubleshooting"
