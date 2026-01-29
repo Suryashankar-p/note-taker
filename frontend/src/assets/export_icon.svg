@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" version="1.1">
+  <title>export-icon</title>
+  <desc>Raster PNG embedded in SVG as data URI</desc>
+  <image width="24" height="24" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAuElEQVR4nO2UQQrCQAxF3wWcigjuxMNYsEsLPUIvoPfpJTyJrvUIdeNWaBmYRXDRSaqjLvogkEV+PpMhgYl/JANyoIpEHmpNFMAd6JTRBo2KubF5J0xUL9kKUaMYUSPqvTZKJQQ+j1GK+jKFwQq4AdeQL4DNJw1e8ZoHUL9jcASeio8/AbMxBofUBslHJFkCF+Accr9HawawGuxFvc9/v2hZWPsxp8KhpDCatMAOI85wrp21+cT36QGAWYJHsTfJNwAAAABJRU5ErkJggg==" />
+</svg>

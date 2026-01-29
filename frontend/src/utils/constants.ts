@@ -81,6 +81,11 @@ export const Languages = [
     value: "de",
     subname: "Germany",
   },
+  {
+    name: "English",
+    value: "en",
+    subname: "English",
+  },
 ];
 
 export const listValuesWithReviewer = [
