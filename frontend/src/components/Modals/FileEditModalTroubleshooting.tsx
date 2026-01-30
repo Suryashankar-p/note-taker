@@ -1,14 +1,7 @@
-import {
-  Dialog,
-  Transition,
-  Textarea,
-  DialogTitle,
-  DialogPanel,
-  TransitionChild,
-} from "@headlessui/react";
-import { Fragment, useState, useRef, useEffect } from "react";
-import Text from "../Text";
+import React, { useState, useRef } from "react";
+import { FaCloudUploadAlt } from "react-icons/fa";
 import Close from "../../assets/close.svg";
+import Text from "../Text";
 import { useSelector, useDispatch } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store";
 import { useForm } from "react-hook-form";
@@ -74,156 +67,115 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
 
   return (
     <>
-      <Transition appear show={isOpen?.status} as={Fragment}>
-        <Dialog
-          as="div"
-          className="relative z-100"
-          onClose={closeModal}
-          initialFocus={initialFocusRef}
-        >
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-[#0061F3]/5" />
-          </TransitionChild>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <TransitionChild
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
+      {isOpen?.status && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4 sm:px-6">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 sm:p-8 space-y-6 relative">
+            {/* Modal Header */}
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Add file
+              </h2>
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition"
+                onClick={closeModal}
               >
-                <DialogPanel
-                  className="w-[90%] sm:max-w-xs md:max-w-md lg:max-w-lg h-fit transform overflow-hidden rounded-2xl bg-white p-4 sm:p-5 md:p-6 text-left align-middle shadow-xl transition-all"
-                  style={{ transform: "translate(5vw, 5vh)" }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <DialogTitle
-                    as="h3"
-                    className="text-[20px] sm:text-[18px] md:text-[24px] relative font-medium flex justify-between leading-6 text-gray-900"
-                  >
-                    <Text>{"Add file"}</Text>
-                    <button
-                      className="absolute right-2 -top-1 sm:right-1 sm:-top-1"
-                      onClick={closeModal}
-                      ref={initialFocusRef}
-                    >
-                      <img
-                        src={Close}
-                        alt="close"
-                        className="w-12 h-12 sm:w-12 sm:h-12"
-                        loading="lazy"
-                      />
-                    </button>
-                  </DialogTitle>
-
-                  <form onSubmit={handleSubmit(onHandle)}>
-                    {toastStatus.status && (
-                      <div className="fixed top-2 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
-                        <Toast type="error" />
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-2 mt-3">
-                      <div className="flex flex-col md:flex-row w-full gap-4">
-                        <div className="flex flex-col w-full md:w-2/3 gap-1">
-                          <label>
-                            <Text className="text-primary_text">
-                              Upload File*
-                            </Text>
-                          </label>
-                          <div className="relative w-full">
-                            <input
-                              type="text"
-                              {...register("fileName", {
-                                required: "Field is required",
-                              })}
-                              className={`border ${
-                                errors?.fileName && "border-danger"
-                              } rounded-md w-full h-10 sm:h-12 flex-grow focus:outline-none p-3 sm:p-4`}
-                              placeholder="Upload File"
-                            />
-                            <input
-                              type="file"
-                              className="hidden"
-                              ref={fileInputRef}
-                              onChange={handleFileChange}
-                            />
-                            <button
-                              type="button"
-                              className="absolute h-9 sm:h-10 right-2 top-1/2 transform -translate-y-1/2 border cursor-pointer bg-inherit text-primary_text rounded-md px-3 py-1"
-                              onClick={handleChooseFileClick}
-                            >
-                              <Text type="small">Choose File</Text>
-                            </button>
-                          </div>
-                          <Text type="small" className="text-danger">
-                            {errors?.fileName?.message}
-                          </Text>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 md:mt-10 flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
-                      <button
-                        type="button"
-                        className="inline-flex justify-center rounded-md border border-transparent bg-none text-primary_text px-3 sm:px-4 py-2 text-sm sm:text-base font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                        onClick={closeModal}
-                      >
-                        <Text type="small">Cancel</Text>
-                      </button>
-                      <button
-                        type="submit"
-                        className="inline-flex justify-center items-center rounded-md border border-transparent bg-[#0061F3] px-3 sm:px-4 py-2 text-sm sm:text-base font-medium text-white focus:outline-none focus-visible:ring-offset-2"
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <div className="flex items-center">
-                            <div className="mr-2">Saving...</div>
-                            <svg
-                              className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8v8H4z"
-                              ></path>
-                            </svg>
-                          </div>
-                        ) : (
-                          <span>Save</span>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </DialogPanel>
-              </TransitionChild>
+                <img src={Close} alt="Close" loading="lazy" className="w-15 h-15" />
+              </button>
             </div>
+
+            <form onSubmit={handleSubmit(onHandle)}>
+              {toastStatus.status && (
+                <div className="fixed top-2 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
+                  <Toast type="error" />
+                </div>
+              )}
+
+              {/* Custom File Upload Box */}
+              <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-red-400 rounded-xl p-6 text-center bg-red-50 hover:bg-red-100 transition-colors duration-200 cursor-pointer">
+                <FaCloudUploadAlt className="w-10 h-10 text-red-600 mb-2" />
+                {file ? (
+                  <span className="text-green-600">{fileName}</span>
+                ) : (
+                  <span className="text-red-700 font-medium hover:underline">
+                    Click to select a file
+                  </span>
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  File size max 10MB.
+                </p>
+                <input
+                  type="file"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+              </label>
+
+              {/* Hidden input for form validation */}
+              <input
+                type="hidden"
+                {...register("fileName", {
+                  required: "Field is required",
+                })}
+              />
+
+              {errors?.fileName && (
+                <Text type="small" className="text-danger">
+                  {errors?.fileName?.message}
+                </Text>
+              )}
+
+              {/* Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`px-4 py-2 rounded-lg text-white font-medium transition ${
+                    loading
+                      ? "bg-blue-300 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="mr-2">Saving...</div>
+                      <svg
+                        className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        ></path>
+                      </svg>
+                    </div>
+                  ) : (
+                    <span>Save</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
-        </Dialog>
-      </Transition>
+        </div>
+      )}
     </>
   );
 };

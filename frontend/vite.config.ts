@@ -4,13 +4,11 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
 
-  const basePath = 'genaistudio'
-
   return {
     plugins: [react()],
-    base: `/${basePath}/`,
+    base: `/`,
     build: {
-      outDir: `dist/${basePath}`,
+      outDir: `dist`,
       assetsDir: 'assets',
     },
     preview: {
