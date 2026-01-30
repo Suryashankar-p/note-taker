@@ -17,7 +17,7 @@ import {
   statusMapper,
   userStatusMapper,
 } from "../../utils/functions.ts";
-import CreateActivity from "../../components/Modals/CreateActivity.tsx";
+import CreateChildActivity from "../../components/Modals/CreateChildActivity.tsx";
 import { Member, url } from "../../utils/constants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
@@ -38,7 +38,6 @@ import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
 import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
 import { getOCRRole } from "./Member.tsx";
-import axios from "axios";
 
 GlobalWorkerOptions.workerSrc = url;
 
@@ -99,6 +98,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   }>({ value: "all", name: "All" });
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
   const [masterActivities, setMasterActivities] = useState<any[]>([]);
+  const [masterSheetsForModal, setMasterSheetsForModal] = useState<Array<{ id: string; name: string }>>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [user, setUser] = useState<any>(null);
   const member = useSelector((state: RootState) => state.memberRole);
@@ -145,47 +145,47 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   const getMasterActivityTitles = async () => {
     try {
       console.log("Fetching master activities...");
-      const DOMAIN = import.meta.env.VITE_DOMAIN;
-      const URL_PREFIX = import.meta.env.VITE_URL_PREFIX;
-      const BASE_URL = `${DOMAIN === 'localhost' ? "http:" : "https:"}//${DOMAIN}${URL_PREFIX}`;
-      const token = localStorage.getItem('access_token');
+      const response = await TransmitterGetMasterActivities(0, 1000, "", null, null);
       
-      // Make a direct API call to get master activities
-      const response = await axios.get(
-        `${BASE_URL}/transmitter_ocr/master_activity?skip=0&limit=1000`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+      console.log("Master activities response:", response);
       
-      console.log("Master activities response:", response.data);
-      
-      if (response.data && response.data.result) {
-        console.log("Master activities result:", response.data.result);
-        // Format for dropdown: { value: id, name: title }
-        const masters = response.data.result.map((master: any) => ({
+      if (response && response.result) {
+        console.log("Master activities result:", response.result);
+        
+        // Format for dropdown filter: { value: id, name: title }
+        const mastersForFilter = response.result.map((master: any) => ({
           value: master.id.toString(),
           name: master.title
         }));
-        console.log("Formatted masters:", masters);
-        setMasterActivities([{ value: "all", name: "All" }, ...masters]);
-      } else if (Array.isArray(response.data)) {
-        // If response is directly an array
-        const masters = response.data.map((master: any) => ({
-          value: master.id.toString(),
+        
+        // Format for modal: { id: string, name: string }
+        const mastersForModal = response.result.map((master: any) => ({
+          id: master.id.toString(),
           name: master.title
         }));
-        setMasterActivities([{ value: "all", name: "All" }, ...masters]);
+        
+        console.log("Formatted masters for filter:", mastersForFilter);
+        console.log("Formatted masters for modal:", mastersForModal);
+        
+        setMasterActivities([{ value: "all", name: "All" }, ...mastersForFilter]);
+        setMasterSheetsForModal(mastersForModal);
       } else {
-        console.log("Unexpected response structure:", response.data);
+        console.log("Unexpected response structure:", response);
         setMasterActivities([{ value: "all", name: "All" }]);
+        setMasterSheetsForModal([]);
       }
     } catch (err) {
       console.error("Error fetching master activity titles", err);
       // Fallback to empty array with "All" option
       setMasterActivities([{ value: "all", name: "All" }]);
+      setMasterSheetsForModal([]);
+      
+      // Show error toast
+      dispatch.toast.openToast({
+        status: true,
+        message: "Failed to load master activities",
+        type: "error",
+      });
     }
   };
 
@@ -379,13 +379,31 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     }
   };
 
-  const handleCreate = async (title: string, file: File, masterId: number) => {
+  const handleCreate = async (title: string, file: File, pagesToTrim?: string, masterSheetId?: string) => {
     setIsLoading(true);
     try {
+      const masterId = masterSheetId ? parseInt(masterSheetId) : 
+                       (masterFilter.value !== "all" ? parseInt(masterFilter.value) : undefined);
+      
+      if (!masterId) {
+        dispatch.toast.openToast({
+          status: true,
+          message: "Please select a master sheet",
+          type: "error",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const response = await TransmitterCreateChildActivity(title, file, masterId);
       if (response) {
         setCreateModalVisible(false);
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
+        dispatch.toast.openToast({
+          status: true,
+          message: "Child activity created successfully",
+          type: "success",
+        });
       } else {
         console.error("Error creating activity");
       }
@@ -411,11 +429,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     }
   };
 
-  const handleCreateActivity = async (title: string, file: File) => {
-    const masterId = masterFilter.value !== "all" ? parseInt(masterFilter.value) : 0;
-    await handleCreate(title, file, masterId);
-  };
-
   const onChange = (item: string, activity: Activity) => {
     setDefaultActivity(activity);
     if (item === "Edit") {
@@ -429,7 +442,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     }
   };
 
-  const onUpdate = async (title: string) => {
+  const onUpdate = async (title: string, pagesToTrim?: string, masterSheetId?: string) => {
     setIsLoading(true);
     try {
       let payload = {
@@ -443,9 +456,19 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
       if (response?.id) {
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
         setCreateModalVisible(false);
+        dispatch.toast.openToast({
+          status: true,
+          message: "Child activity updated successfully",
+          type: "success",
+        });
       }
     } catch (err) {
       console.error("Error updating activity", err);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Error updating activity",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -456,8 +479,18 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     try {
       await TransmitterDeleteChildActivity(activity?.id);
       getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
+      dispatch.toast.openToast({
+        status: true,
+        message: "Activity deleted successfully",
+        type: "success",
+      });
     } catch (err) {
       console.error("Error deleting activity", err);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Error deleting activity",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -502,9 +535,19 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
       if (response?.id) {
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
         dispatch.modal.closeTranferModal();
+        dispatch.toast.openToast({
+          status: true,
+          message: "Activity transferred successfully",
+          type: "success",
+        });
       }
     } catch (err) {
       console.error("Error transferring activity", err);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Error transferring activity",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -512,6 +555,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
 
   // Debug: Log master activities state
   console.log("Master activities state:", masterActivities);
+  console.log("Master sheets for modal:", masterSheetsForModal);
 
   return (
     <div className="flex flex-1 h-screen">
@@ -704,13 +748,14 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
           content="Are you sure you want to remove this activity?"
         />
       )}
-      {/* Create Activity Modal */}
-      <CreateActivity
+      {/* Create Child Activity Modal */}
+      <CreateChildActivity
         isOpen={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
-        onCreate={handleCreateActivity}
+        onCreate={handleCreate}
         defaultValues={defaultActivity}
         onUpdate={onUpdate}
+        masterSheets={masterSheetsForModal}
       />
       {tranferModal && (
         <TranferActivityModal

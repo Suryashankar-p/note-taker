@@ -23,7 +23,125 @@ import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
 import iButton from "../../assets/info.svg";
 import Toast from "../../components/Toast.tsx";
 import { capitalizeWords, statusMapper } from "../../utils/functions.ts";
+
 GlobalWorkerOptions.workerSrc = url;
+
+// Component for displaying master data table (NOW EDITABLE)
+const MasterDataTable: React.FC<{ 
+  masterData: any[];
+  onDataUpdate: (updatedData: any[]) => void;
+  disabled: boolean;
+}> = ({ masterData, onDataUpdate, disabled }) => {
+  if (!masterData || masterData.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        No master data found
+      </div>
+    );
+  }
+
+  const handleCellChange = (rowIndex: number, field: string, value: string) => {
+    const updatedData = [...masterData];
+    updatedData[rowIndex] = {
+      ...updatedData[rowIndex],
+      [field]: value === "" || value === "-" ? null : value
+    };
+    onDataUpdate(updatedData);
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse border border-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+              Tag Number
+            </th>
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+              Model Number
+            </th>
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+              Lower Calibration Range
+            </th>
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+              Upper Calibration Range
+            </th>
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+              Calibration Range Unit
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {masterData.map((item, index) => (
+            <tr key={index} className="hover:bg-gray-50">
+              <td className="border border-gray-200 px-4 py-3 text-sm">
+                {disabled ? (
+                  <span>{item["Tag number"] || "-"}</span>
+                ) : (
+                  <input
+                    type="text"
+                    defaultValue={item["Tag number"] || ""}
+                    onBlur={(e) => handleCellChange(index, "Tag number", e.target.value)}
+                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                  />
+                )}
+              </td>
+              <td className="border border-gray-200 px-4 py-3 text-sm">
+                {disabled ? (
+                  <span>{item["Model number"] || "-"}</span>
+                ) : (
+                  <input
+                    type="text"
+                    defaultValue={item["Model number"] || ""}
+                    onBlur={(e) => handleCellChange(index, "Model number", e.target.value)}
+                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                  />
+                )}
+              </td>
+              <td className="border border-gray-200 px-4 py-3 text-sm">
+                {disabled ? (
+                  <span>{item["Lower Calibration Range"] !== null ? item["Lower Calibration Range"] : "-"}</span>
+                ) : (
+                  <input
+                    type="text"
+                    defaultValue={item["Lower Calibration Range"] !== null ? item["Lower Calibration Range"] : ""}
+                    onBlur={(e) => handleCellChange(index, "Lower Calibration Range", e.target.value)}
+                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                  />
+                )}
+              </td>
+              <td className="border border-gray-200 px-4 py-3 text-sm">
+                {disabled ? (
+                  <span>{item["Upper Calibration Range"] !== null ? item["Upper Calibration Range"] : "-"}</span>
+                ) : (
+                  <input
+                    type="text"
+                    defaultValue={item["Upper Calibration Range"] !== null ? item["Upper Calibration Range"] : ""}
+                    onBlur={(e) => handleCellChange(index, "Upper Calibration Range", e.target.value)}
+                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                  />
+                )}
+              </td>
+              <td className="border border-gray-200 px-4 py-3 text-sm">
+                {disabled ? (
+                  <span>{item["Calibration Range Unit"] || "-"}</span>
+                ) : (
+                  <input
+                    type="text"
+                    defaultValue={item["Calibration Range Unit"] || ""}
+                    onBlur={(e) => handleCellChange(index, "Calibration Range Unit", e.target.value)}
+                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                  />
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 // Component for editable table cells
 const EditableExtractedTables: React.FC<{ 
   tables: any[]; 
@@ -37,6 +155,7 @@ const EditableExtractedTables: React.FC<{
       </div>
     );
   }
+
   const renderTable = (table: any, tableIndex: number) => {
     const { rowCount, columnCount, cells } = table;
     
@@ -48,6 +167,7 @@ const EditableExtractedTables: React.FC<{
       if (a.rowIndex !== b.rowIndex) return a.rowIndex - b.rowIndex;
       return a.columnIndex - b.columnIndex;
     });
+
     return (
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse border border-gray-200">
@@ -114,6 +234,7 @@ const EditableExtractedTables: React.FC<{
       </div>
     );
   };
+
   return (
     <div className="space-y-6">
       {tables.map((table, tableIndex) => (
@@ -132,6 +253,7 @@ const EditableExtractedTables: React.FC<{
     </div>
   );
 };
+
 interface Item {
   title: string;
   type: string;
@@ -139,6 +261,7 @@ interface Item {
   is_valid: boolean;
   invalid_reason: string | null;
 }
+
 const MasterActivityDetailPage: React.FC = () => {
   const location = useLocation();
   const activity = location?.state?.activity;
@@ -169,22 +292,39 @@ const MasterActivityDetailPage: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // State for editable tables
+  // State for editable tables and master data
   const [editableTables, setEditableTables] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [masterData, setMasterData] = useState<any[]>([]);
   
   useEffect(() => {
     getActivityDetails(activity?.id);
     getDocumentLink(activity?.id);
   }, []);
+  
   useEffect(() => {
     getack()
   }, []);
   
-  // Initialize editable tables when activity details are loaded
+  // Initialize editable tables and master data when activity details are loaded
   useEffect(() => {
+    console.log("Activity Details:", activityDetails);
+    console.log("Activity Data:", activityDetails?.data);
+    
     if (activityDetails?.data?.tables) {
       setEditableTables(activityDetails.data.tables);
+    }
+    
+    // Check both locations for master_data
+    if (activityDetails?.master_data) {
+      console.log("Master Data found on activityDetails:", activityDetails.master_data);
+      setMasterData(activityDetails.master_data);
+    } else if (activityDetails?.data?.master_data) {
+      console.log("Master Data found in data:", activityDetails.data.master_data);
+      setMasterData(activityDetails.data.master_data);
+    } else {
+      console.log("No master_data found in response");
+      setMasterData([]);
     }
   }, [activityDetails]);
   
@@ -193,6 +333,7 @@ const MasterActivityDetailPage: React.FC = () => {
     e.preventDefault();
     setIsResizing(true);
   };
+
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing || !containerRef.current) return;
     
@@ -205,9 +346,11 @@ const MasterActivityDetailPage: React.FC = () => {
       setLeftPanelWidth(newLeftWidth);
     }
   };
+
   const handleMouseUp = () => {
     setIsResizing(false);
   };
+
   // Effect to handle mouse events
   useEffect(() => {
     if (isResizing) {
@@ -217,11 +360,13 @@ const MasterActivityDetailPage: React.FC = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     }
+
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isResizing]);
+
   const getDocumentLink = async (activity_id: number) => {
     try {
       const response = await TransmitterGetMasterDocumentUrl(activity_id);
@@ -230,6 +375,7 @@ const MasterActivityDetailPage: React.FC = () => {
       console.error("Error reading document link:", error);
     }
   };
+
   const getActivityDetails = async (activity_id: number) => {
     try {
       const response = await TransmitterGetMasterActivityDetails(activity_id);
@@ -251,6 +397,7 @@ const MasterActivityDetailPage: React.FC = () => {
     );
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
     const pages = pdfDoc.getPages();
+
     fieldsToHighlight.forEach((field) => {
       const { pageNumber, coordinates } = field;
       if (pageNumber < 1 || pageNumber > pages.length) {
@@ -259,14 +406,17 @@ const MasterActivityDetailPage: React.FC = () => {
         );
         return;
       }
+
       const targetPage = pages[pageNumber - 1];
       const { width: pdfWidth, height: pdfHeight } = targetPage.getSize();
       const { current_min_x, current_max_x, current_min_y, current_max_y } =
         coordinates;
+
       const box_x = current_min_x * pdfWidth;
       const box_y = current_min_y * pdfHeight;
       const box_width = (current_max_x - current_min_x) * pdfWidth;
       const box_height = (current_max_y - current_min_y) * pdfHeight;
+
       targetPage.drawRectangle({
         x: box_x,
         y: pdfHeight - box_y - box_height,
@@ -276,6 +426,7 @@ const MasterActivityDetailPage: React.FC = () => {
         borderWidth: 1,
       });
     });
+
     const pdfBytes = await pdfDoc.save();
     // Create a regular Uint8Array from the pdfBytes
     const uint8Array = new Uint8Array(pdfBytes);
@@ -298,6 +449,7 @@ const MasterActivityDetailPage: React.FC = () => {
       console.error("Error fetching acknowledgment data:", error);
     }
   };
+
   const pollAckData = async () => {
     const checkAckData = async () => {
       const response = await TransmitterGetMasterAckData(activity?.id);
@@ -316,6 +468,7 @@ const MasterActivityDetailPage: React.FC = () => {
       clearInterval(polling);
     }, 40000);
   };
+
   const handleSubmit = async (type: string) => {
     // Only handle reject now
     if (type !== "reject") return;
@@ -379,11 +532,13 @@ const MasterActivityDetailPage: React.FC = () => {
       });
     }
   };
+
   useLayoutEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollPositionRef.current;
     }
   }, [fieldData]);
+
   const handleInputChange = async (index: number, value: string | number) => {
     scrollPositionRef.current = scrollRef.current?.scrollTop || 0;
     if (timeoutId) {
@@ -430,6 +585,20 @@ const MasterActivityDetailPage: React.FC = () => {
     });
   };
   
+  // NEW: Function to handle master data updates
+  const handleMasterDataUpdate = (updatedMasterData: any[]) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    
+    setMasterData(updatedMasterData);
+    
+    // Debounce the update to the backend
+    timeoutId = setTimeout(() => {
+      updateActivityDetails(activity?.id, { master_data: updatedMasterData });
+    }, 4000);
+  };
+  
   const updateActivityDetails = async (activity_id: number, data: any) => {
     setIsSaving(true);
     let payload = {
@@ -446,6 +615,12 @@ const MasterActivityDetailPage: React.FC = () => {
         if (response.data.tables) {
           setEditableTables(response.data.tables);
         }
+        // Update master_data if it exists in the response
+        if (response.master_data) {
+          setMasterData(response.master_data);
+        } else if (response.data.master_data) {
+          setMasterData(response.data.master_data);
+        }
         getActivityDetails(activity_id);
       }
     } catch (err) {
@@ -459,11 +634,13 @@ const MasterActivityDetailPage: React.FC = () => {
       setIsSaving(false);
     }
   };
+
   const hasValidItem = () => {
     return (
       fieldData?.length > 0 && fieldData.some((item: Item) => !item.is_valid)
     );
   };
+
   const renderWarning = () => {
     return (
       <div
@@ -513,6 +690,13 @@ const MasterActivityDetailPage: React.FC = () => {
       </div>
     );
   };
+
+  // Determine if editing should be disabled
+  const isEditingDisabled = 
+    activityDetails?.status === "SUBMITTED" || 
+    activityDetails?.status === "SUBMITTED_SUCCESS" || 
+    activityDetails?.status === "REJECTED";
+
   return (
     <div className="flex flex-col py-6 h-full mt-2 gap-3 flex-1 relative">
       <div className="flex px-4 flex-row gap-4">
@@ -565,6 +749,17 @@ const MasterActivityDetailPage: React.FC = () => {
                 Status:{" "}
               </Text>
               {renderWarning()}
+            </div>
+          )}
+          
+          {/* Show saving indicator when saving */}
+          {isSaving && (
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg">
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <Text type="small">Saving...</Text>
             </div>
           )}
           
@@ -644,101 +839,33 @@ const MasterActivityDetailPage: React.FC = () => {
           style={{ width: `${100 - leftPanelWidth}%` }}
           ref={scrollRef}
         >
-          {/* Extracted Tables Section */}
+          {/* Master Data Section - Only Section Displayed */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
               <Text type="header3" className="text-lg font-medium">
-                Extracted Data
+                Master Data {!isEditingDisabled && <span className="text-sm text-gray-500">(Editable)</span>}
               </Text>
-              {isSaving && (
-                <div className="flex items-center text-sm text-gray-500">
-                  <svg className="animate-spin h-4 w-4 mr-1 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                  </svg>
-                  Saving...
-                </div>
-              )}
+              <span className="text-sm text-gray-500">
+                {masterData.length} records found
+              </span>
             </div>
-            {editableTables.length > 0 ? (
-              <EditableExtractedTables
-                tables={editableTables}
-                onCellUpdate={handleCellUpdate}
-                disabled={
-                  activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                  activityDetails?.status === "REJECTED" ||
-                  activityDetails?.status === "SUBMITTED" ||
-                  activityDetails?.status === "SUBMITTED_WAITING"
-                }
-              />
+            {masterData.length > 0 ? (
+              <div className="border rounded-lg p-4 bg-white shadow-sm">
+                <MasterDataTable 
+                  masterData={masterData} 
+                  onDataUpdate={handleMasterDataUpdate}
+                  disabled={isEditingDisabled}
+                />
+              </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                No extracted data available
+                No master data available
+                <div className="text-xs mt-2">
+                  Check console for data structure
+                </div>
               </div>
             )}
           </div>
-          
-          {/* Form Fields Section (if needed) */}
-          {fieldData?.length > 0 && (
-            <div className="mt-8">
-              <Text type="header3" className="text-lg font-medium mb-4">
-                Editable Fields
-              </Text>
-              {fieldData.map((item: any, index: number) => (
-                <div className="mb-6 mt-4" key={index}>
-                  <Text
-                    type="body"
-                    className="block text-lg font-medium text-gray-700 flex flex-row gap-3"
-                  >
-                    {item?.title}
-                    {item?.is_valid === false && (
-                      <img
-                        src={iButton}
-                        title={item?.is_valid === false && item?.invalid_reason}
-                        loading="lazy"
-                        className="cursor-pointer"
-                      />
-                    )}
-                  </Text>
-                  <input
-                    type={item?.type === "string" ? "text" : "number"}
-                    disabled={
-                      activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                      activityDetails?.status === "REJECTED" ||
-                      activityDetails?.status === "SUBMITTED" ||
-                      activityDetails?.status === "SUBMITTED_WAITING"
-                    }
-                    className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg`}
-                    style={{
-                      borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D",
-                      outline: "none",
-                      boxShadow: item?.is_valid
-                        ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
-                        : "0 0 0 1px rgba(252, 211, 77, 0.5)",
-                    }}
-                    defaultValue={item?.value}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = item?.is_valid
-                        ? "#A7AAB1"
-                        : "#E4B106";
-                      e.target.style.boxShadow = item?.is_valid
-                        ? "0 0 0 1px rgba(167, 170, 177, 0.7)"
-                        : "0 0 0 1px rgba(228, 177, 6, 0.7)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = item?.is_valid
-                        ? "#D1D5DB"
-                        : "#FCD34D";
-                      e.target.style.boxShadow = item?.is_valid
-                        ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
-                        : "0 0 0 1px rgba(252, 211, 77, 0.5)";
-                    }}
-                    onChange={(e) => handleInputChange(index, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
           
           {confirmationStatus && (
             <ConfirmationModal
@@ -767,4 +894,5 @@ const MasterActivityDetailPage: React.FC = () => {
     </div>
   );
 };
+
 export default MasterActivityDetailPage;

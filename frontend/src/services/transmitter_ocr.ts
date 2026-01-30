@@ -32,34 +32,51 @@ export const TransmitterGetMemberOCRRole = async () => {
   }
   
   export const TransmitterCreateMasterActivity = async (
-    title: string,
-    file: File,
-    product_document_id?: string | number
-  ) => {
-    const token = localStorage.getItem('access_token');
-    const formData = new FormData();
-    if (file) {
-      formData.append('document', file, file.name);
+  title: string,
+  device_type: string,  // "Transmitter" or "Gauge"
+  template: string,     // "emerson", etc.
+  file: File,
+  product_document_id?: string | number
+) => {
+  const token = localStorage.getItem('access_token');
+  const formData = new FormData();
+  
+  // Append all required fields
+  formData.append('title', title);
+  formData.append('device_type', device_type);
+  formData.append('template', template);
+  
+  if (file) {
+    formData.append('document', file, file.name);
+  }
+  
+  if (product_document_id) {
+    formData.append('product_document_id', product_document_id.toString());
+  }
+  
+  try {
+    const response = await axios.post(
+      `${BACKEND_TBWES_OCR_URL}/transmitter_ocr/master_activity`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    if (error?.response?.status === 415) {
+      (store.dispatch as Dispatch).toast.openToast({ 
+        status: true, 
+        message: "Unsupported extension(s) only use .pdf, .xls, .xlsx",
+        type: "error"
+      });
     }
-    formData.append('title', title)
-    try {
-      const response = await axios.post(
-        `${BACKEND_TBWES_OCR_URL}/transmitter_ocr/master_activity`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-      return response.data;
-    } catch (error: any) {
-      if (error?.response?.status === 415)
-        (store.dispatch as Dispatch).toast.openToast({ status: true, message: "Unsupported extension(s) only use .pdf, .xls, .xlsx" })
-      throw error;
-    }
-  };
+    throw error;
+  }
+};
   
   export const TransmitterGetMasterDocumentUrl = async(activity_id: number) => {
     const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity/${activity_id}/link`)
@@ -265,5 +282,32 @@ export const TransmitterReadChildActivityStatus = async (year: string | number, 
 
 export const TransmitterCheckMasterHasChildActivities = async (activity_id: number) => {
   const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity/${activity_id}/has_child_activities`);
+  return response;
+}
+
+// Tag Numbers Function
+export const TransmitterGetTagNumbers = async (
+  title: string,
+  skip: number = 0,
+  limit: number = 100,
+  search_term?: string,
+  status?: string,
+  user_status?: string
+) => {
+  let url = `${BACKEND_TBWES_OCR_URL}/transmitter_ocr/tag_numbers?title=${encodeURIComponent(title)}&skip=${skip}&limit=${limit}`;
+  
+  if (search_term && search_term !== '') {
+    url += `&search_term=${encodeURIComponent(search_term)}`;
+  }
+  
+  if (status && status !== 'ALL') {
+    url += `&status=${status}`;
+  }
+  
+  if (user_status && user_status !== 'ALL') {
+    url += `&user_status=${user_status}`;
+  }
+  
+  const response = await TransmitterOCRAPI.get(url);
   return response;
 }
