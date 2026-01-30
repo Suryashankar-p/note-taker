@@ -58,6 +58,6 @@ export const TransmitterOCRAPI = createAPI(axiosTransmitterOCR);
 export const DocumentTranslatorAPI = createAPI(axiosDocumentTranslator);
 
 export async function redirectToLogin(): Promise<void> {
-  window.location.href = `/genaistudio/`;
+  window.location.href = `/`;
   localStorage.clear();
 }
