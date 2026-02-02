@@ -21,7 +21,6 @@ interface InputProps {
 
 const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
-  const baseUrl = "/genaistudio";
   useLocalStorageListener("user", (newValue, oldValue) => {
     getUserInfo();
   });
@@ -102,7 +101,7 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
                 <React.Fragment key={key}>
                   <li>
                     <a
-                      href={baseUrl + item.url}
+                      href={item.url}
                       className={`text-${
                         key < breadCrumbs?.length - 1 ? "gray-600" : "link_text"
                       } hover:text-gray-800`}

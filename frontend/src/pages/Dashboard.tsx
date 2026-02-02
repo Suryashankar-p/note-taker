@@ -79,6 +79,7 @@ const Dashboard: React.FC = () => {
             status: true,
             message: servicesList?.detail,
           });
+        navigate("/");
       }
       setLoading(false);
     } catch (err) {

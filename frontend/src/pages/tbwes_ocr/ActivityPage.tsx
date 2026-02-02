@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
@@ -144,12 +144,17 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
       const { current } = activityListRef;
       if (!current) return;
       
-      // Save the scroll position before making an API call
-      const scrollPosition = current.scrollTop;
-  
-      // Check if user has scrolled to the bottom and if more activities need to be fetched
-      if (current.scrollHeight - current.scrollTop === current.clientHeight && !isFetching && activities.length < activityTotal) {
-        loadMoreActivities(scrollPosition);
+      const scrollTop = current.scrollTop;
+      const scrollHeight = current.scrollHeight;
+      const clientHeight = current.clientHeight;
+      
+      // Use a threshold instead of exact equality (fixes decimal precision issues)
+      const threshold = 10; // pixels from bottom
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < threshold;
+      
+      // Check if user has scrolled near the bottom and if more activities need to be fetched
+      if (isNearBottom && !isFetching && activities.length < activityTotal) {
+        loadMoreActivities();
       }
     };
   
@@ -163,43 +168,40 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
         div.removeEventListener('scroll', handleScroll);
       }
     };
-  }, [isFetching, activities]);
+  }, [isFetching, activities, activityTotal]);
 
-// Updated function to load more activities
-const loadMoreActivities = async (scrollPosition: number) => {
-  setIsFetching(true);
-  try {
-    const response = await GetOCRActivities(
-      pageSize.skip + pageSize.limit,
-      pageSize.limit,
-      searchValue,
-      userStatusMapper(usernameFilter.value),
-      statusMapper(statusFilter.value)
-    );
-    if (response.result) {
-      // Update the activities only if there are new activities
-      const newActivities = response.result;
-      if (newActivities && newActivities.length > 0) {
-        setActivities((prevActivities) => [...prevActivities, ...newActivities]);
-        setActivityTotal(response.total);
-        setPageSize((prevPageSize) => ({
-          ...prevPageSize,
-          skip: prevPageSize.skip + prevPageSize.limit,
-        }));
-        setPollingSkip(pageSize.skip + pageSize.limit);
-        // Restore the scroll position
-        activityListRef.current.scrollTo(0, scrollPosition);
-        
-
+  // Load more activities for infinite scroll
+  const loadMoreActivities = useCallback(async () => {
+    if (isFetching) return; // Prevent multiple simultaneous calls
+    
+    setIsFetching(true);
+    
+    try {
+      const response = await GetOCRActivities(
+        pageSize.skip + pageSize.limit,
+        pageSize.limit,
+        searchValue,
+        userStatusMapper(usernameFilter.value),
+        statusMapper(statusFilter.value)
+      );
+      
+      if (response.result) {
+        const newActivities = response.result;
+        if (newActivities && newActivities.length > 0) {
+          setActivities((prevActivities) => [...prevActivities, ...newActivities]);
+          setActivityTotal(response.total);
+          setPageSize((prevPageSize) => ({
+            ...prevPageSize,
+            skip: prevPageSize.skip + prevPageSize.limit,
+          }));
+        }
       }
+    } catch (err) {
+      console.error("Error loading more activities", err);
+    } finally {
+      setIsFetching(false);
     }
-  } catch (err) {
-    console.error("Error loading more activities", err);
-  } finally {
-    setIsFetching(false);
-  }
-};
-
+  }, [isFetching, pageSize, searchValue, usernameFilter.value, statusFilter.value]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
