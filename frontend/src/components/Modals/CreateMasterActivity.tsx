@@ -35,7 +35,9 @@ const CreateMasterActivity: React.FC<CreateMasterActivityModalProps> = ({
   const templateOptions = [
     { name: "Select Master Template", value: "" },
     { name: "Emerson", value: "emerson" },
-    { name: "Honeywell", value: "honeywell" }
+    { name: "Honeywell", value: "honeywell" },
+    { name: "Yokogawa", value: "yokogawa" },
+    { name: "gauges_bourdon", value: "gauges_bourdon" }
 
   ];
 
