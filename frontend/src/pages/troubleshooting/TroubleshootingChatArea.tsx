@@ -327,7 +327,7 @@ const ChatArea: React.FC<Props> = ({
   }) => {
   //  const isPillSelected = selectedPills[messageIndex]?.size > 0;
     return (
-      <div className="flex flex-wrap gap-1 mb-4">
+      <div className="flex flex-col gap-1 mb-4">
         {markdown?.map((item, index) => (
           <Pill
             key={index}

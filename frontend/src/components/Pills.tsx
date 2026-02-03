@@ -9,13 +9,13 @@ interface PillProps {
     const sizeClasses = {
       small: "px-2 py-1 text-sm ",
       medium: "px-3 py-1 text-base",
-      large: "px-4 py-0.5 text-lg",
+      large: "px-3 py-0.5 text-lg",
     };
   
     return (
       <button
         onClick={onClick}
-        className={`rounded-md border bg-white-100 ${
+        className={`w-fit rounded-md border bg-white-100 ${
           selected
             ? "border-[#414143] text-[#414143]"
             : "border-red-300 text-red-300"
