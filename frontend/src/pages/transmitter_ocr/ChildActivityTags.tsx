@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import Toast from "../../components/Toast.tsx";
 import NoData from "../../assets/no_data.tsx";
-import BackIcon from "../../assets/back_arrow.svg";
 import Search from "../../assets/search_icon.svg";
 import Input from "../../components/Input.tsx";
 import Text from "../../components/Text.tsx";
@@ -32,7 +31,6 @@ export type TagNumberResponse = {
 
 interface ChildActivityTagsProps {
   activityTitle?: string;
-  onBack?: () => void;
   onSelectTag?: (tag: TagNumberStatus) => void;
 }
 
@@ -53,11 +51,9 @@ const statusMapper = (status: string): string | undefined => {
 
 const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
   activityTitle: propActivityTitle,
-  onBack,
   onSelectTag,
 }) => {
   const { activityTitle: paramActivityTitle } = useParams<{ activityTitle: string }>();
-  const navigate = useNavigate();
   const dispatch = useDispatch<Dispatch>();
   const tagListRef = useRef<HTMLDivElement>(null);
 
@@ -188,10 +184,6 @@ const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
     }
   };
 
-  const handleBack = () => {
-    onBack ? onBack() : navigate(-1);
-  };
-
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-1 h-screen">
@@ -207,15 +199,12 @@ const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
         <div className="flex justify-between items-center mt-1.5 mb-4 w-full">
           <div className="flex flex-col">
             <div className="flex items-center">
-              <button onClick={handleBack} className="mr-4 hover:opacity-70 transition-opacity">
-                <img src={BackIcon} alt="back" loading="lazy" className="w-5 h-5" />
-              </button>
               <Text className="text-2xl -mt-1 font-bold" type="header2">
                 Child Activity / {activityTitle}
               </Text>
             </div>
             {tagNumbers && (
-              <Text type="small" className="text-faint_text ml-9">
+              <Text type="small" className="text-faint_text ml-1">
                 {`(${tagNumbers.length > 1 ? tagNumbers.length + " Results" : tagNumbers.length + " Result"} of ${tagTotal})`}
               </Text>
             )}

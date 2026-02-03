@@ -107,7 +107,6 @@ const TransmitterOcrMain: React.FC = () => {
         return (
           <ChildActivityTags
             activityTitle={selectedActivity?.title}
-            onBack={() => setSelectedActivity(null)}
             onSelectTag={(tag: any) => handleSelectActivity({ ...selectedActivity, tagData: tag }, "tag_detail")}
           />
         );
