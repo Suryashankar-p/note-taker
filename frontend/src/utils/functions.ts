@@ -9,7 +9,7 @@ import cyberbuddy from '../assets/cyberbuddy.png'
 import heatingocr from '../assets/heating_ocr.png'
 import transmitter_ocr from '../assets/transmitter_ocr.jpg'
 
-const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
+const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 
 
 export const roundToFourDecimals = (number: any) => {
@@ -130,7 +130,7 @@ export const statusMapper = (status: string) => {
 export function getCurrentDate(): { year: number, month: number, day: number } {
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth() + 1; 
+    const month = now.getMonth() + 1;
     const day = now.getDate();
 
     return { year, month, day };
@@ -168,20 +168,20 @@ export const fileTypeSelectorDoctorConBot = (type: string) => {
         case 'Video':
             return 'VIDEO'
         case 'FAQ':
-            return 'FAQ'    
+            return 'FAQ'
         case 'Faq':
             return 'FAQ'
         case 'Other':
             return 'OTHER'
         case 'OTHER':
             return 'Other'
-        
+
     }
 }
 
 export const fileTypeSelectorCyberBuddy = (type: string) => {
     switch (type) {
-        case 'pdf': 
+        case 'pdf':
             return 'PDF';
         case 'xlsx':
             return 'Excel';
@@ -189,7 +189,7 @@ export const fileTypeSelectorCyberBuddy = (type: string) => {
             return 'DOC';
         case 'OTHER':
             return 'Other'
-        
+
     }
 }
 
@@ -198,7 +198,7 @@ export function getFileType(fileName: string): string | null {
     const fileExtension = fileName?.split('.').pop()?.toLowerCase();
 
     switch (fileExtension) {
-        case 'pdf': 
+        case 'pdf':
             return 'PDF';
         case 'xls':
         case 'xlsx':
@@ -220,7 +220,7 @@ export function getFileType(fileName: string): string | null {
         case 'mp4':
             return 'MP4'
         default:
-            return null; 
+            return null;
     }
 }
 
@@ -238,27 +238,29 @@ export const userStatusMapper = (status: string) => {
 export const getBorderColor = (activityStatus: string): string => {
     switch (activityStatus) {
         case 'SUBMITTED':
-            return 'border-green-500'; // Green for submitted
+        case 'PASSED':
+            return 'border-green-500'; // Green for submitted/passed
         case 'REJECTED':
-            return 'border-red-500';   // Red for rejected
+        case 'FAILED':
+            return 'border-red-500';   // Red for rejected/failed
         case 'IN_PROGRESS':
             return 'border-yellow-500';
         case 'SUBMITTED_WAITING':
-            return 'border-orange-500' 
+            return 'border-orange-500'
         case 'SUBMITTED_FAILED':
             return 'border-red-500';
         case 'SUBMITTED_SUCCESS':
             return 'border-green-500';
         default:
-            return 'border-gray-300';  
+            return 'border-gray-300';
     }
 };
 
 export function capitalizeWords(sentence: string): string {
     return sentence
-        .split(' ') 
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1)) 
-        .join(' '); 
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 export const selectImage = (title: string) => {
@@ -290,19 +292,19 @@ export const getIframeSrc = (url, type) => {
     if (type === "PDF" || type === "JPG" || type === "JPEG" || type === "PNG") {
         return url; // Use the direct URL for PDFs and images
     } else if (type === "Excel" || type === "DOC" || type === "PPT") {
-      return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+        return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
     }
     return "";
 };
-  
+
 export const getKeyByValue = (object: any, value: any) => {
     return Object.entries(object).find(([key, val]) => val === value)?.[0];
-  };
+};
 
 export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number) => {
-    switch(type){
+    switch (type) {
         case "Thermax GPT":
-            return  BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}`
+            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}`
         case "Deep Search":
             return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/perplexity/stream?chat_history_id=${chat_history_id}`
         default:

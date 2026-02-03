@@ -14,7 +14,9 @@ import {
   TransmitterGetChildActivityDetails,
   TransmitterSentChildMultipartMessage,
   TransmitterUpdateChildActivityDetails,
-  TransmitterGetChildAckData
+  TransmitterGetChildAckData,
+  TransmitterGetTagNumberDocumentUrl,
+  TransmitterGetTagNumberDetails
 } from "../../services/transmitter_ocr.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
@@ -38,9 +40,14 @@ interface Item {
   invalid_reason: string | null;
 }
 
-const ChildActivityDetailPage: React.FC = () => {
+interface ChildActivityDetailPageProps {
+  onBack?: () => void;
+}
+
+const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBack }) => {
   const location = useLocation();
   const activity = location?.state?.activity;
+  const tagData = activity?.tagData; // Data from ChildActivityTags navigation
   const [reason, setReason] = useState(null);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [pdfUrl, setPdfUrl] = useState<string>("");
@@ -82,13 +89,44 @@ const ChildActivityDetailPage: React.FC = () => {
   }, [activityDetails]);
 
   useEffect(() => {
-    getActivityDetails(activity?.id);
-    getDocumentLink(activity?.id);
-  }, []);
+    if (tagData?.tag_number) {
+      getTagDocumentLink(activity?.id, tagData.tag_number);
+      getTagDetails(activity?.title, tagData.tag_number);
+    } else if (activity?.id) {
+      getActivityDetails(activity?.id);
+      getDocumentLink(activity?.id);
+    }
+  }, [activity, tagData]);
 
   useEffect(() => {
-    getack()
-  }, []);
+    if (!tagData) {
+      getack();
+    }
+  }, [activity, tagData]);
+
+  const getTagDocumentLink = async (activity_id: number, tag_number: string) => {
+    try {
+      const response = await TransmitterGetTagNumberDocumentUrl(activity_id, tag_number);
+      setPdfUrl(response?.link);
+    } catch (error) {
+      console.error("Error reading tag document link:", error);
+    }
+  };
+
+  const getTagDetails = async (title: string, tag_number: string) => {
+    setLoading(true);
+    try {
+      const response = await TransmitterGetTagNumberDetails(title, tag_number);
+      if (response) {
+        setActivityDetails(response);
+        setFieldData(response.fields || []);
+      }
+    } catch (error) {
+      console.error("Error fetching tag details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getDocumentLink = async (activity_id: number) => {
     try {
@@ -106,7 +144,6 @@ const ChildActivityDetailPage: React.FC = () => {
         setActivityDetails(response);
         setFieldData(response?.data?.field);
       } else {
-        console.log("ere");
         navigate("/ai-studio/transmitter_ocr", { replace: true });
       }
     } catch (error) {
@@ -160,7 +197,7 @@ const ChildActivityDetailPage: React.FC = () => {
         console.log("Response received:", response);
         setReason(response.reason);
       }
-      else{
+      else {
         setReason(null);
       }
     } catch (error) {
@@ -180,7 +217,7 @@ const ChildActivityDetailPage: React.FC = () => {
         console.log("Waiting for response...");
       }
     };
-  
+
     const polling = setInterval(checkAckData, 10000);
     const timeout = setTimeout(() => {
       clearInterval(polling);
@@ -190,8 +227,8 @@ const ChildActivityDetailPage: React.FC = () => {
   const handleSubmit = async (type: string) => {
     // Only handle reject now
     if (type !== "reject") return;
-    
-    const updatedType = statusMapper(type)    
+
+    const updatedType = statusMapper(type)
     try {
       setLoading(true);
       const response = await TransmitterSentChildMultipartMessage(activity?.id, updatedType);
@@ -288,12 +325,12 @@ const ChildActivityDetailPage: React.FC = () => {
 
   const hasValidItem = () => {
     if (!fieldData || fieldData.length === 0) return false;
-    
+
     // Only check the required fields
-    const requiredFields = fieldData.filter((item: Item) => 
+    const requiredFields = fieldData.filter((item: Item) =>
       REQUIRED_FIELDS.includes(item.title)
     );
-    
+
     return requiredFields.some((item: Item) => !item.is_valid);
   };
 
@@ -304,13 +341,17 @@ const ChildActivityDetailPage: React.FC = () => {
   };
 
   const onAnnotationChange = (value: any) => {
-    setEnableAnnotation(value);    
+    setEnableAnnotation(value);
     if (enableAnnotation.name === value.name) {
       return;
     } else if (value.name === "Enable") {
       handleHighlighting();
     } else {
-      getDocumentLink(activity?.id);
+      if (tagData?.tag_number) {
+        getTagDocumentLink(activity?.id, tagData.tag_number);
+      } else {
+        getDocumentLink(activity?.id);
+      }
     }
   };
 
@@ -354,9 +395,8 @@ const ChildActivityDetailPage: React.FC = () => {
         )}{" "}
         <Text
           type="small"
-          className={`${
-            hasValidItem() ? "text-yellow-400" : "text-green-600"
-          } items-center`}
+          className={`${hasValidItem() ? "text-yellow-400" : "text-green-600"
+            } items-center`}
         >
           {hasValidItem() ? "Invalid" : "Valid"}
         </Text>
@@ -364,43 +404,59 @@ const ChildActivityDetailPage: React.FC = () => {
     );
   };
 
+  const getFieldValueByTitle = (title: string) => {
+    const field = fieldData.find(f => f.title === title);
+    return field ? field.value : "N/A";
+  };
+
   return (
     <div className="flex flex-col py-6 h-full mt-2 gap-3 flex-1 relative">
       <div className="flex px-4 flex-row gap-4">
         <div className="flex flex-col w-full">
-          <Text
-            type="header3"
-            title={activityDetails?.title}
-            className="text-2xl truncate ellipsis max-w-[100px] font-bold mb-4"
-          >
-            {activityDetails?.title}
-          </Text>
+          <div className="flex items-center gap-2 mb-4">
+            {tagData && (
+              <button onClick={onBack} className="mr-2">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M15 10H5M5 10L10 15M5 10L10 5" stroke="#172B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+            <Text
+              type="header3"
+              className="text-2xl font-bold"
+            >
+              {tagData ? `Tag Number / ${tagData.tag_number}` : activityDetails?.title}
+            </Text>
+          </div>
         </div>
         <div className="absolute flex gap-8 top-4 items-center right-6">
           <div className="inline-flex items-center gap-2">
-            <label className="inline-flex">
-              <Text className=" text-primary_text" type="body">
-                Annotation:
-              </Text>
-            </label>
-            <DropDownButton
-              className="w-32"
-              value={enableAnnotation}
-              listValues={[{ name: "Enable" }, { name: "Disable" }]}
-              onChange={(value: any) => onAnnotationChange(value)}
-            />
-            {(activityDetails?.status === "SUBMITTED_SUCCESS" || activityDetails?.status === "SUBMITTED_FAILED" || activityDetails?.status === "SUBMITTED_WAITING" ) &&          
+            {!tagData && (
+              <>
+                <label className="inline-flex">
+                  <Text className=" text-primary_text" type="body">
+                    Annotation:
+                  </Text>
+                </label>
+                <DropDownButton
+                  className="w-32"
+                  value={enableAnnotation}
+                  listValues={[{ name: "Enable" }, { name: "Disable" }]}
+                  onChange={(value: any) => onAnnotationChange(value)}
+                />
+              </>
+            )}
+            {!tagData && (activityDetails?.status === "SUBMITTED_SUCCESS" || activityDetails?.status === "SUBMITTED_FAILED" || activityDetails?.status === "SUBMITTED_WAITING") &&
               <Text className=" text-primary_text ml-4" type="body">
                 Submit Status:
               </Text>
             }
-            {reason !== null && (
+            {!tagData && reason !== null && (
               <div
-                className={`inline-flex ml-1 items-center gap-2 px-4 py-2 rounded-lg ${
-                  reason === "Success"
-                    ? "bg-white-100 text-green-500 border rounded-lg p-4"
-                    : "bg-white-100 text-yellow-500 border rounded-lg p-4"
-                }`}
+                className={`inline-flex ml-1 items-center gap-2 px-4 py-2 rounded-lg ${reason === "Success"
+                  ? "bg-white-100 text-green-500 border rounded-lg p-4"
+                  : "bg-white-100 text-yellow-500 border rounded-lg p-4"
+                  }`}
               >
                 <Text type="body">
                   {reason === "Success" ? "Success" : "Failed"}
@@ -415,13 +471,13 @@ const ChildActivityDetailPage: React.FC = () => {
                 )}
               </div>
             )}
-            {(activityDetails?.status === "SUBMITTED_WAITING") && reason === null && (
+            {!tagData && (activityDetails?.status === "SUBMITTED_WAITING") && reason === null && (
               <div className="inline-flex items-center ml-1 gap-2 px-4 py-2 rounded-lg bg-white-100 border text-gray-500">
                 <Text type="body">Waiting</Text>
               </div>
             )}
           </div>
-          {(activityDetails?.status === "IN_PROGRESS" || activityDetails?.status === "SUBMITTED_FAILED") && (
+          {!tagData && (activityDetails?.status === "IN_PROGRESS" || activityDetails?.status === "SUBMITTED_FAILED") && (
             <div className="inline-flex gap-2 items-center self-center">
               <Text className="text-primary_text" type="body">
                 Status:{" "}
@@ -429,14 +485,13 @@ const ChildActivityDetailPage: React.FC = () => {
               {renderWarning()}
             </div>
           )}
-          {(activityDetails?.status !== "SUBMITTED" && activityDetails?.status !== "SUBMITTED_SUCCESS") && (
+          {!tagData && (activityDetails?.status !== "SUBMITTED" && activityDetails?.status !== "SUBMITTED_SUCCESS") && (
             <Button
               disabled={loading || activityDetails?.status === "REJECTED"}
-              className={`w-15 h-10 p-4 gap-2 rounded-lg ${
-                loading || activityDetails?.status === "REJECTED"
-                  ? "bg-black bg-opacity-30"
-                  : "bg-danger"
-              }`}
+              className={`w-15 h-10 p-4 gap-2 rounded-lg ${loading || activityDetails?.status === "REJECTED"
+                ? "bg-black bg-opacity-30"
+                : "bg-danger"
+                }`}
               onClick={() => {
                 dispatch.modal.openConfirmation();
                 setConfirmationData({
@@ -471,89 +526,116 @@ const ChildActivityDetailPage: React.FC = () => {
         </div>
       </div>
       <div className="flex flex-row pb-36 h-screen">
-        <div className="md:w-3/4 pr-4 pb-2 h-full overflow-y-auto">
-          <div className="mt-1">
-            {pdfUrl && (
+        <div className="md:w-3/5 pr-4 pb-2 h-full">
+          <div className="mt-1 h-full">
+            {pdfUrl ? (
               <Viewer
                 fileUrl={pdfUrl}
                 plugins={[defaultLayoutPluginInstance]}
               />
+            ) : (
+              <div className="flex justify-center items-center h-full">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#172B4D]" />
+              </div>
             )}
           </div>
         </div>
-        <div className="md:w-1/3 pl-2 pb-2 h-full overflow-y-auto pr-4" ref={scrollRef}>
-          <>
-            {fieldData?.length > 0 && (
-              <>
-                {fieldData
-                  .filter((item: any) => REQUIRED_FIELDS.includes(item?.title))
-                  .map((item: any) => (
-                    <div className="mb-6 mt-4" key={item.title}>
-                      <Text
-                        type="body"
-                        className="block text-lg font-medium text-gray-700 flex flex-row gap-3"
-                      >
-                        {item?.title}
-                        {item?.is_valid === false && (
-                          <img
-                            src={iButton}
-                            title={item?.is_valid === false && item?.invalid_reason}
-                            loading="lazy"
-                            className="cursor-pointer"
-                          />
+        <div className="md:w-2/5 pl-2 pb-2 h-full overflow-y-auto pr-4" ref={scrollRef}>
+          {tagData ? (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-[#F8F9FA]">
+                <h2 className="text-xl font-bold text-[#172B4D]">
+                  Tag Details
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <tbody>
+                    <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <th className="px-6 py-4 text-xs font-semibold text-[#5E6C84] w-1/2">Tag Number</th>
+                      <td className="px-6 py-4 text-sm font-medium text-[#172B4D]">{tagData.tag_number}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <th className="px-6 py-4 text-xs font-semibold text-[#5E6C84]">Status</th>
+                      <td className="px-6 py-4 text-sm font-semibold">
+                        <span className={`px-2 py-1 rounded text-[10px] px-3 py-1 ${tagData.status === 'PASSED' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                          {tagData.status}
+                        </span>
+                      </td>
+                    </tr>
+                    {fieldData.map((field: any, index: number) => (
+                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <th className="px-6 py-4 text-xs font-semibold text-[#5E6C84]">
+                          <div className="flex items-center gap-2">
+                            <span className="capitalize">{field.title.toLowerCase().replace(/([A-Z])/g, ' $1').trim()}</span>
+                            {field.is_valid === false && (
+                              <img
+                                src={iButton}
+                                title={field.invalid_reason}
+                                loading="lazy"
+                                className="cursor-pointer w-3 h-3"
+                              />
+                            )}
+                          </div>
+                        </th>
+                        <td className={`px-6 py-4 text-sm font-medium ${field.is_valid === false ? 'text-danger' : 'text-[#172B4D]'}`}>
+                          {field.value || "N/A"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <>
+              {fieldData?.length > 0 && (
+                <div className="space-y-6 mt-4">
+                  {fieldData
+                    .filter((item: any) => REQUIRED_FIELDS.includes(item?.title))
+                    .map((item: any) => (
+                      <div key={item.title} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                        <Text
+                          type="body"
+                          className="block text-sm font-bold text-[#5E6C84] mb-2 flex items-center gap-2"
+                        >
+                          {item?.title.replace(/([A-Z])/g, ' $1').trim()}
+                          {item?.is_valid === false && (
+                            <img
+                              src={iButton}
+                              title={item?.invalid_reason}
+                              loading="lazy"
+                              className="cursor-pointer w-4 h-4"
+                            />
+                          )}
+                        </Text>
+                        <input
+                          type={item?.type === "string" ? "text" : "number"}
+                          disabled={
+                            activityDetails?.status === "SUBMITTED_SUCCESS" ||
+                            activityDetails?.status === "REJECTED" ||
+                            activityDetails?.status === "SUBMITTED" ||
+                            activityDetails?.status === "SUBMITTED_WAITING"
+                          }
+                          className={`block w-full px-4 py-2 border rounded-md shadow-sm text-base transition-all ${!item?.is_valid ? 'bg-yellow-50 border-yellow-400 focus:ring-yellow-400' : 'bg-white border-gray-300 focus:ring-primary focus:border-primary'
+                            }`}
+                          defaultValue={item?.value}
+                          onChange={(e) => handleInputChange(item.title, e.target.value)}
+                        />
+                        {!item?.is_valid && item?.invalid_reason && (
+                          <div className="mt-2 text-xs text-yellow-600 flex items-start gap-1">
+                            <svg className="w-4 h-4 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <span>{item.invalid_reason}</span>
+                          </div>
                         )}
-                      </Text>
-                      <input
-                        type={item?.type === "string" ? "text" : "number"}
-                        disabled={
-                          activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                          activityDetails?.status === "REJECTED" ||
-                          activityDetails?.status === "SUBMITTED" ||
-                          activityDetails?.status === "SUBMITTED_WAITING"
-                        }
-                        className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg ${
-                          !item?.is_valid ? 'bg-yellow-50' : ''
-                        }`}
-                        style={{
-                          borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D",
-                          outline: "none",
-                          boxShadow: item?.is_valid
-                            ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
-                            : "0 0 0 1px rgba(252, 211, 77, 0.5)",
-                        }}
-                        defaultValue={item?.value}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = item?.is_valid
-                            ? "#A7AAB1"
-                            : "#E4B106";
-                          e.target.style.boxShadow = item?.is_valid
-                            ? "0 0 0 1px rgba(167, 170, 177, 0.7)"
-                            : "0 0 0 1px rgba(228, 177, 6, 0.7)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = item?.is_valid
-                            ? "#D1D5DB"
-                            : "#FCD34D";
-                          e.target.style.boxShadow = item?.is_valid
-                            ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
-                            : "0 0 0 1px rgba(252, 211, 77, 0.5)";
-                        }}
-                        onChange={(e) => handleInputChange(item.title, e.target.value)}
-                      />
-                      {/* Add validation message display */}
-                      {!item?.is_valid && item?.invalid_reason && (
-                        <div className="mt-1 text-sm text-yellow-600 flex items-start">
-                          <svg className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                          <span>{item.invalid_reason}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </>
-            )}
-          </>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </>
+          )}
           {confirmationStatus && (
             <ConfirmationModal
               onSubmit={() => handleSubmit(confirmationData?.type)}
