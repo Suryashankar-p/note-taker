@@ -20,7 +20,11 @@ interface MasterActivity {
   };
 }
 
-const ActivitySummaryPage: React.FC = () => {
+interface ActivitySummaryPageProps {
+  onSelectActivity?: (activity: MasterActivity) => void;
+}
+
+const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActivity }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch<Dispatch>();
   const activityListRef = useRef<HTMLDivElement>(null);
@@ -155,9 +159,14 @@ const ActivitySummaryPage: React.FC = () => {
   };
 
   const handleMasterClick = (activity: MasterActivity) => {
-    navigate(`/ai-studio/transmitter_ocr/activity-summary/${activity.id}`, {
-      state: { activity },
-    });
+    if (onSelectActivity) {
+      onSelectActivity(activity);
+    } else {
+      // Fallback to old behavior if prop not provided (though in this context it should be)
+      // navigate(`/ai-studio/transmitter_ocr/activity-summary/${activity.id}`, {
+      //   state: { activity },
+      // });
+    }
   };
 
   return (
@@ -226,11 +235,10 @@ const ActivitySummaryPage: React.FC = () => {
             masterActivities.map((activity, index) => (
               <div
                 key={activity.id}
-                className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  index !== masterActivities.length - 1
+                className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== masterActivities.length - 1
                     ? "border-b border-gray-200"
                     : ""
-                }`}
+                  }`}
                 onClick={() => handleMasterClick(activity)}
               >
                 <div className="grid grid-cols-2 gap-4 items-center">

@@ -7,14 +7,22 @@ import Input from "../../components/Input.tsx";
 import Button from "../../components/Button.tsx";
 import DropDownButton from "../../components/DropDownButton.tsx";
 import Search from "../../assets/search_icon.svg";
-import BackIcon from "../../assets/back_arrow.svg";
+
 import Menu from "../../assets/more.svg";
+import EditIcon from "../../assets/edit.svg";
+import TrashIcon from "../../assets/trash.svg";
+import TranferIcon from "../../assets/exchange.svg";
+
 import DropDownMenu from "../../components/DropdownMenu.tsx";
-import { getInitials } from "../../utils/functions.ts";
+import {
+  getInitials,
+  getBorderColor,
+  statusMapper,
+  userStatusMapper,
+} from "../../utils/functions.ts";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
-import { TransmitterGetChildActivities } from "../../services/transmitter_ocr.ts";
-import { statusMapper, userStatusMapper } from "../../utils/functions.ts";
+import { TransmitterGetMasterChildActivities } from "../../services/transmitter_ocr.ts";
 
 interface ChildActivity {
   id: number;
@@ -39,10 +47,22 @@ interface MasterActivity {
   };
 }
 
-const ActivitySummaryChildList: React.FC = () => {
-  const { masterId } = useParams<{ masterId: string }>();
+interface ActivitySummaryChildListProps {
+  onSelectActivity?: (activity: any) => void;
+}
+
+const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onSelectActivity }) => {
+  const { masterId: paramMasterId } = useParams<{ masterId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Prefer location state activity, then query param logic could be added if needed
+  const [masterActivity, setMasterActivity] = useState<MasterActivity | null>(
+    location.state?.activity || null
+  );
+
+  const masterId = masterActivity?.id?.toString() || paramMasterId;
+
   const dispatch = useDispatch<Dispatch>();
   const activityListRef = useRef<HTMLDivElement>(null);
 
@@ -57,9 +77,6 @@ const ActivitySummaryChildList: React.FC = () => {
   const [activityTotal, setActivityTotal] = useState<number>(0);
   const [pageSize, setPageSize] = useState({ skip: 0, limit: 50 });
   const [pageError, setPageError] = useState<boolean>(false);
-  const [masterActivity, setMasterActivity] = useState<MasterActivity | null>(
-    location.state?.activity || null
-  );
 
   const toastStatus = useSelector((state: RootState) => state.toast);
 
@@ -68,20 +85,41 @@ const ActivitySummaryChildList: React.FC = () => {
   const statusOptions = [
     { value: "all", name: "All" },
     { value: "inProgress", name: "In progress" },
-    { value: "submitted", name: "Submitted" },
     { value: "rejected", name: "Rejected" },
   ];
 
   const menuItems = [
     {
-      title: "View Details",
-      component: <span>👁️</span>,
+      title: "Edit",
+      component: <img src={EditIcon} alt="edit" loading="lazy" />,
     },
     {
       title: "Delete",
-      component: <span>🗑️</span>,
+      component: <img src={TrashIcon} alt="trash" loading="lazy" />,
+    },
+    {
+      title: "Tranfer",
+      component: <img src={TranferIcon} alt="Tranfer" loading="lazy" />,
     },
   ];
+
+  const handleMenuClick = (item: string, activity: ChildActivity) => {
+    if (item === "Edit") {
+      if (onSelectActivity) {
+        onSelectActivity(activity);
+      } else {
+        navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
+          state: { activity },
+        });
+      }
+    } else if (item === "Delete") {
+      // Handle delete action here
+      console.log("Delete activity:", activity);
+    } else if (item === "Tranfer") {
+      // Handle transfer action here
+      console.log("Transfer activity:", activity);
+    }
+  };
 
   useEffect(() => {
     if (masterId) {
@@ -131,13 +169,13 @@ const ActivitySummaryChildList: React.FC = () => {
   ) => {
     setIsLoading(true);
     try {
-      const response = await TransmitterGetChildActivities(
+      const response = await TransmitterGetMasterChildActivities(
+        masterId ? parseInt(masterId) : 0,
         skip,
         limit,
         search_term,
-        undefined, // user_status
         status !== "all" ? statusMapper(status) : undefined,
-        masterId ? parseInt(masterId) : undefined
+        undefined // user_status
       );
 
       if (response?.result) {
@@ -164,13 +202,13 @@ const ActivitySummaryChildList: React.FC = () => {
   const loadMoreActivities = async (scrollPosition: number) => {
     setIsFetching(true);
     try {
-      const response = await TransmitterGetChildActivities(
+      const response = await TransmitterGetMasterChildActivities(
+        masterId ? parseInt(masterId) : 0,
         pageSize.skip + pageSize.limit,
         pageSize.limit,
         searchValue,
-        undefined,
         statusFilter.value !== "all" ? statusMapper(statusFilter.value) : undefined,
-        masterId ? parseInt(masterId) : undefined
+        undefined
       );
 
       if (response?.result) {
@@ -214,61 +252,17 @@ const ActivitySummaryChildList: React.FC = () => {
     getAllChildActivities(pageSize.skip, pageSize.limit, searchValue, value.value);
   };
 
-  const handleBack = () => {
-    navigate("/ai-studio/transmitter_ocr/activity-summary");
-  };
 
-  const handleMenuClick = (item: string, activity: ChildActivity) => {
-    console.log(`Menu action: ${item} for activity:`, activity);
-    // TODO: Implement menu actions (View Details, Delete)
-    if (item === "View Details") {
+
+  const handleChildActivityClick = (activity: ChildActivity) => {
+    if (onSelectActivity) {
+      onSelectActivity(activity);
+    } else {
       // Navigate to child activity detail page
       navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
         state: { activity },
       });
-    } else if (item === "Delete") {
-      // Handle delete
-      console.log("Delete activity:", activity);
     }
-  };
-
-  const handleChildActivityClick = (activity: ChildActivity) => {
-    // Navigate to child activity detail page
-    navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
-      state: { activity },
-    });
-  };
-
-  const getStatusColor = (status: string): string => {
-    switch (status.toUpperCase()) {
-      case "INPROGRESS":
-      case "IN_PROGRESS":
-        return "border-blue-500 text-blue-700 bg-blue-50";
-      case "SUBMITTED":
-      case "SUBMITTED_SUCCESS":
-        return "border-green-500 text-green-700 bg-green-50";
-      case "REJECTED":
-        return "border-red-500 text-red-700 bg-red-50";
-      case "SUBMITTED_WAITING":
-        return "border-yellow-500 text-yellow-700 bg-yellow-50";
-      case "SUBMITTED_FAILED":
-        return "border-orange-500 text-orange-700 bg-orange-50";
-      default:
-        return "border-gray-500 text-gray-700 bg-gray-50";
-    }
-  };
-
-  const getStatusLabel = (status: string): string => {
-    const statusMap: { [key: string]: string } = {
-      IN_PROGRESS: "INPROGRESS",
-      INPROGRESS: "INPROGRESS",
-      SUBMITTED: "SUBMITTED",
-      SUBMITTED_SUCCESS: "SUBMITTED",
-      REJECTED: "REJECTED",
-      SUBMITTED_WAITING: "WAITING",
-      SUBMITTED_FAILED: "FAILED",
-    };
-    return statusMap[status.toUpperCase()] || status;
   };
 
   return (
@@ -283,14 +277,7 @@ const ActivitySummaryChildList: React.FC = () => {
       <div className="flex-1 p-6 h-full">
         <div className="flex justify-between items-center mt-1.5 mb-6 w-full">
           <div className="flex items-center">
-            <Button
-              onClick={handleBack}
-              custom_type="secondary"
-              className="mr-4 p-2 rounded-lg"
-              size="custom"
-            >
-              <img src={BackIcon} alt="back" loading="lazy" className="w-5 h-5" />
-            </Button>
+
             <div className="flex flex-col">
               <Text className="text-2xl font-bold" type="header2">
                 Activity Summary / {masterActivity?.title || "Loading..."}
@@ -335,7 +322,7 @@ const ActivitySummaryChildList: React.FC = () => {
               {childActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="border-2 border-blue-400 rounded-lg p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  className="border border-gray-200 rounded-lg p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white"
                   onClick={() => handleChildActivityClick(activity)}
                 >
                   <div className="flex items-center flex-1">
@@ -346,27 +333,25 @@ const ActivitySummaryChildList: React.FC = () => {
                       {getInitials(activity.user.name)}
                     </div>
                     <div className="flex flex-col ml-4">
-                      <Text type="body" className="font-semibold text-base">
+                      <Text type="body" className="font-bold text-lg text-primary_text">
                         {activity.title}
                       </Text>
-                      <Text className="text-[#505F79] text-xs">
-                        Master: {activity.master_title}
-                      </Text>
-                      <Text className="text-[#505F79] text-xs">
-                        Created On:{" "}
+                      <Text className="text-[#505F79] text-xs mt-1">
+                        Created on:{" "}
                         {new Date(activity.created_on).toLocaleDateString()}
                       </Text>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className={`border-2 rounded-lg px-6 py-2 font-medium ${getStatusColor(
-                        activity.status
+                  <div className="flex items-center relative gap-8 pr-4">
+                    <Text
+                      type="body"
+                      className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
+                        activity?.status
                       )}`}
                     >
-                      {getStatusLabel(activity.status)}
-                    </div>
+                      {activity?.status && statusMapper(activity.status)}
+                    </Text>
 
                     <div onClick={(e) => e.stopPropagation()}>
                       <DropDownMenu
@@ -375,7 +360,7 @@ const ActivitySummaryChildList: React.FC = () => {
                         }
                         content={
                           <img
-                            className="w-8 h-8 cursor-pointer"
+                            className="w-8 h-8"
                             src={Menu}
                             alt="menu"
                             loading="lazy"
@@ -391,15 +376,6 @@ const ActivitySummaryChildList: React.FC = () => {
           ) : (
             <div className="flex flex-col justify-center items-center h-full">
               <NoData />
-              <Text
-                type="header3"
-                className="mt-6 text-gray-700 font-semibold text-2xl"
-              >
-                No Results Found
-              </Text>
-              <Text type="body" className="mt-2 text-gray-500">
-                No child activities found for this master
-              </Text>
             </div>
           )}
 
@@ -409,8 +385,8 @@ const ActivitySummaryChildList: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

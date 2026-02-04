@@ -363,13 +363,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
       <div className="flex px-4 flex-row gap-4">
         <div className="flex flex-col w-full">
           <div className="flex items-center gap-2 mb-4">
-            {tagData && (
-              <button onClick={onBack} className="mr-2">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M15 10H5M5 10L10 15M5 10L10 5" stroke="#172B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
+
             <Text
               type="header3"
               title={activityDetails?.title}
