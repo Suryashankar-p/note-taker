@@ -278,10 +278,14 @@ const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
                   {/* Status badge + view icon */}
                   <div className="flex items-center relative">
                     <Text
-                      type="bold-body"
-                      className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(tag.status)} absolute right-16`}
+                      type="body"
+                      className={`border rounded-lg w-28 text-center h-10 px-3 py-2 text-sm text-primary_text ${getBorderColor(tag.status)} absolute right-14`}
                     >
-                      {tag.status}
+                      {tag.status === "PASSED"
+                        ? "Passed"
+                        : tag.status === "FAILED"
+                        ? "Failed"
+                        : tag.status}
                     </Text>
 
                     {/* Eye Icon */}

@@ -5,13 +5,9 @@ import { Dispatch, RootState } from "../../redux/store.ts";
 import Text from "../../components/Text.tsx";
 import Input from "../../components/Input.tsx";
 import Button from "../../components/Button.tsx";
-import DropDownButton from "../../components/DropDownButton.tsx";
 import Search from "../../assets/search_icon.svg";
 
-import Menu from "../../assets/more.svg";
-import EditIcon from "../../assets/edit.svg";
-import TrashIcon from "../../assets/trash.svg";
-import TranferIcon from "../../assets/exchange.svg";
+
 
 import DropDownMenu from "../../components/DropdownMenu.tsx";
 import {
@@ -67,10 +63,6 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
   const activityListRef = useRef<HTMLDivElement>(null);
 
   const [searchValue, setSearchValue] = useState("");
-  const [statusFilter, setStatusFilter] = useState<{
-    value: string;
-    name: string;
-  }>({ value: "all", name: "All" });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState(false);
   const [childActivities, setChildActivities] = useState<ChildActivity[]>([]);
@@ -82,48 +74,42 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
 
   let timeoutId: NodeJS.Timeout | null = null;
 
-  const statusOptions = [
-    { value: "all", name: "All" },
-    { value: "inProgress", name: "In progress" },
-    { value: "rejected", name: "Rejected" },
-  ];
+  // const menuItems = [
+  //   {
+  //     title: "Edit",
+  //     component: <img src={EditIcon} alt="edit" loading="lazy" />,
+  //   },
+  //   {
+  //     title: "Delete",
+  //     component: <img src={TrashIcon} alt="trash" loading="lazy" />,
+  //   },
+  //   {
+  //     title: "Tranfer",
+  //     component: <img src={TranferIcon} alt="Tranfer" loading="lazy" />,
+  //   },
+  // ];
 
-  const menuItems = [
-    {
-      title: "Edit",
-      component: <img src={EditIcon} alt="edit" loading="lazy" />,
-    },
-    {
-      title: "Delete",
-      component: <img src={TrashIcon} alt="trash" loading="lazy" />,
-    },
-    {
-      title: "Tranfer",
-      component: <img src={TranferIcon} alt="Tranfer" loading="lazy" />,
-    },
-  ];
-
-  const handleMenuClick = (item: string, activity: ChildActivity) => {
-    if (item === "Edit") {
-      if (onSelectActivity) {
-        onSelectActivity(activity);
-      } else {
-        navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
-          state: { activity },
-        });
-      }
-    } else if (item === "Delete") {
-      // Handle delete action here
-      console.log("Delete activity:", activity);
-    } else if (item === "Tranfer") {
-      // Handle transfer action here
-      console.log("Transfer activity:", activity);
-    }
-  };
+  // const handleMenuClick = (item: string, activity: ChildActivity) => {
+  //   if (item === "Edit") {
+  //     if (onSelectActivity) {
+  //       onSelectActivity(activity);
+  //     } else {
+  //       navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
+  //         state: { activity },
+  //       });
+  //     }
+  //   } else if (item === "Delete") {
+  //     // Handle delete action here
+  //     console.log("Delete activity:", activity);
+  //   } else if (item === "Tranfer") {
+  //     // Handle transfer action here
+  //     console.log("Transfer activity:", activity);
+  //   }
+  // };
 
   useEffect(() => {
     if (masterId) {
-      getAllChildActivities(pageSize.skip, pageSize.limit, "", statusFilter.value);
+      getAllChildActivities(pageSize.skip, pageSize.limit, "");
     }
   }, [masterId]);
 
@@ -164,8 +150,7 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
   const getAllChildActivities = async (
     skip: number,
     limit: number,
-    search_term: string,
-    status: string
+    search_term: string
   ) => {
     setIsLoading(true);
     try {
@@ -174,7 +159,7 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
         skip,
         limit,
         search_term,
-        status !== "all" ? statusMapper(status) : undefined,
+        undefined,
         undefined // user_status
       );
 
@@ -207,7 +192,7 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
         pageSize.skip + pageSize.limit,
         pageSize.limit,
         searchValue,
-        statusFilter.value !== "all" ? statusMapper(statusFilter.value) : undefined,
+        undefined,
         undefined
       );
 
@@ -243,13 +228,8 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
     }
 
     timeoutId = setTimeout(() => {
-      getAllChildActivities(pageSize.skip, pageSize.limit, searchTerm, statusFilter.value);
+      getAllChildActivities(pageSize.skip, pageSize.limit, searchTerm);
     }, 500);
-  };
-
-  const handleFilter = (value: any) => {
-    setStatusFilter(value);
-    getAllChildActivities(pageSize.skip, pageSize.limit, searchValue, value.value);
   };
 
 
@@ -286,18 +266,6 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="relative flex items-center">
-              <Text className="mr-2" type="small">
-                Status:
-              </Text>
-              <DropDownButton
-                className="w-36"
-                listValues={statusOptions}
-                value={statusFilter}
-                onChange={handleFilter}
-              />
-            </div>
-
             <Input
               prefixIcon={<img src={Search} alt="search" loading="lazy" />}
               placeholder="Search"
@@ -353,7 +321,7 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
                       {activity?.status && statusMapper(activity.status)}
                     </Text>
 
-                    <div onClick={(e) => e.stopPropagation()}>
+                    {/* <div onClick={(e) => e.stopPropagation()}>
                       <DropDownMenu
                         onChange={(item: string) =>
                           handleMenuClick(item, activity)
@@ -368,7 +336,7 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
                         }
                         menuItems={menuItems}
                       />
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               ))}

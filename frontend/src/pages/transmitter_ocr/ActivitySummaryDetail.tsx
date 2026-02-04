@@ -10,6 +10,7 @@ import Toast from "../../components/Toast.tsx";
 import NoData from "../../assets/no_data.tsx";
 
 import Search from "../../assets/search_icon.svg";
+import Download from "../../assets/export_icon.svg";
 import {
   TransmitterGetChildActivityDetails
 } from "../../services/transmitter_ocr.ts";
@@ -49,7 +50,11 @@ type BackendResponse = {
   data: PageData[];
 };
 
-const ActivitySummaryDetail: React.FC = () => {
+interface ActivitySummaryDetailProps {
+  onBack?: () => void;
+}
+
+const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch<Dispatch>();
@@ -294,43 +299,41 @@ const ActivitySummaryDetail: React.FC = () => {
       <div className="flex flex-col p-6 h-full overflow-hidden bg-white">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-6 w-full">
-          <div className="flex flex-col">
-            <Text className="text-3xl font-bold text-gray-900" type="header2">
+          <div className="flex-1">
+            <Text className="text-2xl font-bold text-gray-900" type="header2">
               Activity Summary / {masterTitle} / {childTitle}
             </Text>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="relative">
               <Input
-                prefixIcon={<img src={Search} alt="search" loading="lazy" className="w-5 h-5" />}
+                prefixIcon={<img src={Search} alt="search" loading="lazy" className="w-4 h-4" />}
                 placeholder="Search"
-                className="w-64"
+                className="w-64 rounded-full border-gray-300"
                 onChange={onSearchChange}
                 value={searchValue}
               />
             </div>
             <Button
-              custom_type="secondary"
-              className="px-6 py-2.5 rounded-lg border border-gray-300 flex items-center gap-2"
-              size="custom"
+              className="px-4 py-2 flex flex-row items-center gap-2 justify-start bg-white border border-gray-300 text-black rounded-full transition duration-300 ease-in-out hover:bg-gray-100"
               onClick={handleExportCSV}
               disabled={!pageDataList.length}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 10V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M4.66675 6.66667L8.00008 10L11.3334 6.66667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 10V2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <Text type="body" className="font-semibold text-gray-700">Export</Text>
+              <img src={Download} alt="export" loading="lazy" />
+              <Text type="body" className="text-black">Export</Text>
             </Button>
             <Button
-              custom_type="primary"
-              className="px-6 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 transition-colors"
-              size="custom"
-              onClick={() => navigate(-1)}
+              className="px-4 py-2 text-white flex flex-row items-center gap-4 justify-start border-none bg-danger rounded-full transition duration-300 ease-in-out"
+              onClick={() => {
+                if (onBack) {
+                  onBack();
+                } else {
+                  navigate(-1);
+                }
+              }}
             >
-              <Text type="body" className="font-semibold text-white">Back</Text>
+              <Text type="body">Back</Text>
             </Button>
           </div>
         </div>

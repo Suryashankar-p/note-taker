@@ -198,24 +198,24 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
         </div>
 
         {/* Master Activities Section */}
-        <div className="mt-6 mb-4">
+        <div className="mt-6 mb-3">
           <Text className="text-xl font-semibold" type="header3">
             Master Activities
           </Text>
         </div>
 
         {/* Table Header */}
-        <div className="bg-gray-50 border-b-2 border-gray-200 py-3 px-4 rounded-t-lg">
+        <div className="bg-gray-50 border-t border-b border-gray-200 py-3 px-4">
           <div className="grid grid-cols-2 gap-4">
             <Text
               type="small"
-              className="font-semibold text-gray-600 uppercase"
+              className="text-gray-600 uppercase"
             >
               MASTER ACTIVITY
             </Text>
             <Text
               type="small"
-              className="font-semibold text-gray-600 uppercase text-right"
+              className="text-gray-600 uppercase pl-12"
             >
               CREATED ON
             </Text>
@@ -225,7 +225,7 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
         {/* Activities List */}
         <div
           ref={activityListRef}
-          className="flex-1 h-[calc(100vh-300px)] overflow-y-auto border-l border-r border-b border-gray-200 rounded-b-lg"
+          className="flex-1 h-[calc(100vh-300px)] overflow-y-auto"
         >
           {isLoading && masterActivities.length === 0 ? (
             <div className="flex justify-center items-center h-full">
@@ -249,12 +249,12 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
                     >
                       {getInitials(activity?.user?.name)}
                     </div>
-                    <Text type="body" className="ml-3 font-medium">
+                    <Text type="body" className="ml-3 text-gray-800">
                       {activity.title}
                     </Text>
                   </div>
-                  <div className="text-right">
-                    <Text type="body" className="text-gray-600">
+                  <div className="flex justify-start pl-12">
+                    <Text type="body" className="text-gray-500">
                       {new Date(activity.created_on).toLocaleDateString(
                         "en-US",
                         {

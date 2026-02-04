@@ -115,7 +115,7 @@ const TransmitterOcrMain: React.FC = () => {
       } else if (selectedActivityType === "summary") {
         return <ActivitySummaryChildList onSelectActivity={(activity: any) => handleSelectActivity(activity, "summary_detail")} />;
       } else if (selectedActivityType === "summary_detail") {
-        return <ActivitySummaryDetail />;
+        return <ActivitySummaryDetail onBack={() => setSelectedActivityType("summary")} />;
       }
     }
     switch (currentPage) {

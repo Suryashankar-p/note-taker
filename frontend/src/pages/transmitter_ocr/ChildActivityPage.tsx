@@ -201,7 +201,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
         console.error(`Polling error for activity ${id}`, err);
         // Keep polling; transient network errors shouldn't stop it.
       }
-    }, 3000); // 3-second interval
+    }, 5000); // 3-second interval
 
     pollTimersRef.current.set(id, timer);
   }, [updateActivityById, stopPolling]);
@@ -723,10 +723,10 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                         </div>
                       ) : (
                         /*
-                         * ── Normal status badge (Bold) ────────────────────
+                         * ── Normal status badge (non-bold) ────────────────
                          */
                         <Text
-                          type="bold-body"
+                          type="body"
                           className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(activity?.status)} absolute right-24`}
                         >
                           {activity?.status && statusMapper(activity.status)}
