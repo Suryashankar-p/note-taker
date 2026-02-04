@@ -31,15 +31,25 @@ const CreateMasterActivity: React.FC<CreateMasterActivityModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Template options for dropdown
-  const templateOptions = [
-    { name: "Select Master Template", value: "" },
-    { name: "Emerson", value: "emerson" },
-    { name: "Honeywell", value: "honeywell" },
-    { name: "Yokogawa", value: "yokogawa" },
-    { name: "gauges_bourdon", value: "gauges_bourdon" }
+  // Template options for dropdown - dynamically based on masterType
+  const getTemplateOptions = () => {
+    if (masterType === "Transmitter") {
+      return [
+        { name: "Select Master Template", value: "" },
+        { name: "Emerson", value: "emerson" },
+        { name: "Honeywell", value: "honeywell" },
+        { name: "Yokogawa", value: "yokogawa" }
+      ];
+    } else if (masterType === "Gauge") {
+      return [
+        { name: "Select Master Template", value: "" },
+        { name: "Gauges Bourdon", value: "gauges_bourdon" }
+      ];
+    }
+    return [{ name: "Select Master Template", value: "" }];
+  };
 
-  ];
+  const templateOptions = getTemplateOptions();
 
   useEffect(() => {
     if (isOpen) {
@@ -62,6 +72,16 @@ const CreateMasterActivity: React.FC<CreateMasterActivityModalProps> = ({
       }
     }
   }, [isOpen, defaultValues]);
+
+  // Reset template when masterType changes
+  useEffect(() => {
+    // Only reset template if it's not valid for the current masterType
+    const currentOptions = getTemplateOptions();
+    const isTemplateValid = currentOptions.some(opt => opt.value === template);
+    if (!isTemplateValid && template !== "") {
+      setTemplate("");
+    }
+  }, [masterType]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -250,12 +270,13 @@ const CreateMasterActivity: React.FC<CreateMasterActivityModalProps> = ({
         {!defaultValues && (
           <div className="mb-4">
             <Text className="text-primary_text">File upload*</Text>
-            <div className="relative w-full flex items-center border rounded-md border-grey h-12 overflow-hidden">
+            <div className="relative w-full">
               <input
                 type="text"
                 value={fileName}
                 readOnly
-                className="flex-1 h-full focus:outline-none p-4 border-none bg-gray-50"
+                disabled={loading}
+                className="border rounded-md w-full border-grey h-12 focus:outline-none p-4 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="Upload File"
               />
               <input
@@ -268,7 +289,7 @@ const CreateMasterActivity: React.FC<CreateMasterActivityModalProps> = ({
               />
               <button
                 type="button"
-                className="h-full px-4 border-l border-grey bg-white text-primary_text hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute h-10 right-2 top-1/2 transform -translate-y-1/2 border bg-inherit text-primary_text rounded-md px-4 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleChooseFileClick}
                 disabled={loading}
               >
