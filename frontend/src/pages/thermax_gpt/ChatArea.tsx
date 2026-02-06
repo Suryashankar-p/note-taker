@@ -814,6 +814,21 @@ const ChatArea: React.FC<Props> = ({
     0
   );
 
+  {/* Remove after test */}
+  const extractImageUrl = (text: string): string | null => {
+    // Check for direct image URLs in the text
+    const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|webp|gif)(\?[^\s]*)?)/gi;
+    const matches = text.match(urlRegex);
+    
+    if (matches && matches.length > 0) {
+      // Return the first valid image URL found
+      return matches[0];
+    }
+    
+    return null;
+  };
+  {/* Remove after test */}
+
   const renderAttachFile = () => {
     switch (aiProvider) {
       case "Thermax GPT":
@@ -924,6 +939,29 @@ const ChatArea: React.FC<Props> = ({
                       id={`message-${index}`}
                       className="w-full max-w-4xl py-1 px-4 rounded-lg"
                     >
+                      {/* Remove after test */}
+                      {/* Check for direct image URLs in the AI message */}
+                      {(() => {
+                        const directImageUrl = extractImageUrl(message?.ai);
+                        if (directImageUrl) {
+                          return (
+                            <div className="my-4">
+                              <img
+                                src={directImageUrl}
+                                alt="Generated visual"
+                                className="w-[70%] rounded shadow"
+                                onError={(e) => {
+                                  // If image fails to load, fallback to markdown rendering
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      {/* Remove after test */}
+                      
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
@@ -1044,6 +1082,29 @@ const ChatArea: React.FC<Props> = ({
                     <span className="text-gray-600">{"AI"}</span>
                   </div>
                   <div className="w-full max-w-4xl py-1 px-4 rounded-lg">
+                    {/* Remove after test */}
+                    {/* Check for direct image URLs in streaming data */}
+                    {(() => {
+                      const directImageUrl = extractImageUrl(streamedData);
+                      if (directImageUrl) {
+                        return (
+                          <div className="my-4">
+                            <img
+                              src={directImageUrl}
+                              alt="Generated visual"
+                              className="w-[70%] rounded shadow"
+                              onError={(e) => {
+                                // If image fails to load, fallback to markdown rendering
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {/* Remove after test */}
+                    
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
