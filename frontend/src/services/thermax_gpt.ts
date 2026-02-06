@@ -109,12 +109,18 @@ export const DeleteChatHistory = async (
 };
 
 export const ReadVideo = async (
-  chat_id: number,
   link: string
 ) => {
-  const response = await GPTAPI.get(
-    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history//video/${link}`
+  const response = await axios.get(
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/1/video/stream`,
+    {
+      params: {
+        link: link,
+      },
+      responseType: "blob",
+    }
   );
+
   return response;
 };
 
