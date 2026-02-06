@@ -1,4 +1,3 @@
-// thermax-ai-studio/frontend/src/pages/transmitter_ocr/TransmitterOcrMain.tsx
 import React, { useState, useEffect } from "react";
 import Header from "../../components/Header.tsx";
 import TransmitterOcrSidebar from "./Sidebar.tsx";
@@ -47,15 +46,42 @@ const TransmitterOcrMain: React.FC = () => {
             : `/ai-studio/transmitter_ocr?activity_id=${activity.id}`;
 
       navigate(activityUrl, { replace: true, state: { activity, type } });
-      setBreadCrumbs((prev) => [
-        ...prev,
-        {
-          title: activity?.title?.length > MAX_TITLE_LENGTH
-            ? `${activity.title.substring(0, MAX_TITLE_LENGTH)}...`
-            : `${activity.title}`,
-          url: activityUrl,
-        },
-      ]);
+      
+      // Fix breadcrumb logic for tag details
+      if (type === "tag_detail") {
+        // For tag details, we need: AI Studio → Transmitter OCR → Child Activity Name → Tag Number
+        setBreadCrumbs([
+          {
+            title: "AI Studio",
+            url: "/ai-studio",
+          },
+          {
+            title: "Transmitter OCR",
+            url: "/ai-studio/transmitter_ocr",
+          },
+          {
+            title: activity?.title?.length > MAX_TITLE_LENGTH
+              ? `${activity.title.substring(0, MAX_TITLE_LENGTH)}...`
+              : `${activity.title}`,
+            url: `/ai-studio/transmitter_ocr?activity_id=${activity.id}`,
+          },
+          {
+            title: activity?.tagData?.tag_number || "Tag Details",
+            url: activityUrl,
+          },
+        ]);
+      } else {
+        // For other types, append to existing breadcrumbs
+        setBreadCrumbs((prev) => [
+          ...prev,
+          {
+            title: activity?.title?.length > MAX_TITLE_LENGTH
+              ? `${activity.title.substring(0, MAX_TITLE_LENGTH)}...`
+              : `${activity.title}`,
+            url: activityUrl,
+          },
+        ]);
+      }
     }
   };
 
@@ -108,14 +134,34 @@ const TransmitterOcrMain: React.FC = () => {
           <ChildActivityTags
             activityTitle={selectedActivity?.title}
             onSelectTag={(tag: any) => handleSelectActivity({ ...selectedActivity, tagData: tag }, "tag_detail")}
+            onBack={() => {
+              setSelectedActivity(null);
+              setSelectedActivityType("master");
+              setCurrentPage("ChildActivity");
+              navigate("/ai-studio/transmitter_ocr");
+            }}
           />
         );
       } else if (selectedActivityType === "tag_detail") {
-        return <ChildActivityDetailPage onBack={() => setSelectedActivityType("child")} />;
+        return <ChildActivityDetailPage onBack={() => {
+          setSelectedActivityType("child");
+          navigate(-1);
+        }} />;
       } else if (selectedActivityType === "summary") {
-        return <ActivitySummaryChildList onSelectActivity={(activity: any) => handleSelectActivity(activity, "summary_detail")} />;
+        return <ActivitySummaryChildList 
+          onSelectActivity={(activity: any) => handleSelectActivity(activity, "summary_detail")}
+          onBack={() => {
+            setSelectedActivity(null);
+            setSelectedActivityType("master");
+            setCurrentPage("ActivitySummary");
+            navigate("/ai-studio/transmitter_ocr");
+          }}
+        />;
       } else if (selectedActivityType === "summary_detail") {
-        return <ActivitySummaryDetail onBack={() => setSelectedActivityType("summary")} />;
+        return <ActivitySummaryDetail onBack={() => {
+          setSelectedActivityType("summary");
+          navigate(-1);
+        }} />;
       }
     }
     switch (currentPage) {

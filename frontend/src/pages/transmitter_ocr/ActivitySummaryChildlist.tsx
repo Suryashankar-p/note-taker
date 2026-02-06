@@ -45,9 +45,10 @@ interface MasterActivity {
 
 interface ActivitySummaryChildListProps {
   onSelectActivity?: (activity: any) => void;
+  onBack?: () => void;
 }
 
-const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onSelectActivity }) => {
+const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onSelectActivity, onBack }) => {
   const { masterId: paramMasterId } = useParams<{ masterId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -257,7 +258,29 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
       <div className="flex-1 p-6 h-full">
         <div className="flex justify-between items-center mt-1.5 mb-6 w-full">
           <div className="flex items-center">
-
+            {/* Back Button */}
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="mr-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Go back"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            )}
             <div className="flex flex-col">
               <Text className="text-2xl font-bold" type="header2">
                 Activity Summary / {masterActivity?.title || "Loading..."}

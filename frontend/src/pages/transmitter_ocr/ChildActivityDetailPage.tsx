@@ -452,7 +452,29 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
       <div className="flex px-4 flex-row gap-4">
         <div className="flex flex-col w-full">
           <div className="flex items-center gap-2 mb-4">
-
+            {/* Back Button */}
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="mr-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Go back"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            )}
             <Text
               type="header3"
               title={activityDetails?.title}
