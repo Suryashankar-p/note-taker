@@ -108,6 +108,16 @@ export const DeleteChatHistory = async (
   return response;
 };
 
+export const ReadVideo = async (
+  chat_id: number,
+  link: string
+) => {
+  const response = await GPTAPI.get(
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history//video/${link}`
+  );
+  return response;
+};
+
 //<<<<<<Usage APIs>>>>>>
 
 export const ReadCostUsage = async (
