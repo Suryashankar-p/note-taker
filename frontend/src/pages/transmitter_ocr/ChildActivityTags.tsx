@@ -32,6 +32,7 @@ export type TagNumberResponse = {
 interface ChildActivityTagsProps {
   activityTitle?: string;
   onSelectTag?: (tag: TagNumberStatus) => void;
+  onBack?: () => void; // Add onBack prop
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ const statusMapper = (status: string): string | undefined => {
 const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
   activityTitle: propActivityTitle,
   onSelectTag,
+  onBack, // Add onBack prop
 }) => {
   const { activityTitle: paramActivityTitle } = useParams<{ activityTitle: string }>();
   const dispatch = useDispatch<Dispatch>();
@@ -199,6 +201,29 @@ const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
         <div className="flex justify-between items-center mt-1.5 mb-4 w-full">
           <div className="flex flex-col">
             <div className="flex items-center">
+              {/* Back button */}
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="mr-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  title="Go back"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+              )}
               <Text className="text-2xl -mt-1 font-bold" type="header2">
                 Child Activity / {activityTitle}
               </Text>

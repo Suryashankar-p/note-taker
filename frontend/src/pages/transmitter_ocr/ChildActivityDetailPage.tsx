@@ -13,10 +13,10 @@ import {
   TransmitterGetChildDocumentUrl,
   TransmitterGetChildActivityDetails,
   TransmitterSentChildMultipartMessage,
-  TransmitterUpdateChildActivityDetails,
   TransmitterGetChildAckData,
   TransmitterGetTagNumberDocumentUrl,
-  TransmitterGetTagNumberDetails
+  TransmitterGetTagNumberDetails,
+  TransmitterUpdateTagNumberFields
 } from "../../services/transmitter_ocr.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
@@ -74,6 +74,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
     { coordinates: any; pageNumber: number }[]
   >([]);
   const [pageError, setPageError] = useState<boolean>(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const toast = useSelector((state: RootState) => state.toast);
 
   useEffect(() => {
@@ -89,10 +90,12 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
   }, [activityDetails]);
 
   useEffect(() => {
-    if (tagData?.tag_number) {
-      getTagDocumentLink(activity?.id, tagData.tag_number);
+    // Always call tag number details API when tag data exists (even for "Unknown")
+    if (tagData?.tag_number && activity?.title) {
       getTagDetails(activity?.title, tagData.tag_number);
+      getTagDocumentLink(activity?.id, tagData.tag_number);
     } else if (activity?.id) {
+      // Only fallback to regular APIs if no tag data exists at all
       getActivityDetails(activity?.id);
       getDocumentLink(activity?.id);
     }
@@ -267,50 +270,116 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
 
   const handleInputChange = async (title: string, value: string | number) => {
     scrollPositionRef.current = scrollRef.current?.scrollTop || 0;
+    
+    // Update the field data immediately for UI responsiveness
+    setFieldData((prevFieldData: any) => {
+      const updatedFieldData = [...prevFieldData];
+      const index = updatedFieldData.findIndex(field => field.title === title);
+      if (index !== -1) {
+        updatedFieldData[index] = {
+          ...updatedFieldData[index],
+          value: value,
+        };
+      }
+      return updatedFieldData;
+    });
+
+    // Set unsaved changes flag
+    setHasUnsavedChanges(true);
+    
+    // Clear any existing timeout (removed the 4-second timeout)
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  const handleInputBlur = async (title: string) => {
+    // Trigger API call immediately when user moves out of the field
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    timeoutId = setTimeout(() => {
-      setFieldData((prevFieldData: any) => {
-        const updatedFieldData = [...prevFieldData];
-        const index = updatedFieldData.findIndex(field => field.title === title);
-        if (index !== -1) {
-          updatedFieldData[index] = {
-            ...updatedFieldData[index],
-            value: value,
-          };
-        }
-        updateActivityDetails(activity?.id, updatedFieldData);
-        return updatedFieldData;
-      });
-    }, 4000);
+    
+    // Get the current field data and update immediately
+    setFieldData((prevFieldData: any) => {
+      updateActivityDetails(activity?.id, prevFieldData);
+      return prevFieldData;
+    });
   };
 
   const updateActivityDetails = async (activity_id: number, body: any) => {
-    let payload = {
-      title: activity?.title,
-      master_title: activityDetails?.master_title,
-      data: {
-        field: body,
-      },
-    };
-    try {
-      const response = await TransmitterUpdateChildActivityDetails(activity_id, payload);
-      if (response?.data) {
-        setFieldData(response?.data?.field || []);
-        setActivityDetails(prev => ({
-          ...prev,
-          data: response?.data,
-          title: response?.title || prev?.title,
-          status: response?.status || prev?.status,
-          coordinates: response?.coordinates || prev?.coordinates,
-        }));
-      }
-    } catch (err) {
-      console.error("Error updating activity details:", err);
+    // Check if we have valid tag data, otherwise show error and prevent API call
+    if (!tagData?.tag_number || tagData.tag_number.trim() === '' || tagData.tag_number === 'Unknown') {
+      console.error('❌ Invalid or missing tag number:', tagData?.tag_number);
       dispatch.toast.openToast({
         status: true,
-        message: "Failed to update activity details",
+        message: "Valid tag number not found. Cannot update fields.",
+        type: "error",
+      });
+      return;
+    }
+
+    // Use the new tag number update API
+    const payload = {
+      activity_id: activity_id,
+      tag_number: tagData.tag_number,
+      fields: body.map(field => ({
+        title: field.title,
+        value: field.value
+      }))
+    };
+    
+    console.log('=== BEFORE TAG UPDATE ===');
+    console.log('Activity ID:', activity_id);
+    console.log('Tag Number:', tagData.tag_number);
+    console.log('Payload:', JSON.stringify(payload, null, 2));
+    
+    try {
+      const response = await TransmitterUpdateTagNumberFields(payload);
+      console.log('=== AFTER TAG UPDATE ===');
+      console.log('Response:', response);
+      
+      if (response) {
+        console.log('✅ Tag update API successful');
+        
+        // Update activity details with the response
+        setActivityDetails(prev => ({
+          ...prev,
+          ...response,
+          fields: response.fields || prev.fields,
+        }));
+        
+        // Update field data with the response
+        if (response.fields) {
+          setFieldData(response.fields);
+        }
+        
+        // Clear unsaved changes flag
+        setHasUnsavedChanges(false);
+        
+        console.log('✅ Tag updated successfully');
+        
+        // Show success message
+        dispatch.toast.openToast({
+          status: true,
+          message: "Tag data updated successfully",
+          type: "success",
+        });
+      } else {
+        console.warn('⚠️ No data in tag update response:', response);
+      }
+    } catch (err: any) {
+      console.error("❌ Error updating tag number fields:", err);
+      console.error("Error details:", {
+        message: err?.message,
+        response: err?.response?.data,
+        status: err?.response?.status,
+        config: err?.config
+      });
+      
+      dispatch.toast.openToast({
+        status: true,
+        message: err?.response?.data?.detail || "Failed to update tag data",
         type: "error",
       });
     }
@@ -350,8 +419,28 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
     return (
       <div className={`flex bg-white border items-center px-4 py-1.5 rounded-md gap-2 ${isInvalid ? "border-gray-200" : "border-green-200"}`}>
         <img src={isInvalid ? iButton : Tick} alt="status" className="w-4 h-4" />
-        <Text type="body" className={`font-bold text-sm ${isInvalid ? "text-[#E4B106]" : "text-green-600"}`}>
+        <Text type="body" className={`font-bold text-sm flex-grow text-center ${isInvalid ? "text-[#E4B106]" : "text-green-600"}`}>
           {isInvalid ? "Invalid" : "Valid"}
+        </Text>
+      </div>
+    );
+  };
+
+  const renderResponseStatus = () => {
+    const status = activityDetails?.status;
+    const isValid = status === "PASSED";
+    const isFailed = status === "FAILED";
+    
+    // Only show if status is PASSED or FAILED
+    if (!isValid && !isFailed) {
+      return null;
+    }
+    
+    return (
+      <div className={`flex bg-white border items-center px-4 py-1.5 rounded-md gap-2 ${isFailed ? "border-gray-200" : "border-green-200"}`}>
+        <img src={isFailed ? iButton : Tick} alt="status" className="w-4 h-4" />
+        <Text type="body" className={`font-bold text-sm flex-grow text-center ${isFailed ? "text-[#E4B106]" : "text-green-600"}`}>
+          {isFailed ? "Invalid" : "Valid"}
         </Text>
       </div>
     );
@@ -387,14 +476,28 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
             />
           </div>
 
-          {(activityDetails?.status === "IN_PROGRESS" || activityDetails?.status === "SUBMITTED_FAILED" || activityDetails?.status === "SUBMITTED_SUCCESS") && (
-            <div className="inline-flex gap-3 items-center self-center">
-              <Text className="text-[#5E6C84] font-bold text-sm" type="body">
-                Status:
-              </Text>
-              {renderWarning()}
-            </div>
-          )}
+          {/* Status Section - between Annotation and Reject */}
+          <div className="flex items-center gap-4">
+            {/* Existing Status Section */}
+            {(activityDetails?.status === "IN_PROGRESS" || activityDetails?.status === "SUBMITTED_FAILED" || activityDetails?.status === "SUBMITTED_SUCCESS") && (
+              <div className="inline-flex gap-3 items-center">
+                <Text className="text-[#5E6C84] font-bold text-sm" type="body">
+                  Status:
+                </Text>
+                {renderWarning()}
+              </div>
+            )}
+
+            {/* Response Status Section - shows Valid/Invalid based on API response status */}
+            {renderResponseStatus() && (
+              <div className="inline-flex gap-3 items-center">
+                <Text className="text-[#5E6C84] font-bold text-sm" type="body">
+                  Status:
+                </Text>
+                {renderResponseStatus()}
+              </div>
+            )}
+          </div>
           {/* Reject Button Section */}
           <Button
             disabled={loading || activityDetails?.status === "REJECTED"}
@@ -462,55 +565,56 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                       )}
                     </Text>
                     <div className="w-full">
-                      {tagData ? (
-                        <div
-                          className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg flex items-center min-h-[50px] ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'}`}
-                          style={{
-                            borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D",
-                            boxShadow: item?.is_valid
-                              ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
-                              : "0 0 0 1px rgba(252, 211, 77, 0.5)",
-                          }}
-                        >
-                          {item?.value || "N/A"}
-                        </div>
-                      ) : (
-                        <input
-                          type={item?.type === "string" ? "text" : "number"}
-                          disabled={
-                            activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                            activityDetails?.status === "REJECTED" ||
-                            activityDetails?.status === "SUBMITTED" ||
-                            activityDetails?.status === "SUBMITTED_WAITING"
-                          }
-                          className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg transition-all ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'}`}
-                          style={{
-                            borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D",
-                            outline: "none",
-                            boxShadow: item?.is_valid
-                              ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
-                              : "0 0 0 1px rgba(252, 211, 77, 0.5)",
-                          }}
-                          defaultValue={item?.value}
-                          onFocus={(e) => {
-                            e.target.style.borderColor = item?.is_valid
-                              ? "#A7AAB1"
-                              : "#E4B106";
-                            e.target.style.boxShadow = item?.is_valid
-                              ? "0 0 0 1px rgba(167, 170, 177, 0.7)"
-                              : "0 0 0 1px rgba(228, 177, 6, 0.7)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.borderColor = item?.is_valid
-                              ? "#D1D5DB"
-                              : "#FCD34D";
-                            e.target.style.boxShadow = item?.is_valid
-                              ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
-                              : "0 0 0 1px rgba(252, 211, 77, 0.5)";
-                          }}
-                          onChange={(e) => handleInputChange(item.title, e.target.value)}
-                        />
-                      )}
+                      <input
+                        type={item?.type === "string" ? "text" : "number"}
+                        disabled={
+                          activityDetails?.status === "SUBMITTED_SUCCESS" ||
+                          activityDetails?.status === "REJECTED" ||
+                          activityDetails?.status === "SUBMITTED" ||
+                          activityDetails?.status === "SUBMITTED_WAITING"
+                        }
+                        className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg transition-all ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'} ${
+                          activityDetails?.status === "SUBMITTED_SUCCESS" ||
+                          activityDetails?.status === "REJECTED" ||
+                          activityDetails?.status === "SUBMITTED" ||
+                          activityDetails?.status === "SUBMITTED_WAITING"
+                            ? 'cursor-not-allowed opacity-50'
+                            : 'cursor-text'
+                        }`}
+                        style={{
+                          borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D",
+                          outline: "none",
+                          boxShadow: item?.is_valid
+                            ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
+                            : "0 0 0 1px rgba(252, 211, 77, 0.5)",
+                        }}
+                        value={item?.value || ""}
+                        onFocus={(e) => {
+                          console.log('Input focused:', item.title, 'Current value:', item?.value);
+                          e.target.style.borderColor = item?.is_valid
+                            ? "#A7AAB1"
+                            : "#E4B106";
+                          e.target.style.boxShadow = item?.is_valid
+                            ? "0 0 0 1px rgba(167, 170, 177, 0.7)"
+                            : "0 0 0 1px rgba(228, 177, 6, 0.7)";
+                        }}
+                        onBlur={(e) => {
+                          console.log('Input blurred:', item.title, 'Final value:', e.target.value);
+                          e.target.style.borderColor = item?.is_valid
+                            ? "#D1D5DB"
+                            : "#FCD34D";
+                          e.target.style.boxShadow = item?.is_valid
+                            ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
+                            : "0 0 0 1px rgba(252, 211, 77, 0.5)";
+                          // Trigger API call immediately on blur
+                          handleInputBlur(item.title);
+                        }}
+                        onChange={(e) => {
+                          console.log('Input changing:', item.title, 'New value:', e.target.value);
+                          handleInputChange(item.title, e.target.value);
+                        }}
+                        placeholder={`Enter ${item.title.toLowerCase()}`}
+                      />
                     </div>
                     {!item?.is_valid && item?.invalid_reason && (
                       <div className="mt-1 text-sm text-yellow-600 flex items-start">

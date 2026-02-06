@@ -357,6 +357,11 @@ export const TransmitterGetTagNumberDetails = async (title: string, tag_number: 
   return response
 }
 
+export const TransmitterUpdateTagNumberFields = async (data: any) => {
+  const response = await TransmitterOCRAPI.patch(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/child_activity/tag_number/update`, data);
+  return response
+}
+
 // Activity Summary Detail APIs
 export const TransmitterGetChildActivitySummaryDetails = async (
   activity_id: number,
