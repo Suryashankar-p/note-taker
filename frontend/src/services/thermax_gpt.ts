@@ -108,22 +108,6 @@ export const DeleteChatHistory = async (
   return response;
 };
 
-export const ReadVideo = async (
-  link: string
-) => {
-  const response = await axios.get(
-    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/1/video/stream`,
-    {
-      params: {
-        link: link,
-      },
-      responseType: "blob",
-    }
-  );
-
-  return response;
-};
-
 //<<<<<<Usage APIs>>>>>>
 
 export const ReadCostUsage = async (
