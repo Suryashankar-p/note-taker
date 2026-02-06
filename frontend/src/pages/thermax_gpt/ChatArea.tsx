@@ -21,7 +21,6 @@ import {
   CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
   CreatePerplexityStream,
-  ReadVideo,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -100,8 +99,6 @@ const ChatArea: React.FC<Props> = ({
   const [fileShow, setFileShow] = useState(false);
   const [fileData, setFileData] = useState();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [videoUrls, setVideoUrls] = useState<{ [key: string]: string }>({});
-  const [pendingVideos, setPendingVideos] = useState<{ [key: string]: string }>({});
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
@@ -203,21 +200,6 @@ const ChatArea: React.FC<Props> = ({
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
-    };
-  }, []);
-
-  useEffect(() => {
-    Object.entries(pendingVideos).forEach(([key, url]) => {
-      if (url && !videoUrls[key]) {
-        loadVideoBlob(url, key);
-      }
-    });
-  }, [pendingVideos]);
-
-  // Cleanup blob URLs on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(videoUrls).forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
@@ -858,18 +840,6 @@ const ChatArea: React.FC<Props> = ({
     return null;
   };
 
-  const loadVideoBlob = async (url: string, key: string) => {
-    try {
-      const response = await ReadVideo(url);      
-      
-      const blob = await response.data;
-      const blobUrl = URL.createObjectURL(blob);      
-      setVideoUrls((prev) => ({ ...prev, [key]: blobUrl }));
-    } catch (err) {
-      console.error("Error loading video:", err);
-    }
-  };
-
   const renderAttachFile = () => {
     switch (aiProvider) {
       case "Thermax GPT":
@@ -1012,35 +982,18 @@ const ChatArea: React.FC<Props> = ({
                               href?.includes("generated_videos");
 
                             if (isVideo) {
-                              const key = `video-${href}`;
-                              
-                              // Queue video for loading if not already loaded or pending
-                              if (href && !videoUrls[key] && !pendingVideos[key]) {
-                                setPendingVideos((prev) => ({
-                                  ...prev,
-                                  [key]: href,
-                                }));
-                              }
                               return (
                                 <div className="my-4">
                                   <p className="mb-2 text-sm text-gray-600">
                                     Here is the generated video:
                                   </p>
-                                  <div className="relative max-w-[70%]">
-                                    {videoUrls[key] ? (
-                                      <video
-                                        controls
-                                        src={videoUrls[key]}
-                                        className="w-full rounded shadow"
-                                      >
-                                        Your browser does not support the video tag.
-                                      </video>
-                                    ) : (
-                                      <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded">
-                                        <p className="text-gray-500">Loading video...</p>
-                                      </div>
-                                    )}
-                                  </div>
+                                  <video
+                                    controls
+                                    src={href}
+                                    className="w-[70%] rounded shadow"
+                                  >
+                                    Your browser does not support the video tag.
+                                  </video>
                                 </div>
                               );
                             }
@@ -1087,6 +1040,25 @@ const ChatArea: React.FC<Props> = ({
                                 className="w-[70%] rounded shadow"
                                 onError={(e) => {
                                   // If image fails to load, fallback to markdown rendering
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      {/* Check for direct video URLs in the AI message */}
+                      {(() => {
+                        const directVideoUrl = extractVideoUrl(message?.ai);
+                        if (directVideoUrl) {
+                          return (
+                            <div className="my-4">
+                              <video
+                                src={directVideoUrl}
+                                className="w-[70%] rounded shadow"
+                                onError={(e) => {
+                                  // If video fails to load, fallback to markdown rendering
                                   e.currentTarget.style.display = 'none';
                                 }}
                               />
@@ -1169,9 +1141,8 @@ const ChatArea: React.FC<Props> = ({
                       if (directVideoUrl) {
                         return (
                           <div className="my-4">
-                            <img
+                            <video
                               src={directVideoUrl}
-                              alt="Generated visual"
                               className="w-[70%] rounded shadow"
                               onError={(e) => {
                                 // If video fails to load, fallback to markdown rendering
@@ -1344,7 +1315,7 @@ const ChatArea: React.FC<Props> = ({
                             key={tab.label}
                             onClick={() => handleTabChange(tab.label)}
                             className={`relative z-10 flex items-center justify-center gap-2 px-5 py-1 text-sm font-medium transition-colors duration-300 whitespace-nowrap
-                            ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
+              ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
                             style={{ width: "200px" }}
                           >
                             {tab.icon}
