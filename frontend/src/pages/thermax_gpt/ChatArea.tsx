@@ -814,7 +814,6 @@ const ChatArea: React.FC<Props> = ({
     0
   );
 
-  {/* Remove after test */}
   const extractImageUrl = (text: string): string | null => {
     // Check for direct image URLs in the text
     const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|webp|gif)(\?[^\s]*)?)/gi;
@@ -827,7 +826,6 @@ const ChatArea: React.FC<Props> = ({
     
     return null;
   };
-  {/* Remove after test */}
 
   const renderAttachFile = () => {
     switch (aiProvider) {
@@ -939,29 +937,6 @@ const ChatArea: React.FC<Props> = ({
                       id={`message-${index}`}
                       className="w-full max-w-4xl py-1 px-4 rounded-lg"
                     >
-                      {/* Remove after test */}
-                      {/* Check for direct image URLs in the AI message */}
-                      {(() => {
-                        const directImageUrl = extractImageUrl(message?.ai);
-                        if (directImageUrl) {
-                          return (
-                            <div className="my-4">
-                              <img
-                                src={directImageUrl}
-                                alt="Generated visual"
-                                className="w-[70%] rounded shadow"
-                                onError={(e) => {
-                                  // If image fails to load, fallback to markdown rendering
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                      {/* Remove after test */}
-                      
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
@@ -1041,6 +1016,26 @@ const ChatArea: React.FC<Props> = ({
                       >
                         {message?.ai}
                       </ReactMarkdown>
+                      {/* Check for direct image URLs in the AI message */}
+                      {(() => {
+                        const directImageUrl = extractImageUrl(message?.ai);
+                        if (directImageUrl) {
+                          return (
+                            <div className="my-4">
+                              <img
+                                src={directImageUrl}
+                                alt="Generated visual"
+                                className="w-[70%] rounded shadow"
+                                onError={(e) => {
+                                  // If image fails to load, fallback to markdown rendering
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   ) : (
                     !message?.file_name &&
@@ -1082,7 +1077,13 @@ const ChatArea: React.FC<Props> = ({
                     <span className="text-gray-600">{"AI"}</span>
                   </div>
                   <div className="w-full max-w-4xl py-1 px-4 rounded-lg">
-                    {/* Remove after test */}
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                      className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
+                      >
+                      {streamedData}
+                    </ReactMarkdown>
                     {/* Check for direct image URLs in streaming data */}
                     {(() => {
                       const directImageUrl = extractImageUrl(streamedData);
@@ -1103,15 +1104,6 @@ const ChatArea: React.FC<Props> = ({
                       }
                       return null;
                     })()}
-                    {/* Remove after test */}
-                    
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm, remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                      className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
-                    >
-                      {streamedData}
-                    </ReactMarkdown>
                   </div>
                 </div>
               </div>
