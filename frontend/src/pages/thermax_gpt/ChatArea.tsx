@@ -21,7 +21,6 @@ import {
   CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
   CreatePerplexityStream,
-  ReadVideo,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -110,79 +109,6 @@ const ChatArea: React.FC<Props> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
   const eventSourceRef = useRef<EventSource | null>(null);
-  const [videoStreamUrls, setVideoStreamUrls] = useState<Map<string, string>>(new Map());
-  const [loadingVideos, setLoadingVideos] = useState<Set<string>>(new Set());
-
-  // Video stream component
-  const VideoStream: React.FC<{ originalUrl: string }> = ({ originalUrl }) => {
-    const [streamUrl, setStreamUrl] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-      const loadVideo = async () => {
-        setLoadingVideos(prev => new Set(prev).add(originalUrl));
-        setError(null);
-        
-        try {
-          const url = await getVideoStreamUrl(originalUrl);
-          if (url) {
-            setStreamUrl(url);
-          } else {
-            setError('Failed to load video stream');
-          }
-        } catch (err) {
-          setError('Error loading video');
-        } finally {
-          setLoadingVideos(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(originalUrl);
-            return newSet;
-          });
-        }
-      };
-
-      loadVideo();
-    }, [originalUrl]);
-
-    if (loadingVideos.has(originalUrl)) {
-      return (
-        <div className="my-4">
-          <p className="mb-2 text-sm text-gray-600">Loading video...</p>
-          <div className="w-[70%] h-48 bg-gray-200 rounded flex items-center justify-center">
-            <div className="text-gray-500">Streaming video...</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="my-4">
-          <p className="mb-2 text-sm text-red-600">Error: {error}</p>
-          <video
-            controls
-            src={originalUrl}
-            className="w-[70%] rounded shadow"
-          >
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      );
-    }
-
-    return (
-      <div className="my-4">
-        <p className="mb-2 text-sm text-gray-600">Here is the generated video:</p>
-        <video
-          controls
-          src={streamUrl || originalUrl}
-          className="w-[70%] rounded shadow"
-        >
-          Your browser does not support the video tag.
-        </video>
-      </div>
-    );
-  };
 
   const { upload, uploadState, fileId, status, statusState, isDone } =
     useDocumentUploadWithStatus();
@@ -274,10 +200,8 @@ const ChatArea: React.FC<Props> = ({
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
-      // Cleanup blob URLs to prevent memory leaks
-      videoStreamUrls.forEach(url => URL.revokeObjectURL(url));
     };
-  }, [videoStreamUrls]);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
@@ -903,49 +827,6 @@ const ChatArea: React.FC<Props> = ({
     return null;
   };
 
-  const extractVideoUrl = (text: string): string | null => {
-    // Check for direct video URLs in the text
-    const urlRegex = /(https?:\/\/[^\s]+\.(mp4|avi|mov|wmv|flv|webm)(\?[^\s]*)?)/gi;
-    const matches = text.match(urlRegex);
-    
-    if (matches && matches.length > 0) {
-      // Return the first valid video URL found
-      return matches[0];
-    }
-    
-    return null;
-  };
-
-  const getVideoStreamUrl = async (videoUrl: string): Promise<string | null> => {
-    // Check if we already have a stream URL for this video
-    if (videoStreamUrls.has(videoUrl)) {
-      return videoStreamUrls.get(videoUrl) || null;
-    }
-
-    try {
-      if (!chat_id) return null;
-      
-      // Encode the video URL for safe transmission
-      const encodedUrl = encodeURIComponent(videoUrl);
-      const response = await ReadVideo(Number(chat_id), encodedUrl);
-      
-      if (response?.data) {
-        // Create a blob URL from the streamed response
-        const blob = new Blob([response.data], { type: 'video/mp4' });
-        const streamUrl = URL.createObjectURL(blob);
-        
-        // Cache the stream URL
-        setVideoStreamUrls(prev => new Map(prev.set(videoUrl, streamUrl)));
-        
-        return streamUrl;
-      }
-    } catch (error) {
-      console.error('Error streaming video:', error);
-    }
-    
-    return null;
-  };
-
   const renderAttachFile = () => {
     switch (aiProvider) {
       case "Thermax GPT":
@@ -1081,15 +962,27 @@ const ChatArea: React.FC<Props> = ({
                           a: ({ node, href, children, ...props }) => {
                             const isVideo =
                               href?.endsWith(".mp4") ||
-                              href?.includes("generated_videos") ||
-                              extractVideoUrl(href) !== null;
+                              href?.includes("generated_videos");
 
                             const isImage =
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
                               href?.includes("generated_videos");
 
                             if (isVideo) {
-                              return <VideoStream originalUrl={href} />;
+                              return (
+                                <div className="my-4">
+                                  <p className="mb-2 text-sm text-gray-600">
+                                    Here is the generated video:
+                                  </p>
+                                  <video
+                                    controls
+                                    src={href}
+                                    className="w-[70%] rounded shadow"
+                                  >
+                                    Your browser does not support the video tag.
+                                  </video>
+                                </div>
+                              );
                             }
 
                             if (isImage) {
@@ -1140,14 +1033,6 @@ const ChatArea: React.FC<Props> = ({
                               />
                             </div>
                           );
-                        }
-                        return null;
-                      })()}
-                      {/* Check for direct video URLs in the AI message */}
-                      {(() => {
-                        const directVideoUrl = extractVideoUrl(message?.ai);
-                        if (directVideoUrl) {
-                          return <VideoStream originalUrl={directVideoUrl} />;
                         }
                         return null;
                       })()}
@@ -1216,14 +1101,6 @@ const ChatArea: React.FC<Props> = ({
                             />
                           </div>
                         );
-                      }
-                      return null;
-                    })()}
-                    {/* Check for direct video URLs in streaming data */}
-                    {(() => {
-                      const directVideoUrl = extractVideoUrl(streamedData);
-                      if (directVideoUrl) {
-                        return <VideoStream originalUrl={directVideoUrl} />;
                       }
                       return null;
                     })()}
