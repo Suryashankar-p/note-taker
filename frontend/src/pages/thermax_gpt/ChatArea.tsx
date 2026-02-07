@@ -111,6 +111,7 @@ const ChatArea: React.FC<Props> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
   const eventSourceRef = useRef<EventSource | null>(null);
+  const fetchedVideosRef = useRef<Set<string>>(new Set());
 
   const { upload, uploadState, fileId, status, statusState, isDone } =
     useDocumentUploadWithStatus();
@@ -212,6 +213,28 @@ const ChatArea: React.FC<Props> = ({
       });
     };
   }, []);
+
+  useEffect(() => {
+    chatContent.forEach((message: any, index: number) => {
+      if (!message?.ai) return;
+      const videoUrl = extractVideoUrl(message.ai);
+      if (!videoUrl) return;
+      // ✅ Prevent duplicate calls
+      if (fetchedVideosRef.current.has(videoUrl)) return;
+      fetchedVideosRef.current.add(videoUrl);
+      fetchVideo(index, videoUrl);
+    });
+  }, [chatContent]);
+
+  useEffect(() => {
+    if (!streamedData) return;
+    const videoUrl = extractVideoUrl(streamedData);
+    if (!videoUrl) return;
+    if (fetchedVideosRef.current.has(videoUrl)) return;
+    fetchedVideosRef.current.add(videoUrl);
+    fetchVideo(-1, videoUrl);
+  }, [streamedData]);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
@@ -1011,23 +1034,6 @@ const ChatArea: React.FC<Props> = ({
                             const isImage =
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
                               href?.includes("generated_videos");
-
-                            // if (isVideo) {
-                            //   return (
-                            //     <div className="my-4">
-                            //       <p className="mb-2 text-sm text-gray-600">
-                            //         Here is the generated video:
-                            //       </p>
-                            //       <video
-                            //         controls
-                            //         src={href}
-                            //         className="w-[70%] rounded shadow"
-                            //       >
-                            //         Your browser does not support the video tag.
-                            //       </video>
-                            //     </div>
-                            //   );
-                            // }
                             if (isImage) {
                               return (
                                 <div className="my-4">
@@ -1083,8 +1089,6 @@ const ChatArea: React.FC<Props> = ({
                       {(() => {
                         const directVideoUrl = extractVideoUrl(message?.ai);
                         if (!directVideoUrl) return null;
-                        // Trigger backend streaming once
-                        fetchVideo(index, directVideoUrl);
                         const localVideoUrl = videoUrlMap[index];
                         if (!localVideoUrl) {
                           return (
