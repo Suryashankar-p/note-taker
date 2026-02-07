@@ -64,95 +64,6 @@ type Message = {
   text: string;
 };
 
-// VideoPlayer component that handles streaming videos through the API
-const VideoPlayer: React.FC<{
-  videoUrl: string;
-  chatId: string;
-  className?: string;
-}> = ({ videoUrl, chatId, className }) => {
-  const [videoSrc, setVideoSrc] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string>("");
-
-  useEffect(() => {
-    const loadVideo = async () => {
-      try {
-        setIsLoading(true);
-        setError("");
-        
-        const response = await ReadVideo(Number(chatId), videoUrl);
-        const videoBlob = new Blob([response.data], { type: 'video/mp4' });
-        const url = URL.createObjectURL(videoBlob);
-        setVideoSrc(url);
-      } catch (err) {
-        console.error("Error loading video:", err);
-        setError("Failed to load video");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (videoUrl && chatId) {
-      loadVideo();
-    }
-
-    // Cleanup blob URL when component unmounts
-    return () => {
-      if (videoSrc) {
-        URL.revokeObjectURL(videoSrc);
-      }
-    };
-  }, [videoUrl, chatId]);
-
-  if (isLoading) {
-    return (
-      <div className={`my-4 ${className}`}>
-        <div className="flex items-center justify-center w-[70%] h-64 bg-gray-100 rounded">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Loading video...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={`my-4 ${className}`}>
-        <div className="flex items-center justify-center w-[70%] h-64 bg-red-50 rounded">
-          <div className="text-center">
-            <p className="text-sm text-red-600">{error}</p>
-            <a 
-              href={videoUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 underline text-sm mt-2 inline-block"
-            >
-              Try opening directly
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`my-4 ${className}`}>
-      <p className="mb-2 text-sm text-gray-600">
-        Here is the generated video:
-      </p>
-      <video
-        controls
-        src={videoSrc}
-        className="w-[70%] rounded shadow"
-      >
-        Your browser does not support the video tag.
-      </video>
-    </div>
-  );
-};
-
 const ChatArea: React.FC<Props> = ({
   onNewChatAddition,
   disabled,
@@ -192,6 +103,7 @@ const ChatArea: React.FC<Props> = ({
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
+  const [videoUrlMap, setVideoUrlMap] = useState<Record<number, string>>({});
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
@@ -199,7 +111,6 @@ const ChatArea: React.FC<Props> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
   const eventSourceRef = useRef<EventSource | null>(null);
-  const [videoLoadingStates, setVideoLoadingStates] = useState<Set<string>>(new Set());
 
   const { upload, uploadState, fileId, status, statusState, isDone } =
     useDocumentUploadWithStatus();
@@ -291,6 +202,14 @@ const ChatArea: React.FC<Props> = ({
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(videoUrlMap).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, []);
 
@@ -919,15 +838,7 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const extractVideoUrl = (text: string): string | null => {
-    // Check for Azure blob video URLs with SAS tokens (more specific)
-    const azureBlobRegex = /(https:\/\/tmxgenaipstr01\.blob\.core\.windows\.net\/[^\s]+\.(mp4|webm|ogg|avi|mov|wmv)(\?[^\s]*)?)/gi;
-    const azureMatches = text.match(azureBlobRegex);
-    
-    if (azureMatches && azureMatches.length > 0) {
-      return azureMatches[0];
-    }
-    
-    // Check for other direct video URLs in the text
+    // Check for direct video URLs in the text
     const urlRegex = /(https?:\/\/[^\s]+\.(mp4|webm|ogg|avi|mov|wmv)(\?[^\s]*)?)/gi;
     const matches = text.match(urlRegex);
     
@@ -951,6 +862,29 @@ const ChatArea: React.FC<Props> = ({
         return "Attach File (Up to 10MB)";
     }
   };
+
+  const fetchVideo = async (index: number, blobLink: string) => {
+    try {
+      // Avoid refetching the same video
+      if (videoUrlMap[index]) return;
+
+      const response = await ReadVideo(Number(chat_id), blobLink);
+
+      const videoBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || "video/mp4",
+      });
+
+      const objectUrl = URL.createObjectURL(videoBlob);
+
+      setVideoUrlMap((prev) => ({
+        ...prev,
+        [index]: objectUrl,
+      }));
+    } catch (err) {
+      console.error("Failed to stream video:", err);
+    }
+  };
+
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -1080,35 +1014,21 @@ const ChatArea: React.FC<Props> = ({
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
                               href?.includes("generated_videos");
 
-                            // Check if it's a blob URL (contains SAS token parameters)
-                            const isBlobVideo = isVideo && href?.includes("blob.core.windows.net") && href?.includes("?");
-
                             if (isVideo) {
-                              if (isBlobVideo && chat_id) {
-                                // Use VideoPlayer for blob URLs with SAS tokens
-                                return (
-                                  <VideoPlayer 
-                                    videoUrl={href} 
-                                    chatId={chat_id}
-                                  />
-                                );
-                              } else {
-                                // Regular video URL, use direct video tag
-                                return (
-                                  <div className="my-4">
-                                    <p className="mb-2 text-sm text-gray-600">
-                                      Here is the generated video:
-                                    </p>
-                                    <video
-                                      controls
-                                      src={href}
-                                      className="w-[70%] rounded shadow"
-                                    >
-                                      Your browser does not support the video tag.
-                                    </video>
-                                  </div>
-                                );
-                              }
+                              return (
+                                <div className="my-4">
+                                  <p className="mb-2 text-sm text-gray-600">
+                                    Here is the generated video:
+                                  </p>
+                                  <video
+                                    controls
+                                    src={href}
+                                    className="w-[70%] rounded shadow"
+                                  >
+                                    Your browser does not support the video tag.
+                                  </video>
+                                </div>
+                              );
                             }
                             if (isImage) {
                               return (
@@ -1164,35 +1084,26 @@ const ChatArea: React.FC<Props> = ({
                       {/* Check for direct video URLs in the AI message */}
                       {(() => {
                         const directVideoUrl = extractVideoUrl(message?.ai);
-                        if (directVideoUrl) {
-                          // Check if it's a blob URL (contains SAS token parameters)
-                          const isBlobVideo = directVideoUrl.includes("blob.core.windows.net") && directVideoUrl.includes("?");
-                          
-                          if (isBlobVideo && chat_id) {
-                            // Use VideoPlayer for blob URLs with SAS tokens
-                            return (
-                              <VideoPlayer 
-                                videoUrl={directVideoUrl} 
-                                chatId={chat_id}
-                              />
-                            );
-                          } else {
-                            // Regular video URL, use direct video tag
-                            return (
-                              <div className="my-4">
-                                <video
-                                  src={directVideoUrl}
-                                  className="w-[70%] rounded shadow"
-                                  onError={(e) => {
-                                    // If video fails to load, fallback to markdown rendering
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                              </div>
-                            );
-                          }
+                        if (!directVideoUrl) return null;
+                        // Trigger backend streaming once
+                        fetchVideo(index, directVideoUrl);
+                        const localVideoUrl = videoUrlMap[index];
+                        if (!localVideoUrl) {
+                          return (
+                            <p className="text-sm text-gray-500 my-2">
+                              Loading video…
+                            </p>
+                          );
                         }
-                        return null;
+                        return (
+                          <div className="my-4">
+                            <video
+                              controls
+                              src={localVideoUrl}
+                              className="w-[70%] rounded shadow"
+                            />
+                          </div>
+                        );
                       })()}
                     </div>
                   ) : (
@@ -1265,35 +1176,25 @@ const ChatArea: React.FC<Props> = ({
                     {/* Check for direct video URLs in streaming data */}
                     {(() => {
                       const directVideoUrl = extractVideoUrl(streamedData);
-                      if (directVideoUrl) {
-                        // Check if it's a blob URL (contains SAS token parameters)
-                        const isBlobVideo = directVideoUrl.includes("blob.core.windows.net") && directVideoUrl.includes("?");
-                        
-                        if (isBlobVideo && chat_id) {
-                          // Use VideoPlayer for blob URLs with SAS tokens
-                          return (
-                            <VideoPlayer 
-                              videoUrl={directVideoUrl} 
-                              chatId={chat_id}
-                            />
-                          );
-                        } else {
-                          // Regular video URL, use direct video tag
-                          return (
-                            <div className="my-4">
-                              <video
-                                src={directVideoUrl}
-                                className="w-[70%] rounded shadow"
-                                onError={(e) => {
-                                  // If video fails to load, fallback to markdown rendering
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          );
-                        }
+                      if (!directVideoUrl) return null;
+                      fetchVideo(-1, directVideoUrl); // use -1 or a fixed key
+                      const localVideoUrl = videoUrlMap[-1];
+                      if (!localVideoUrl) {
+                        return (
+                          <p className="text-sm text-gray-500 my-2">
+                            Loading video…
+                          </p>
+                        );
                       }
-                      return null;
+                      return (
+                        <div className="my-4">
+                          <video
+                            controls
+                            src={localVideoUrl}
+                            className="w-[70%] rounded shadow"
+                          />
+                        </div>
+                      );
                     })()}
                   </div>
                 </div>
