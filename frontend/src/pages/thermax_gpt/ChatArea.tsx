@@ -838,16 +838,18 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const extractVideoUrl = (text: string): string | null => {
-    // Check for direct video URLs in the text
-    const urlRegex = /(https?:\/\/[^\s]+\.(mp4|webm|ogg|avi|mov|wmv)(\?[^\s]*)?)/gi;
-    const matches = text.match(urlRegex);
-    
-    if (matches && matches.length > 0) {
-      // Return the first valid video URL found
-      return matches[0];
+    const markdownUrlRegex = /\((https?:\/\/[^)\s]+)\)/;
+    const markdownMatch = text.match(markdownUrlRegex);
+
+    if (markdownMatch) {
+      return markdownMatch[1];
     }
-    
-    return null;
+
+    // Fallback: direct video URL anywhere in text
+    const directUrlRegex = /(https?:\/\/[^\s]+?\.(mp4|webm|ogg|avi|mov|wmv)[^\s]*)/i;
+    const directMatch = text.match(directUrlRegex);
+
+    return directMatch ? directMatch[1] : null;
   };
 
   const renderAttachFile = () => {
@@ -867,15 +869,11 @@ const ChatArea: React.FC<Props> = ({
     try {
       // Avoid refetching the same video
       if (videoUrlMap[index]) return;
-
       const response = await ReadVideo(Number(chat_id), blobLink);
-
       const videoBlob = new Blob([response.data], {
         type: response.headers["content-type"] || "video/mp4",
       });
-
       const objectUrl = URL.createObjectURL(videoBlob);
-
       setVideoUrlMap((prev) => ({
         ...prev,
         [index]: objectUrl,
