@@ -1012,22 +1012,22 @@ const ChatArea: React.FC<Props> = ({
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
                               href?.includes("generated_videos");
 
-                            if (isVideo) {
-                              return (
-                                <div className="my-4">
-                                  <p className="mb-2 text-sm text-gray-600">
-                                    Here is the generated video:
-                                  </p>
-                                  <video
-                                    controls
-                                    src={href}
-                                    className="w-[70%] rounded shadow"
-                                  >
-                                    Your browser does not support the video tag.
-                                  </video>
-                                </div>
-                              );
-                            }
+                            // if (isVideo) {
+                            //   return (
+                            //     <div className="my-4">
+                            //       <p className="mb-2 text-sm text-gray-600">
+                            //         Here is the generated video:
+                            //       </p>
+                            //       <video
+                            //         controls
+                            //         src={href}
+                            //         className="w-[70%] rounded shadow"
+                            //       >
+                            //         Your browser does not support the video tag.
+                            //       </video>
+                            //     </div>
+                            //   );
+                            // }
                             if (isImage) {
                               return (
                                 <div className="my-4">
