@@ -103,6 +103,7 @@ const ChatArea: React.FC<Props> = ({
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
+  const [videoUrlMap, setVideoUrlMap] = useState<Record<number, string>>({});
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
@@ -201,6 +202,14 @@ const ChatArea: React.FC<Props> = ({
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(videoUrlMap).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, []);
 
@@ -854,6 +863,29 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
+  const fetchVideo = async (index: number, blobLink: string) => {
+    try {
+      // Avoid refetching the same video
+      if (videoUrlMap[index]) return;
+
+      const response = await ReadVideo(Number(chat_id), blobLink);
+
+      const videoBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || "video/mp4",
+      });
+
+      const objectUrl = URL.createObjectURL(videoBlob);
+
+      setVideoUrlMap((prev) => ({
+        ...prev,
+        [index]: objectUrl,
+      }));
+    } catch (err) {
+      console.error("Failed to stream video:", err);
+    }
+  };
+
+
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
       {dislikeModalStatus && <DislikeReason onSubmit={onDislikeSubmit} />}
@@ -1052,21 +1084,26 @@ const ChatArea: React.FC<Props> = ({
                       {/* Check for direct video URLs in the AI message */}
                       {(() => {
                         const directVideoUrl = extractVideoUrl(message?.ai);
-                        if (directVideoUrl) {
+                        if (!directVideoUrl) return null;
+                        // Trigger backend streaming once
+                        fetchVideo(index, directVideoUrl);
+                        const localVideoUrl = videoUrlMap[index];
+                        if (!localVideoUrl) {
                           return (
-                            <div className="my-4">
-                              <video
-                                src={directVideoUrl}
-                                className="w-[70%] rounded shadow"
-                                onError={(e) => {
-                                  // If video fails to load, fallback to markdown rendering
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            </div>
+                            <p className="text-sm text-gray-500 my-2">
+                              Loading video…
+                            </p>
                           );
                         }
-                        return null;
+                        return (
+                          <div className="my-4">
+                            <video
+                              controls
+                              src={localVideoUrl}
+                              className="w-[70%] rounded shadow"
+                            />
+                          </div>
+                        );
                       })()}
                     </div>
                   ) : (
@@ -1139,21 +1176,25 @@ const ChatArea: React.FC<Props> = ({
                     {/* Check for direct video URLs in streaming data */}
                     {(() => {
                       const directVideoUrl = extractVideoUrl(streamedData);
-                      if (directVideoUrl) {
+                      if (!directVideoUrl) return null;
+                      fetchVideo(-1, directVideoUrl); // use -1 or a fixed key
+                      const localVideoUrl = videoUrlMap[-1];
+                      if (!localVideoUrl) {
                         return (
-                          <div className="my-4">
-                            <video
-                              src={directVideoUrl}
-                              className="w-[70%] rounded shadow"
-                              onError={(e) => {
-                                // If video fails to load, fallback to markdown rendering
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          </div>
+                          <p className="text-sm text-gray-500 my-2">
+                            Loading video…
+                          </p>
                         );
                       }
-                      return null;
+                      return (
+                        <div className="my-4">
+                          <video
+                            controls
+                            src={localVideoUrl}
+                            className="w-[70%] rounded shadow"
+                          />
+                        </div>
+                      );
                     })()}
                   </div>
                 </div>
