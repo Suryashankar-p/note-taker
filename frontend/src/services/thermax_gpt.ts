@@ -298,12 +298,12 @@ export const ReadVideo = async (
   chat_id: number,
   link: string
 ) => {
-  const response = await axios.get(
+  const response = await axios.post(
     BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history/video/stream`,
     {
-      params: {
-        link: link,
-      },
+      link: link,
+    },
+    {
       responseType: "blob",
     }
   );
