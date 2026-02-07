@@ -293,3 +293,20 @@ export const CreatePerplexityStream = async (
 
   return response;
 };
+
+export const ReadVideo = async (
+  chat_id: number,
+  link: string
+) => {
+  const response = await axios.get(
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/video/stream`,
+    {
+      params: {
+        link: link,
+      },
+      responseType: "blob",
+    }
+  );
+
+  return response;
+};
