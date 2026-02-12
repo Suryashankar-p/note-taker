@@ -173,7 +173,8 @@ export const TransmitterDeleteChildActivity = async (activity_id: number) => {
 export const TransmitterCreateChildActivity = async (
   title: string,
   file: File,
-  masterId: number
+  masterId: number,
+  pagesToTrim?: string
 ) => {
   const token = localStorage.getItem('access_token');
   const formData = new FormData();
@@ -182,6 +183,9 @@ export const TransmitterCreateChildActivity = async (
   }
   formData.append('title', title);
   formData.append('master_id', masterId.toString());
+  if (pagesToTrim) {
+    formData.append('pages_to_trim', pagesToTrim);
+  }
   try {
     const response = await axios.post(
       `${BACKEND_TBWES_OCR_URL}/transmitter_ocr/child_activity`,

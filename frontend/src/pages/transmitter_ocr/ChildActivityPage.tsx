@@ -77,6 +77,31 @@ const isExtracting = (activity: Activity): boolean =>
   activity.status === "IN_PROGRESS" && activity.is_extracted === false;
 
 // ---------------------------------------------------------------------------
+// Helper: staged processing label while IN_PROGRESS + not extracted
+// Uploading (0-10s) → Extracting (10-20s) → Validating (20-30s) → In Progress (30s+)
+// ---------------------------------------------------------------------------
+type ProcessingStage = "uploading" | "extracting" | "validating";
+
+const getProcessingStage = (elapsedMs: number): ProcessingStage => {
+  if (elapsedMs < 10_000) return "uploading";
+  if (elapsedMs < 20_000) return "extracting";
+  return "validating";
+};
+
+const getProcessingLabel = (stage: ProcessingStage): string => {
+  switch (stage) {
+    case "uploading":
+      return "Uploading";
+    case "extracting":
+      return "Extracting";
+    case "validating":
+      return "Validating";
+    default:
+      return "In Progress";
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Menu item sets (unchanged)
 // ---------------------------------------------------------------------------
 const MenuItems = [
@@ -105,6 +130,12 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   const pollingIdsRef = useRef<Set<number>>(new Set());
   // Map of intervalId per activity id so we can clear individually
   const pollTimersRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
+
+  // ── UI tick for staged labels ─────────────────────────────────────────────
+  const [nowTickMs, setNowTickMs] = useState<number>(() => Date.now());
+  const stageTickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Track when we first saw an activity in extracting state (UI-based timer)
+  const extractingFirstSeenRef = useRef<Map<number, number>>(new Map());
 
   // ── Filters ──────────────────────────────────────────────────────────────
   const [usernameFilter, setUsernameFilter] = useState<{ value: string; name: string }>({ value: "all", name: "All" });
@@ -201,7 +232,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
         console.error(`Polling error for activity ${id}`, err);
         // Keep polling; transient network errors shouldn't stop it.
       }
-    }, 5000); // 3-second interval
+    }, 5000);
 
     pollTimersRef.current.set(id, timer);
   }, [updateActivityById, stopPolling]);
@@ -329,8 +360,53 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     getMasterActivityTitles();
 
     // Cleanup all polling timers on unmount
-    return () => stopAllPolling();
+    return () => {
+      stopAllPolling();
+      if (stageTickTimerRef.current) {
+        clearInterval(stageTickTimerRef.current);
+        stageTickTimerRef.current = null;
+      }
+    };
   }, []);
+
+  // Keep staged labels updating while we have any extracting activity visible.
+  useEffect(() => {
+    const hasExtracting = activities.some(isExtracting);
+    if (!hasExtracting) {
+      if (stageTickTimerRef.current) {
+        clearInterval(stageTickTimerRef.current);
+        stageTickTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (stageTickTimerRef.current) return;
+
+    stageTickTimerRef.current = setInterval(() => {
+      setNowTickMs(Date.now());
+    }, 1000);
+
+    return () => {
+      if (stageTickTimerRef.current) {
+        clearInterval(stageTickTimerRef.current);
+        stageTickTimerRef.current = null;
+      }
+    };
+  }, [activities]);
+
+  // Maintain per-activity "first seen extracting" timestamps
+  useEffect(() => {
+    const now = Date.now();
+
+    activities.forEach((a) => {
+      if (isExtracting(a) && !extractingFirstSeenRef.current.has(a.id)) {
+        extractingFirstSeenRef.current.set(a.id, now);
+      }
+      if (!isExtracting(a) && extractingFirstSeenRef.current.has(a.id)) {
+        extractingFirstSeenRef.current.delete(a.id);
+      }
+    });
+  }, [activities]);
 
   // ==========================================================================
   // API CALLS
@@ -389,9 +465,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     }
   };
 
-  // ==========================================================================
-  // FILTERS
-  // ==========================================================================
   const handleFilter = (type: string, value: any) => {
     if (type === "status") {
       setFilter(prev => ({ ...prev, status: value?.value }));
@@ -438,7 +511,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
         return;
       }
 
-      const response = await TransmitterCreateChildActivity(title, file, masterId);
+      const response = await TransmitterCreateChildActivity(title, file, masterId, pagesToTrim);
       if (response) {
         setCreateModalVisible(false);
         dispatch.toast.openToast({ status: true, message: "Child activity created successfully", type: "success" });
@@ -481,7 +554,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   const onUpdate = async (title: string, pagesToTrim?: string, masterSheetId?: string) => {
     setIsLoading(true);
     try {
-      const payload = { title, master_title: defaultActivity?.master_title };
+      const payload = { title, master_title: defaultActivity?.master_title, pages_to_trim: pagesToTrim };
       const response = await TransmitterUpdateChildActivityDetails(defaultActivity?.id, payload);
       if (response?.id) {
         getAllActivitiesList(pageSize.skip, pageSize.limit, "");
@@ -659,6 +732,14 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
           ) : activities.length > 0 ? (
             activities.map((activity: any) => {
               const extracting = isExtracting(activity);
+              const extractingFirstSeen = extracting
+                ? extractingFirstSeenRef.current.get(activity.id) ?? nowTickMs
+                : undefined;
+              const elapsedMs = extractingFirstSeen ? Math.max(0, nowTickMs - extractingFirstSeen) : 0;
+
+              const processingLabel = extracting
+                ? (elapsedMs >= 30_000 ? "In Progress" : getProcessingLabel(getProcessingStage(elapsedMs)))
+                : undefined;
 
               return (
                 <div className="mt-5" key={activity.id}>
@@ -718,7 +799,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                             type="body"
                             className="text-gray-400 text-[12px]"
                           >
-                            In Progress
+                            {processingLabel}
                           </Text>
                         </div>
                       ) : (
