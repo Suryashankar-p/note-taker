@@ -70,21 +70,14 @@ interface ChildActivityPageProps {
   onSelectActivity: (activity: Activity) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Helper: is the card still waiting for OCR extraction?
-// ---------------------------------------------------------------------------
 const isExtracting = (activity: Activity): boolean =>
   activity.status === "IN_PROGRESS" && activity.is_extracted === false;
 
-// ---------------------------------------------------------------------------
-// Helper: staged processing label while IN_PROGRESS + not extracted
-// Uploading (0-10s) → Extracting (10-20s) → Validating (20-30s) → In Progress (30s+)
-// ---------------------------------------------------------------------------
 type ProcessingStage = "uploading" | "extracting" | "validating";
 
 const getProcessingStage = (elapsedMs: number): ProcessingStage => {
   if (elapsedMs < 10_000) return "uploading";
-  if (elapsedMs < 20_000) return "extracting";
+  if (elapsedMs < 25_000) return "extracting";
   return "validating";
 };
 
@@ -101,9 +94,6 @@ const getProcessingLabel = (stage: ProcessingStage): string => {
   }
 };
 
-// ---------------------------------------------------------------------------
-// Menu item sets (unchanged)
-// ---------------------------------------------------------------------------
 const MenuItems = [
   { title: "Edit", component: <img src={Edit} alt="edit" loading="lazy" /> },
   { title: "Delete", component: <img src={Trash} alt="trash" loading="lazy" /> },
@@ -114,42 +104,29 @@ const MenuItemsWithoutEdit = [
   { title: "Tranfer", component: <img src={Tranfer} alt="Tranfer" loading="lazy" /> },
 ];
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity }) => {
-  // ── URL params ───────────────────────────────────────────────────────────
   const [searchParams, setSearchParams] = useSearchParams();
   const check = searchParams.get("activity_id");
 
-  // ── Refs ─────────────────────────────────────────────────────────────────
   const activityListRef = useRef<HTMLDivElement>(null);
 
-  // ── Polling refs (never trigger a re-render) ────────────────────────────
-  // Set of activity IDs currently being polled
   const pollingIdsRef = useRef<Set<number>>(new Set());
-  // Map of intervalId per activity id so we can clear individually
   const pollTimersRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
-  // ── UI tick for staged labels ─────────────────────────────────────────────
   const [nowTickMs, setNowTickMs] = useState<number>(() => Date.now());
   const stageTickTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // Track when we first saw an activity in extracting state (UI-based timer)
   const extractingFirstSeenRef = useRef<Map<number, number>>(new Map());
 
-  // ── Filters ──────────────────────────────────────────────────────────────
   const [usernameFilter, setUsernameFilter] = useState<{ value: string; name: string }>({ value: "all", name: "All" });
   const [statusFilter, setStatusFilter] = useState<{ value: string; name: string }>({ value: "all", name: "All" });
   const [masterFilter, setMasterFilter] = useState<{ value: string; name: string }>({ value: "all", name: "All" });
 
-  // ── Modal / list state ───────────────────────────────────────────────────
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
   const [masterActivities, setMasterActivities] = useState<any[]>([]);
   const [masterSheetsForModal, setMasterSheetsForModal] = useState<Array<{ id: string; name: string }>>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [user, setUser] = useState<any>(null);
 
-  // ── Redux ────────────────────────────────────────────────────────────────
   const member = useSelector((state: RootState) => state.memberRole);
   const ocrMemberDetails = member.service === "transmitter_ocr" ? member?.details : {};
   const dispatch = useDispatch<Dispatch>();
@@ -157,13 +134,11 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   const tranferModal = useSelector((state: RootState) => state.modal.tranferModal);
   const confirmationStatus = useSelector((state: RootState) => state.modal.confirmation);
 
-  // ── Pagination / search ──────────────────────────────────────────────────
   const [pageSize, setPageSize] = useState({ skip: 0, limit: 50 });
   const [activityTotal, setActivityTotal] = useState<number>(0);
   const [searchValue, setSearchValue] = useState('');
   const [isFetching, setIsFetching] = useState(false);
 
-  // ── Misc ─────────────────────────────────────────────────────────────────
   const [defaultActivity, setDefaultActivity] = useState<any>();
   const [pageError, setPageError] = useState<boolean>(false);
   const [members, setMembers] = useState<Member[]>([]);
@@ -186,20 +161,10 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     { value: "rejected", name: "Rejected" },
   ];
 
-  // ==========================================================================
-  // POLLING HELPERS
-  // ==========================================================================
-
-  /**
-   * Update a single activity in state by id (immutable).
-   */
   const updateActivityById = useCallback((id: number, updater: (prev: Activity) => Activity) => {
     setActivities(prev => prev.map(a => (a.id === id ? updater(a) : a)));
   }, []);
 
-  /**
-   * Stop polling for a specific activity id.
-   */
   const stopPolling = useCallback((id: number) => {
     const timer = pollTimersRef.current.get(id);
     if (timer) {
@@ -209,12 +174,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     pollingIdsRef.current.delete(id);
   }, []);
 
-  /**
-   * Start polling /{id}/status every 3 seconds.
-   * Stops automatically when is_extracted becomes true.
-   */
   const startPolling = useCallback((id: number) => {
-    // Already polling this id — skip
     if (pollingIdsRef.current.has(id)) return;
     pollingIdsRef.current.add(id);
 
@@ -223,25 +183,18 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
         const updated: Activity = await TransmitterGetChildActivityStatus(id);
 
         if (updated.is_extracted) {
-          // OCR done → push the fresh data into state and stop polling
           updateActivityById(id, () => updated);
           stopPolling(id);
         }
         // else: still extracting — do nothing, next tick will poll again
       } catch (err) {
         console.error(`Polling error for activity ${id}`, err);
-        // Keep polling; transient network errors shouldn't stop it.
       }
     }, 5000);
 
     pollTimersRef.current.set(id, timer);
   }, [updateActivityById, stopPolling]);
 
-  /**
-   * Given a list of activities, kick off polling for every one that is
-   * still in the "extracting" state.  Idempotent — safe to call on every
-   * list refresh.
-   */
   const syncPolling = useCallback((list: Activity[]) => {
     list.forEach(activity => {
       if (isExtracting(activity)) {
@@ -250,19 +203,12 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     });
   }, [startPolling]);
 
-  /**
-   * Cleanup: stop ALL active polls.  Call on unmount or before a full
-   * list replacement that already contains the latest data.
-   */
   const stopAllPolling = useCallback(() => {
     pollTimersRef.current.forEach((timer) => clearInterval(timer));
     pollTimersRef.current.clear();
     pollingIdsRef.current.clear();
   }, []);
 
-  // ==========================================================================
-  // MASTER ACTIVITIES
-  // ==========================================================================
   const getMasterActivityTitles = async () => {
     try {
       const response = await TransmitterGetMasterActivities(0, 1000, "", null, null);
@@ -289,9 +235,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     }
   };
 
-  // ==========================================================================
-  // INFINITE SCROLL
-  // ==========================================================================
   useEffect(() => {
     const handleScroll = () => {
       const { current } = activityListRef;
@@ -336,9 +279,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     }
   };
 
-  // ==========================================================================
-  // MOUNT / INIT
-  // ==========================================================================
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
@@ -359,7 +299,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     getAllMembers(0, 100, "");
     getMasterActivityTitles();
 
-    // Cleanup all polling timers on unmount
     return () => {
       stopAllPolling();
       if (stageTickTimerRef.current) {
@@ -369,7 +308,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     };
   }, []);
 
-  // Keep staged labels updating while we have any extracting activity visible.
   useEffect(() => {
     const hasExtracting = activities.some(isExtracting);
     if (!hasExtracting) {
@@ -394,7 +332,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     };
   }, [activities]);
 
-  // Maintain per-activity "first seen extracting" timestamps
   useEffect(() => {
     const now = Date.now();
 
@@ -605,8 +542,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   // CARD CLICK  — blocked while extracting
   // ==========================================================================
   const onActivityCardClick = (activity: Activity) => {
-    // ── Guard: extraction not finished yet ──────────────────────────────
-    if (isExtracting(activity)) return; // silently ignore — card is already visually muted
+    if (isExtracting(activity)) return;
 
     if (activity?.user_id === ocrMemberDetails?.user_id) {
       onSelectActivity(activity);
@@ -651,7 +587,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
 
       {/* ── Main content ────────────────────────────────────────────────── */}
       <div className="flex-1 p-6 h-full">
-        {/* Header row */}
         <div className="flex justify-between items-center mt-1.5 mb-4 w-full">
           <div className="flex flex-col">
             <Text className="text-2xl -mt-1 font-bold" type="header2">Child Activity</Text>
@@ -664,7 +599,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
 
           <div className="items-center space-y-2">
             <div className="flex space-x-6 pr-2">
-              {/* User filter */}
               <div className="relative flex items-center">
                 <Text className="mr-2" type="small">User:</Text>
                 <DropDownButton
@@ -675,7 +609,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                 />
               </div>
 
-              {/* Status filter */}
               <div className="relative flex items-center">
                 <Text className="mr-2" type="small">Status:</Text>
                 <DropDownButton
@@ -686,7 +619,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                 />
               </div>
 
-              {/* Master filter */}
               <div className="relative flex items-center">
                 <Text className="mr-2" type="small">Master:</Text>
                 <DropDownButton
@@ -697,7 +629,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                 />
               </div>
 
-              {/* Add button */}
               <div className="flex items-center space-x-5">
                 <Button
                   onClick={() => { setCreateModalVisible(true); setDefaultActivity(undefined); }}
@@ -711,7 +642,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
               </div>
             </div>
 
-            {/* Search */}
             <div className="pt-4">
               <Input
                 prefixIcon={<img src={Search} alt="search" loading="lazy" />}
@@ -723,7 +653,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
           </div>
         </div>
 
-        {/* ── Activity list ─────────────────────────────────────────────── */}
         <div ref={activityListRef} className="flex-1 mt-4 h-[calc(100vh-230px)] pr-4 overflow-y-auto">
           {isLoading && activities.length === 0 ? (
             <div className="flex justify-center items-center h-full">
@@ -738,27 +667,25 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
               const elapsedMs = extractingFirstSeen ? Math.max(0, nowTickMs - extractingFirstSeen) : 0;
 
               const processingLabel = extracting
-                ? (elapsedMs >= 30_000 ? "In Progress" : getProcessingLabel(getProcessingStage(elapsedMs)))
+                ? getProcessingLabel(getProcessingStage(elapsedMs))
                 : undefined;
 
               return (
                 <div className="mt-5" key={activity.id}>
                   <div
-                    // Mute the entire card while extracting; remove pointer so it feels disabled
                     className={`border main_card p-4 flex justify-between items-center mb-4 rounded-lg shadow-lg transition-opacity duration-300 ${extracting
-                      ? "opacity-60 cursor-not-allowed bg-gray-50"  // muted / disabled look
-                      : "cursor-pointer"                            // normal clickable
+                      ? "opacity-60 cursor-not-allowed bg-gray-50"
+                      : "cursor-pointer"
                       }`}
                     onClick={(e: any) => {
-                      if (extracting) return; // hard block
+                      if (extracting) return;
                       if (
                         e.target.className.includes("main_card") ||
                         e.target.className.includes("title_text")
                       )
                         onActivityCardClick(activity);
                     }}
-                  >
-                    {/* Avatar + text */}
+                    >
                     <div className="flex items-center">
                       <div
                         title={activity?.user?.name}
@@ -771,7 +698,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                         <Text
                           type="header3"
                           title={activity.title}
-                          className={`truncate title_text max-w-2xl ellipsis ${extracting ? "text-gray-400" : ""   // lighter title while extracting
+                          className={`truncate title_text max-w-2xl ellipsis ${extracting ? "text-gray-400" : ""
                             }`}
                         >
                           {activity?.title}
@@ -787,12 +714,8 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
 
                     <div />
 
-                    {/* Status badge + menu */}
                     <div className="flex items-center relative">
                       {extracting ? (
-                        /*
-                         * ── IN PROGRESS (Light + Spinner) ──────────────────
-                         */
                         <div className="flex items-center space-x-2 absolute right-24 border border-gray-300 rounded-lg w-32 h-12 justify-center">
                           <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400" />
                           <Text
@@ -803,9 +726,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                           </Text>
                         </div>
                       ) : (
-                        /*
-                         * ── Normal status badge (non-bold) ────────────────
-                         */
                         <Text
                           type="body"
                           className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(activity?.status)} absolute right-24`}
@@ -814,7 +734,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                         </Text>
                       )}
 
-                      {/* Context-menu (three-dot) — hidden while extracting */}
                       <div className="right-12">
                         {!extracting &&
                           ocrMemberDetails &&
@@ -846,7 +765,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
         </div>
       </div>
 
-      {/* ── Modals ──────────────────────────────────────────────────────── */}
       {confirmationStatus && (
         <ConfirmationModal
           onSubmit={() => onDeleteSubmit(defaultActivity)}
