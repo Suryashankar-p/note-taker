@@ -814,7 +814,8 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const tabs =
-    access_details?.map((service) => ({
+  // Remove this to enable Deep Search(Preplexity)
+    access_details?.filter((service) => service.title !== "Deep Search").map((service) => ({
       label: service.title,
       icon: iconMapping[service.title],
     })) ?? []; // fallback to []
