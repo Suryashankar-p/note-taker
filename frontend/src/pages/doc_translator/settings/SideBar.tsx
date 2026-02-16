@@ -28,11 +28,6 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   const translatorMemberDetails =
     memberRole.service === "doc_translator" ? memberRole.details : null;
 
-  // 🔐 RBAC: Only OWNER can see Settings
-  if (translatorMemberDetails?.role !== "OWNER") {
-    return null;
-  }
-
   const settingsValues: SettingsValueType[] = [
     {
       title: "Members",

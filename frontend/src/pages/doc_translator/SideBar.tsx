@@ -45,16 +45,12 @@ const TranslatorSidebar: React.FC<OcrSidebarProps> = ({
       alt: "translator",
       key: "Translator",
     },
-    ...(role === "OWNER"
-      ? [
-          {
-            title: "Settings",
-            src: SettingsIcon,
-            alt: "settings",
-            key: "Settings",
-          },
-        ]
-      : []),
+    {
+      title: "Settings",
+      src: SettingsIcon,
+      alt: "settings",
+      key: "Settings",
+    },
   ];
 
   return (
