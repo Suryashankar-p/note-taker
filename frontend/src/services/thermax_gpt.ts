@@ -220,13 +220,24 @@ export const DocumentAnalyserFileStatusCheck = async (
   return response;
 };
 
+export const CreateDocumentAnalyserChatHistory = async (
+  body: DocumentAnalyserBody,
+  chat_id: string
+) => {
+  const response = await GPTAPI.post(
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/document_analyzer/chat_history?chat_id=${chat_id}`,
+    body
+  );
+  
+  return response;
+};
+
 export const getThermaxServices = async () => {
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL + `/thermax_gpt/services/active?skip=0&limit=100`
   );
   return response;
 };
-
 
 export const CreateChatHistoryStream = async (
   query: string,
@@ -242,21 +253,8 @@ export const CreateChatHistoryStream = async (
   }
 
   const response = await GPTAPI.post(
-    `${BACKEND_THERMAX_GPT_URL}/thermax_gpt/chat/${chat_id}/chat_history/`,
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history/`,
     formData,
-  );
-
-  return response;
-};
-
-
-export const CreateDocumentAnalyserChatHistory = async (
-  body: DocumentAnalyserBody,
-  chat_id: string
-) => {
-  const response = await GPTAPI.post(
-    `${BACKEND_THERMAX_GPT_URL}/thermax_gpt/document_analyzer/chat_history/?chat_id=${chat_id}`,
-    body
   );
 
   return response;
@@ -271,7 +269,7 @@ export const CreateChatHistoryPerplexity = async (
   formData.append("human", query);
 
   const response = await GPTAPI.post(
-    `${BACKEND_THERMAX_GPT_URL}/thermax_gpt/chat/${chat_id}/chat_history/perplexity`,
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history/perplexity`,
     formData,
   );
 
@@ -287,7 +285,7 @@ export const CreatePerplexityStream = async (
   formData.append("human", query);
 
   const response = await GPTAPI.post(
-    `${BACKEND_THERMAX_GPT_URL}/thermax_gpt/chat/${chat_id}/chat_history/perplexity/`,
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history/perplexity/`,
     formData,
   );
 
