@@ -229,25 +229,44 @@ const ChatArea: React.FC<Props> = ({
   const onOtherFileClick = async (file: any) => {
     try {
       const token = localStorage.getItem("access_token");
-      const response = await fetch(file.link, {
+      const fileUrl = file.link || file.url || file.file_url || file.download_url;
+      
+      if (!fileUrl) {
+        console.error("No URL found in file object:", file);
+        dispatch.toast.openToast({
+          status: true,
+          message: "File URL not found",
+          type: "error",
+        });
+        return;
+      }
+      
+      const response = await fetch(fileUrl, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!response.ok) throw new Error("Failed to fetch video");
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+      }
+      
       const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);      
-      setFileData({
-        name: file.name,
-        type: getFileType(file?.name),
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const newFileData = {
+        name: file.file_name || file.name || "unknown-file",
+        type: getFileType(file?.file_name || file?.name),
         url: blobUrl,
-      });
+      };
+      
+      setFileData(newFileData);
       setFileShow(true);
     } catch (err) {
       console.error("File click error:", err);
       dispatch.toast.openToast({
         status: true,
-        message: "File not found",
+        message: err.message || "Failed to load file",
         type: "error",
       });
     }

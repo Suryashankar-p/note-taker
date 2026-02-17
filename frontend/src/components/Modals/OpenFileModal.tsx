@@ -11,13 +11,20 @@ import DownloadIcon from "../../assets/download.svg";
 
 const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [zoom, setZoom] = useState(100);
 
-  const closeModal = () => onClose();
+  const closeModal = () => {
+    setLoading(true);
+    setError(null);
+    onClose();
+  };
+  
   const zoomScale = zoom / 100;
 
   const onDownload = () => {
+    if (!fileUrl?.url) return;
     const a = document.createElement("a");
     a.href = fileUrl.url;
     a.download = fileUrl.name || "downloaded-file";
@@ -26,6 +33,14 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
     a.click();
     document.body.removeChild(a);
   };
+
+  // Reset loading state when fileUrl changes
+  React.useEffect(() => {
+    if (isOpen && fileUrl?.url) {
+      setLoading(true);
+      setError(null);
+    }
+  }, [fileUrl, isOpen]);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -145,14 +160,28 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
                     <div className="flex flex-col items-center">
                       <div className="w-10 h-10 border-4 border-blue-400 border-t-blue-600 rounded-full animate-spin"></div>
                       <p className="mt-3 text-gray-700 font-medium">
-                        Loading...
+                        Loading file...
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {error && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-20">
+                    <div className="flex flex-col items-center text-center p-6">
+                      <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                      <p className="mt-3 text-red-700 font-medium">
+                        Failed to load file
+                      </p>
+                      <p className="mt-1 text-gray-600 text-sm">
+                        {error}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* PDF VIEWER */}
-                {fileUrl?.type?.toLowerCase() === "pdf" ? (
+                {fileUrl?.type?.toLowerCase() === "pdf" && fileUrl?.url && !error ? (
                   <iframe
                     src={`${fileUrl.url}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
                     className="w-full h-full"
@@ -165,8 +194,12 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
                     }}
                     scrolling="no"
                     onLoad={() => setLoading(false)}
+                    onError={() => {
+                      setError("Failed to load PDF");
+                      setLoading(false);
+                    }}
                   />
-                ) : (
+                ) : fileUrl?.type?.toLowerCase() !== "pdf" && fileUrl?.url && !error ? (
                   <img
                     src={fileUrl?.url}
                     alt="preview"
@@ -176,8 +209,16 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
                       transformOrigin: "top center",
                     }}
                     onLoad={() => setLoading(false)}
+                    onError={() => {
+                      setError("Failed to load image");
+                      setLoading(false);
+                    }}
                   />
-                )}
+                ) : !fileUrl?.url && !loading && !error ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-gray-500">No file URL provided</p>
+                  </div>
+                ) : null}
               </div>
             </DialogPanel>
           </TransitionChild>
