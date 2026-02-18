@@ -30,7 +30,7 @@ import copy from "clipboard-copy";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import "github-markdown-css/github-markdown.css";
-import OpenFileModal from "../../components/Modals/OpenFileModal.tsx";
+import OpenFileModal from "../../components/Modals/OpenFileModalConbot.tsx";
 import { getFileType } from "../../utils/functions.ts";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";

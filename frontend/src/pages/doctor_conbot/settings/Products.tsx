@@ -33,7 +33,7 @@ import {
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
 import Toast from "../../../components/Toast";
 import { getFileType } from "../../../utils/functions.ts";
-import OpenFileModal from "../../../components/Modals/OpenFileModal.tsx";
+import OpenFileModal from "../../../components/Modals/OpenFileModalConbot.tsx";
 
 const MenuItems = [
   {
