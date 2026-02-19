@@ -398,8 +398,6 @@ const ActivityDetailPage: React.FC = () => {
           onChange={val => handleFieldChange(index, val.value)}
           placeholder="Type to search..."
           disabled={disabled}
-          onInputChange={fetchMakerOptions}
-          // loading={makerLoading}
         />
       );
     }
@@ -415,8 +413,6 @@ const ActivityDetailPage: React.FC = () => {
           onChange={val => handleFieldChange(index, val.value)}
           placeholder="Type to search..."
           disabled={disabled}
-          onInputChange={fetchProcessOptions}
-          // loading={processLoading}
         />
       );
     }

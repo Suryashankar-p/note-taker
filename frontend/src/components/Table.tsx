@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../redux/store";
 import AddMembersModal from "./Modals/AddMembers";
 import ConfirmationModal from "./Modals/ConfirmationModal";
-import { getInitials, roleMapping } from "../utils/functions";
+import { getInitials, roleMapping, getKeyByValue } from "../utils/functions";
 
 interface Props {
   data: any[];

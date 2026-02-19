@@ -269,6 +269,10 @@ export const roleMapping = {
     'Member': 'MEMBER',
 };
 
+export const getKeyByValue = (object: any, value: any) => {
+  return Object.entries(object).find(([key, val]) => val === value)?.[0];
+};
+
 export const listValues = [
     { name: 'Owner' },
     { name: 'Reviewer' },
