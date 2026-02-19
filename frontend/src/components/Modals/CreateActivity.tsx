@@ -7,9 +7,11 @@ import { capitalizeWords } from "../../utils/functions.ts";
 interface CreateActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, file: File) => void;
+  onCreate: (title: string, file: File, template?: string, number?: number) => void;
   defaultValues?: any;
   onUpdate?: (title: string) => void;
+  showTemplate?: boolean;
+  showNumber?: boolean; // New prop to show number dropdown
 }
 
 const CreateActivity: React.FC<CreateActivityModalProps> = ({
@@ -18,28 +20,47 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
   onCreate,
   defaultValues,
   onUpdate,
+  showTemplate = false,
+  showNumber = false, // Default to false
 }) => {
   const [title, setTitle] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>("");
+  const [template, setTemplate] = useState<string>("");
+  const [number, setNumber] = useState<number | null>(null);
   const [titleError, setTitleError] = useState<string>("");
   const [fileError, setFileError] = useState<string>("");
+  const [numberError, setNumberError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  
+  const templateOptions = ["Plate"];
+  const numberOptions = [
+    { value: 6, label: "AMNS HAZIRA" },
+    { value: 7, label: "JSPL ANGUL" },
+    { value: 65, label: "JSL ANJAR" },
+    { value: 66, label: "SAIL BHILAI" },
+  ];
+
 
   useEffect(() => {
     if (defaultValues) {
-      setTitle(defaultValues.title);
-      setFile(defaultValues.file);
+      setTitle(defaultValues.title || "");
+      setFile(defaultValues.file || null);
       setFileName(defaultValues.filename ?? "");
+      setTemplate(defaultValues.template ?? "");
+      setNumber(defaultValues.number ?? null);
     }
     return () => {
       setTitle("");
       setFile(null);
       setFileName("");
+      setTemplate("");
+      setNumber(null);
       setTitleError("");
       setFileError("");
-      setLoading(false)
+      setNumberError("");
+      setLoading(false);
     };
   }, [isOpen, defaultValues]);
 
@@ -47,7 +68,7 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
       setFileName(e.target.files[0].name);
-      setFileError(""); // Clear file error when a file is selected
+      setFileError("");
     }
   };
 
@@ -55,7 +76,24 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
     let updatedTitle = capitalizeWords(e.target.value);
     setTitle(updatedTitle);
     if (updatedTitle !== "") {
-      setTitleError(""); // Clear title error when user starts typing
+      setTitleError("");
+    }
+  };
+
+  const handleTemplateChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setTemplate(e.target.value);
+    // Reset number when template changes
+    if (e.target.value !== "Plate") {
+      setNumber(null);
+      setNumberError("");
+    }
+  };
+
+  const handleNumberChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const selectedNumber = parseInt(e.target.value);
+    setNumber(selectedNumber);
+    if (selectedNumber) {
+      setNumberError("");
     }
   };
 
@@ -68,6 +106,7 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
   const handleCreate = () => {
     let hasError = false;
     setLoading(true);
+
     if (!title) {
       setTitleError("Title is required");
       hasError = true;
@@ -82,14 +121,33 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
       setFileError("");
     }
 
+    // Validate number is required when template is "Plate"
+    if (showNumber && template === "Plate" && !number && !defaultValues) {
+      setNumberError("Number is required for Plate template");
+      hasError = true;
+    } else {
+      setNumberError("");
+    }
+
+    if (hasError) {
+      setLoading(false);
+      return;
+    }
+
     if (!hasError && !defaultValues) {
-      onCreate(title, file as File);
-      // onClose()
+      onCreate(
+        title, 
+        file as File, 
+        showTemplate ? template : undefined,
+        showNumber && template === "Plate" ? number : undefined
+      );
     } else if (!hasError && defaultValues) {
-      onUpdate(title);
+      onUpdate?.(title);
       setTitle("");
       setFile(null);
       setFileName("");
+      setTemplate("");
+      setNumber(null);
     }
   };
 
@@ -104,7 +162,7 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
     >
       <div
         className="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl h-auto relative"
-        onClick={(e) => e.stopPropagation()} // Prevent close when clicking inside the modal
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
           <Text className="text-[24px] text-black font-medium leading-6">
@@ -124,6 +182,44 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
           />
           {titleError && <Text className="text-red-500">{titleError}</Text>}
         </div>
+        {showTemplate && (
+          <div className="mb-4">
+            <Text className="text-primary_text">Template</Text>
+            <select
+              value={template}
+              onChange={handleTemplateChange}
+              className="border rounded-md w-full border-grey h-12 focus:outline-none p-2"
+            >
+              <option value="">Select Template</option>
+              {templateOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {/* Show Number dropdown only when template is "Plate" */}
+        {showNumber && template === "Plate" && (
+          <div className="mb-4">
+            <Text className="text-primary_text">Number*</Text>
+            <select
+              value={number ?? ""}
+              onChange={handleNumberChange}
+              className="border rounded-md w-full border-grey h-12 focus:outline-none p-2"
+            >
+              <option value="" disabled>
+                Select Vendor
+              </option>
+              {numberOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {numberError && <Text className="text-red-500">{numberError}</Text>}
+          </div>
+        )}
         <div className="mb-4">
           <Text className="text-primary_text">File upload*</Text>
           <div className="relative w-full">
@@ -144,7 +240,7 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
             />
             <button
               type="button"
-              className="absolute h-10 right-2 top-1/2 transform -translate-y-1/2 border  bg-inherit text-primary_text rounded-md px-4 py-1"
+              className="absolute h-10 right-2 top-1/2 transform -translate-y-1/2 border bg-white hover:bg-gray-100 text-primary_text rounded-md px-4 py-1"
               onClick={handleChooseFileClick}
               disabled={defaultValues?.filename}
             >
@@ -156,13 +252,13 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
         <div className="flex justify-end space-x-2">
           <button
             onClick={onClose}
-            className="inline-flex justify-center rounded-md border border-transparent bg-none text-primary_text px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="inline-flex justify-center rounded-md border border-transparent bg-[#f5f5f5] hover:bg-[#e5e5e5] text-primary_text px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             <Text type="small">Cancel</Text>
           </button>
           <button
             onClick={handleCreate}
-            className="inline-flex justify-center rounded-md border border-transparent bg-[#0061F3] px-4 py-2 text-sm font-medium text-background focus:outline-none focus-visible:ring-offset-2"
+            className="inline-flex justify-center rounded-md border border-transparent bg-[#0061F3] hover:bg-[#0052cc] px-4 py-2 text-sm font-medium text-background focus:outline-none focus-visible:ring-offset-2"
           >
             {loading ? (
               <div className="flex items-center">
@@ -189,8 +285,8 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
                 </svg>
               </div>
             ) : (
-                <span>{defaultValues ? 'Update' : 'Save' }</span>
-            )}{" "}
+              <span>{defaultValues ? "Update" : "Save"}</span>
+            )}
           </button>
         </div>
       </div>

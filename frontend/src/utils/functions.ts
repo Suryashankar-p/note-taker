@@ -5,12 +5,17 @@ import TrainingQA from '../assets/training_qa.jpg'
 import Thermax_GPT from '../assets/thermax_gpt.png'
 import doctor_conbot from '../assets/doctor_conbot.png'
 import troubleshooting from '../assets/troubleshooting.png'
+import heating_ocr from '../assets/heating_ocr.png'
 import cyberbuddy from '../assets/cyberbuddy.png'
-import heatingocr from '../assets/heating_ocr.png'
 import transmitter_ocr from '../assets/transmitter_ocr.jpg'
-
 const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 
+// const DOMAIN = import.meta.env.VITE_DOMAIN;
+// const URL_PREFIX = import.meta.env.VITE_URL_PREFIX;
+// //const BASE_URL = "http://192.168.29.53:9000/api"
+// const BASE_URL = `${
+//   DOMAIN === "localhost" ? "http:" : "https:"
+// }//${DOMAIN}${URL_PREFIX}`;
 
 export const roundToFourDecimals = (number: any) => {
     return Number(number.toFixed(4));
@@ -57,15 +62,6 @@ export function categorizeDate(inputDate: string): string {
     }
 }
 
-// roleMapping.ts
-export const roleMapping = {
-    'Owner': 'OWNER',
-    'Reviewer': 'REVIEWER',
-    'Member': 'MEMBER',
-};
-
-
-
 export const getInitials = (name: string) => {
     if (!name) return '';
 
@@ -84,6 +80,48 @@ export const getInitials = (name: string) => {
 
     return initials;
 };
+
+export const heatingOcrStatusMapper = (status: string) => {
+
+    switch (status) {
+        case 'approved':
+            return 'APPROVED'
+        case 'rejected':
+            return 'REJECTED'
+        case 'inReview':
+            return 'IN_REVIEW'
+        case 'notReviewed':
+            return 'NOT_REVIEWED'
+        case 'inProgress':
+            return 'IN_PROGRESS'
+        case 'submitted':
+            return 'SUBMITTED'
+        case 'waiting':
+            return 'SUBMITTED_WAITING'
+        case 'failed':
+            return 'SUBMITTED_FAILED'
+        case 'IN_PROGRESS':
+            return 'In Progress'
+        case 'REJECTED':
+            return 'Rejected'
+        case 'SUBMITTED_SUCCESS':
+            return 'Submitted'
+        case 'SUBMITTED':
+            return 'Submitted'
+        case 'SUBMITTED_FAILED':
+            return 'Failed'
+        case 'SUBMITTED_WAITING':
+            return 'Waiting'
+        case 'All':
+            return 'All'
+        case 'reject':
+            return 'REJECTED';
+        case 'submit':
+            return 'SUBMITTED';
+        default:
+            return undefined
+    }
+}
 
 export const statusMapper = (status: string) => {
 
@@ -224,6 +262,24 @@ export function getFileType(fileName: string): string | null {
     }
 }
 
+// roleMapping.ts
+export const roleMapping = {
+    'Owner': 'OWNER',
+    'Reviewer': 'REVIEWER',
+    'Member': 'MEMBER',
+};
+
+export const getKeyByValue = (object: any, value: any) => {
+  return Object.entries(object).find(([key, val]) => val === value)?.[0];
+};
+
+export const listValues = [
+    { name: 'Owner' },
+    { name: 'Reviewer' },
+    { name: 'Member' }
+];
+
+
 export const userStatusMapper = (status: string) => {
     switch (status) {
         case 'by me':
@@ -279,10 +335,10 @@ export const selectImage = (title: string) => {
             return doctor_conbot;
         case 'Smart Troubleshooting App':
             return troubleshooting;
+        case 'Heating OCR':
+            return heating_ocr;
         case 'CyberBuddy':
             return cyberbuddy;
-        case 'Heating OCR':
-            return heatingocr;
     }
 }
 
@@ -294,10 +350,7 @@ export const getIframeSrc = (url, type) => {
     }
     return "";
 };
-  
-export const getKeyByValue = (object: any, value: any) => {
-    return Object.entries(object).find(([key, val]) => val === value)?.[0];
-  };
+
 
 export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number) => {
     switch(type){

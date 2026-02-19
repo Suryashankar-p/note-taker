@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
@@ -14,7 +14,7 @@ import Tranfer from "../../assets/exchange.svg";
 import {
   getBorderColor,
   getInitials,
-  statusMapper,
+  heatingOcrStatusMapper,
   userStatusMapper,
 } from "../../utils/functions";
 import CreateActivity from "../../components/Modals/CreateActivity"; // Import the new modal component
@@ -50,6 +50,7 @@ export type Activity = {
   username: string;
   fileUrl: string;
   user_id: string;
+  template: string;
 };
 
 interface ActivityPageProps {
@@ -94,6 +95,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
     value: string;
     name: string;
   }>({ value: "all", name: "All" });
+  const navigate  = useNavigate();
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [user, setUser] = useState<any>(null);
@@ -148,7 +150,7 @@ const loadMoreActivities = async (scrollPosition: number) => {
       pageSize.limit,
       searchValue,
       userStatusMapper(usernameFilter.value),
-      statusMapper(statusFilter.value)
+      heatingOcrStatusMapper(statusFilter.value)
     );
     if (response.result) {
       const newActivities = response.result;
@@ -294,7 +296,7 @@ useEffect(() => {
           pageSize?.limit,
           searchValue,
           userStatusMapper(filter?.user),
-          statusMapper(value?.value)
+          heatingOcrStatusMapper(value?.value)
         );
       }
     }
@@ -306,7 +308,7 @@ useEffect(() => {
           pageSize?.limit,
           searchValue,
           null,
-          statusMapper(filter?.status)
+          heatingOcrStatusMapper(filter?.status)
         );
       } else {
         getAllActivitiesList(
@@ -314,7 +316,7 @@ useEffect(() => {
           pageSize?.limit,
           searchValue,
           userStatusMapper(value?.value),
-          statusMapper(filter?.status)
+          heatingOcrStatusMapper(filter?.status)
         );
       }
     }
@@ -322,9 +324,9 @@ useEffect(() => {
 
 
 
-  const handleCreate = async (title: string, file: File) => {
+  const handleCreate = async (title: string, file: File, template?: string, number?: number) => {
     try {
-      const response = await CreateOCRActivity(title, file);
+      const response = await CreateOCRActivity(title, file, template, number);
       if (response) {
         setCreateModalVisible(false);
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
@@ -397,13 +399,13 @@ useEffect(() => {
     timeoutId = setTimeout(() => {
       
       getAllActivitiesList(pageSize?.skip, pageSize?.limit, searchTerm, userStatusMapper(usernameFilter.value),
-      statusMapper(statusFilter.value));
+      heatingOcrStatusMapper(statusFilter.value));
     }, 500);
   };
 
   const onActivityCardClick = (activity: Activity) => {
     if (activity?.user_id === ocrMemberDetails?.user_id) {
-      onSelectActivity(activity);
+        onSelectActivity(activity);
     } else if (
       activity?.status === "SUBMITTED" ||
       activity?.status === "REJECTED"
@@ -411,7 +413,7 @@ useEffect(() => {
       onSelectActivity(activity);
     } else {
       setPageError(true);
-      dispatch.toast.openToast({  
+      dispatch.toast.openToast({
         status: true,
         message: "Sorry you are not the creator",
       });
@@ -553,7 +555,7 @@ useEffect(() => {
                 activity?.status
               )} absolute right-24`}
             >
-              {activity?.status && statusMapper(activity.status)}
+              {activity?.status && heatingOcrStatusMapper(activity.status)}
             </Text>
             {/* Empty placeholder to maintain space for dropdown menu */}
             <div className="right-12">
@@ -607,6 +609,8 @@ useEffect(() => {
         onCreate={handleCreate}
         defaultValues={defaultActivity}
         onUpdate={onUpdate}
+        showTemplate={true}
+        showNumber={true}  // Add this prop
       />
 
       {tranferModal && (
