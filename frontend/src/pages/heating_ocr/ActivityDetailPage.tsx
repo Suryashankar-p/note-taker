@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { PDFDocument, rgb } from "pdf-lib";
 import { Viewer } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
@@ -26,7 +26,7 @@ import iButton from "../../assets/info.svg";
 import Tick from "../../assets/tick.svg";
 import DropDownButton from "../../components/DropDownButton.tsx";
 import Toast from "../../components/Toast.tsx";
-import { capitalizeWords, statusMapper } from "../../utils/functions.ts";
+import { capitalizeWords, heatingOcrStatusMapper } from "../../utils/functions.ts";
 
 GlobalWorkerOptions.workerSrc = url;
 
@@ -240,7 +240,7 @@ const ActivityDetailPage: React.FC = () => {
 
   const handleSubmit = async (type: string) => {
     // Handle the form submission here
-    const updatedType = statusMapper(type)    
+    const updatedType = heatingOcrStatusMapper(type)    
     try {
       setLoading(true);
       const response = await SentMultipartMessage(activity?.id, updatedType);
@@ -345,9 +345,9 @@ const ActivityDetailPage: React.FC = () => {
       setLoading(false);
       dispatch.modal.closeConfirmation();
       if (type === "submit") {
-        handleSubmit("SUBMIT");
+        handleSubmit("submit");
       } else {
-        handleSubmit("REJECT");
+        handleSubmit("reject");
       }
     }, 1000);
   };
@@ -531,6 +531,11 @@ const ActivityDetailPage: React.FC = () => {
            activityDetails?.status === "SUBMITTED_FAILED";
   };
 
+  // Check if this is a plate/group activity where individual submit/reject should be hidden
+  const isPlateActivity = () => {
+    return isGroupView || activity?.template === "Plate";
+  };
+
   return (
     <div className="flex flex-col py-6 h-full mt-2 gap-3 flex-1 relative">
       {/* Top-right Submit Button */}
@@ -613,8 +618,8 @@ const ActivityDetailPage: React.FC = () => {
           )}
 
           <div className="flex gap-2">
-            {/* Submit Button - Hidden in group view, disabled if activity finalized */}
-            {!isGroupView && !isActivityFinalized() && (
+            {/* Submit Button - Hidden in group view or plate template, disabled if activity finalized */}
+            {!isPlateActivity() && !isActivityFinalized() && (
               <Button
                 onClick={() => {
                   dispatch.modal.openConfirmation();
@@ -686,8 +691,8 @@ const ActivityDetailPage: React.FC = () => {
               </Button>
             )}
 
-            {/* Reject Button - Disabled if activity finalized */}
-            {!isActivityFinalized() && (
+            {/* Reject Button - Hidden in group view or plate template, disabled if activity finalized */}
+            {!isPlateActivity() && !isActivityFinalized() && (
               <Button
                 disabled={loading}
                 className={`w-15 h-10 p-4 gap-2 rounded-lg ${
@@ -755,10 +760,19 @@ const ActivityDetailPage: React.FC = () => {
             )}
 
             {/* Show disabled state message when activity is finalized */}
-            {isActivityFinalized() && (
+            {!isPlateActivity() && isActivityFinalized() && (
               <div className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg">
                 <Text type="small">
                   Activity is {activityDetails?.status === "REJECTED" ? "rejected" : "submitted"}
+                </Text>
+              </div>
+            )}
+
+            {/* Show message for plate activities that submit/reject is done from groups page */}
+            {isPlateActivity() && (
+              <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-200">
+                <Text type="small">
+                  Submit/Reject from Groups List
                 </Text>
               </div>
             )}
