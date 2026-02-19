@@ -112,13 +112,23 @@ export const GetHeatingOCRRole = async () => {
     if (number) {
       formData.append('number', number.toString());
     }
-    const response = await axios.post(`${BACKEND_HEATING_OCR_URL}/heating_ocr/activity`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
+    try {
+      const response = await axios.post(
+        `${BACKEND_HEATING_OCR_URL}/heating_ocr/activity`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${token}`,
-      },
-    });
-    return response.data;
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error?.response?.status === 415)
+        (store.dispatch as Dispatch).toast.openToast({ status: true, message: "Unsupported extension(s) only use .pdf, .xls, .xlsx" })
+      throw error;
+    }
   };
   
   export const GetDocumentUrl = async(activity_id: number) => {
