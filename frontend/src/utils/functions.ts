@@ -346,30 +346,7 @@ export const getIframeSrc = (url, type) => {
     }
     return "";
 };
-  
 
-import { PDFDocument } from "pdf-lib";
-
-export async function splitPdfIntoChunks(file: File, pagesPerChunk = 5): Promise<Blob[]> {
-  const chunks: Blob[] = [];
-  const existingPdfBytes = await file.arrayBuffer();
-  const pdfDoc = await PDFDocument.load(existingPdfBytes);
-  const totalPages = pdfDoc.getPageCount();
-
-  for (let i = 0; i < totalPages; i += pagesPerChunk) {
-    const newPdfDoc = await PDFDocument.create();
-    const end = Math.min(i + pagesPerChunk, totalPages);
-    const pages = await newPdfDoc.copyPages(pdfDoc, Array.from({ length: end - i }, (_, k) => i + k));
-
-    pages.forEach((page) => newPdfDoc.addPage(page));
-    const newPdfBytes = await newPdfDoc.save();
-    // chunks.push(new Blob([newPdfBytes], { type: "application/pdf" }));
-    chunks.push(new Blob([new Uint8Array(newPdfBytes)], { type: "application/pdf" }));
- 
-  }
-
-  return chunks;
-}
 
 export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number) => {
     switch(type){
