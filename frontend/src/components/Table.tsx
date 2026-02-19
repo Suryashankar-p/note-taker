@@ -8,7 +8,6 @@ import Menu from "../assets/more.svg";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../redux/store";
 import AddMembersModal from "./Modals/AddMembers";
-import { getKeyByValue } from '../utils/functions'
 import ConfirmationModal from "./Modals/ConfirmationModal";
 import { getInitials, roleMapping } from "../utils/functions";
 

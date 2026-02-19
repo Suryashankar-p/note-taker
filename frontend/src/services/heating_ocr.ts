@@ -7,49 +7,57 @@ const BACKEND_HEATING_OCR_URL=import.meta.env.VITE_BACKEND_HEATING_OCR_URL  || w
 /////////////////<<<<<<<<<<<<<<<<<<<OCR APIs>>>>>>>>>>>>>>>>>>>>>\\\\\\\\\\\\\\\\\\
 
 export const GetHeatingOCRRole = async () => {
-    console.log("Getting Heating OCR Role", BACKEND_HEATING_OCR_URL);
-
-    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + '/heating_ocr/member/me')
+    const response = await HeatingOCRAPI.get('/heating_ocr/member/me')
     return response
   }
   
   export const GetOCRActivities = async (skip: number = 0, limit: number = 100, search_term?: string, user_status?: string, status?: string) => {
-    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity?skip=${skip}&limit=${limit}${search_term !== '' ? '&search_term=' + search_term : ''}${status ? '&status=' + status : ''}${user_status ? '&user_status=' + user_status : ''}`)
+    const response = await HeatingOCRAPI.get(`/heating_ocr/activity?skip=${skip}&limit=${limit}${search_term !== '' ? '&search_term=' + search_term : ''}${status ? '&status=' + status : ''}${user_status ? '&user_status=' + user_status : ''}`)
     return response
   }
   
   export const GetOCRActivitiesDetails = async(activity_id: number) => {
-    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}`)
+    const response = await HeatingOCRAPI.get(`/heating_ocr/activity/${activity_id}`)
     return response
   }
   
   export const UpdateOCRActivitiesDetails = async(activity_id: number, body?: any) => {
-    const response = await HeatingOCRAPI.patch(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}`, body);
+    const response = await HeatingOCRAPI.patch(`/heating_ocr/activity/${activity_id}`, body);
     return response
   }
+
+  export const GetMakerCodes = async (search = "") => {
+    const response = await HeatingOCRAPI.get(`/heating_ocr/maker_code/${search ? `?search=${search}` : ""}`);
+    return response;
+  };
+
+  export const GetProcessCodes = async (search = "") => {
+    const response = await HeatingOCRAPI.get(`/heating_ocr/process_code/${search ? `?search=${search}` : ""}`);
+    return response;
+  };
   
   export const DeleteOCRActivities = async(activity_id: number) => {
-    const response = await HeatingOCRAPI.delete(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}`)
+    const response = await HeatingOCRAPI.delete(`/heating_ocr/activity/${activity_id}`)
     return response
   }
   
   export const ReadOCRMembers = async (skip: number = 0, limit: number = 100, search_term?: string) => {
-    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/member?skip=${skip}&limit=${limit}${search_term !== '' ? '&search_term=' + search_term : ''}`)
+    const response = await HeatingOCRAPI.get(`/heating_ocr/member?skip=${skip}&limit=${limit}${search_term !== '' ? '&search_term=' + search_term : ''}`)
     return response
   }
   
   export const CreateOCRMember = async (role: string, email: string, name: string) => {
-    const response = await HeatingOCRAPI.post(BACKEND_HEATING_OCR_URL + `/heating_ocr/member?role=${role}&email=${email}&name=${name}`)
+    const response = await HeatingOCRAPI.post(`/heating_ocr/member?role=${role}&email=${email}&name=${name}`)
     return response
   }
   
   export const UpdateOCRMember = async (role: string, name: string, member_id: string) => {
-    const response = await HeatingOCRAPI.patch(BACKEND_HEATING_OCR_URL + `/heating_ocr/member/${member_id}?name=${name}&role=${role}`)
+    const response = await HeatingOCRAPI.patch(`/heating_ocr/member/${member_id}?name=${name}&role=${role}`)
     return response
   }
   
   export const DeleteOCRMember = async (member_id: string) => {
-    const response = await HeatingOCRAPI.delete(BACKEND_HEATING_OCR_URL + `/heating_ocr/member/${member_id}`)
+    const response = await HeatingOCRAPI.delete(`/heating_ocr/member/${member_id}`)
     return response
   }
   
@@ -93,34 +101,24 @@ export const GetHeatingOCRRole = async () => {
     return response
   }
   
-  export const CreateOCRActivity = async (
-    title: string,
-    file: File,
-    product_document_id?: string | number
-  ) => {
+  export const CreateOCRActivity = async (title: string, document: File, template?: string, number?: number) => {
     const token = localStorage.getItem('access_token');
     const formData = new FormData();
-    if (file) {
-      formData.append('document', file, file.name);
+    formData.append('title', title);
+    formData.append('document', document);
+    if (template) {
+      formData.append('template', template);
     }
-    formData.append('title', title)
-    try {
-      const response = await axios.post(
-        `${BACKEND_HEATING_OCR_URL}/heating_ocr/activity`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
+    if (number) {
+      formData.append('number', number.toString());
+    }
+    const response = await axios.post(`${BACKEND_HEATING_OCR_URL}/heating_ocr/activity`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-      return response.data;
-    } catch (error: any) {
-      if (error?.response?.status === 415)
-        (store.dispatch as Dispatch).toast.openToast({ status: true, message: "Unsupported extension(s) only use .pdf, .xls, .xlsx" })
-      throw error;
-    }
+      },
+    });
+    return response.data;
   };
   
   export const GetDocumentUrl = async(activity_id: number) => {
@@ -147,3 +145,16 @@ export const GetHeatingOCRRole = async () => {
     const response = await HeatingOCRAPI.put(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}/transfer?user_id=${user_id}`)
     return response
   }
+  
+  export const GetActivityGroups = async (activity_id: number) => {
+    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}/groups`);
+    return response;
+  };
+
+  export const GetGroupActivityData = async (activity_id: number, group: string[]) => {
+    // Encode the group array as JSON string
+    const groupParam = encodeURIComponent(JSON.stringify(group));
+    const response = await HeatingOCRAPI.get(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}/mapped-activity?group=${groupParam}`);
+    return response;
+  };
+
