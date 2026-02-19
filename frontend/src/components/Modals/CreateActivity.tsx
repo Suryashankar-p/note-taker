@@ -3,15 +3,13 @@ import Close from "../../assets/close.svg";
 import Text from "../Text";
 import Button from "../Button";
 import { capitalizeWords } from "../../utils/functions.ts";
-import { TransmitterGetMasterActivities } from "../../services/transmitter_ocr.ts";
 
 interface CreateActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, file: File, masterId?: number, template?: string, number?: number) => void;
+  onCreate: (title: string, file: File, template?: string, number?: number) => void;
   defaultValues?: any;
   onUpdate?: (title: string) => void;
-  isChildActivity?: boolean;
   showTemplate?: boolean;
   showNumber?: boolean; // New prop to show number dropdown
 }
@@ -22,20 +20,16 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
   onCreate,
   defaultValues,
   onUpdate,
-  isChildActivity = false,
   showTemplate = false,
   showNumber = false, // Default to false
 }) => {
   const [title, setTitle] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>("");
-  const [masterId, setMasterId] = useState<number | null>(null);
   const [template, setTemplate] = useState<string>("");
   const [number, setNumber] = useState<number | null>(null);
-  const [masterActivities, setMasterActivities] = useState<{ id: number; title: string }[]>([]);
   const [titleError, setTitleError] = useState<string>("");
   const [fileError, setFileError] = useState<string>("");
-  const [masterError, setMasterError] = useState<string>("");
   const [numberError, setNumberError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -48,28 +42,12 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
     { value: 66, label: "SAIL BHILAI" },
   ];
 
-  useEffect(() => {
-    if (isChildActivity) {
-      const fetchMasterActivities = async () => {
-        try {
-          const response = await TransmitterGetMasterActivities(0, 100, "", null, null);
-          if (response.result) {
-            setMasterActivities(response.result);
-          }
-        } catch (err) {
-          console.error("Error fetching master activities:", err);
-        }
-      };
-      fetchMasterActivities();
-    }
-  }, [isChildActivity]);
 
   useEffect(() => {
     if (defaultValues) {
       setTitle(defaultValues.title || "");
       setFile(defaultValues.file || null);
       setFileName(defaultValues.filename ?? "");
-      setMasterId(defaultValues.master_id ?? null);
       setTemplate(defaultValues.template ?? "");
       setNumber(defaultValues.number ?? null);
     }
@@ -77,12 +55,10 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
       setTitle("");
       setFile(null);
       setFileName("");
-      setMasterId(null);
       setTemplate("");
       setNumber(null);
       setTitleError("");
       setFileError("");
-      setMasterError("");
       setNumberError("");
       setLoading(false);
     };
@@ -101,14 +77,6 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
     setTitle(updatedTitle);
     if (updatedTitle !== "") {
       setTitleError("");
-    }
-  };
-
-  const handleMasterChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = parseInt(e.target.value);
-    setMasterId(selectedId);
-    if (selectedId) {
-      setMasterError("");
     }
   };
 
@@ -153,13 +121,6 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
       setFileError("");
     }
 
-    if (isChildActivity && !masterId && !defaultValues) {
-      setMasterError("Master Sheet is required");
-      hasError = true;
-    } else {
-      setMasterError("");
-    }
-
     // Validate number is required when template is "Plate"
     if (showNumber && template === "Plate" && !number && !defaultValues) {
       setNumberError("Number is required for Plate template");
@@ -177,7 +138,6 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
       onCreate(
         title, 
         file as File, 
-        isChildActivity ? masterId : undefined, 
         showTemplate ? template : undefined,
         showNumber && template === "Plate" ? number : undefined
       );
@@ -186,7 +146,6 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
       setTitle("");
       setFile(null);
       setFileName("");
-      setMasterId(null);
       setTemplate("");
       setNumber(null);
     }
@@ -207,7 +166,7 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
       >
         <div className="flex justify-between items-center mb-4">
           <Text className="text-[24px] text-black font-medium leading-6">
-            {isChildActivity ? "Create Child Activity" : "Create Activity"}
+            Create Activity
           </Text>
           <button className="absolute top-4 right-4 z-50" onClick={onClose}>
             <img src={Close} alt="close" loading="lazy" />
@@ -223,27 +182,6 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
           />
           {titleError && <Text className="text-red-500">{titleError}</Text>}
         </div>
-        {isChildActivity && (
-          <div className="mb-4">
-            <Text className="text-primary_text">Master Sheet*</Text>
-            <select
-              value={masterId ?? ""}
-              onChange={handleMasterChange}
-              disabled={defaultValues?.master_id}
-              className="border rounded-md w-full border-grey h-12 focus:outline-none p-2"
-            >
-              <option value="" disabled>
-                Select Master Sheet
-              </option>
-              {masterActivities.map((master) => (
-                <option key={master.id} value={master.id}>
-                  {master.title}
-                </option>
-              ))}
-            </select>
-            {masterError && <Text className="text-red-500">{masterError}</Text>}
-          </div>
-        )}
         {showTemplate && (
           <div className="mb-4">
             <Text className="text-primary_text">Template</Text>
