@@ -24,7 +24,7 @@ import {
 import { getFileType } from "../../../utils/functions.ts";
 import AddProductModal from "../../../components/Modals/AddProductModalDoctorConBot";
 import FileEditModal from "../../../components/Modals/FileEditModalDoctorConBot";
-import OpenFileModal from "../../../components/Modals/OpenFileModal.tsx";
+import OpenFileModal from "../../../components/Modals/OpenFileModalConbot.tsx";
 import DropDownMenu from "../../../components/DropdownMenu";
 import Menu from "../../../assets/more.svg";
 import Edit from "../../../assets/edit.svg";

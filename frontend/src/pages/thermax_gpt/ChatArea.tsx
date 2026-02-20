@@ -21,6 +21,7 @@ import {
   CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
   CreatePerplexityStream,
+  ReadVideo,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -102,6 +103,7 @@ const ChatArea: React.FC<Props> = ({
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
+  const [videoUrlMap, setVideoUrlMap] = useState<Record<number, string>>({});
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
@@ -200,6 +202,14 @@ const ChatArea: React.FC<Props> = ({
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(videoUrlMap).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, []);
 
@@ -804,7 +814,8 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const tabs =
-    access_details?.map((service) => ({
+  // Remove this to enable Deep Search(Preplexity)
+    access_details?.filter((service) => service.title !== "Deep Search").map((service) => ({
       label: service.title,
       icon: iconMapping[service.title],
     })) ?? []; // fallback to []
@@ -813,6 +824,34 @@ const ChatArea: React.FC<Props> = ({
     tabs.findIndex((tab) => tab.label === aiProvider),
     0
   );
+
+  const extractImageUrl = (text: string): string | null => {
+    // Check for direct image URLs in the text
+    const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|webp|gif)(\?[^\s]*)?)/gi;
+    const matches = text.match(urlRegex);
+    
+    if (matches && matches.length > 0) {
+      // Return the first valid image URL found
+      return matches[0];
+    }
+    
+    return null;
+  };
+
+  const extractVideoUrl = (text: string): string | null => {
+    const markdownUrlRegex = /\((https?:\/\/[^)\s]+)\)/;
+    const markdownMatch = text.match(markdownUrlRegex);
+
+    if (markdownMatch) {
+      return markdownMatch[1];
+    }
+
+    // Fallback: direct video URL anywhere in text
+    const directUrlRegex = /(https?:\/\/[^\s]+?\.(mp4|webm|ogg|avi|mov|wmv)[^\s]*)/i;
+    const directMatch = text.match(directUrlRegex);
+
+    return directMatch ? directMatch[1] : null;
+  };
 
   const renderAttachFile = () => {
     switch (aiProvider) {
@@ -826,6 +865,25 @@ const ChatArea: React.FC<Props> = ({
         return "Attach File (Up to 10MB)";
     }
   };
+
+  const fetchVideo = async (index: number, blobLink: string) => {
+    try {
+      // Avoid refetching the same video
+      if (videoUrlMap[index]) return;
+      const response = await ReadVideo(Number(chat_id), blobLink);
+      const videoBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || "video/mp4",
+      });
+      const objectUrl = URL.createObjectURL(videoBlob);
+      setVideoUrlMap((prev) => ({
+        ...prev,
+        [index]: objectUrl,
+      }));
+    } catch (err) {
+      console.error("Failed to stream video:", err);
+    }
+  };
+
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -954,24 +1012,6 @@ const ChatArea: React.FC<Props> = ({
                             const isImage =
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
                               href?.includes("generated_videos");
-
-                            if (isVideo) {
-                              return (
-                                <div className="my-4">
-                                  <p className="mb-2 text-sm text-gray-600">
-                                    Here is the generated video:
-                                  </p>
-                                  <video
-                                    controls
-                                    src={href}
-                                    className="w-[70%] rounded shadow"
-                                  >
-                                    Your browser does not support the video tag.
-                                  </video>
-                                </div>
-                              );
-                            }
-
                             if (isImage) {
                               return (
                                 <div className="my-4">
@@ -1003,6 +1043,49 @@ const ChatArea: React.FC<Props> = ({
                       >
                         {message?.ai}
                       </ReactMarkdown>
+                      {/* Check for direct image URLs in the AI message */}
+                      {(() => {
+                        const directImageUrl = extractImageUrl(message?.ai);
+                        if (directImageUrl) {
+                          return (
+                            <div className="my-4">
+                              <img
+                                src={directImageUrl}
+                                alt="Generated visual"
+                                className="w-[70%] rounded shadow"
+                                onError={(e) => {
+                                  // If image fails to load, fallback to markdown rendering
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      {/* Check for direct video URLs in the AI message */}
+                      {(() => {
+                        const directVideoUrl = extractVideoUrl(message?.ai);
+                        if (!directVideoUrl) return null;
+                        fetchVideo(index, directVideoUrl);
+                        const localVideoUrl = videoUrlMap[index];
+                        if (!localVideoUrl) {
+                          return (
+                            <p className="text-sm text-gray-500 my-2">
+                              Loading video…
+                            </p>
+                          );
+                        }
+                        return (
+                          <div className="my-4">
+                            <video
+                              controls
+                              src={localVideoUrl}
+                              className="w-[70%] rounded shadow"
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     !message?.file_name &&
@@ -1048,9 +1131,52 @@ const ChatArea: React.FC<Props> = ({
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
                       className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
-                    >
+                      >
                       {streamedData}
                     </ReactMarkdown>
+                    {/* Check for direct image URLs in streaming data */}
+                    {(() => {
+                      const directImageUrl = extractImageUrl(streamedData);
+                      if (directImageUrl) {
+                        return (
+                          <div className="my-4">
+                            <img
+                              src={directImageUrl}
+                              alt="Generated visual"
+                              className="w-[70%] rounded shadow"
+                              onError={(e) => {
+                                // If image fails to load, fallback to markdown rendering
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {/* Check for direct video URLs in streaming data */}
+                    {(() => {
+                      const directVideoUrl = extractVideoUrl(streamedData);
+                      if (!directVideoUrl) return null;
+                      fetchVideo(-1, directVideoUrl); // use -1 or a fixed key
+                      const localVideoUrl = videoUrlMap[-1];
+                      if (!localVideoUrl) {
+                        return (
+                          <p className="text-sm text-gray-500 my-2">
+                            Loading video…
+                          </p>
+                        );
+                      }
+                      return (
+                        <div className="my-4">
+                          <video
+                            controls
+                            src={localVideoUrl}
+                            className="w-[70%] rounded shadow"
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

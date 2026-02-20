@@ -258,15 +258,13 @@ const Usage = () => {
     <div className="flex flex-col h-full md:mx-8 lg:mx-16 gap-8 relative">
       <div className="flex items-center justify-between">
         <Text type="header2">Usage</Text>
-        {doctorConBotMemberDetails?.role === 'OWNER' && 
-          <button
-            className="bg-danger rounded-lg p-2 m-2"
-            onClick={() => setIsModalOpen(true)}
-            title="Download Usage Details"
-          >
-            <IoMdDownload className="text-white w-5 h-5" />
-          </button>
-        }
+        <button
+          className="bg-danger rounded-lg p-2 m-2"
+          onClick={() => setIsModalOpen(true)}
+          title="Download Usage Details"
+        >
+          <IoMdDownload className="text-white w-5 h-5" />
+        </button>
       </div>
       {toastStatus && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
