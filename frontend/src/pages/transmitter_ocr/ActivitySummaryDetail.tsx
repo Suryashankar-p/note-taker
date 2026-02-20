@@ -224,11 +224,11 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
   // Format column header text
   const formatColumnHeader = (title: string): string => {
     // Map specialized names like TAGNUM -> TAG NUMBER
-    if (title.toUpperCase() === "TAGNUM") return "TAG NUMBER";
-    if (title.toUpperCase() === "MODELNUM") return "MODEL NUMBER";
-    if (title.toUpperCase() === "LOWERCALIBRATIONRANGE") return "LOWER CALIBRATION RANGE";
-    if (title.toUpperCase() === "UPPERCALIBRATIONRANGE") return "UPPER CALIBRATION RANGE";
-    if (title.toUpperCase() === "CALIBRATIONRANGEUNIT") return "CALIBRATION RANGE UNIT";
+    if (title.toUpperCase() === "TAGNUM" || title.toUpperCase() === "TAG-NUMBER") return "TAG NUMBER";
+    if (title.toUpperCase() === "MODELNUM" || title.toUpperCase() === "MODEL-NUMBER") return "MODEL NUMBER";
+    if (title.toUpperCase() === "LOWERCALIBRATIONRANGE" || title.toUpperCase() === "LOWER-CALIBRATION-RANGE") return "LOWER CALIBRATION RANGE";
+    if (title.toUpperCase() === "UPPERCALIBRATIONRANGE" || title.toUpperCase() === "UPPER-CALIBRATION-RANGE") return "UPPER CALIBRATION RANGE";
+    if (title.toUpperCase() === "CALIBRATIONRANGEUNIT" || title.toUpperCase() === "CALIBRATION-RANGE-UNIT") return "CALIBRATION RANGE UNIT";
 
     return title
       .replace(/([A-Z])/g, ' $1')

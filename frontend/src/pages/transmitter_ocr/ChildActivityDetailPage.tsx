@@ -32,6 +32,18 @@ GlobalWorkerOptions.workerSrc = url;
 // Define the required fields we want to display
 const REQUIRED_FIELDS = ["MODELNUM", "TAGNUM", "LOWERCALIBRATIONRANGE", "UPPERCALIBRATIONRANGE", "CALIBRATIONRANGEUNIT"];
 
+// Helper function to format field titles for display
+const formatFieldTitle = (title: string): string => {
+  const mapping: { [key: string]: string } = {
+    MODELNUM: "MODEL NUMBER",
+    TAGNUM: "TAG NUMBER",
+    LOWERCALIBRATIONRANGE: "LOWER CALIBRATION RANGE",
+    UPPERCALIBRATIONRANGE: "UPPER CALIBRATION RANGE",
+    CALIBRATIONRANGEUNIT: "CALIBRATION RANGE UNIT",
+  };
+  return mapping[title.toUpperCase()] || title;
+};
+
 interface Item {
   title: string;
   type: string;
@@ -576,7 +588,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                       type="body"
                       className="block text-lg font-medium text-gray-700 flex flex-row gap-3"
                     >
-                      {item?.title}
+                      {formatFieldTitle(item?.title)}
                       {item?.is_valid === false && (
                         <img
                           src={iButton}
@@ -595,14 +607,13 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                           activityDetails?.status === "SUBMITTED" ||
                           activityDetails?.status === "SUBMITTED_WAITING"
                         }
-                        className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg transition-all ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'} ${
-                          activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                          activityDetails?.status === "REJECTED" ||
-                          activityDetails?.status === "SUBMITTED" ||
-                          activityDetails?.status === "SUBMITTED_WAITING"
+                        className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg transition-all ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'} ${activityDetails?.status === "SUBMITTED_SUCCESS" ||
+                            activityDetails?.status === "REJECTED" ||
+                            activityDetails?.status === "SUBMITTED" ||
+                            activityDetails?.status === "SUBMITTED_WAITING"
                             ? 'cursor-not-allowed opacity-50'
                             : 'cursor-text'
-                        }`}
+                          }`}
                         style={{
                           borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D",
                           outline: "none",
@@ -635,7 +646,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                           console.log('Input changing:', item.title, 'New value:', e.target.value);
                           handleInputChange(item.title, e.target.value);
                         }}
-                        placeholder={`Enter ${item.title.toLowerCase()}`}
+                        placeholder={`Enter ${formatFieldTitle(item.title).toLowerCase()}`}
                       />
                     </div>
                     {!item?.is_valid && item?.invalid_reason && (
