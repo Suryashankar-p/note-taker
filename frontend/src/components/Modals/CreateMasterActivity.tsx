@@ -261,7 +261,6 @@ const CreateMasterActivity: React.FC<CreateMasterActivityModalProps> = ({
               value={templateOptions.find(opt => opt.value === template) || templateOptions[0]}
               onChange={handleTemplateChange}
               error={templateError ? { message: templateError } as any : undefined}
-              disabled={loading}
             />
           </div>
         )}
@@ -319,7 +318,7 @@ const CreateMasterActivity: React.FC<CreateMasterActivityModalProps> = ({
                 <div className="mr-2">{defaultValues ? "Updating..." : "Saving..."}</div>
                 <svg
                   className="animate-spin h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
+                  xmlns="http://www.w3.org/2000/svg "
                   fill="none"
                   viewBox="0 0 24 24"
                 >
