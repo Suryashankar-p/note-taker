@@ -45,6 +45,9 @@ const MasterDataTable: React.FC<{
         <thead className="bg-gray-50">
           <tr>
             <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+              S.No
+            </th>
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
               Tag Number
             </th>
             <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
@@ -64,6 +67,9 @@ const MasterDataTable: React.FC<{
         <tbody>
           {masterData.map((item, index) => (
             <tr key={index} className="hover:bg-gray-50">
+              <td className="border border-gray-200 px-4 py-3 text-sm">
+                {index + 1}
+              </td>
               <td className="border border-gray-200 px-4 py-3 text-sm">
                 {disabled ? (
                   <span title={item["Tag number"] || ""}>{item["Tag number"] || "-"}</span>
