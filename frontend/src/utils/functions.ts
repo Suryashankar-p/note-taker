@@ -354,10 +354,6 @@ export const getIframeSrc = (url, type) => {
     return "";
 };
 
-export const getKeyByValue = (object: any, value: any) => {
-    return Object.entries(object).find(([key, val]) => val === value)?.[0];
-};
-
 export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number) => {
     switch (type) {
         case "Thermax GPT":
