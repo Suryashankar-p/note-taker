@@ -17,7 +17,8 @@ import {
   statusMapper,
   userStatusMapper,
 } from "../../utils/functions.ts";
-import CreateActivity from "../../components/Modals/CreateActivity.tsx";
+// import CreateActivity from "../../components/Modals/CreateActivity.tsx";
+import CreateMasterActivity from "../../components/Modals/CreateMasterActivity.tsx";
 import { Member, url } from "../../utils/constants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
@@ -324,49 +325,63 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       }
     }
   };
-  const handleCreate = async (title: string, file: File) => {
-    setIsCreatingActivity(true); // API call for creating activity
-    try {
-      const response = await TransmitterCreateMasterActivity(title, file);
-      if (response) {
-        setCreateModalVisible(false);
-        // Reset pagination
-        setPageSize({ skip: 0, limit: 50 });
-
-        // Refetch activities after creation
-        setIsLoading(true); // <-- Show loader only for refetch
-        await getAllActivitiesList(
-          0,
-          pageSize.limit,
-          "",
-          userStatusMapper(usernameFilter.value),
-          statusMapper(statusFilter.value)
-        );
-      } else {
-        console.error("Error creating activity");
-      }
-    } catch (err) {
+  const handleCreate = async (title: string, masterType: string, template: string, file: File) => {
+  setIsCreatingActivity(true);
+  try {
+    // Pass all required parameters to the API
+    const response = await TransmitterCreateMasterActivity(title, masterType, template, file);
+    if (response) {
       setCreateModalVisible(false);
-      setPageError(true);
-      console.log(err);
-      if (err?.response?.data?.detail) {
-        dispatch.toast.openToast({
-          status: true,
-          message: err?.response?.data?.detail,
-          type: "error",
-        });
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: err?.response?.data ?? "Error creating activity",
-          type: "error",
-        });
-      }
-    } finally {
-      setIsCreatingActivity(false); // Creation finished
-      setIsLoading(false);          // Refetch finished
+      
+      // Show success message
+      dispatch.toast.openToast({
+        status: true,
+        message: "Master activity created successfully",
+        type: "success",
+      });
+      
+      // Reset pagination
+      setPageSize({ skip: 0, limit: 50 });
+
+      // Refetch activities after creation
+      setIsLoading(true);
+      await getAllActivitiesList(
+        0,
+        pageSize.limit,
+        "",
+        userStatusMapper(usernameFilter.value),
+        statusMapper(statusFilter.value)
+      );
+    } else {
+      console.error("Error creating activity");
+      dispatch.toast.openToast({
+        status: true,
+        message: "Failed to create activity",
+        type: "error",
+      });
     }
-  };
+  } catch (err) {
+    setCreateModalVisible(false);
+    setPageError(true);
+    console.log(err);
+    if (err?.response?.data?.detail) {
+      dispatch.toast.openToast({
+        status: true,
+        message: err?.response?.data?.detail,
+        type: "error",
+      });
+    } else {
+      dispatch.toast.openToast({
+        status: true,
+        message: err?.response?.data ?? "Error creating activity",
+        type: "error",
+      });
+    }
+  } finally {
+    setIsCreatingActivity(false);
+    setIsLoading(false);
+  }
+};
   
   const onChange = (item: string, activity: Activity) => {
     setDefaultActivity(activity);
@@ -661,7 +676,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
         />
       )}
       {/* Create Activity Modal */}
-      <CreateActivity
+      <CreateMasterActivity
         isOpen={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
         onCreate={handleCreate}
