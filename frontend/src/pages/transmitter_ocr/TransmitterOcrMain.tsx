@@ -1,4 +1,3 @@
-// thermax-ai-studio/frontend/src/pages/transmitter_ocr/TransmitterOcrMain.tsx
 import React, { useState, useEffect } from "react";
 import Header from "../../components/Header.tsx";
 import TransmitterOcrSidebar from "./Sidebar.tsx";
@@ -9,6 +8,9 @@ import Usage from "./Usage.tsx";
 import ActivitySummaryPage from "./ActivitySummaryPage.tsx";
 import MasterActivityDetailPage from "./MasterActivityDetailPage.tsx";
 import ChildActivityDetailPage from "./ChildActivityDetailPage.tsx";
+import ActivitySummaryChildList from "./ActivitySummaryChildlist.tsx";
+import ActivitySummaryDetail from "./ActivitySummaryDetail.tsx";
+import ChildActivityTags from "./ChildActivityTags.tsx";
 import { useNavigate } from "react-router-dom";
 import useApiCheck from "../../hooks/useApiCheck.ts";
 import PageLoading from "../../components/PageLoading.tsx";
@@ -17,7 +19,7 @@ const TransmitterOcrMain: React.FC = () => {
   const loading = useApiCheck('transmitter_ocr');
   const [currentPage, setCurrentPage] = useState<string>("MasterActivity");
   const [selectedActivity, setSelectedActivity] = useState<any | null>(null);
-  const [selectedActivityType, setSelectedActivityType] = useState<string>("master"); // "master" or "child"
+  const [selectedActivityType, setSelectedActivityType] = useState<string>("master"); // "master", "child", or "summary"
   const [breadCrumbs, setBreadCrumbs] = useState([
     {
       title: "AI Studio",
@@ -30,25 +32,59 @@ const TransmitterOcrMain: React.FC = () => {
   ]);
   const MAX_TITLE_LENGTH = 20;
   const navigate = useNavigate();
-  
+
   const handleSelectActivity = (activity: any, type: string = "master") => {
     setSelectedActivity(activity);
     setSelectedActivityType(type);
     if (activity) {
-      const activityUrl = `/ai-studio/transmitter_ocr?activity_id=${activity.id}`;
+      const activityUrl = type === "summary"
+        ? `/ai-studio/transmitter_ocr?summary_id=${activity.id}`
+        : type === "summary_detail"
+          ? `/ai-studio/transmitter_ocr?summary_detail_id=${activity.id}`
+          : type === "tag_detail"
+            ? `/ai-studio/transmitter_ocr?tag_detail_id=${activity.id}`
+            : `/ai-studio/transmitter_ocr?activity_id=${activity.id}`;
+
       navigate(activityUrl, { replace: true, state: { activity, type } });
-      setBreadCrumbs((prev) => [
-        ...prev,
-        {
-          title: activity?.title?.length > MAX_TITLE_LENGTH 
-                 ? `${activity.title.substring(0, MAX_TITLE_LENGTH)}...` 
-                 : `${activity.title}`,
-          url: activityUrl,
-        },
-      ]);
+      
+      // Fix breadcrumb logic for tag details
+      if (type === "tag_detail") {
+        // For tag details, we need: AI Studio → Transmitter OCR → Child Activity Name → Tag Number
+        setBreadCrumbs([
+          {
+            title: "AI Studio",
+            url: "/ai-studio",
+          },
+          {
+            title: "Transmitter OCR",
+            url: "/ai-studio/transmitter_ocr",
+          },
+          {
+            title: activity?.title?.length > MAX_TITLE_LENGTH
+              ? `${activity.title.substring(0, MAX_TITLE_LENGTH)}...`
+              : `${activity.title}`,
+            url: `/ai-studio/transmitter_ocr?activity_id=${activity.id}`,
+          },
+          {
+            title: activity?.tagData?.tag_number || "Tag Details",
+            url: activityUrl,
+          },
+        ]);
+      } else {
+        // For other types, append to existing breadcrumbs
+        setBreadCrumbs((prev) => [
+          ...prev,
+          {
+            title: activity?.title?.length > MAX_TITLE_LENGTH
+              ? `${activity.title.substring(0, MAX_TITLE_LENGTH)}...`
+              : `${activity.title}`,
+            url: activityUrl,
+          },
+        ]);
+      }
     }
   };
-  
+
   const handleSidebarSelect = (page: string) => {
     setSelectedActivity(null);
     setCurrentPage(page);
@@ -88,13 +124,44 @@ const TransmitterOcrMain: React.FC = () => {
       },
     ]);
   };
-  
+
   const renderPage = () => {
     if (selectedActivity) {
       if (selectedActivityType === "master") {
         return <MasterActivityDetailPage />;
-      } else {
-        return <ChildActivityDetailPage />;
+      } else if (selectedActivityType === "child") {
+        return (
+          <ChildActivityTags
+            activityTitle={selectedActivity?.title}
+            onSelectTag={(tag: any) => handleSelectActivity({ ...selectedActivity, tagData: tag }, "tag_detail")}
+            onBack={() => {
+              setSelectedActivity(null);
+              setSelectedActivityType("master");
+              setCurrentPage("ChildActivity");
+              navigate("/ai-studio/transmitter_ocr");
+            }}
+          />
+        );
+      } else if (selectedActivityType === "tag_detail") {
+        return <ChildActivityDetailPage onBack={() => {
+          setSelectedActivityType("child");
+          navigate(-1);
+        }} />;
+      } else if (selectedActivityType === "summary") {
+        return <ActivitySummaryChildList 
+          onSelectActivity={(activity: any) => handleSelectActivity(activity, "summary_detail")}
+          onBack={() => {
+            setSelectedActivity(null);
+            setSelectedActivityType("master");
+            setCurrentPage("ActivitySummary");
+            navigate("/ai-studio/transmitter_ocr");
+          }}
+        />;
+      } else if (selectedActivityType === "summary_detail") {
+        return <ActivitySummaryDetail onBack={() => {
+          setSelectedActivityType("summary");
+          navigate(-1);
+        }} />;
       }
     }
     switch (currentPage) {
@@ -107,28 +174,31 @@ const TransmitterOcrMain: React.FC = () => {
       case "ChildUsage":
         return <Usage usageType="child" />;
       case "ActivitySummary":
-        return <ActivitySummaryPage />;
+        return <ActivitySummaryPage onSelectActivity={(activity) => handleSelectActivity(activity, "summary")} />;
       case "members":
         return <MembersPage />;
       default:
         return <MasterActivityPage onSelectActivity={(activity) => handleSelectActivity(activity, "master")} />;
     }
   };
-  
+
   useEffect(() => {
     const currentPath = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    const summaryId = searchParams.get("summary_id");
+
     if (currentPath.includes("members")) {
       setCurrentPage("members");
     } else if (currentPath.includes("MasterUsage")) {
       setCurrentPage("MasterUsage");
     } else if (currentPath.includes("ChildUsage")) {
       setCurrentPage("ChildUsage");
-    } else if (currentPath.includes("ActivitySummary")) {
+    } else if (currentPath.includes("ActivitySummary") || summaryId) {
       setCurrentPage("ActivitySummary");
     } else {
       setCurrentPage("MasterActivity");
     }
-    
+
     // Check if we have activity data in location state
     const locationState = window.history.state;
     if (locationState?.activity) {
@@ -136,11 +206,11 @@ const TransmitterOcrMain: React.FC = () => {
       setSelectedActivityType(locationState.type || "master");
     }
   }, []);
-  
+
   if (loading) {
     return <PageLoading />;
   }
-  
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header breadCrumbs={breadCrumbs} />

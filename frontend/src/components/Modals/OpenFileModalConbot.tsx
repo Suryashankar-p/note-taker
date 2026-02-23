@@ -157,28 +157,6 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
                     ⛶
                   </button>
 
-                  {/* OPEN IN NEW TAB */}
-                  <button
-                    onClick={() => window.open(fileUrl.url, "_blank")}
-                    title="Open in New Tab"
-                    className="px-2 py-1 border border-gray-300 rounded hover:bg-gray-100 text-sm"
-                  >
-                    ↗
-                  </button>
-
-                  {/* DOWNLOAD BUTTON — icon only, large */}
-                  {/* <button
-                    title="Download File"
-                    onClick={onDownload}
-                    className="p-1 hover:opacity-80 transition"
-                  >
-                    <img
-                      src={DownloadIcon}
-                      alt="download"
-                      className="w-10 h-10"
-                    />
-                  </button> */}
-
                   {/* CLOSE BUTTON — icon only, large */}
                   <button
                     title="Close"
