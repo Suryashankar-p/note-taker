@@ -155,6 +155,8 @@ export const statusMapper = (status: string) => {
             return 'Failed'
         case 'SUBMITTED_WAITING':
             return 'Waiting'
+        case 'OCR_FAILED':
+            return 'OCR Failed'
         case 'All':
             return 'All'
         case 'reject':
@@ -308,6 +310,8 @@ export const getBorderColor = (activityStatus: string): string => {
             return 'border-red-500';
         case 'SUBMITTED_SUCCESS':
             return 'border-green-500';
+        case 'OCR_FAILED':
+            return 'border-orange-500'; // Orange for OCR failures
         default:
             return 'border-gray-300';
     }
