@@ -182,7 +182,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
       try {
         const updated: Activity = await TransmitterGetChildActivityStatus(id);
 
-        if (updated.is_extracted) {
+        if (updated.is_extracted || updated.status === "OCR_FAILED") {
           updateActivityById(id, () => updated);
           stopPolling(id);
         }
@@ -685,7 +685,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
                       )
                         onActivityCardClick(activity);
                     }}
-                    >
+                  >
                     <div className="flex items-center">
                       <div
                         title={activity?.user?.name}
