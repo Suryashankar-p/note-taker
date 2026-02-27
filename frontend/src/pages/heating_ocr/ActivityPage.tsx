@@ -401,7 +401,7 @@ useEffect(() => {
 
 
 
-  const handleCreate = async (title: string, file: File, masterId?: number, template?: string, number?: number) => {
+  const handleCreate = async (title: string, file: File, template?: string, number?: number) => {
     try {
       const response = await CreateOCRActivity(title, file, template, number);
       if (response) {
@@ -732,7 +732,7 @@ useEffect(() => {
       <CreateActivity
         isOpen={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
-        onCreate={(title, file, template, number) => handleCreate(title, file, undefined, template, number)}
+        onCreate={handleCreate}
         defaultValues={defaultActivity}
         onUpdate={onUpdate}
         showTemplate={true}
