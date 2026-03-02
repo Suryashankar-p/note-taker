@@ -677,23 +677,6 @@ const ChatArea: React.FC<Props> = ({
     return initials.toUpperCase();
   };
 
-  const onDislikeClick = (e: any, message: any) => {
-    setDefaultChatData(message);
-    e.stopPropagation();
-    if (message?.like === false) return;
-    else {
-      dispatch.modal.openDislikeReason("add");
-    }
-  };
-
-  const onLikeClick = (e: any, message: any) => {
-    e.stopPropagation();
-    if (message?.like) return;
-    else {
-      UpdateChat_history(message?.id, message?.chat_id, true);
-    }
-  };
-
   const handleRemoveFile = (index: number) => {
     if (aiProvider === "Document Analyzer") {
       // cancelUpload if needed
@@ -959,7 +942,7 @@ const ChatArea: React.FC<Props> = ({
       );
     }
 
-    if (media_type === 'file') {
+    if (media_type === 'excel') {
       return (
         <div className="my-4">
           <p className="mb-2 text-sm text-gray-600">
@@ -976,7 +959,7 @@ const ChatArea: React.FC<Props> = ({
     }
 
     return null;
-  }, [fetchMedia, videoUrlMap]); // Memoize to prevent recreation
+  }, []); // Remove dependencies to prevent recreation on cache updates
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
