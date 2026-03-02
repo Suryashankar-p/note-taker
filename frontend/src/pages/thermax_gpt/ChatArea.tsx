@@ -976,7 +976,7 @@ const ChatArea: React.FC<Props> = ({
     }
 
     return null;
-  }, [fetchMedia, videoUrlMap]); // Memoize to prevent recreation
+  }, []); // Remove dependencies to prevent recreation on cache updates
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
