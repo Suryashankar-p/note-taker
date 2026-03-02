@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef, useState, useMemo } from "react";
 import { FaRobot, FaGlobe, FaFileAlt } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
@@ -137,6 +137,11 @@ const ChatArea: React.FC<Props> = ({
     if (chat_id) {
       getPageChat();
     }
+  }, [chat_id]);
+
+  // Clear media cache when chat_id changes (navigating between chats)
+  useEffect(() => {
+    setVideoUrlMap({});
   }, [chat_id]);
 
   useEffect(() => {
@@ -364,6 +369,7 @@ const ChatArea: React.FC<Props> = ({
   ) => {
     setStreamedData(""); // Clear streamed data
     setStreamingSource(null); // Clear streaming source
+    setVideoUrlMap({}); // Clear media cache when new content is loaded
     setInputValue("");
     setLoading(false);
     setPageError(false);
@@ -849,7 +855,18 @@ const ChatArea: React.FC<Props> = ({
   const fetchMedia = async (index: number, mediaType: string, blobLink: string) => {
     try {
       // Avoid refetching the same media
-      if (videoUrlMap[index]) return;
+      if (videoUrlMap[index]) {
+        console.log(`Media already cached for index ${index}, skipping fetch`);
+        return;
+      }
+      
+      // Ensure we have a valid chat_id
+      if (!chat_id) {
+        console.error('No chat_id available for media fetch');
+        return;
+      }
+      
+      console.log(`Fetching media for index ${index}, type: ${mediaType}, chat_id: ${chat_id}`);
       const response = await ReadFile(Number(chat_id), mediaType, blobLink);
       const mediaBlob = new Blob([response.data], {
         type: response.headers["content-type"] || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg'),
@@ -865,15 +882,18 @@ const ChatArea: React.FC<Props> = ({
   };
 
   // Component to render media based on source field
-  const MediaRenderer = ({ source, messageIndex }: { source: any; messageIndex: number }) => {
+  const MediaRenderer = useMemo(() => ({ source, messageIndex }: { source: any; messageIndex: number }) => {
     const { media_type, link } = source;
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
       // Start fetching media when component mounts
-      fetchMedia(messageIndex, media_type, link);
-    }, [messageIndex, media_type, link]);
+      // Only fetch if not already cached and not currently loading
+      if (!videoUrlMap[messageIndex]) {
+        fetchMedia(messageIndex, media_type, link);
+      }
+    }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
 
     const mediaUrl = videoUrlMap[messageIndex];
 
@@ -956,7 +976,7 @@ const ChatArea: React.FC<Props> = ({
     }
 
     return null;
-  };
+  }, [fetchMedia, videoUrlMap]); // Memoize to prevent recreation
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
