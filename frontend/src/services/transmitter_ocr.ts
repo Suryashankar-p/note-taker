@@ -21,6 +21,12 @@ export const TransmitterGetMasterActivityDetails = async (activity_id: number) =
   return response
 }
 
+// Polling endpoint — checks is_extracted status for a master activity
+export const TransmitterGetMasterActivityStatus = async (activity_id: number) => {
+  const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity/${activity_id}/status`)
+  return response
+}
+
 export const TransmitterUpdateMasterActivityDetails = async (activity_id: number, body?: any) => {
   const response = await TransmitterOCRAPI.patch(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity/${activity_id}`, body);
   return response
