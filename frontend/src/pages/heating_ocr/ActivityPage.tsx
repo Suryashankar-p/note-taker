@@ -737,6 +737,7 @@ useEffect(() => {
         onUpdate={onUpdate}
         showTemplate={true}
         showNumber={true}  // Add this prop
+        
       />
 
       {tranferModal && (
