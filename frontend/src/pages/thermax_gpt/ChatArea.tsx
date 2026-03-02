@@ -21,7 +21,7 @@ import {
   CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
   CreatePerplexityStream,
-  ReadVideo,
+  ReadFile,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -110,6 +110,7 @@ const ChatArea: React.FC<Props> = ({
   const [isModalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
+  const [streamingSource, setStreamingSource] = useState<any>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const { upload, uploadState, fileId, status, statusState, isDone } =
@@ -329,6 +330,10 @@ const ChatArea: React.FC<Props> = ({
           // Handle tool usage if needed
         } else if (data.type === "end") {
           // Stream completed
+          // Capture source field if present
+          if (data.content?.source) {
+            setStreamingSource(data.content.source);
+          }
           handleStreamEnd(data.content, chatId, localFiles, isNewChat);
           eventSource.close();
           eventSourceRef.current = null;
@@ -358,6 +363,7 @@ const ChatArea: React.FC<Props> = ({
     isNewChat: boolean
   ) => {
     setStreamedData(""); // Clear streamed data
+    setStreamingSource(null); // Clear streaming source
     setInputValue("");
     setLoading(false);
     setPageError(false);
@@ -395,6 +401,7 @@ const ChatArea: React.FC<Props> = ({
   // Handle stream errors
   const handleStreamError = () => {
     setStreamedData("");
+    setStreamingSource(null);
     setLoading(false);
     setPageError(true);
     dispatch.toast.openToast({
@@ -825,34 +832,6 @@ const ChatArea: React.FC<Props> = ({
     0
   );
 
-  const extractImageUrl = (text: string): string | null => {
-    // Check for direct image URLs in the text
-    const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|webp|gif)(\?[^\s]*)?)/gi;
-    const matches = text.match(urlRegex);
-    
-    if (matches && matches.length > 0) {
-      // Return the first valid image URL found
-      return matches[0];
-    }
-    
-    return null;
-  };
-
-  const extractVideoUrl = (text: string): string | null => {
-    const markdownUrlRegex = /\((https?:\/\/[^)\s]+)\)/;
-    const markdownMatch = text.match(markdownUrlRegex);
-
-    if (markdownMatch) {
-      return markdownMatch[1];
-    }
-
-    // Fallback: direct video URL anywhere in text
-    const directUrlRegex = /(https?:\/\/[^\s]+?\.(mp4|webm|ogg|avi|mov|wmv)[^\s]*)/i;
-    const directMatch = text.match(directUrlRegex);
-
-    return directMatch ? directMatch[1] : null;
-  };
-
   const renderAttachFile = () => {
     switch (aiProvider) {
       case "Thermax GPT":
@@ -866,24 +845,118 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  const fetchVideo = async (index: number, blobLink: string) => {
+  // Function to fetch and cache media
+  const fetchMedia = async (index: number, mediaType: string, blobLink: string) => {
     try {
-      // Avoid refetching the same video
+      // Avoid refetching the same media
       if (videoUrlMap[index]) return;
-      const response = await ReadVideo(Number(chat_id), blobLink);
-      const videoBlob = new Blob([response.data], {
-        type: response.headers["content-type"] || "video/mp4",
+      const response = await ReadFile(Number(chat_id), mediaType, blobLink);
+      const mediaBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg'),
       });
-      const objectUrl = URL.createObjectURL(videoBlob);
+      const objectUrl = URL.createObjectURL(mediaBlob);
       setVideoUrlMap((prev) => ({
         ...prev,
         [index]: objectUrl,
       }));
     } catch (err) {
-      console.error("Failed to stream video:", err);
+      console.error("Failed to stream media:", err);
     }
   };
 
+  // Component to render media based on source field
+  const MediaRenderer = ({ source, messageIndex }: { source: any; messageIndex: number }) => {
+    const { media_type, link } = source;
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+      // Start fetching media when component mounts
+      fetchMedia(messageIndex, media_type, link);
+    }, [messageIndex, media_type, link]);
+
+    const mediaUrl = videoUrlMap[messageIndex];
+
+    if (media_type === 'image') {
+      return (
+        <div className="my-4">
+          <p className="mb-2 text-sm text-gray-600">
+            Generated image:
+          </p>
+          {mediaUrl ? (
+            <img
+              src={mediaUrl}
+              alt="Generated visual"
+              className="w-[70%] rounded shadow"
+              onError={(e) => {
+                console.error('Failed to load generated image:', link);
+                setError('Failed to load image');
+              }}
+            />
+          ) : (
+            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+              <p className="text-gray-500">Loading image...</p>
+            </div>
+          )}
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (media_type === 'video') {
+      if (!mediaUrl) {
+        return (
+          <div className="my-4">
+            <p className="mb-2 text-sm text-gray-600">
+              Generated video:
+            </p>
+            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+              <p className="text-gray-500">Loading video...</p>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="my-4">
+          <p className="mb-2 text-sm text-gray-600">
+            Generated video:
+          </p>
+          <video
+            controls
+            src={mediaUrl}
+            className="w-[70%] rounded shadow"
+            onError={(e) => {
+              console.error('Failed to load generated video:', link);
+              setError('Failed to load video');
+            }}
+          />
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (media_type === 'file') {
+      return (
+        <div className="my-4">
+          <p className="mb-2 text-sm text-gray-600">
+            Generated file:
+          </p>
+          <button
+            onClick={() => window.open(link, '_blank')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Download File
+          </button>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -1043,49 +1116,10 @@ const ChatArea: React.FC<Props> = ({
                       >
                         {message?.ai}
                       </ReactMarkdown>
-                      {/* Check for direct image URLs in the AI message */}
-                      {(() => {
-                        const directImageUrl = extractImageUrl(message?.ai);
-                        if (directImageUrl) {
-                          return (
-                            <div className="my-4">
-                              <img
-                                src={directImageUrl}
-                                alt="Generated visual"
-                                className="w-[70%] rounded shadow"
-                                onError={(e) => {
-                                  // If image fails to load, fallback to markdown rendering
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                      {/* Check for direct video URLs in the AI message */}
-                      {(() => {
-                        const directVideoUrl = extractVideoUrl(message?.ai);
-                        if (!directVideoUrl) return null;
-                        fetchVideo(index, directVideoUrl);
-                        const localVideoUrl = videoUrlMap[index];
-                        if (!localVideoUrl) {
-                          return (
-                            <p className="text-sm text-gray-500 my-2">
-                              Loading video…
-                            </p>
-                          );
-                        }
-                        return (
-                          <div className="my-4">
-                            <video
-                              controls
-                              src={localVideoUrl}
-                              className="w-[70%] rounded shadow"
-                            />
-                          </div>
-                        );
-                      })()}
+                      {/* Handle source field for generated media */}
+                      {message?.source && (
+                        <MediaRenderer source={message.source} messageIndex={index} />
+                      )}
                     </div>
                   ) : (
                     !message?.file_name &&
@@ -1134,49 +1168,10 @@ const ChatArea: React.FC<Props> = ({
                       >
                       {streamedData}
                     </ReactMarkdown>
-                    {/* Check for direct image URLs in streaming data */}
-                    {(() => {
-                      const directImageUrl = extractImageUrl(streamedData);
-                      if (directImageUrl) {
-                        return (
-                          <div className="my-4">
-                            <img
-                              src={directImageUrl}
-                              alt="Generated visual"
-                              className="w-[70%] rounded shadow"
-                              onError={(e) => {
-                                // If image fails to load, fallback to markdown rendering
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                    {/* Check for direct video URLs in streaming data */}
-                    {(() => {
-                      const directVideoUrl = extractVideoUrl(streamedData);
-                      if (!directVideoUrl) return null;
-                      fetchVideo(-1, directVideoUrl); // use -1 or a fixed key
-                      const localVideoUrl = videoUrlMap[-1];
-                      if (!localVideoUrl) {
-                        return (
-                          <p className="text-sm text-gray-500 my-2">
-                            Loading video…
-                          </p>
-                        );
-                      }
-                      return (
-                        <div className="my-4">
-                          <video
-                            controls
-                            src={localVideoUrl}
-                            className="w-[70%] rounded shadow"
-                          />
-                        </div>
-                      );
-                    })()}
+                    {/* Handle source field for streaming media */}
+                    {streamingSource && (
+                      <MediaRenderer source={streamingSource} messageIndex={-1} />
+                    )}
                   </div>
                 </div>
               </div>
