@@ -10,6 +10,7 @@ import Text from "../../components/Text.tsx";
 import { TransmitterGetTagNumbers } from "../../services/transmitter_ocr.ts";
 import { getInitials, getBorderColor } from "../../utils/functions.ts";
 import DropDownButton from "../../components/DropDownButton.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -264,9 +265,7 @@ const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
         {/* ── Tag list ───────────────────────────────────────────────────── */}
         <div ref={tagListRef} className="flex-1 mt-4 h-[calc(100vh-230px)] pr-4 overflow-y-auto">
           {isLoading && tagNumbers.length === 0 ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-danger" />
-            </div>
+            <PageLoading />
           ) : tagNumbers.length > 0 ? (
             tagNumbers.map((tag: any, index: number) => (
               <div className="mt-5" key={index}>
@@ -309,8 +308,8 @@ const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
                       {tag.status === "PASSED"
                         ? "Passed"
                         : tag.status === "FAILED"
-                        ? "Failed"
-                        : tag.status}
+                          ? "Failed"
+                          : tag.status}
                     </Text>
 
                     {/* Eye Icon */}
