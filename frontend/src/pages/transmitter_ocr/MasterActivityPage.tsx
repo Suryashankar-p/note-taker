@@ -56,12 +56,11 @@ export type Activity = {
 const isExtracting = (activity: Activity): boolean =>
   activity.status === "IN_PROGRESS" && activity.is_extracted !== true;
 
-type ProcessingStage = "uploading" | "extracting" | "validating";
+type ProcessingStage = "uploading" | "extracting";
 
 const getProcessingStage = (elapsedMs: number): ProcessingStage => {
   if (elapsedMs < 10_000) return "uploading";
-  if (elapsedMs < 25_000) return "extracting";
-  return "validating";
+  return "extracting";
 };
 
 const getProcessingLabel = (stage: ProcessingStage): string => {
@@ -70,8 +69,6 @@ const getProcessingLabel = (stage: ProcessingStage): string => {
       return "Uploading";
     case "extracting":
       return "Extracting";
-    case "validating":
-      return "Validating";
     default:
       return "In Progress";
   }
