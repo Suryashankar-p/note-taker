@@ -759,30 +759,6 @@ const ChatArea: React.FC<Props> = ({
     localStorage.setItem("aiProvider", tab);
   };
 
-  const handleDownloadFile = async (mediaType: string, link: string, fileName: string) => {
-    try {
-      console.log("Downloading file:", mediaType, link, fileName);
-      
-      const response = await ReadFile(Number(chat_id), mediaType, link);
-      const mediaBlob = new Blob([response.data], {
-        type: response.headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      
-      const downloadUrl = URL.createObjectURL(mediaBlob);
-      const linkElement = document.createElement('a');
-      linkElement.href = downloadUrl;
-      linkElement.download = fileName;
-      document.body.appendChild(linkElement);
-      linkElement.click();
-      document.body.removeChild(linkElement);
-      
-      // Clean up the object URL
-      URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error("Failed to download file:", error);
-    }
-  };
-
   const renderFileIcon = (file_name: string) => {
     const type = getFileType(file_name);
 
@@ -889,10 +865,44 @@ const ChatArea: React.FC<Props> = ({
   };
 
   // Component to render media based on source field
-  const MediaRenderer = useMemo(() => ({ source, messageIndex }: { source: any; messageIndex: number }) => {
+  const MediaRenderer = useMemo(() => ({ source, messageIndex, chatId }: { source: any; messageIndex: number; chatId: string | null }) => {
     const { media_type, link } = source;
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const handleDownloadFile = async (mediaType: string, link: string) => {
+      try {
+        console.log("Downloading file:", mediaType, link);
+        
+        if (!chatId) {
+          console.error('No chat_id available for file download');
+          return;
+        }
+        
+        // Extract filename from link URL
+        const url = new URL(link);
+        const filenameParam = url.searchParams.get('filename');
+        const fileName = filenameParam || `generated_file_${Date.now()}.xlsx`;
+        
+        const response = await ReadFile(Number(chatId), mediaType, link);
+        const mediaBlob = new Blob([response.data], {
+          type: response.headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        
+        const downloadUrl = URL.createObjectURL(mediaBlob);
+        const linkElement = document.createElement('a');
+        linkElement.href = downloadUrl;
+        linkElement.download = fileName;
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        document.body.removeChild(linkElement);
+        
+        // Clean up the object URL
+        URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+        console.error("Failed to download file:", error);
+      }
+    };
 
     useEffect(() => {
       // Only fetch media for image and video types
@@ -960,7 +970,7 @@ const ChatArea: React.FC<Props> = ({
       return (
         <div className="my-4">
           <Button
-            onClick={() => handleDownloadFile(media_type, link, `generated_file_${Date.now()}.xlsx`)}
+            onClick={() => handleDownloadFile(media_type, link)}
             custom_type="danger"
             className="bg-danger w-32 h-10 p-2 gap-2 rounded-lg"
             size="custom"
@@ -1134,7 +1144,7 @@ const ChatArea: React.FC<Props> = ({
                       </ReactMarkdown>
                       {/* Handle source field for generated media */}
                       {message?.source && (
-                        <MediaRenderer source={message.source} messageIndex={index} />
+                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} />
                       )}
                     </div>
                   ) : (
@@ -1186,7 +1196,7 @@ const ChatArea: React.FC<Props> = ({
                     </ReactMarkdown>
                     {/* Handle source field for streaming media */}
                     {streamingSource && (
-                      <MediaRenderer source={streamingSource} messageIndex={-1} />
+                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} />
                     )}
                   </div>
                 </div>
