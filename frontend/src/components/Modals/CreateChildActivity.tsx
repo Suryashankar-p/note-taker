@@ -154,7 +154,7 @@ const CreateChildActivity: React.FC<CreateChildActivityModalProps> = ({
             type="text"
             value={pagesToTrim}
             onChange={handlePagesToTrimChange}
-            placeholder="Enter Page Number"
+            placeholder="Enter Page Numbers (e.g. 1-5)"
             className="border rounded-md w-full border-grey h-12 focus:outline-none p-4"
           />
         </div>

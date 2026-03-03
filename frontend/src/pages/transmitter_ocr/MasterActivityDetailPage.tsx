@@ -13,6 +13,7 @@ import { TransmitterUpdateMasterActivityDetails, TransmitterGetMasterActivityDet
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import Toast from "../../components/Toast.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 
 GlobalWorkerOptions.workerSrc = url;
 
@@ -290,14 +291,22 @@ const MasterActivityDetailPage: React.FC = () => {
   const [editableTables, setEditableTables] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [masterData, setMasterData] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Use useRef for timeout to avoid closure issues
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    getActivityDetails(activity?.id);
-    getDocumentLink(activity?.id);
-  }, []);
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([
+        getActivityDetails(activity?.id),
+        getDocumentLink(activity?.id)
+      ]);
+      setLoading(false);
+    };
+    fetchData();
+  }, [activity?.id]);
 
   // Initialize editable tables and master data when activity details are loaded
   useEffect(() => {
@@ -578,6 +587,10 @@ const MasterActivityDetailPage: React.FC = () => {
     activityDetails?.status === "SUBMITTED" ||
     activityDetails?.status === "SUBMITTED_SUCCESS" ||
     activityDetails?.status === "REJECTED";
+
+  if (loading) {
+    return <PageLoading />;
+  }
 
   return (
     <div className="flex flex-col py-6 h-full mt-2 gap-3 flex-1 relative">

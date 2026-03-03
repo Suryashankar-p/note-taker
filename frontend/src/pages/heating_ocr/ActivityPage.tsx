@@ -261,7 +261,7 @@ const startPolling = () => {
   console.log("Starting polling for processing activities...");
   pollingIntervalRef.current = setInterval(() => {
     pollForProcessingActivities();
-  }, 5000); // Poll every 5 seconds
+  }, 10000); // Poll every 5 seconds
 };
 
 // Stop polling
@@ -737,7 +737,7 @@ useEffect(() => {
         onUpdate={onUpdate}
         showTemplate={true}
         showNumber={true}  // Add this prop
-        
+
       />
 
       {tranferModal && (
