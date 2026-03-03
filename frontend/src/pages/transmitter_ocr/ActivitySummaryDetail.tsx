@@ -7,6 +7,7 @@ import Text from "../../components/Text.tsx";
 import Input from "../../components/Input.tsx";
 import Button from "../../components/Button.tsx";
 import Toast from "../../components/Toast.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 import NoData from "../../assets/no_data.tsx";
 
 import Search from "../../assets/search_icon.svg";
@@ -371,9 +372,7 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
                 {isLoading ? (
                   <tr>
                     <td colSpan={dynamicColumns.length + 3} className="py-20 text-center">
-                      <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
-                      </div>
+                      <PageLoading />
                     </td>
                   </tr>
                 ) : (
