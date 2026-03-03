@@ -938,15 +938,15 @@ const ChatArea: React.FC<Props> = ({
         <div className="my-4">
           <button
             onClick={() => {
-              // Create a temporary link and trigger download
-              const link = document.createElement('a');
-              link.href = mediaUrl;
-              link.download = `generated_file_${Date.now()}.xlsx`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
+              // Create a temporary link and trigger download using the original blob link
+              const downloadLink = document.createElement('a');
+              downloadLink.href = link; // Use the original blob link from source
+              downloadLink.download = `generated_file_${Date.now()}.xlsx`;
+              document.body.appendChild(downloadLink);
+              downloadLink.click();
+              document.body.removeChild(downloadLink);
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="flex items-center bg-background border border-danger text-danger rounded-lg w-20 h-10 p-2 gap-2"
           >
             Download File
           </button>
