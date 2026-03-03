@@ -759,6 +759,16 @@ const ChatArea: React.FC<Props> = ({
     localStorage.setItem("aiProvider", tab);
   };
 
+  const handleDownloadFile = (mediaUrl: string, fileName: string) => {
+    console.log("Downloading file:", mediaUrl, fileName);
+    const link = document.createElement('a');
+    link.href = mediaUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const renderFileIcon = (file_name: string) => {
     const type = getFileType(file_name);
 
@@ -871,9 +881,8 @@ const ChatArea: React.FC<Props> = ({
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-      // Start fetching media when component mounts
-      // Only fetch if not already cached and not currently loading
-      if (!videoUrlMap[messageIndex]) {
+      // Only fetch media for image and video types
+      if (media_type !== 'excel' && !videoUrlMap[messageIndex]) {
         fetchMedia(messageIndex, media_type, link);
       }
     }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
@@ -936,20 +945,14 @@ const ChatArea: React.FC<Props> = ({
     if (media_type === 'excel') {
       return (
         <div className="my-4">
-          <button
-            onClick={() => {
-              // Create a temporary link and trigger download using the original blob link
-              const downloadLink = document.createElement('a');
-              downloadLink.href = link; // Use the original blob link from source
-              downloadLink.download = `generated_file_${Date.now()}.xlsx`;
-              document.body.appendChild(downloadLink);
-              downloadLink.click();
-              document.body.removeChild(downloadLink);
-            }}
-            className="flex items-center bg-background border border-danger text-danger rounded-lg w-20 h-10 p-2 gap-2"
+          <Button
+            onClick={() => handleDownloadFile(link, `generated_file_${Date.now()}.xlsx`)}
+            custom_type="danger"
+            className="bg-danger w-32 h-10 p-2 gap-2 rounded-lg"
+            size="custom"
           >
-            Download File
-          </button>
+            <Text type="small">Download File</Text>
+          </Button>
         </div>
       );
     }
