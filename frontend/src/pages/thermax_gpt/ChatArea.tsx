@@ -759,14 +759,28 @@ const ChatArea: React.FC<Props> = ({
     localStorage.setItem("aiProvider", tab);
   };
 
-  const handleDownloadFile = (mediaUrl: string, fileName: string) => {
-    console.log("Downloading file:", mediaUrl, fileName);
-    const link = document.createElement('a');
-    link.href = mediaUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadFile = async (mediaType: string, link: string, fileName: string) => {
+    try {
+      console.log("Downloading file:", mediaType, link, fileName);
+      
+      const response = await ReadFile(Number(chat_id), mediaType, link);
+      const mediaBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      
+      const downloadUrl = URL.createObjectURL(mediaBlob);
+      const linkElement = document.createElement('a');
+      linkElement.href = downloadUrl;
+      linkElement.download = fileName;
+      document.body.appendChild(linkElement);
+      linkElement.click();
+      document.body.removeChild(linkElement);
+      
+      // Clean up the object URL
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Failed to download file:", error);
+    }
   };
 
   const renderFileIcon = (file_name: string) => {
@@ -946,7 +960,7 @@ const ChatArea: React.FC<Props> = ({
       return (
         <div className="my-4">
           <Button
-            onClick={() => handleDownloadFile(link, `generated_file_${Date.now()}.xlsx`)}
+            onClick={() => handleDownloadFile(media_type, link, `generated_file_${Date.now()}.xlsx`)}
             custom_type="danger"
             className="bg-danger w-32 h-10 p-2 gap-2 rounded-lg"
             size="custom"
