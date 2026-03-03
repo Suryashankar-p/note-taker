@@ -38,6 +38,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
 import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 import { getOCRRole } from "./Member.tsx";
 
 GlobalWorkerOptions.workerSrc = url;
@@ -295,9 +296,16 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   }, [check, activities]);
 
   useEffect(() => {
-    getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
-    getAllMembers(0, 100, "");
-    getMasterActivityTitles();
+    const fetchData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        getAllActivitiesList(pageSize?.skip, pageSize?.limit, "", undefined, undefined, undefined, false),
+        getAllMembers(0, 100, ""),
+        getMasterActivityTitles()
+      ]);
+      setIsLoading(false);
+    };
+    fetchData();
 
     return () => {
       stopAllPolling();
@@ -377,9 +385,10 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     search_term: string,
     user_status?: string,
     status?: string,
-    master_id?: number
+    master_id?: number,
+    showLoader: boolean = true
   ) => {
-    setIsLoading(true);
+    if (showLoader) setIsLoading(true);
     try {
       const response = await TransmitterGetChildActivities(
         skip, limit, search_term,
@@ -655,9 +664,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
 
         <div ref={activityListRef} className="flex-1 mt-4 h-[calc(100vh-230px)] pr-4 overflow-y-auto">
           {isLoading && activities.length === 0 ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-danger" />
-            </div>
+            <PageLoading />
           ) : activities.length > 0 ? (
             activities.map((activity: any) => {
               const extracting = isExtracting(activity);
