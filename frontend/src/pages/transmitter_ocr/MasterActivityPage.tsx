@@ -39,6 +39,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
 import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 GlobalWorkerOptions.workerSrc = url;
 export type Activity = {
   id: number;
@@ -294,8 +295,15 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       });
     } else {
       // Normal initial load
-      getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
-      getAllMembers(0, 100, "");
+      const fetchData = async () => {
+        setIsLoading(true);
+        await Promise.all([
+          getAllActivitiesList(pageSize?.skip, pageSize?.limit, ""),
+          getAllMembers(0, 100, "")
+        ]);
+        setIsLoading(false);
+      };
+      fetchData();
     }
 
     return () => {
@@ -379,9 +387,9 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
     status?: string
   ) => {
     // Don't set loading to false if we're in the process of creating an activity
-    if (!isCreatingActivity) {
-      setIsLoading(true);
-    }
+    // if (!isCreatingActivity) {
+    //   setIsLoading(true);
+    // }
     try {
       const response = await TransmitterGetMasterActivities(
         skip,
@@ -401,9 +409,9 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       console.error("Error fetching activities", err);
     } finally {
       // Only set loading to false if we're not creating an activity
-      if (!isCreatingActivity) {
-        setIsLoading(false);
-      }
+      // if (!isCreatingActivity) {
+      //   setIsLoading(false);
+      // }
     }
   };
 
@@ -698,12 +706,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
         <div ref={activityListRef} className="mt-4 mb-5 flex-1 h-[calc(100vh-230px)] pr-4 overflow-y-auto">
           {/* Show loader when creating an activity or when initially loading */}
           {isLoading ? (
-            <div className="flex flex-col justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-danger mb-4"></div>
-              <Text type="body" className="text-gray-500">
-                Loading activities...
-              </Text>
-            </div>
+            <PageLoading />
           ) : activities.length > 0 ? (
             activities.map((activity: any) => {
               const extracting = isExtracting(activity);
