@@ -883,9 +883,6 @@ const ChatArea: React.FC<Props> = ({
     if (media_type === 'image') {
       return (
         <div className="my-4">
-          <p className="mb-2 text-sm text-gray-600">
-            Generated image:
-          </p>
           {mediaUrl ? (
             <img
               src={mediaUrl}
@@ -912,9 +909,6 @@ const ChatArea: React.FC<Props> = ({
       if (!mediaUrl) {
         return (
           <div className="my-4">
-            <p className="mb-2 text-sm text-gray-600">
-              Generated video:
-            </p>
             <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
               <p className="text-gray-500">Loading video...</p>
             </div>
@@ -923,9 +917,6 @@ const ChatArea: React.FC<Props> = ({
       }
       return (
         <div className="my-4">
-          <p className="mb-2 text-sm text-gray-600">
-            Generated video:
-          </p>
           <video
             controls
             src={mediaUrl}
@@ -945,11 +936,16 @@ const ChatArea: React.FC<Props> = ({
     if (media_type === 'excel') {
       return (
         <div className="my-4">
-          <p className="mb-2 text-sm text-gray-600">
-            Generated file:
-          </p>
           <button
-            onClick={() => window.open(link, '_blank')}
+            onClick={() => {
+              // Create a temporary link and trigger download
+              const link = document.createElement('a');
+              link.href = mediaUrl;
+              link.download = `generated_file_${Date.now()}.xlsx`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
           >
             Download File
