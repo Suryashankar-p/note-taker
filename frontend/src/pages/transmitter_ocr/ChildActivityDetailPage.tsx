@@ -26,6 +26,7 @@ import Tick from "../../assets/tick.svg";
 import DropDownButton from "../../components/DropDownButton.tsx";
 import Toast from "../../components/Toast.tsx";
 import { capitalizeWords, statusMapper } from "../../utils/functions.ts";
+import PageLoading from "../../components/PageLoading.tsx";
 
 GlobalWorkerOptions.workerSrc = url;
 
@@ -102,15 +103,22 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
   }, [activityDetails]);
 
   useEffect(() => {
-    // Always call tag number details API when tag data exists (even for "Unknown")
-    if (tagData?.tag_number && activity?.title) {
-      getTagDetails(activity?.title, tagData.tag_number);
-      getTagDocumentLink(activity?.id, tagData.tag_number);
-    } else if (activity?.id) {
-      // Only fallback to regular APIs if no tag data exists at all
-      getActivityDetails(activity?.id);
-      getDocumentLink(activity?.id);
-    }
+    const fetchData = async () => {
+      setLoading(true);
+      if (tagData?.tag_number && activity?.title) {
+        await Promise.all([
+          getTagDetails(activity?.title, tagData.tag_number),
+          getTagDocumentLink(activity?.id, tagData.tag_number)
+        ]);
+      } else if (activity?.id) {
+        await Promise.all([
+          getActivityDetails(activity?.id),
+          getDocumentLink(activity?.id)
+        ]);
+      }
+      setLoading(false);
+    };
+    fetchData();
   }, [activity, tagData]);
 
   useEffect(() => {
@@ -129,7 +137,6 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
   };
 
   const getTagDetails = async (title: string, tag_number: string) => {
-    setLoading(true);
     try {
       const response = await TransmitterGetTagNumberDetails(title, tag_number);
       if (response) {
@@ -138,8 +145,6 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
       }
     } catch (error) {
       console.error("Error fetching tag details:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -459,6 +464,10 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
   };
 
 
+  if (loading) {
+    return <PageLoading />;
+  }
+
   return (
     <div className="flex flex-col py-6 h-full mt-2 gap-3 flex-1 relative">
       <div className="flex px-4 flex-row gap-4">
@@ -608,11 +617,11 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                           activityDetails?.status === "SUBMITTED_WAITING"
                         }
                         className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg transition-all ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'} ${activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                            activityDetails?.status === "REJECTED" ||
-                            activityDetails?.status === "SUBMITTED" ||
-                            activityDetails?.status === "SUBMITTED_WAITING"
-                            ? 'cursor-not-allowed opacity-50'
-                            : 'cursor-text'
+                          activityDetails?.status === "REJECTED" ||
+                          activityDetails?.status === "SUBMITTED" ||
+                          activityDetails?.status === "SUBMITTED_WAITING"
+                          ? 'cursor-not-allowed opacity-50'
+                          : 'cursor-text'
                           }`}
                         style={{
                           borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D",
