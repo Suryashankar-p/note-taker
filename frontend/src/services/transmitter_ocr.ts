@@ -33,7 +33,7 @@ export const TransmitterUpdateMasterActivityDetails = async (activity_id: number
 }
 
 export const TransmitterCheckMasterHasChildActivities = async (activity_id: number) => {
-  const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity/${activity_id}/child_activities/check`)
+  const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity/${activity_id}/has_child_activities`)
   return response
 }
 
