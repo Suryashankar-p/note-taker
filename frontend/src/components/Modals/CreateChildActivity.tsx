@@ -149,7 +149,7 @@ const CreateChildActivity: React.FC<CreateChildActivityModalProps> = ({
         </div>
         
         <div className="mb-4">
-          <Text className="text-primary_text">Pages to Trim</Text>
+          <Text className="text-primary_text">Index Pages to Trim</Text>
           <input
             type="text"
             value={pagesToTrim}
