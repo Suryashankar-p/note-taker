@@ -261,7 +261,7 @@ const startPolling = () => {
   console.log("Starting polling for processing activities...");
   pollingIntervalRef.current = setInterval(() => {
     pollForProcessingActivities();
-  }, 10000); // Poll every 10 seconds
+  }, 10000); // Poll every 5 seconds
 };
 
 // Stop polling
