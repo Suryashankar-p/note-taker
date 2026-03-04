@@ -155,6 +155,8 @@ export const statusMapper = (status: string) => {
             return 'Failed'
         case 'SUBMITTED_WAITING':
             return 'Waiting'
+        case 'ocrFailed':
+            return 'OCR_FAILED'
         case 'OCR_FAILED':
             return 'OCR Failed'
         case 'All':
@@ -273,7 +275,7 @@ export const roleMapping = {
 };
 
 export const getKeyByValue = (object: any, value: any) => {
-  return Object.entries(object).find(([key, val]) => val === value)?.[0];
+    return Object.entries(object).find(([key, val]) => val === value)?.[0];
 };
 
 export const listValues = [
