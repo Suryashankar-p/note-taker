@@ -159,7 +159,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   const statusOptions = [
     { value: "all", name: "All" },
     { value: "inProgress", name: "In progress" },
-    { value: "rejected", name: "Rejected" },
+    { value: "ocrFailed", name: "OCR Failed" },
   ];
 
   const updateActivityById = useCallback((id: number, updater: (prev: Activity) => Activity) => {
