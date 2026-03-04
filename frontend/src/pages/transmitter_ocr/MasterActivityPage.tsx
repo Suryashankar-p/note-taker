@@ -163,7 +163,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
   const statusOptions = [
     { value: "all", name: "All" },
     { value: "inProgress", name: "In progress" },
-    { value: "rejected", name: "Rejected" },
+    { value: "ocrFailed", name: "OCR Failed" },
   ];
   useEffect(() => {
     const handleScroll = () => {
