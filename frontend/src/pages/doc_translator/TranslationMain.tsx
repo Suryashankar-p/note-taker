@@ -6,10 +6,11 @@ import PageLoading from "../../components/PageLoading.tsx";
 import TranslatorSidebar from "./SideBar.tsx";
 import Translator from "./Translator.tsx";
 import useApiCheck from "../../hooks/useApiCheck.ts";
+import Settings from "./settings/Settings";
 
 const Translation: React.FC = () => {
   const loading = useApiCheck('doc_translator');
-  const [currentPage, setCurrentPage] = useState<string>("Activity");
+  const [currentPage, setCurrentPage] = useState<string>("Translator");
   const [breadCrumbs, setBreadCrumbs] = useState([
     {
       title: "AI Studio",
@@ -31,6 +32,9 @@ const Translation: React.FC = () => {
       case "Translator":
         pageUrl = "/ai-studio/doc_translator";
         break;
+      case "Settings":
+        pageUrl = "/ai-studio/doc_translator/settings";
+        break;
       default:
         pageUrl = "/ai-studio/doc_translator";
         break;
@@ -43,14 +47,20 @@ const Translation: React.FC = () => {
         url: "/ai-studio",
       },
       {
-        title: "Translator",
+        title: page,
         url: pageUrl,
       },
     ]);
   };
 
   const renderPage = () => {
-    return <Translator/>
+    switch (currentPage) {
+      case "Settings":
+        return <Settings />;
+      case "Translator":
+      default:
+        return <Translator />;
+    }
   };
 
   //   useEffect(() => {
@@ -75,7 +85,7 @@ const Translation: React.FC = () => {
       <div className="flex flex-1 mt-4 overflow-hidden">
         <TranslatorSidebar
           onSelect={handleSidebarSelect}
-          selected={'Translator'}
+          selected={currentPage}
         />
         <div className="flex-1 overflow-hidden py-6 px-2 ml-3 mr-3 mt-3 flex flex-col">
           {renderPage()}
