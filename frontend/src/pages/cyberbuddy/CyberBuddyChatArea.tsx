@@ -74,7 +74,6 @@ const ChatArea: React.FC<Props> = ({
   const [defaultChatData, setDefaultChatData] = useState<any>();
   const onLikeClick = async (e: any, message: any) => {
     e.stopPropagation();
-    console.log(message)
     if (localLikes[message.id] === true || message?.like) return;
     try {
       setLocalLikes((prev) => ({ ...prev, [message.id]: true }));
@@ -253,7 +252,6 @@ const ChatArea: React.FC<Props> = ({
               );
             }
           } catch (err) {
-            console.log("evde", err);
             setLoading(false);
           }
         } else {
@@ -264,7 +262,6 @@ const ChatArea: React.FC<Props> = ({
             type: "error",
           });
           setLoading(false);
-          console.log("error");
         }
       }
     } catch (error) {
@@ -306,10 +303,8 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const onFileClick = async (file: any) => {
-    console.log("PDF file clicked:", file);
     try {
       const linkResp = await ReadDocumentUrl(file.product_id);
-      console.log("Got API response");      
       const blobUrl = URL.createObjectURL(linkResp.data);
       let fileInfo: any = {
         name: file.name,
@@ -319,7 +314,6 @@ const ChatArea: React.FC<Props> = ({
       setFileData(fileInfo);
       setFileShow(true);
     } catch (err) {
-      console.log("err", err);
     }
   };
 

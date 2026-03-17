@@ -76,39 +76,6 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
 
   let timeoutId: NodeJS.Timeout | null = null;
 
-  // const menuItems = [
-  //   {
-  //     title: "Edit",
-  //     component: <img src={EditIcon} alt="edit" loading="lazy" />,
-  //   },
-  //   {
-  //     title: "Delete",
-  //     component: <img src={TrashIcon} alt="trash" loading="lazy" />,
-  //   },
-  //   {
-  //     title: "Tranfer",
-  //     component: <img src={TranferIcon} alt="Tranfer" loading="lazy" />,
-  //   },
-  // ];
-
-  // const handleMenuClick = (item: string, activity: ChildActivity) => {
-  //   if (item === "Edit") {
-  //     if (onSelectActivity) {
-  //       onSelectActivity(activity);
-  //     } else {
-  //       navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
-  //         state: { activity },
-  //       });
-  //     }
-  //   } else if (item === "Delete") {
-  //     // Handle delete action here
-  //     console.log("Delete activity:", activity);
-  //   } else if (item === "Tranfer") {
-  //     // Handle transfer action here
-  //     console.log("Transfer activity:", activity);
-  //   }
-  // };
-
   useEffect(() => {
     if (masterId) {
       getAllChildActivities(pageSize.skip, pageSize.limit, "");

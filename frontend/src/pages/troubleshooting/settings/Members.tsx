@@ -54,46 +54,33 @@ const Members = () => {
     }
     setLoading(false);
   } catch (err) {
-    console.log(err);
     setLoading(false);
   }
 };
 
 
   const onMemberCreate = async (data: any) => {
-    if (data) {
-      try {
-        const response = await CreateMember(data?.role, data?.email, data?.name);
-        if (response?.id) {
-          dispatch.modal.closeAddMember();
-          getAllMembers(0, 30, ''); 
-          getTroubleshootingRole();
-        } else {
-          setPageError(true);
-          if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
-        }
-      } catch (err) {
-        console.log(err);
-      }
+    const response = await CreateMember(data?.role, data?.email, data?.name);
+    if (response?.id) {
+      dispatch.modal.closeAddMember();
+      getAllMembers(0, 30, ''); 
+      getTroubleshootingRole();
     } else {
-      console.log('error');
+      setPageError(true);
+      if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
     }
   };
 
   const onMemberEdit = async (data: any) => {
     if (data) {
-      try {
-        const response = await UpdateMember(data?.role, data?.name, data?.memberId);
-        if (response?.id) {
-          dispatch.modal.closeAddMember();
-          getAllMembers(0, 30, ''); 
-          getTroubleshootingRole();
-        } else {
-          setPageError(true);
-          if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
-        }
-      } catch (error) {
-        console.log(error);
+      const response = await UpdateMember(data?.role, data?.name, data?.memberId);
+      if (response?.id) {
+        dispatch.modal.closeAddMember();
+        getAllMembers(0, 30, ''); 
+        getTroubleshootingRole();
+      } else {
+        setPageError(true);
+        if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
       }
     }
   };
@@ -107,12 +94,8 @@ const Members = () => {
   };
 
   const onDeleteSubmit = async (user: any) => {
-    try {
-      await DeleteMember(user?.id);
-      getAllMembers(0, 30, ''); 
-    } catch (err) {
-      console.log(err);
-    }
+    await DeleteMember(user?.id);
+    getAllMembers(0, 30, ''); 
   };
 
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -98,12 +98,3 @@ const RelatedQueries: React.FC<RelatedProps> = ({ onExpandClick, relatedQuestion
 }
 
 export default RelatedQueries
-
-{/* <Loading related/> */ }
-
-{/* <Button disabled className='border-none bg-[#373737] mx-[1vw] pl-[1vw] flex flex-row items-center justify-between w-[18.5vw] h-[8vh] py-1 my-1' size='custom' custom_type='secondary'>
-        {item}
-        <Button onClick={() => console.log("keri")} custom_type='secondary' className='border-none w-12 h-[2vh] mt-2' size='very_small' rounded>
-          <ExpandArrow color={expand === key ? 'red' : 'white'}/>
-        </Button>
-      </Button>)} */}

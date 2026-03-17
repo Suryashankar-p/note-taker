@@ -243,7 +243,6 @@ const ChatArea: React.FC<Props> = ({
             type: "error",
           });
           setLoading(false);
-          console.log("error");
         }
       }
     } catch (error) {

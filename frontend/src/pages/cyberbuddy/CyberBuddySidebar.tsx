@@ -129,7 +129,6 @@ const Sidebar: React.FC<Props> = ({
 
   const onChange = (title: string, item: any, index: number) => {
     if (title === "Edit") {
-      console.log(item);
       setEditChat({ status: true, index });
       setInputValue(item.title);
     } else if (title === "Delete") {

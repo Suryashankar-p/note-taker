@@ -36,14 +36,10 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
   let userDetails = userData;
 
   const getUserInfo = async () => {
-    try {
-      const user = await GetUserDetails();
-      if (user?.id) {
-        localStorage.setItem("user", JSON.stringify(user));
-        userDetails = user;
-      }
-    } catch (err) {
-      console.log(err, "err");
+    const user = await GetUserDetails();
+    if (user?.id) {
+      localStorage.setItem("user", JSON.stringify(user));
+      userDetails = user;
     }
   };
 

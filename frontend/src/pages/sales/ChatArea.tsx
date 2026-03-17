@@ -223,7 +223,6 @@ const scrollToBottom = () => {
               navigate(`/ai-studio/sales?chat_id=${newSessionResponse?.id}`);
             }
           } catch (err) {
-            console.log("evde", err);
             setLoading(false);
           }
         } else {
@@ -234,7 +233,6 @@ const scrollToBottom = () => {
             type: "error",
           });
           setLoading(false);
-          console.log("error");
         }
       }
     } catch (error) {
@@ -268,20 +266,16 @@ const scrollToBottom = () => {
     chat_id: number,
     like: boolean
   ) => {
-    try {
-      let resp = await updateChatHistory(chat_history_id, chat_id, like);
-      if (resp?.id) {
-        getPageChat();
-      } else {
-        setCopySuccess(false);
-        dispatch.toast.openToast({
-          message: resp?.detail,
-          status: true,
-          type: "error",
-        });
-      }
-    } catch (err) {
-      console.log("err", err);
+    let resp = await updateChatHistory(chat_history_id, chat_id, like);
+    if (resp?.id) {
+      getPageChat();
+    } else {
+      setCopySuccess(false);
+      dispatch.toast.openToast({
+        message: resp?.detail,
+        status: true,
+        type: "error",
+      });
     }
   };
 
@@ -316,29 +310,25 @@ const scrollToBottom = () => {
       data?.dislikeReason === "Other"
         ? data?.customReason
         : data?.dislikeReason;
-    try {
-      if (defaultChatData) {
-        const resp = await updateChatHistory(
-          defaultChatData.id,
-          defaultChatData?.chat_id,
-          false,
-          dislikeReason,
-          data?.suggestedAnswer
-        );
-        if (resp?.id) {
-          getPageChat();
-          dispatch.modal.CloseDislikeReason();
-        } else {
-          setCopySuccess(false);
-          dispatch.toast.openToast({
-            status: true,
-            message: resp?.detail,
-            type: "error",
-          });
-        }
+    if (defaultChatData) {
+      const resp = await updateChatHistory(
+        defaultChatData.id,
+        defaultChatData?.chat_id,
+        false,
+        dislikeReason,
+        data?.suggestedAnswer
+      );
+      if (resp?.id) {
+        getPageChat();
+        dispatch.modal.CloseDislikeReason();
+      } else {
+        setCopySuccess(false);
+        dispatch.toast.openToast({
+          status: true,
+          message: resp?.detail,
+          type: "error",
+        });
       }
-    } catch (err) {
-      console.log("err", err);
     }
   };
 
@@ -355,59 +345,55 @@ const scrollToBottom = () => {
   };
 
   const onFileClick = async (file: any) => {    
-    try {
-      if (file?.product_id) {
-        const linkResp = await ReadProductDocumentUrl(
-          file.product_id,
-          file.product_document_id
-        );
-        if (linkResp?.link) {
-          let fileInfo: any = {
-            name: file.name,
-            type: getFileType(file?.name),
-            url: linkResp?.link,
-          };
-          setFileData(fileInfo);
-          setFileShow(true);
-        } else {
-          setCopySuccess(false);
-          dispatch.toast.openToast({
-            status: true,
-            message: "File not found",
-            type: "error",
-          });
-        }
-      } else if (file?.feedback_knowledge_id) {
-        const feedback_response = await ReadFeedbackWithid(
-          file?.feedback_knowledge_id
-        );
-        if (feedback_response?.updated_answer) {
-          setFileData({...feedback_response, name:file.name, question:feedback_response.updated_question, answer:feedback_response.updated_answer});
-          setFeedbackShow(true);
-        } else {
-          setCopySuccess(false);
-          dispatch.toast.openToast({
-            status: true,
-            message: "File not found",
-            type: "error",
-          });
-        }
-      } else if (file?.qa_knowledge_id) {
-        const qa_response = await ReadQAWithid(file?.qa_knowledge_id);
-        if (qa_response?.answer) {
-          setFileData({...qa_response, name:file.name});
-          setFeedbackShow(true);
-        } else {
-          setCopySuccess(false);
-          dispatch.toast.openToast({
-            status: true,
-            message: "File not found",
-            type: "error",
-          });
-        }
+    if (file?.product_id) {
+      const linkResp = await ReadProductDocumentUrl(
+        file.product_id,
+        file.product_document_id
+      );
+      if (linkResp?.link) {
+        let fileInfo: any = {
+          name: file.name,
+          type: getFileType(file?.name),
+          url: linkResp?.link,
+        };
+        setFileData(fileInfo);
+        setFileShow(true);
+      } else {
+        setCopySuccess(false);
+        dispatch.toast.openToast({
+          status: true,
+          message: "File not found",
+          type: "error",
+        });
       }
-    } catch (err) {
-      console.log("err", err);
+    } else if (file?.feedback_knowledge_id) {
+      const feedback_response = await ReadFeedbackWithid(
+        file?.feedback_knowledge_id
+      );
+      if (feedback_response?.updated_answer) {
+        setFileData({...feedback_response, name:file.name, question:feedback_response.updated_question, answer:feedback_response.updated_answer});
+        setFeedbackShow(true);
+      } else {
+        setCopySuccess(false);
+        dispatch.toast.openToast({
+          status: true,
+          message: "File not found",
+          type: "error",
+        });
+      }
+    } else if (file?.qa_knowledge_id) {
+      const qa_response = await ReadQAWithid(file?.qa_knowledge_id);
+      if (qa_response?.answer) {
+        setFileData({...qa_response, name:file.name});
+        setFeedbackShow(true);
+      } else {
+        setCopySuccess(false);
+        dispatch.toast.openToast({
+          status: true,
+          message: "File not found",
+          type: "error",
+        });
+      }
     }
   };
 

@@ -94,7 +94,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
     if (productData?.id) {
       getCategoryDocuments(productData?.id, 0, 10, "");
       getSubPackages(productData?.id, 0, 20, "");
-      console.log(productData);
       
     }
   }, [productData]);
@@ -105,22 +104,18 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
     limit: number,
     search_term: string
   ) => {
-    try {
-      const resp = await ReadCategoryDocuments(
-        product_id,
-        skip,
-        limit,
-        search_term
-      );
-      if (resp?.result) {
-        setFiles(resp.result);
-        return resp.result;
-      } else {
-        setPageError(true);
-        dispatch.toast.openToast({ status: true, message: resp?.detail });
-      }
-    } catch (err) {
-      console.log("err", err);
+    const resp = await ReadCategoryDocuments(
+      product_id,
+      skip,
+      limit,
+      search_term
+    );
+    if (resp?.result) {
+      setFiles(resp.result);
+      return resp.result;
+    } else {
+      setPageError(true);
+      dispatch.toast.openToast({ status: true, message: resp?.detail });
     }
   };
 
@@ -130,16 +125,12 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
     limit: number,
     search_term: string
   ) => {
-    try {
-      const resp = await ReadSubpackages(category_id, skip, limit, search_term);
-      if (resp?.result) {
-        setSubpackages(resp?.result);
-      } else {
-        setPageError(true);
-        dispatch.toast.openToast({ status: true, message: resp?.detail });
-      }
-    } catch (err) {
-      console.log("err", err);
+    const resp = await ReadSubpackages(category_id, skip, limit, search_term);
+    if (resp?.result) {
+      setSubpackages(resp?.result);
+    } else {
+      setPageError(true);
+      dispatch.toast.openToast({ status: true, message: resp?.detail });
     }
   };
 
@@ -149,34 +140,22 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
       other_names: data?.other_names ? data?.other_names : "",
       description: data?.description,
     };
-    try {
-      dispatch.loadingState.startLoading();
-      const response = await CreateSubpackage(body, productData?.id);
-      if (response) {
-        getSubPackages(productData?.id, 0, 20, "");
-        dispatch.loadingState.endLoading();
+    dispatch.loadingState.startLoading();
+    const response = await CreateSubpackage(body, productData?.id);
+    if (response) {
+      getSubPackages(productData?.id, 0, 20, "");
+      dispatch.loadingState.endLoading();
         dispatch.modal.closeAddProduct();
       } else {
         setPageError(true);
         dispatch.loadingState.endLoading();
         dispatch.toast.openToast({ status: true, message: response?.detail });
       }
-    } catch (err) {
-      console.log("err", err);
-    }
   };
 
   const onSubPackageDeleteSubmit = async (subpackageData: any) => {
-    if (subpackageData?.id) {
-      try {
-        await DeleteSubPackage(subpackageData?.category_id, subpackageData?.id);
-        getSubPackages(productData?.id, 0, 20, "");
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      console.log("Failed");
-    }
+    await DeleteSubPackage(subpackageData?.category_id, subpackageData?.id);
+    getSubPackages(productData?.id, 0, 20, "");
   };
 
   const getSubPackageDocuments = async(sub_package_id: number | string, skip:number, limit: number, search_term: string = '') => {
@@ -249,7 +228,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
 
       try {
         const documents = await getSubPackageDocuments(item?.id, 0, 100, ""); // Await the result
-        console.log("Fetched documents:", documents); // Debugging log  
         if (documents && Array.isArray(documents)) {
           documents.forEach((doc) => {
             if (doc.id) {
@@ -280,22 +258,14 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
     category_id: string | number,
     file_id: string | number
   ) => {
-    try {
-      const resp = await DeleteCategoryDocument(category_id, file_id);
-      getCategoryDocuments(category_id, 0, 100, "");
-    } catch (err) {
-      console.log("err", err);
-    }
+    const resp = await DeleteCategoryDocument(category_id, file_id);
+    getCategoryDocuments(category_id, 0, 100, "");
   };
 
   const deleteSubpackageFile = async (file_id: string | number, current_sub_package_id: string | number) => {
-    try {
       await DeleteSubPackageDocument(file_id, current_sub_package_id);
       getSubPackageDocuments(current_sub_package_id, 0, 100, "");
       getSubPackages(productData?.id, 0, 20, "");
-    } catch (error) {
-      console.log("err", error);
-    }
   };
 
     const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -311,7 +281,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
   };
 
   const onFileClick = async (file: any, fileType: "CATEGORY" | "SUBPACKAGE") => {
-    try {
       if (fileType === "CATEGORY") {
         setFileShow(true)
         dispatch.loadingState.startLoading();
@@ -351,9 +320,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
           });
         }
       }
-    } catch (err) {
-      console.log("err", err);
-    }
   };
 
 
@@ -371,7 +337,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
 
     // Create a new polling interval
     const pollingInterval = setInterval(async () => {
-      try {
         const response = await PollSubpackageDocumentStatus(subPackageId, documentId);
 
         if (response.status === "COMPLETED") {
@@ -391,9 +356,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
             [documentId]: "PENDING",
           }));
         }
-      } catch (error) {
-        console.error(`Error polling document ${documentId} status:`, error);
-      }
     }, 5000);
 
     // Store the interval reference for cleanup
@@ -481,12 +443,10 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
                     menuItems={MenuItems}
                     onChange={(action: string) => {
                       setDefaultCategoryDocument(file);
-                      console.log(action);
                       if (action === "Open") {
                         onFileClick(file, "CATEGORY");
                       }
                       if (action === "Delete") {
-                        console.log("Delete clicked", file);
                         setDeleteType("FILE");
                         dispatch.modal.openConfirmation();
                       }
@@ -588,7 +548,6 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
                   <DropDownMenu
                     onChange={(action: string) => {
                       setDefaultSubpackage(item);
-                      console.log(action);
                       if (action === "Edit") {
                         dispatch.modal.openAddProduct("edit");
                         // handle edit logic

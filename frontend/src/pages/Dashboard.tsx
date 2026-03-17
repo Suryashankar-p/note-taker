@@ -83,7 +83,6 @@ const Dashboard: React.FC = () => {
       }
       setLoading(false);
     } catch (err) {
-      console.log("error", err);
       setLoading(false);
     }
   };
@@ -109,7 +108,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -124,7 +123,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -139,7 +138,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -154,7 +153,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -169,7 +168,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -194,7 +193,7 @@ const Dashboard: React.FC = () => {
         }
       }
     } catch (error) {
-      console.log(error);
+      navigate("/");
     }
   };
 
@@ -210,7 +209,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -225,7 +224,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -240,7 +239,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 

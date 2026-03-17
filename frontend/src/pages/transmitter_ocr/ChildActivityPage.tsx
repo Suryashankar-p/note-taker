@@ -357,17 +357,13 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   // API CALLS
   // ==========================================================================
   const getAllMembers = async (skip: number, limit: number, search_term?: string) => {
-    try {
-      const response = await TransmitterReadOCRMembers(skip, limit, search_term);
-      if (response?.result) {
-        setMembers(response.result);
-      } else {
-        setPageError(true);
-        if (response?.detail)
-          dispatch.toast.openToast({ status: true, message: response.detail, type: "error" });
-      }
-    } catch (err) {
-      console.log(err);
+    const response = await TransmitterReadOCRMembers(skip, limit, search_term);
+    if (response?.result) {
+      setMembers(response.result);
+    } else {
+      setPageError(true);
+      if (response?.detail)
+        dispatch.toast.openToast({ status: true, message: response.detail, type: "error" });
     }
   };
 
@@ -476,7 +472,6 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     } catch (err) {
       setCreateModalVisible(false);
       setPageError(true);
-      console.log(err);
       dispatch.toast.openToast({
         status: true,
         message: err?.response?.data?.detail ?? err?.response?.data ?? "Error creating activity",

@@ -54,78 +54,58 @@ const getActivityTopUsers = async (
       limit: number
     ) => {
      if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
-      try {
-        const topUserResponse = await ReadActivityUsageTopUsers(
-          year,
-          month,
-          skip,
-          limit
+      const topUserResponse = await ReadActivityUsageTopUsers(
+        year,
+        month,
+        skip,
+        limit
+      );
+
+      if (topUserResponse?.result) {
+        setTopUsers((prevData: any) =>
+          skip === 0
+            ? topUserResponse.result
+            : [...prevData, ...topUserResponse.result]
         );
-  
-        if (topUserResponse?.result) {
-          setTopUsers((prevData: any) =>
-            skip === 0
-              ? topUserResponse.result
-              : [...prevData, ...topUserResponse.result]
-          );
-          setTotalUsers(topUserResponse.total);
-        } else {
-          setPageError(true);
-          setTopUsers(null);
-        }
-      } catch (err) {
-        console.log("err", err);
+        setTotalUsers(topUserResponse.total);
+      } else {
+        setPageError(true);
+        setTopUsers(null);
       }
     };
 
   const getActivityUsage = async (year: string | number, month: string | number) => {
-    try {
-      const activityResponse = await ReadActivityUsage(year, month)
-      if (activityResponse?.question) {
-        setActivityData(activityResponse)
-      }
-      else {
-        setPageError(true);
-        setActivityData(null)
-      }
+    const activityResponse = await ReadActivityUsage(year, month)
+    if (activityResponse?.question) {
+      setActivityData(activityResponse)
     }
-    catch (err) {
-      console.log("err", err);
+    else {
+      setPageError(true);
+      setActivityData(null)
     }
   }
 
   const getUsageLimit = async () => {
-    try {
-      const limitResponse = await ReadUsageLimit()
-      if (limitResponse?.id) {
-        setLimit(limitResponse?.limit)
-      }
-      else {
-        setPageError(true)
-      }
+    const limitResponse = await ReadUsageLimit()
+    if (limitResponse?.id) {
+      setLimit(limitResponse?.limit)
     }
-    catch (err) {
-      console.log(err, "er");
-
+    else {
+      setPageError(true)
     }
   }
 
   const onLimitEdit = async (data: any) => {
 
     if (data?.limit) {
-      try {
-        const editLimitResponse = await UpdateUsageLimit(data?.limit)
-        if (editLimitResponse?.id) {
-          setLimit(editLimitResponse?.limit)
-          dispatch.modal.closeEditLimit()
-        }
-        else {
-          setPageError(true)
-          if (editLimitResponse?.detail) dispatch.toast.openToast({ message: editLimitResponse?.detail, status: true, type:'error' })
-        }
+      const editLimitResponse = await UpdateUsageLimit(data?.limit)
+      if (editLimitResponse?.id) {
+        setLimit(editLimitResponse?.limit)
+        dispatch.modal.closeEditLimit()
       }
-      catch (err) {
-        console.log(err, "erer");
+      else {
+        setPageError(true)
+        if (editLimitResponse?.detail) dispatch.toast.openToast({ message: editLimitResponse?.detail, status: true, type:'error' })
       }
     }
   }
@@ -154,7 +134,6 @@ const getActivityTopUsers = async (
   };
 
   const getCostUsage = async (year: string | number, month: string | number) => {
-    try {
       const usageResponse = await ReadCostUsage(year, month)
       if (usageResponse?.cost) {
         setUsageData(usageResponse)
@@ -163,10 +142,6 @@ const getActivityTopUsers = async (
         setPageError(true)
         setUsageData(null)
       }
-    }
-    catch (err) {
-      console.log(err);
-    }
   }
 
 

@@ -167,7 +167,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
         navigate("/ai-studio/transmitter_ocr", { replace: true });
       }
     } catch (error) {
-      console.log(error?.message);
+      setPageError(true);
     }
   };
 

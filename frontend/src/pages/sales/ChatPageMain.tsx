@@ -67,13 +67,8 @@ const ChatPageMain = () => {
 
   const onQuestionAsked = async (question?: string) => {
     if (question) {
-      try {
-        const resp = await ReadRelatedQuestions(question)
-        setRelatedQuestions(resp?.result)
-      }
-      catch (err) {
-        console.log("err", err);
-      }
+      const resp = await ReadRelatedQuestions(question)
+      setRelatedQuestions(resp?.result)
     }
     else {
       setRelatedQuestions([])
