@@ -21,13 +21,14 @@ const Translator = () => {
   >();
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean | null>(false);
+  const [downloading, setDownloading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationKey: ["document_translation"],
-    mutationFn: () => TranslateDocument(selectedOutputLanguage?.value, file),
+    mutationFn: () => TranslateDocument(selectedOutputLanguage?.value, file, selectedInputLanguage?.value),
     onSuccess: () => setLoading(true)
   });
 
@@ -87,19 +88,34 @@ const Translator = () => {
     }
   };
 
-  const handleDownload = () => {
-    if (!translatorData?.result?.output_link) {
-      console.error("No URL available for download.");
-      return;
-    }
-    const link = document.createElement("a");
-    link.href = translatorData?.result?.output_link;  // Use the signed Azure Blob URL
-    link.download = selectedFileName;  // Optionally, specify the default filename
-    link.target = "_blank";  // Opens the file in a new tab (optional)
-    document.body.appendChild(link);
-    link.click();  // Programmatically click the link to trigger the download
-    document.body.removeChild(link);  // Clean up the DOM
-  }
+const handleDownload = async () => {
+  if (!translatorData?.result?.output_link) return;
+
+  setDownloading(true);   // start loading
+
+  const response = await fetch(translatorData.result.output_link);
+  const blob = await response.blob();
+
+  const parts = selectedFileName.split(".");
+  const extension = parts.pop();
+  const baseName = parts.join(".");
+  const languageName = selectedOutputLanguage?.name.replace(/\s+/g, "-");
+
+  const newFileName = `${baseName}-${languageName}.${extension}`;
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = newFileName;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  window.URL.revokeObjectURL(url);
+
+  setDownloading(false);  // stop loading
+};
 
   return (
     <div className="flex flex-col gap-8 px-2 pt-8 h-screen">
@@ -230,7 +246,7 @@ const Translator = () => {
         </div>
 
         <Button disabled={!translatorData?.result?.output_link} className={`p-2.5 ${!translatorData?.result?.output_link && 'bg-opacity-30'}`} onClick={handleDownload}>
-          <Text type="small">Download</Text>
+          <Text type="small">{downloading ? "Downloading..." : "Download"}</Text>
         </Button>
       </div>
 
