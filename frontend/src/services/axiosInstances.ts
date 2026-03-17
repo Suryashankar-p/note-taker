@@ -4,10 +4,13 @@ const sso_BaseURL = import.meta.env.VITE_BACKEND_SSO_URL || window.env?.BACKEND_
 const gpt_BaseURL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 const sales_BaseURL = import.meta.env.VITE_BACKEND_SALES_URL || window.env?.BACKEND_SALES_URL;
 const tbwes_BaseURL = import.meta.env.VITE_BACKEND_TBWES_OCR_URL || window.env?.BACKEND_TBWES_OCR_URL;
+const transmitter_BaseURL = import.meta.env.VITE_BACKEND_TRANSMITTER_OCR_URL || window.env?.BACKEND_TRANSMITTER_OCR_URL;
 const troubleshoot_BaseURL = import.meta.env.VITE_BACKEND_SMART_TROUBLESHOOT_URL || window.env?.BACKEND_SMART_TROUBLESHOOT_URL;
 const doctorBot_BaseURL = import.meta.env.VITE_BACKEND_DOCTOR_CONBOT_URL || window.env?.BACKEND_DOCTOR_CONBOT_URL;
 const cyberbuddy_BaseURL = import.meta.env.VITE_BACKEND_CYBERBUDDY_URL || window.env?.BACKEND_CYBERBUDDY_URL;
 const heatingOCR_BaseURL = import.meta.env.VITE_BACKEND_HEATING_OCR_URL || window.env?.BACKEND_HEATING_OCR_URL;
+const doctranslator_BaseURL = import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL || window.env?.BACKEND_DOCUMENT_TRANSLATOR_URL;
+
 const edge_BaseURL = import.meta.env.VITE_BACKEND_EDGE_URL || window.env?.BACKEND_EDGE_URL;
 
 export const axiosSSO: AxiosInstance = axios.create({
@@ -30,6 +33,11 @@ export const axiosTBWES: AxiosInstance = axios.create({
   timeout: 300000,
 });
 
+export const axiosTransmitterOCR: AxiosInstance = axios.create({
+  baseURL: transmitter_BaseURL,
+  timeout: 300000,
+});
+
 export const axiosTroubleshoot: AxiosInstance = axios.create({
   baseURL: troubleshoot_BaseURL,
   timeout: 300000,
@@ -47,6 +55,11 @@ export const axiosCyberbuddy: AxiosInstance = axios.create({
 
 export const axiosHeatingOCR: AxiosInstance = axios.create({
   baseURL: heatingOCR_BaseURL,
+  timeout: 300000,
+});
+
+export const axiosDocumentTranslator: AxiosInstance = axios.create({
+  baseURL: doctranslator_BaseURL,
   timeout: 300000,
 });
 

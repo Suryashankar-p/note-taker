@@ -23,27 +23,19 @@ import NoData from "../../../assets/no_data";
 import {
   CreateCategory,
   CreateCategoryDocument,
-  // EditcategoryDocument,
   DeleteCategory,
   DeleteCategoryDocument,
-  ReadCategoryDocumentUrl,
   ReadCategoryDocuments,
   ReadCategories,
-  // Updatecategory,
-  PollDocumentStatus,
   getCategoryFileBlobUrl,
   PollCategoryDocumentStatus,
 } from "../../../services/doctor_conbot.ts";
 import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
 import Toast from "../../../components/Toast";
 import { getFileType } from "../../../utils/functions.ts";
-import FileViewModal from "../../../components/Modals/FileViewModal.tsx";
+import OpenFileModal from "../../../components/Modals/OpenFileModalConbot.tsx";
 
 const MenuItems = [
-  // {
-  //   title: "Edit",
-  //   component: <img src={Edit} alt="edit" loading="lazy" />,
-  // },
   {
     title: "Delete",
     component: <img src={Trash} alt="trash" loading="lazy" />,
@@ -401,26 +393,15 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
     try {
       setFileShow(true)
       dispatch.loadingState.startLoading();
-      const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
-      if (linkResp) {
-        if (linkResp?.type === "base64") {
-          let fileInfo: any = {
-            name: file.filename,
-            type: getFileType(file?.filename),
-            url: linkResp?.link,
+      const response = await getCategoryFileBlobUrl(file)
+      if (response) {
+        const blobUrl = URL.createObjectURL(response.data);
+        let fileInfo: any = {
+          name: file.filename,
+          type: getFileType(file?.filename),
+          url: blobUrl,
           };
           setFileData(fileInfo);
-        } else {       
-          const response: any = await getCategoryFileBlobUrl(file)
-          const blobUrl = URL.createObjectURL(response.data);
-          let fileInfo: any = {
-            name: file.filename,
-            type: getFileType(file?.filename),
-            url: blobUrl,
-          };
-          setFileData(fileInfo);
-          
-        }
       } else {
         dispatch.toast.openToast({
           status: true,
@@ -523,7 +504,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
         </div>
       )}
       {fileShow && (
-        <FileViewModal
+        <OpenFileModal
           fileUrl={fileData}
           isOpen={fileShow}
           onClose={() => setFileShow(false)}
@@ -743,7 +724,7 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
                 />
               )}
               {fileUrl && (
-                <FileViewModal
+                <OpenFileModal
                   fileUrl={fileUrl}
                   isOpen={fileUrl}
                   onClose={() => setFileUrl(null)}

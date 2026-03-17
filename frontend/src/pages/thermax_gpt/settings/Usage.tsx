@@ -380,9 +380,6 @@ const MonthButton: React.FC<ButtonProps> = ({ onSubmit, month }) => {
 
 const YearButton: React.FC<ButtonProps> = ({ onSubmit, year }) => {
   const [yearIndex, setYearIndex] = useState<number>(0);
-  // const years: string[] = [
-  //   "2025","2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017"
-  // ];
 
   const handlePrevYear = () => {
     setYearIndex((prevYearIndex) =>
@@ -402,7 +399,7 @@ const YearButton: React.FC<ButtonProps> = ({ onSubmit, year }) => {
     <div className="relative flex items-center">
       <button
         className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300"
-        onClick={handleNextYear}
+        onClick={handlePrevYear}
       >
         &lt;
       </button>
@@ -413,7 +410,7 @@ const YearButton: React.FC<ButtonProps> = ({ onSubmit, year }) => {
       </span>
       <button
         className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300"
-        onClick={handlePrevYear}
+        onClick={handleNextYear}
       >
         &gt;
       </button>

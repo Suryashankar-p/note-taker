@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef, useState, useMemo } from "react";
 import { FaRobot, FaGlobe, FaFileAlt } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
@@ -21,6 +21,7 @@ import {
   CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
   CreatePerplexityStream,
+  ReadFile,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -45,8 +46,9 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import UploadStatusIndicator from "../../components/UploadStatusIndicator";
-import { UploadFileModal } from "../../components/Modals/UploadFileModal";
-import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus";
+import { UploadFileModal } from "../../components/Modals/UploadFileModal.tsx";
+// import { useDocumentUploadWebSocket } from "../../services/hooks/useDocumentUploadWebSocket.ts";
+import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus.ts";
 import { set } from "react-hook-form";
 import { iconMapping } from "../../utils/constants.ts";
 
@@ -101,12 +103,14 @@ const ChatArea: React.FC<Props> = ({
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
+  const [videoUrlMap, setVideoUrlMap] = useState<Record<number, string>>({});
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
   const [isModalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
+  const [streamingSource, setStreamingSource] = useState<any>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const { upload, uploadState, fileId, status, statusState, isDone } =
@@ -133,6 +137,11 @@ const ChatArea: React.FC<Props> = ({
     if (chat_id) {
       getPageChat();
     }
+  }, [chat_id]);
+
+  // Clear media cache when chat_id changes (navigating between chats)
+  useEffect(() => {
+    setVideoUrlMap({});
   }, [chat_id]);
 
   useEffect(() => {
@@ -162,63 +171,51 @@ const ChatArea: React.FC<Props> = ({
     }
   }, [inputValue]);
 
-  // useEffect(() => {
-  //   setShowButton(false);
-  //   const handleScroll = () => {
-  //     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-  //     if (scrollTop === 0 && !loading && !hasReachedEnd) {
-  //       // Handle load more if needed
-  //     } else if (scrollTop + clientHeight < scrollHeight - 100) {
-  //       setShowButton(true);
-  //     } else {
-  //       setShowButton(false);
-  //     }
-  //   };
+  useEffect(() => {
+    setShowButton(false);
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      if (scrollTop === 0 && !loading && !hasReachedEnd) {
+        // Handle load more if needed
+      } else if (scrollTop + clientHeight < scrollHeight - 100) {
+        setShowButton(true);
+      } else {
+        setShowButton(false);
+      }
+    };
 
-  //   const refCurrent = scrollRef.current;
+    const refCurrent = scrollRef.current;
 
-  //   if (refCurrent) {
-  //     refCurrent.addEventListener("scroll", handleScroll);
-  //   }
+    if (refCurrent) {
+      refCurrent.addEventListener("scroll", handleScroll);
+    }
 
-  //   if (currentChatContent.length < 0) {
-  //     setShowButton(false);
-  //   }
+    if (currentChatContent.length < 0) {
+      setShowButton(false);
+    }
 
-  //   return () => {
-  //     if (refCurrent) {
-  //       refCurrent.removeEventListener("scroll", handleScroll);
-  //     }
-  //   };
-  // }, [loading, hasReachedEnd]);
+    return () => {
+      if (refCurrent) {
+        refCurrent.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [loading, hasReachedEnd]);
 
   // Cleanup EventSource on unmount
-
-useEffect(() => {
-  const handleScroll = () => {
-    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const btn = document.getElementById("scrollToBottomBtn");
-    if (!btn) return;
-
-    if (scrollTop + clientHeight < scrollHeight - 100) {
-      btn.classList.remove("hidden");
-    } else {
-      btn.classList.add("hidden");
-    }
-  };
-
-  const ref = scrollRef.current;
-  if (ref) ref.addEventListener("scroll", handleScroll);
-
-  return () => ref && ref.removeEventListener("scroll", handleScroll);
-}, []);
-
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(videoUrlMap).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, []);
 
@@ -335,11 +332,13 @@ useEffect(() => {
           if (data.tool === "image") {
             // setStreamedData
           }
-          if (data.tool === "video") {
-          }
           // Handle tool usage if needed
         } else if (data.type === "end") {
           // Stream completed
+          // Capture source field if present
+          if (data.content?.source) {
+            setStreamingSource(data.content.source);
+          }
           handleStreamEnd(data.content, chatId, localFiles, isNewChat);
           eventSource.close();
           eventSourceRef.current = null;
@@ -369,6 +368,8 @@ useEffect(() => {
     isNewChat: boolean
   ) => {
     setStreamedData(""); // Clear streamed data
+    setStreamingSource(null); // Clear streaming source
+    setVideoUrlMap({}); // Clear media cache when new content is loaded
     setInputValue("");
     setLoading(false);
     setPageError(false);
@@ -406,6 +407,7 @@ useEffect(() => {
   // Handle stream errors
   const handleStreamError = () => {
     setStreamedData("");
+    setStreamingSource(null);
     setLoading(false);
     setPageError(true);
     dispatch.toast.openToast({
@@ -675,25 +677,8 @@ useEffect(() => {
     return initials.toUpperCase();
   };
 
-  const onDislikeClick = (e: any, message: any) => {
-    setDefaultChatData(message);
-    e.stopPropagation();
-    if (message?.like === false) return;
-    else {
-      dispatch.modal.openDislikeReason("add");
-    }
-  };
-
-  const onLikeClick = (e: any, message: any) => {
-    e.stopPropagation();
-    if (message?.like) return;
-    else {
-      UpdateChat_history(message?.id, message?.chat_id, true);
-    }
-  };
-
   const handleRemoveFile = (index: number) => {
-    if (aiProvider === "Document Analyser") {
+    if (aiProvider === "Document Analyzer") {
       // cancelUpload if needed
     }
     const newFiles = [...uploadedFiles];
@@ -825,7 +810,8 @@ useEffect(() => {
   };
 
   const tabs =
-    access_details?.map((service) => ({
+  // Remove this to enable Deep Search(Preplexity)
+    access_details?.filter((service) => service.title !== "Deep Search").map((service) => ({
       label: service.title,
       icon: iconMapping[service.title],
     })) ?? []; // fallback to []
@@ -847,6 +833,156 @@ useEffect(() => {
         return "Attach File (Up to 10MB)";
     }
   };
+
+  // Function to fetch and cache media
+  const fetchMedia = async (index: number, mediaType: string, blobLink: string) => {
+    try {
+      // Avoid refetching the same media
+      if (videoUrlMap[index]) {
+        console.log(`Media already cached for index ${index}, skipping fetch`);
+        return;
+      }
+      
+      // Ensure we have a valid chat_id
+      if (!chat_id) {
+        console.error('No chat_id available for media fetch');
+        return;
+      }
+      
+      console.log(`Fetching media for index ${index}, type: ${mediaType}, chat_id: ${chat_id}`);
+      const response = await ReadFile(Number(chat_id), mediaType, blobLink);
+      const mediaBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg'),
+      });
+      const objectUrl = URL.createObjectURL(mediaBlob);
+      setVideoUrlMap((prev) => ({
+        ...prev,
+        [index]: objectUrl,
+      }));
+    } catch (err) {
+      console.error("Failed to stream media:", err);
+    }
+  };
+
+  // Component to render media based on source field
+  const MediaRenderer = useMemo(() => ({ source, messageIndex, chatId }: { source: any; messageIndex: number; chatId: string | null }) => {
+    const { media_type, link } = source;
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleDownloadFile = async (mediaType: string, link: string) => {
+      try {
+        console.log("Downloading file:", mediaType, link);
+        
+        if (!chatId) {
+          console.error('No chat_id available for file download');
+          return;
+        }
+        
+        // Extract filename from link URL
+        const url = new URL(link);
+        const filenameParam = url.searchParams.get('filename');
+        const fileName = filenameParam || `generated_file_${Date.now()}.xlsx`;
+        
+        const response = await ReadFile(Number(chatId), mediaType, link);
+        const mediaBlob = new Blob([response.data], {
+          type: response.headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        
+        const downloadUrl = URL.createObjectURL(mediaBlob);
+        const linkElement = document.createElement('a');
+        linkElement.href = downloadUrl;
+        linkElement.download = fileName;
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        document.body.removeChild(linkElement);
+        
+        // Clean up the object URL
+        URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+        console.error("Failed to download file:", error);
+      }
+    };
+
+    useEffect(() => {
+      // Only fetch media for image and video types
+      if (media_type !== 'excel' && !videoUrlMap[messageIndex]) {
+        fetchMedia(messageIndex, media_type, link);
+      }
+    }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
+
+    const mediaUrl = videoUrlMap[messageIndex];
+
+    if (media_type === 'image') {
+      return (
+        <div className="my-4">
+          {mediaUrl ? (
+            <img
+              src={mediaUrl}
+              alt="Generated visual"
+              className="w-[70%] rounded shadow"
+              onError={(e) => {
+                console.error('Failed to load generated image:', link);
+                setError('Failed to load image');
+              }}
+            />
+          ) : (
+            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+              <p className="text-gray-500">Loading image...</p>
+            </div>
+          )}
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (media_type === 'video') {
+      if (!mediaUrl) {
+        return (
+          <div className="my-4">
+            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+              <p className="text-gray-500">Loading video...</p>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="my-4">
+          <video
+            controls
+            src={mediaUrl}
+            className="w-[70%] rounded shadow"
+            onError={(e) => {
+              console.error('Failed to load generated video:', link);
+              setError('Failed to load video');
+            }}
+          />
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (media_type === 'excel') {
+      return (
+        <div className="my-4">
+          <Button
+            onClick={() => handleDownloadFile(media_type, link)}
+            custom_type="danger"
+            className="bg-danger w-32 h-10 p-2 gap-2 rounded-lg"
+            size="custom"
+          >
+            <Text type="small">Download File</Text>
+          </Button>
+        </div>
+      );
+    }
+
+    return null;
+  }, []); // Remove dependencies to prevent recreation on cache updates
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -970,29 +1106,11 @@ useEffect(() => {
                           a: ({ node, href, children, ...props }) => {
                             const isVideo =
                               href?.endsWith(".mp4") ||
-                              href?.includes("generated_videos") ||
-                              href?.includes("/chat_history/video/");
+                              href?.includes("generated_videos");
 
                             const isImage =
                               href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
-                              href?.includes("generated_images");
-                            if (isVideo) {
-                              return (
-                                <div className="my-4">
-                                  <p className="mb-2 text-sm text-gray-600">
-                                    Here is the generated video:
-                                  </p>
-                                  <video
-                                    controls
-                                    src={href}
-                                    className="w-[70%] rounded shadow"
-                                  >
-                                    Your browser does not support the video tag.
-                                  </video>
-                                </div>
-                              );
-                            }
-
+                              href?.includes("generated_videos");
                             if (isImage) {
                               return (
                                 <div className="my-4">
@@ -1024,6 +1142,10 @@ useEffect(() => {
                       >
                         {message?.ai}
                       </ReactMarkdown>
+                      {/* Handle source field for generated media */}
+                      {message?.source && (
+                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} />
+                      )}
                     </div>
                   ) : (
                     !message?.file_name &&
@@ -1069,9 +1191,13 @@ useEffect(() => {
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
                       className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
-                    >
+                      >
                       {streamedData}
                     </ReactMarkdown>
+                    {/* Handle source field for streaming media */}
+                    {streamingSource && (
+                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1083,23 +1209,14 @@ useEffect(() => {
         <div className="mt-12 mb-12" ref={messagesEndRef}></div>
       </div>
       <div className="relative">
-        {/* {showButton && (
+        {showButton && (
           <button
             className="w-fit top-[-2.5rem] left-[45%] self-center h-7 bg-white absolute border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white"
             onClick={scrollToBottom}
-             id="scrollToBottomBtn"
-             style={{ display: "none" }}
           >
             <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
           </button>
-        )} */}
-        <button
-          id="scrollToBottomBtn"
-          className="w-fit top-[-2.5rem] left-[45%] self-center h-7 bg-white absolute border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white hidden"
-          onClick={scrollToBottom}
-        >
-          <Text className="text-[14px] font-medium">Scroll to bottom</Text>
-        </button>
+        )}
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex items-center justify-start bg-inherit">
           <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
             <div className="w-full flex items-center gap-2">
@@ -1171,7 +1288,7 @@ useEffect(() => {
                 <textarea
                   disabled={loading || disabled}
                   onKeyDown={onKeyDown}
-                  maxLength={500}
+                  maxLength={5000}
                   onChange={(event) => setInputValue(event.target.value)}
                   value={inputValue}
                   placeholder={
@@ -1237,7 +1354,6 @@ useEffect(() => {
                       {/* Tab Buttons */}
                       {tabs.map((tab) => {
                         const isActive = aiProvider === tab.label;
-                        const Icon = tab.icon;
                         return (
                           <button
                             key={tab.label}
@@ -1246,7 +1362,7 @@ useEffect(() => {
               ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
                             style={{ width: "200px" }}
                           >
-                            {Icon ? <Icon size={18} /> : null}
+                            {tab.icon}
                             <span>{tab.label}</span>
                           </button>
                         );

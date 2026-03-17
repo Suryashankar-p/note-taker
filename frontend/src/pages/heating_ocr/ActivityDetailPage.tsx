@@ -14,7 +14,11 @@ import {
   GetOCRActivitiesDetails,
   SentMultipartMessage,
   UpdateOCRActivitiesDetails,
+  GetProcessCodes,
+  GetMakerCodes,
+  GetGroupActivityData,  // Add this import
 } from "../../services/heating_ocr.ts";
+import SearchDropdown from "../../components/Combobox.tsx"; 
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
@@ -22,7 +26,7 @@ import iButton from "../../assets/info.svg";
 import Tick from "../../assets/tick.svg";
 import DropDownButton from "../../components/DropDownButton.tsx";
 import Toast from "../../components/Toast.tsx";
-import { capitalizeWords, statusMapper } from "../../utils/functions.ts";
+import { capitalizeWords, heatingOcrStatusMapper } from "../../utils/functions.ts";
 
 GlobalWorkerOptions.workerSrc = url;
 
@@ -37,6 +41,9 @@ interface Item {
 const ActivityDetailPage: React.FC = () => {
   const location = useLocation();
   const activity = location?.state?.activity;
+  const group = location?.state?.group;
+  const isGroupView = location?.state?.isGroupView;
+  
   const [reason, setReason] = useState(null);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [pdfUrl, setPdfUrl] = useState<string>("");
@@ -65,23 +72,67 @@ const ActivityDetailPage: React.FC = () => {
   const [pageError, setPageError] = useState<boolean>(false);
   const toast = useSelector((state: RootState) => state.toast);
 
+  const codeValuesMaker = ["TE_INSP_AGEN", "TE_STEELMAK_CD"];
+  const codeValuesProcess = ["TE_HEAT_TREAT", "TE_STEELMAK_PRCS", "TE_DEOXID"];
+
+  const [makerOptions, setMakerOptions] = useState<any[]>([]);
+  const [processOptions, setProcessOptions] = useState<any[]>([]);
+  const [makerLoading, setMakerLoading] = useState(false);
+  const [processLoading, setProcessLoading] = useState(false);
+
+  const fetchMakerOptions = async (query: string) => {
+    setMakerLoading(true);
+    try {
+      const res = await GetMakerCodes(query);
+      setMakerOptions(res || []);
+    } finally {
+      setMakerLoading(false);
+    }
+  };
+
+  const fetchProcessOptions = async (query: string) => {
+    setProcessLoading(true);
+    try {
+      const res = await GetProcessCodes(query);
+      setProcessOptions(res || []);
+    } finally {
+      setProcessLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (activityDetails && activityDetails?.coordinates?.coordinate?.length > 0) {
-      const newCoordinates = activityDetails?.coordinates?.coordinate?.map((item: any) => ({
-        coordinates: item.coordinate,
-        pageNumber: item.pagenumber,
-      }));
+    fetchMakerOptions("");
+    fetchProcessOptions("");
+  }, []);
+
+  useEffect(() => {
+    if (
+      activityDetails &&
+      activityDetails?.coordinates?.coordinate?.length > 0
+    ) {
+      const newCoordinates = activityDetails?.coordinates?.coordinate?.map(
+        (item: any) => ({
+          coordinates: item.coordinate,
+          pageNumber: item.pagenumber,
+        })
+      );
       setCoordinates(newCoordinates);
     } else {
-      setCoordinates([]); // Handle the case where there are no activity details
+      setCoordinates([]);
     }
   }, [activityDetails]);
 
   useEffect(() => {
-    getActivityDetails(activity?.id);
-    getDocumentLink(activity?.id);
-  }, []);
-
+    if (isGroupView && group && activity?.id) {
+      // Fetch group-specific data
+      getGroupActivityData(activity.id, group);
+      getDocumentLink(activity.id);
+    } else if (activity?.id) {
+      // Fetch regular activity data
+      getActivityDetails(activity.id);
+      getDocumentLink(activity.id);
+    }
+  }, [activity?.id, group, isGroupView]);
 
   const getDocumentLink = async (activity_id: number) => {
     try {
@@ -92,19 +143,53 @@ const ActivityDetailPage: React.FC = () => {
     }
   };
 
+  // Fetch only activity metadata (without replacing field data) when in group mode
+  const getActivityDetailsForMeta = async (activity_id: number) => {
+    try {
+      const response = await GetOCRActivitiesDetails(activity_id);
+      if (response?.id) {
+        setActivityDetails(response);
+      }
+    } catch (error) {
+      console.error("Error reading activity details:", error);
+    }
+  };
+
+  // Fetch group-specific field data
+  const getGroupActivityData = async (activity_id: number, groupData: string[]) => {
+    try {
+      const response = await GetGroupActivityData(activity_id, groupData);
+      if (response && Array.isArray(response)) {
+        setFieldData(response);
+        setActivityDetails({
+          ...activity,
+          data: { field: response }
+        });
+      } else {
+        console.error("Invalid response format");
+        navigate("/ai-studio/heating_ocr", { replace: true });
+      }
+    } catch (error: any) {
+      console.error("Error fetching group data:", error);
+      dispatch.toast.openToast({
+        status: true,
+        message: error?.response?.data?.detail || "Failed to fetch group data",
+        type: "error",
+      });
+    }
+  };
+
   const getActivityDetails = async (activity_id: number) => {
-    // Implement your logic to fetch and display activity details
     try {
       const response = await GetOCRActivitiesDetails(activity_id);
       if (response?.id) {
         setActivityDetails(response);
         setFieldData(response?.data?.field);
       } else {
-        console.log("ere");
         navigate("/ai-studio/heating_ocr", { replace: true });
       }
     } catch (error) {
-      console.log(error?.message);
+      console.error("Error fetching activity details:", error);
     }
   };
 
@@ -155,7 +240,7 @@ const ActivityDetailPage: React.FC = () => {
 
   const handleSubmit = async (type: string) => {
     // Handle the form submission here
-    const updatedType = statusMapper(type)    
+    const updatedType = heatingOcrStatusMapper(type)    
     try {
       setLoading(true);
       const response = await SentMultipartMessage(activity?.id, updatedType);
@@ -193,45 +278,172 @@ const ActivityDetailPage: React.FC = () => {
     }
   }, [fieldData]);
 
-  const handleInputChange = async (index: number, value: string | number) => {
-    scrollPositionRef.current = scrollRef.current?.scrollTop || 0;
+  const handleFieldChange = (index: number, newValue: string) => {
+    if (scrollRef.current) {
+      scrollPositionRef.current = scrollRef.current.scrollTop;
+    }
+    const updatedFieldData = [...fieldData];
+    updatedFieldData[index] = {
+      ...updatedFieldData[index],
+      value: newValue,
+      // Remove the automatic is_valid: true - let backend validate
+    };
+    setFieldData(updatedFieldData);
+
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
     timeoutId = setTimeout(() => {
-      setFieldData((prevFieldData: any) => {
-        const updatedFieldData = [...prevFieldData];
-        updatedFieldData[index] = {
-          ...updatedFieldData[index],
-          value: value,
-        };
-        updateActivityDetails(activity?.id, updatedFieldData);
-      });
-    }, 4000); //
+      updateDocument(activity?.id, { field: updatedFieldData });
+    }, 500);
+
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollPositionRef.current;
+      }
+    });
   };
 
-  const updateActivityDetails = async (activity_id: number, body: any) => {
-    let payload = {
-      title: activity?.title,
-      data: {
-        field: body,
-      },
-    };
+  const updateDocument = async (activity_id: number, data: any) => {
     try {
+      // Include group in the update payload if in group mode
+      const payload = isGroupView 
+        ? { title: activityDetails?.title || activity?.title, data, group } 
+        : { title: activityDetails?.title || activity?.title, data };
+      
       const response = await UpdateOCRActivitiesDetails(activity_id, payload);
-      if (response?.data) {
-        setFieldData(response?.data);
-        getActivityDetails(activity?.id);
+      if (response?.id) {
+        // Always fetch fresh data after update to get validation results
+        if (isGroupView && group) {
+          // Re-fetch group data to get validation
+          await getGroupActivityData(activity_id, group);
+        } else {
+          setActivityDetails(response);
+          setFieldData(response?.data?.field);
+        }
+      } else {
+        setPageError(true);
+        dispatch.toast.openToast({
+          status: true,
+          message: response?.detail || "Failed to update",
+          type: "error",
+        });
       }
-    } catch (err) {
-      console.error("Error updating activity details:", err);
+    } catch (error: any) {
+      setPageError(true);
+      dispatch.toast.openToast({
+        status: true,
+        message: error?.response?.data?.detail || "Failed to update",
+        type: "error",
+      });
     }
   };
 
-  const hasValidItem = () => {
+  const handleConfirmation = (type: "submit" | "reject") => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      dispatch.modal.closeConfirmation();
+      if (type === "submit") {
+        handleSubmit("submit");
+      } else {
+        handleSubmit("reject");
+      }
+    }, 1000);
+  };
+
+  const handleBack = () => {
+    if (isGroupView) {
+      // Go back to groups list - don't submit
+      navigate(`/ai-studio/heating_ocr?activity_id=${activity?.id}`, {
+        state: { activity },
+      });
+    } else {
+      navigate("/ai-studio/heating_ocr", { replace: true });
+    }
+  };
+
+  const getDisplayValue = (options: any[], value: string) => {
+    const found = options.find(opt => opt.mapping_label === value);
+    return found
+      ? { value: found.mapping_label, name: found.mapping_value }
+      : { value, name: value };
+  };
+
+  const renderFieldInput = (item, index) => {
+    const disabled =
+      activityDetails?.status === "SUBMITTED_SUCCESS" ||
+      activityDetails?.status === "REJECTED" ||
+      activityDetails?.status === "SUBMITTED" ||
+      activityDetails?.status === "SUBMITTED_WAITING";
+    const inputClassName = `mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg ${
+      item?.is_valid ? "border-gray-300" : "border-yellow-300"
+    }`;
+    const inputStyle = {
+      outline: "none",
+      boxShadow: item?.is_valid
+        ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
+        : "0 0 0 1px rgba(252, 211, 77, 0.5)",
+    };
+
+    if (codeValuesMaker.includes(item.title)) {
+      return (
+        <SearchDropdown
+          className={inputClassName}
+          listValues={makerOptions.map(opt => ({
+            value: opt.mapping_label,
+            name: opt.mapping_value
+          }))}
+          initialValue={getDisplayValue(makerOptions, item.value)}
+          onChange={val => handleFieldChange(index, val.value)}
+          placeholder="Type to search..."
+          disabled={disabled}
+        />
+      );
+    }
+    if (codeValuesProcess.includes(item.title)) {
+      return (
+        <SearchDropdown
+          className={inputClassName}
+          listValues={processOptions.map(opt => ({
+            value: opt.mapping_label,
+            name: opt.mapping_value
+          }))}
+          initialValue={getDisplayValue(processOptions, item.value)}
+          onChange={val => handleFieldChange(index, val.value)}
+          placeholder="Type to search..."
+          disabled={disabled}
+        />
+      );
+    }
+    // Default input for other fields
     return (
-      fieldData?.length > 0 && fieldData.some((item: Item) => !item.is_valid)
+      <input
+        type={item?.type === "string" ? "text" : "number"}
+        disabled={disabled}
+        className={inputClassName}
+        style={inputStyle}
+        defaultValue={item?.value}
+        onFocus={e => {
+          e.target.style.borderColor = item?.is_valid ? "#A7AAB1" : "#E4B106";
+          e.target.style.boxShadow = item?.is_valid
+            ? "0 0 0 1px rgba(167, 170, 177, 0.7)"
+            : "0 0 0 1px rgba(228, 177, 6, 0.7)";
+        }}
+        onBlur={e => {
+          e.target.style.borderColor = item?.is_valid ? "#D1D5DB" : "#FCD34D";
+          e.target.style.boxShadow = item?.is_valid
+            ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
+            : "0 0 0 1px rgba(252, 211, 77, 0.5)";
+        }}
+        onChange={e => handleFieldChange(index, e.target.value)}
+      />
     );
+  };
+
+  const hasValidItem = () => {
+    if (!fieldData || !Array.isArray(fieldData)) return false;
+    return fieldData.some((item: Item) => !item.is_valid);
   };
 
   const handleHighlighting = () => {
@@ -259,7 +471,7 @@ const ActivityDetailPage: React.FC = () => {
             ? "Some of the values are Invalid"
             : "All values are valid"
         }
-        className="flex flex-row p-2 gap-1 items-center border cursor-default	 rounded-lg "
+        className="flex flex-row p-2 gap-1 items-center border cursor-default rounded-lg"
       >
         {hasValidItem() ? (
           <svg
@@ -270,7 +482,12 @@ const ActivityDetailPage: React.FC = () => {
             stroke="currentColor"
             aria-hidden="true"
           >
-            <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 25 11 A 3 3 0 0 0 22 14 A 3 3 0 0 0 25 17 A 3 3 0 0 0 28 14 A 3 3 0 0 0 25 11 z M 21 21 L 21 23 L 22 23 L 23 23 L 23 36 L 22 36 L 21 36 L 21 38 L 22 38 L 23 38 L 27 38 L 28 38 L 29 38 L 29 36 L 28 36 L 27 36 L 27 21 L 26 21 L 22 21 L 21 21 z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
         ) : (
           <svg
@@ -288,7 +505,7 @@ const ActivityDetailPage: React.FC = () => {
               d="M9 12l2 2l4-4m5 5a9 9 0 11-18 0a9 9 0 0118 0z"
             />
           </svg>
-        )}{" "}
+        )}
         <Text
           type="small"
           className={`${
@@ -299,6 +516,20 @@ const ActivityDetailPage: React.FC = () => {
         </Text>
       </div>
     );
+  };
+
+  // Check if activity is already submitted or rejected
+  const isActivityFinalized = () => {
+    return activityDetails?.status === "SUBMITTED" || 
+           activityDetails?.status === "REJECTED" ||
+           activityDetails?.status === "SUBMITTED_SUCCESS" ||
+           activityDetails?.status === "SUBMITTED_WAITING" ||
+           activityDetails?.status === "SUBMITTED_FAILED";
+  };
+
+  // Check if this is a plate/group activity where individual submit/reject should be hidden
+  const isPlateActivity = () => {
+    return isGroupView || activity?.template === "Plate";
   };
 
   return (
@@ -313,6 +544,14 @@ const ActivityDetailPage: React.FC = () => {
           >
             {activityDetails?.title}
           </Text>
+          {/* Show group info if in group mode */}
+          {isGroupView && group && (
+            <div className="flex items-center space-x-2 text-sm text-gray-500 mb-1">
+              <span>Heat No: <strong>{group[0]}</strong></span>
+              <span>|</span>
+              <span>Plate No: <strong>{group[1]}</strong></span>
+            </div>
+          )}
         </div>
         <div className="absolute flex gap-8 top-4 items-center right-6">
           <div className="inline-flex items-center gap-2">
@@ -320,15 +559,6 @@ const ActivityDetailPage: React.FC = () => {
               <Text className=" text-primary_text" type="body">
                 Annotation:
               </Text>
-
-              
-              {/* {reason && (
-    <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 rounded-lg">
-      <Text className="text-yellow-500" type="body">
-        {reason}
-      </Text>
-    </div>
-  )} */}
             </label>
             <DropDownButton
               className="w-32"
@@ -336,41 +566,44 @@ const ActivityDetailPage: React.FC = () => {
               listValues={[{ name: "Enable" }, { name: "Disable" }]}
               onChange={(value: any) => onAnnotationChange(value)}
             />
-{   (activityDetails?.status === "SUBMITTED_SUCCESS" || activityDetails?.status === "SUBMITTED_FAILED" || activityDetails?.status === "SUBMITTED_WAITING" )   &&           <Text className=" text-primary_text ml-4" type="body">
+            
+            {(activityDetails?.status === "SUBMITTED_SUCCESS" || 
+              activityDetails?.status === "SUBMITTED_FAILED" || 
+              activityDetails?.status === "SUBMITTED_WAITING") && (
+              <Text className=" text-primary_text ml-4" type="body">
                 Submit Status:
-              </Text>}
-  {reason !== null && (
-  <div
-    className={`inline-flex ml-1 items-center gap-2 px-4 py-2 rounded-lg ${
-      reason === "Success"
-        ? "bg-white-100 text-green-500 border rounded-lg p-4"
-        : "bg-white-100 text-yellow-500 border rounded-lg p-4"
-    }`}
-  >
+              </Text>
+            )}
+            
+            {reason !== null && (
+              <div
+                className={`inline-flex ml-1 items-center gap-2 px-4 py-2 rounded-lg ${
+                  reason === "Success"
+                    ? "bg-white-100 text-green-500 border rounded-lg p-4"
+                    : "bg-white-100 text-yellow-500 border rounded-lg p-4"
+                }`}
+              >
+                <Text type="body">
+                  {reason === "Success" ? "Success" : "Failed"}
+                </Text>
+                {reason !== "Success" && reason !== null && (
+                  <img
+                    src={iButton}
+                    title={reason}
+                    loading="lazy"
+                    className="cursor-pointer"
+                  />
+                )}
+              </div>
+            )}
 
-    <Text type="body">
-      {reason === "Success" ? "Success" : "Failed"}
-    </Text>
-    {reason !== "Success" && reason !== null && (
-      <img
-        src={iButton}
-        title={reason}
-        loading="lazy"
-        className="cursor-pointer"
-      />
-    )}
-  </div>
-)}
-
-{(activityDetails?.status === "SUBMITTED_WAITING") && reason === null && (
-  <div className="inline-flex items-center ml-1 gap-2 px-4 py-2 rounded-lg bg-white-100 border text-gray-500">
-    <Text type="body">Waiting</Text>
-  </div>
-)}
-
-
-
+            {(activityDetails?.status === "SUBMITTED_WAITING") && reason === null && (
+              <div className="inline-flex items-center ml-1 gap-2 px-4 py-2 rounded-lg bg-white-100 border text-gray-500">
+                <Text type="body">Waiting</Text>
+              </div>
+            )}
           </div>
+
           {(activityDetails?.status === "IN_PROGRESS" || activityDetails?.status === "SUBMITTED_FAILED") && (
             <div className="inline-flex gap-2 items-center self-center">
               <Text className="text-primary_text" type="body">
@@ -379,132 +612,170 @@ const ActivityDetailPage: React.FC = () => {
               {renderWarning()}
             </div>
           )}
-          {activityDetails?.status !== "REJECTED" && (
-            <Button
-              onClick={() => {
-                dispatch.modal.openConfirmation();
-                setConfirmationData({
-                  title: "Submit Confirmation",
-                  content: "Are you sure you want to submit?",
-                  type: "submit",
-                });
-              }}
-              className={`${
-                loading ||
-                hasValidItem() ||
-                activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                activityDetails?.status === "SUBMITTED_WAITING"||
-                activityDetails?.status === "SUBMITTED" 
-                  ? "bg-black bg-opacity-30"
-                  : "bg-danger"
-              } w-15 h-10  p-4 gap-2 rounded-lg`}
-              size="custom"
-              disabled={
-                loading ||
-                hasValidItem() ||
-                activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                activityDetails?.status === "REJECTED" ||
-                activityDetails?.status === "SUBMITTED" ||
-                activityDetails?.status === "SUBMITTED_WAITING"
-              }
-            >
-              {loading && confirmationData?.type === "submit" ? (
-                <div className="flex items-center">
-                  <div className="mr-2">Submitting...</div>
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8H4z"
-                    ></path>
-                  </svg>
-                </div>
-              ) : (
-                <Text type="small" className="inline-flex gap-2">
-                  {activityDetails?.status === "SUBMITTED" || activityDetails?.status === "SUBMITTED_SUCCESS"
-                    ? "Submitted"
-                    : "Submit"}
-                  {(activityDetails?.status === "SUBMITTED" || activityDetails?.status === "SUBMITTED_SUCCESS") && (
+
+          <div className="flex gap-2">
+            {/* Submit Button - Hidden in group view or plate template, disabled if activity finalized */}
+            {!isPlateActivity() && !isActivityFinalized() && (
+              <Button
+                onClick={() => {
+                  dispatch.modal.openConfirmation();
+                  setConfirmationData({
+                    title: "Submit Confirmation",
+                    content: "Are you sure you want to submit?",
+                    type: "submit",
+                  });
+                }}
+                className={`w-15 h-10 p-4 gap-2 rounded-lg ${
+                  loading ||
+                  hasValidItem()
+                    ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                    : "bg-danger text-white hover:bg-red-700"
+                }`}
+                size="custom"
+                disabled={loading || hasValidItem()}
+              >
+                {loading && confirmationData?.type === "submit" ? (
+                  <div className="flex items-center">
+                    <div className="mr-2">Submitting...</div>
                     <svg
-                      className="w-5 h-5 text-white-400"
+                      className="animate-spin h-5 w-5 text-white"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
-                      viewBox="0 0 26 26"
-                      stroke="currentColor"
-                      aria-hidden="true"
+                      viewBox="0 0 24 24"
                     >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
                       <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12l2 2l4-4m5 5a9 9 0 11-18 0a9 9 0 0118 0z"
-                      />
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      ></path>
                     </svg>
-                  )}
-                </Text>
-              )}
-            </Button>
-
-          )}
-
-          {(activityDetails?.status !== "SUBMITTED" && activityDetails?.status !== "SUBMITTED_SUCCESS") && (
-            <Button
-              disabled={loading || activityDetails?.status === "REJECTED" ||   activityDetails?.status === "SUBMITTED_SUCCESS" || activityDetails?.status === "SUBMITTED_WAITING" || activityDetails?.status === "SUBMITTED" }
-              className={`w-15 h-10 p-4 gap-2 rounded-lg ${
-                loading ||
-                activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                activityDetails?.status === "REJECTED" ||
-                activityDetails?.status === "SUBMITTED" ||
-                activityDetails?.status === "SUBMITTED_WAITING"
-                  ? "bg-black bg-opacity-30"
-                  : "bg-danger"
-              }`}
-              onClick={() => {
-                dispatch.modal.openConfirmation();
-                setConfirmationData({
-                  title: "Reject Confirmation",
-                  content: "Are you sure you want to reject?",
-                  type: "reject",
-                });
-              }}
-            >
-              <Text type="small" className="inline-flex gap-2">
-                {activityDetails?.status === "REJECTED" ? "Rejected" : "Reject"}
-                {activityDetails?.status === "REJECTED" && (
-                  <svg
-                    className="w-5 h-5 text-white-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 26 26"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12l2 2l4-4m5 5a9 9 0 11-18 0a9 9 0 0118 0z"
-                    />
-                  </svg>
+                  </div>
+                ) : (
+                  <Text type="small" className="inline-flex gap-2">
+                    {activityDetails?.status === "SUBMITTED" || 
+                     activityDetails?.status === "SUBMITTED_SUCCESS"
+                      ? "Submitted"
+                      : "Submit"}
+                    {(activityDetails?.status === "SUBMITTED" || 
+                      activityDetails?.status === "SUBMITTED_SUCCESS") && (
+                      <svg
+                        className="w-5 h-5 text-white-400"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 26 26"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12l2 2l4-4m5 5a9 9 0 11-18 0a9 9 0 0118 0z"
+                        />
+                      </svg>
+                    )}
+                  </Text>
                 )}
-              </Text>
-            </Button>
-          )}
+              </Button>
+            )}
+
+            {/* Reject Button - Hidden in group view or plate template, disabled if activity finalized */}
+            {!isPlateActivity() && !isActivityFinalized() && (
+              <Button
+                disabled={loading}
+                className={`w-15 h-10 p-4 gap-2 rounded-lg ${
+                  loading
+                    ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                    : "bg-orange-500 text-white hover:bg-orange-600"
+                }`}
+                size="custom"
+                onClick={() => {
+                  dispatch.modal.openConfirmation();
+                  setConfirmationData({
+                    title: "Reject Confirmation",
+                    content: "Are you sure you want to reject?",
+                    type: "reject",
+                  });
+                }}
+              >
+                {loading && confirmationData?.type === "reject" ? (
+                  <div className="flex items-center">
+                    <div className="mr-2">Rejecting...</div>
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      ></path>
+                    </svg>
+                  </div>
+                ) : (
+                  <Text type="small" className="inline-flex gap-2">
+                    {activityDetails?.status === "REJECTED" ? "Rejected" : "Reject"}
+                    {activityDetails?.status === "REJECTED" && (
+                      <svg
+                        className="w-5 h-5 text-white-400"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 26 26"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12l2 2l4-4m5 5a9 9 0 11-18 0a9 9 0 0118 0z"
+                        />
+                      </svg>
+                    )}
+                  </Text>
+                )}
+              </Button>
+            )}
+
+            {/* Show disabled state message when activity is finalized */}
+            {!isPlateActivity() && isActivityFinalized() && (
+              <div className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg">
+                <Text type="small">
+                  Activity is {activityDetails?.status === "REJECTED" ? "rejected" : "submitted"}
+                </Text>
+              </div>
+            )}
+
+            {/* Show message for plate activities that submit/reject is done from groups page */}
+            {isPlateActivity() && (
+              <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-200">
+                <Text type="small">
+                  Submit/Reject from Groups List
+                </Text>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
       {/* Left side - PDF Viewer */}
       <div className="flex flex-row pb-36 h-screen ">
         <div className="md:w-3/4 pr-4 pb-2 h-full overflow-y-auto">
@@ -539,68 +810,38 @@ const ActivityDetailPage: React.FC = () => {
                       />
                     )}
                   </Text>
-                  <input
-                    type={item?.type === "string" ? "text" : "number"}
-                    disabled={
-                      activityDetails?.status === "SUBMITTED_SUCCESS" ||
-                      activityDetails?.status === "REJECTED" ||
-                      activityDetails?.status === "SUBMITTED" ||
-                      activityDetails?.status === "SUBMITTED_WAITING"
-                    }
-                    className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg`}
-                    style={{
-                      borderColor: item?.is_valid ? "#D1D5DB" : "#FCD34D", // Tailwind's gray-300 and yellow-300 colors
-                      outline: "none",
-                      boxShadow: item?.is_valid
-                        ? "0 0 0 1px rgba(209, 213, 219, 0.5)" // slightly bolder gray-300
-                        : "0 0 0 1px rgba(252, 211, 77, 0.5)", // slightly bolder yellow-300
-                    }}
-                    defaultValue={item?.value}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = item?.is_valid
-                        ? "#A7AAB1"
-                        : "#E4B106"; // darker shade on focus
-                      e.target.style.boxShadow = item?.is_valid
-                        ? "0 0 0 1px rgba(167, 170, 177, 0.7)" // slightly darker gray
-                        : "0 0 0 1px rgba(228, 177, 6, 0.7)"; // slightly darker yellow
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = item?.is_valid
-                        ? "#D1D5DB"
-                        : "#FCD34D"; // revert to original
-                      e.target.style.boxShadow = item?.is_valid
-                        ? "0 0 0 1px rgba(209, 213, 219, 0.5)" // revert to original
-                        : "0 0 0 1px rgba(252, 211, 77, 0.5)"; // revert to original
-                    }}
-                    onChange={(e) => handleInputChange(index, e.target.value)}
-                  />
+                  {renderFieldInput(item, index)}
                 </div>
               ))}
           </>
-          {confirmationStatus && (
-            <ConfirmationModal
-              onSubmit={() => handleSubmit(confirmationData?.type)}
-              title={confirmationData?.title}
-              content={confirmationData?.content}
-            />
-          )}
-          {toast?.status && toast?.type === "error" && pageError && (
-            <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
-              <Toast type="error" />
-            </div>
-          )}
-          {toast?.status && toast?.type === "success" && (
-            <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
-              <Toast
-                onClose={() =>
-                  (window.location.href = "/ai-studio/heating_ocr")
-                }
-                type="success"
-              />
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmationStatus && (
+        <ConfirmationModal
+          onSubmit={() => handleConfirmation(confirmationData?.type)}
+          title={confirmationData?.title}
+          content={confirmationData?.content}
+        />
+      )}
+
+      {/* Toast Messages */}
+      {toast?.status && toast?.type === "error" && pageError && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
+          <Toast type="error" />
+        </div>
+      )}
+      {toast?.status && toast?.type === "success" && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
+          <Toast
+            onClose={() =>
+              (window.location.href = "/genaistudio/ai-studio/heating_ocr")
+            }
+            type="success"
+          />
+        </div>
+      )}
     </div>
   );
 };

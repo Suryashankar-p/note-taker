@@ -18,11 +18,7 @@ import { Dispatch, RootState } from "../../redux/store.ts";
 import {
   CreateAgentChatHistory,
   CreateChat,
-  CreateChatHistory,
-  DeleteChatHistory,
   ReadChatHistories,
-  getChatHistoryFileUrl,
-  getChatHistoryFileBlobUrl,
 } from "../../services/doctor_conbot.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -34,7 +30,7 @@ import copy from "clipboard-copy";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import "github-markdown-css/github-markdown.css";
-import FileViewModal from "../../components/Modals/FileViewModal.tsx";
+import OpenFileModal from "../../components/Modals/OpenFileModalConbot.tsx";
 import { getFileType } from "../../utils/functions.ts";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -232,33 +228,47 @@ const ChatArea: React.FC<Props> = ({
   // ───────────────────────────────
   const onOtherFileClick = async (file: any) => {
     try {
-      const linkResp = await getChatHistoryFileUrl(file);
-      if (linkResp) {
-        if (linkResp?.type === "base64") {
-          setFileData({
-            name: linkResp?.file_name,
-            type: getFileType(linkResp?.file_name),
-            url: linkResp?.link,
-          });
-        } else {
-          const response = await getChatHistoryFileBlobUrl(file);
-          const blobUrl = URL.createObjectURL(response.data);
-          setFileData({
-            name: file.name,
-            type: getFileType(file?.name),
-            url: blobUrl,
-          });
-        }
-        setFileShow(true);
-      } else {
+      const token = localStorage.getItem("access_token");
+      const fileUrl = file.link || file.url || file.file_url || file.download_url;
+      
+      if (!fileUrl) {
+        console.error("No URL found in file object:", file);
         dispatch.toast.openToast({
           status: true,
-          message: "File not found",
+          message: "File URL not found",
           type: "error",
         });
+        return;
       }
+      
+      const response = await fetch(fileUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const newFileData = {
+        name: file.file_name || file.name || "unknown-file",
+        type: getFileType(file?.file_name || file?.name),
+        url: blobUrl,
+      };
+      
+      setFileData(newFileData);
+      setFileShow(true);
     } catch (err) {
       console.error("File click error:", err);
+      dispatch.toast.openToast({
+        status: true,
+        message: err.message || "Failed to load file",
+        type: "error",
+      });
     }
   };
 
@@ -266,6 +276,7 @@ const ChatArea: React.FC<Props> = ({
   // Video Authorization Loader
   // ───────────────────────────────
   const loadVideoBlob = async (url: string, key: string) => {
+    console.log("In the function loadVideoBlob");
     try {
       const token = localStorage.getItem("access_token");
       const response = await fetch(url, {
@@ -290,14 +301,16 @@ const ChatArea: React.FC<Props> = ({
     console.log("In the function loadImageBlob");
     try {
       const token = localStorage.getItem("access_token");
-      // const response = await fetch(url, {
-      //   headers: {
-      //     Authorization: `Bearer ${token}`,
-      //   },
-      // });
-      const response =  await DoctorBotAPI.get(url);
-      console.log("Response:", response);
-      setImageUrls((prev) => ({ ...prev, [key]: response.link }));
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch image");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      setImageUrls((prev) => ({ ...prev, [key]: blobUrl }));
     } catch (err) {
       console.error("Error loading image:", err);
     }
@@ -344,7 +357,7 @@ const ChatArea: React.FC<Props> = ({
 
       {/* File Preview Modal */}
       {fileShow && (
-        <FileViewModal
+        <OpenFileModal
           fileUrl={fileData}
           isOpen={fileShow}
           onClose={() => setFileShow(false)}
@@ -379,7 +392,7 @@ const ChatArea: React.FC<Props> = ({
               <div className="flex flex-row items-start justify-start w-full">
                 {(message?.ai || loading) && (
                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600">AI</span>
+                    <span className="text-gray-600">{"Dr"}</span>
                   </div>
                 )}
 
@@ -496,7 +509,7 @@ const ChatArea: React.FC<Props> = ({
                               <button
                                 key={fileIdx}
                                 className="rounded-full px-2 p-1 border border-grey flex items-center hover:bg-gray-50"
-                                onClick={() => onOtherFileClick(source)}
+                                onClick={() => onOtherFileClick(file)}
                               >
                                 <img className="pb-1" src={Link} alt="Link" />
                                 <Text

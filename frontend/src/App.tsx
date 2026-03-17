@@ -31,13 +31,19 @@ const ProtectedRoute = ({ element }: any) => {
     );
   }
 };
+
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ChatPage = lazy(() => import("./pages/sales/ChatPageMain"));
 const Settings = lazy(() => import("./pages/sales/settings/Settings"));
+const Translator = lazy(() => import("./pages/doc_translator/TranslationMain"));
+const DocTranslatorSettings = lazy(
+  () => import("./pages/doc_translator/settings/Settings")
+);
 const EdgeChatPage = lazy(() => import("./pages/edge/ChatPageMain"));
 const EdgeSettings = lazy(() => import("./pages/edge/settings/Settings"));
 const TBWES_OCR = lazy(() => import("./pages/tbwes_ocr/OcrMain.tsx"));
 const Thermax_GPT = lazy(() => import("./pages/thermax_gpt/GPTMain.tsx"));
+const TRANSMITTER_OCR = lazy(() => import("./pages/transmitter_ocr/TransmitterOcrMain.tsx"));
 const Thermax_GPT_Settings = lazy(
   () => import("./pages/thermax_gpt/settings/Settings.tsx")
 );
@@ -78,12 +84,24 @@ const App = () => (
         element={<ProtectedRoute element={<TBWES_OCR />} />}
       />
       <Route
+        path="/ai-studio/transmitter_ocr"
+        element={<ProtectedRoute element={<TRANSMITTER_OCR />} />}
+      />
+      <Route
         path="/ai-studio/sales"
         element={<ProtectedRoute element={<ChatPage />} />}
       />
       <Route
         path="/ai-studio/sales/settings"
         element={<ProtectedRoute element={<Settings />} />}
+      />
+      <Route
+        path="/ai-studio/doc_translator"
+        element={<ProtectedRoute element={<Translator />} />}
+      />
+      <Route
+        path="/ai-studio/doc_translator/settings"
+        element={<ProtectedRoute element={<DocTranslatorSettings />} />}
       />
       <Route
         path="/ai-studio/edge"

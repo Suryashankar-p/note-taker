@@ -258,15 +258,13 @@ const Usage = () => {
     <div className="flex flex-col h-full md:mx-8 lg:mx-16 gap-8 relative">
       <div className="flex items-center justify-between">
         <Text type="header2">Usage</Text>
-        {doctorConBotMemberDetails?.role === 'OWNER' && 
-          <button
-            className="bg-danger rounded-lg p-2 m-2"
-            onClick={() => setIsModalOpen(true)}
-            title="Download Usage Details"
-          >
-            <IoMdDownload className="text-white w-5 h-5" />
-          </button>
-        }
+        <button
+          className="bg-danger rounded-lg p-2 m-2"
+          onClick={() => setIsModalOpen(true)}
+          title="Download Usage Details"
+        >
+          <IoMdDownload className="text-white w-5 h-5" />
+        </button>
       </div>
       {toastStatus && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
@@ -386,7 +384,7 @@ const YearButton: React.FC<ButtonProps> = ({ onSubmit, year }) => {
     <div className="relative flex items-center">
       <button
         className="absolute left-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300"
-        onClick={handleNextYear}
+        onClick={handlePrevYear}
       >
         &lt;
       </button>
@@ -397,7 +395,7 @@ const YearButton: React.FC<ButtonProps> = ({ onSubmit, year }) => {
       </span>
       <button
         className="absolute right-0 flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded transition duration-300"
-        onClick={handlePrevYear}
+        onClick={handleNextYear}
       >
         &gt;
       </button>

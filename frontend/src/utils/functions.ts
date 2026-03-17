@@ -5,11 +5,18 @@ import TrainingQA from '../assets/training_qa.jpg'
 import Thermax_GPT from '../assets/thermax_gpt.png'
 import doctor_conbot from '../assets/doctor_conbot.png'
 import troubleshooting from '../assets/troubleshooting.png'
+import heating_ocr from '../assets/heating_ocr.png'
 import cyberbuddy from '../assets/cyberbuddy.png'
-import heatingocr from '../assets/heating_ocr.png'
+import transmitter_ocr from '../assets/transmitter_ocr.jpg'
 
-const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
+const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 
+// const DOMAIN = import.meta.env.VITE_DOMAIN;
+// const URL_PREFIX = import.meta.env.VITE_URL_PREFIX;
+// //const BASE_URL = "http://192.168.29.53:9000/api"
+// const BASE_URL = `${
+//   DOMAIN === "localhost" ? "http:" : "https:"
+// }//${DOMAIN}${URL_PREFIX}`;
 
 export const roundToFourDecimals = (number: any) => {
     return Number(number.toFixed(4));
@@ -56,15 +63,6 @@ export function categorizeDate(inputDate: string): string {
     }
 }
 
-// roleMapping.ts
-export const roleMapping = {
-    'Owner': 'OWNER',
-    'Reviewer': 'REVIEWER',
-    'Member': 'MEMBER',
-};
-
-
-
 export const getInitials = (name: string) => {
     if (!name) return '';
 
@@ -83,6 +81,48 @@ export const getInitials = (name: string) => {
 
     return initials;
 };
+
+export const heatingOcrStatusMapper = (status: string) => {
+
+    switch (status) {
+        case 'approved':
+            return 'APPROVED'
+        case 'rejected':
+            return 'REJECTED'
+        case 'inReview':
+            return 'IN_REVIEW'
+        case 'notReviewed':
+            return 'NOT_REVIEWED'
+        case 'inProgress':
+            return 'IN_PROGRESS'
+        case 'submitted':
+            return 'SUBMITTED'
+        case 'waiting':
+            return 'SUBMITTED_WAITING'
+        case 'failed':
+            return 'SUBMITTED_FAILED'
+        case 'IN_PROGRESS':
+            return 'In Progress'
+        case 'REJECTED':
+            return 'Rejected'
+        case 'SUBMITTED_SUCCESS':
+            return 'Submitted'
+        case 'SUBMITTED':
+            return 'Submitted'
+        case 'SUBMITTED_FAILED':
+            return 'Failed'
+        case 'SUBMITTED_WAITING':
+            return 'Waiting'
+        case 'All':
+            return 'All'
+        case 'reject':
+            return 'REJECTED';
+        case 'submit':
+            return 'SUBMITTED';
+        default:
+            return undefined
+    }
+}
 
 export const statusMapper = (status: string) => {
 
@@ -115,6 +155,10 @@ export const statusMapper = (status: string) => {
             return 'Failed'
         case 'SUBMITTED_WAITING':
             return 'Waiting'
+        case 'ocrFailed':
+            return 'OCR_FAILED'
+        case 'OCR_FAILED':
+            return 'OCR Failed'
         case 'All':
             return 'All'
         case 'reject':
@@ -129,7 +173,7 @@ export const statusMapper = (status: string) => {
 export function getCurrentDate(): { year: number, month: number, day: number } {
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth() + 1; 
+    const month = now.getMonth() + 1;
     const day = now.getDate();
 
     return { year, month, day };
@@ -167,20 +211,20 @@ export const fileTypeSelectorDoctorConBot = (type: string) => {
         case 'Video':
             return 'VIDEO'
         case 'FAQ':
-            return 'FAQ'    
+            return 'FAQ'
         case 'Faq':
             return 'FAQ'
         case 'Other':
             return 'OTHER'
         case 'OTHER':
             return 'Other'
-        
+
     }
 }
 
 export const fileTypeSelectorCyberBuddy = (type: string) => {
     switch (type) {
-        case 'pdf': 
+        case 'pdf':
             return 'PDF';
         case 'xlsx':
             return 'Excel';
@@ -188,7 +232,7 @@ export const fileTypeSelectorCyberBuddy = (type: string) => {
             return 'DOC';
         case 'OTHER':
             return 'Other'
-        
+
     }
 }
 
@@ -197,7 +241,7 @@ export function getFileType(fileName: string): string | null {
     const fileExtension = fileName?.split('.').pop()?.toLowerCase();
 
     switch (fileExtension) {
-        case 'pdf': 
+        case 'pdf':
             return 'PDF';
         case 'xls':
         case 'xlsx':
@@ -219,9 +263,27 @@ export function getFileType(fileName: string): string | null {
         case 'mp4':
             return 'MP4'
         default:
-            return null; 
+            return null;
     }
 }
+
+// roleMapping.ts
+export const roleMapping = {
+    'Owner': 'OWNER',
+    'Reviewer': 'REVIEWER',
+    'Member': 'MEMBER',
+};
+
+export const getKeyByValue = (object: any, value: any) => {
+    return Object.entries(object).find(([key, val]) => val === value)?.[0];
+};
+
+export const listValues = [
+    { name: 'Owner' },
+    { name: 'Reviewer' },
+    { name: 'Member' }
+];
+
 
 export const userStatusMapper = (status: string) => {
     switch (status) {
@@ -237,27 +299,31 @@ export const userStatusMapper = (status: string) => {
 export const getBorderColor = (activityStatus: string): string => {
     switch (activityStatus) {
         case 'SUBMITTED':
-            return 'border-green-500'; // Green for submitted
+        case 'PASSED':
+            return 'border-green-500'; // Green for submitted/passed
         case 'REJECTED':
-            return 'border-red-500';   // Red for rejected
+        case 'FAILED':
+            return 'border-red-500';   // Red for rejected/failed
         case 'IN_PROGRESS':
             return 'border-yellow-500';
         case 'SUBMITTED_WAITING':
-            return 'border-orange-500' 
+            return 'border-orange-500'
         case 'SUBMITTED_FAILED':
             return 'border-red-500';
         case 'SUBMITTED_SUCCESS':
             return 'border-green-500';
+        case 'OCR_FAILED':
+            return 'border-orange-500'; // Orange for OCR failures
         default:
-            return 'border-gray-300';  
+            return 'border-gray-300';
     }
 };
 
 export function capitalizeWords(sentence: string): string {
     return sentence
-        .split(' ') 
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1)) 
-        .join(' '); 
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 export const selectImage = (title: string) => {
@@ -266,6 +332,8 @@ export const selectImage = (title: string) => {
             return sales;
         case "TBWES OCR":
             return ocr;
+        case "Transmitter OCR":
+            return transmitter_ocr;
         case 'Document Translator':
             return translate;
         case 'Training QA':
@@ -276,10 +344,10 @@ export const selectImage = (title: string) => {
             return doctor_conbot;
         case 'Smart Troubleshooting App':
             return troubleshooting;
+        case 'Heating OCR':
+            return heating_ocr;
         case 'CyberBuddy':
             return cyberbuddy;
-        case 'Heating OCR':
-            return heatingocr;
     }
 }
 
@@ -287,19 +355,15 @@ export const getIframeSrc = (url, type) => {
     if (type === "PDF" || type === "JPG" || type === "JPEG" || type === "PNG") {
         return url; // Use the direct URL for PDFs and images
     } else if (type === "Excel" || type === "DOC" || type === "PPT") {
-      return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+        return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
     }
     return "";
 };
-  
-export const getKeyByValue = (object: any, value: any) => {
-    return Object.entries(object).find(([key, val]) => val === value)?.[0];
-  };
 
 export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number) => {
-    switch(type){
+    switch (type) {
         case "Thermax GPT":
-            return  BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}`
+            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}`
         case "Deep Search":
             return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/perplexity/stream?chat_history_id=${chat_history_id}`
         default:

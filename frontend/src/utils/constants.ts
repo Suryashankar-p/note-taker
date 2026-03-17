@@ -18,6 +18,7 @@ export const months: string[] = [
 ];
 
 export const years: string[] = [
+  "2026",
   "2025",
   "2024",
   "2023",
@@ -79,6 +80,11 @@ export const Languages = [
     name: "German",
     value: "de",
     subname: "Germany",
+  },
+  {
+    name: "English",
+    value: "en",
+    subname: "English",
   },
 ];
 

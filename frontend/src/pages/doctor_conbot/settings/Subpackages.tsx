@@ -24,7 +24,7 @@ import {
 import { getFileType } from "../../../utils/functions.ts";
 import AddProductModal from "../../../components/Modals/AddProductModalDoctorConBot";
 import FileEditModal from "../../../components/Modals/FileEditModalDoctorConBot";
-import FileViewModal from "../../../components/Modals/FileViewModal.tsx";
+import OpenFileModal from "../../../components/Modals/OpenFileModalConbot.tsx";
 import DropDownMenu from "../../../components/DropdownMenu";
 import Menu from "../../../assets/more.svg";
 import Edit from "../../../assets/edit.svg";
@@ -313,28 +313,17 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
   const onFileClick = async (file: any, fileType: "CATEGORY" | "SUBPACKAGE") => {
     try {
       if (fileType === "CATEGORY") {
-        const linkResp = await ReadCategoryDocumentUrl(file.category_id, file.id);
-        if (linkResp) {
-          if (linkResp?.type === "base64") {
-            let fileInfo: any = {
-              name: file.filename,
-              type: getFileType(file?.filename),
-              url: linkResp?.link,
-            };
-            setFileData(fileInfo);
-            setFileShow(true);
-          } else {
-            const response: any = await getCategoryFileBlobUrl(file)
-            const blobUrl = URL.createObjectURL(response.data);
-            console.log(blobUrl)
-            let fileInfo: any = {
-              name: file.filename,
-              type: getFileType(file?.filename),
+        setFileShow(true)
+        dispatch.loadingState.startLoading();
+        const response = await getCategoryFileBlobUrl(file)
+        if (response) {
+          const blobUrl = URL.createObjectURL(response.data);
+          let fileInfo: any = {
+            name: file.filename,
+            type: getFileType(file?.filename),
               url: blobUrl,
             };
             setFileData(fileInfo);
-            setFileShow(true);
-          }
         } else {
           dispatch.toast.openToast({
             status: true,
@@ -343,28 +332,17 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
           });
         }
       } else {
-        const linkResp = await ReadSubpackageDocumentUrl(file.sub_package_id, file.id);
-        if (linkResp) {
-          if (linkResp?.type === "base64") {
-            let fileInfo: any = {
-              name: file.filename,
-              type: getFileType(file?.filename),
-              url: linkResp?.link,
-            };
-            setFileData(fileInfo);
-            setFileShow(true);
-          } else {
-            const response: any = await getSubpackageFileBlobUrl(file)
-            const blobUrl = URL.createObjectURL(response.data);
-            console.log(blobUrl)
-            let fileInfo: any = {
-              name: file.filename,
-              type: getFileType(file?.filename),
+        setFileShow(true)
+        dispatch.loadingState.startLoading();
+        const response = await getSubpackageFileBlobUrl(file)
+        if (response) {
+          const blobUrl = URL.createObjectURL(response.data);
+          let fileInfo: any = {
+            name: file.filename,
+            type: getFileType(file?.filename),
               url: blobUrl,
             };
             setFileData(fileInfo);
-            setFileShow(true);
-          }
         } else {
           dispatch.toast.openToast({
             status: true,
@@ -467,7 +445,7 @@ const Subpackages: React.FC<SubpackagesProps> = ({ onSwitch, productData }) => {
         />
       )}
       {fileShow && (
-        <FileViewModal
+        <OpenFileModal
           fileUrl={fileData}
           isOpen={fileShow}
           onClose={() => setFileShow(false)}

@@ -14,7 +14,7 @@ import Tranfer from "../../assets/exchange.svg";
 import {
   getBorderColor,
   getInitials,
-  statusMapper,
+  heatingOcrStatusMapper,
   userStatusMapper,
 } from "../../utils/functions";
 import CreateActivity from "../../components/Modals/CreateActivity"; // Import the new modal component
@@ -47,9 +47,11 @@ export type Activity = {
   createdOn: string;
   updatedOn: string;
   status: string;
+  file_status: string;
   username: string;
   fileUrl: string;
   user_id: string;
+  template: string;
 };
 
 interface ActivityPageProps {
@@ -94,6 +96,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
     value: string;
     name: string;
   }>({ value: "all", name: "All" });
+  const navigate  = useNavigate();
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [user, setUser] = useState<any>(null);
@@ -109,8 +112,9 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
   const [searchValue, setSearchValue] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [pollingSkip, setPollingSkip] = useState(pageSize.skip);
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  let isPolling = false;
   const tranferModal = useSelector(
     (state: RootState) => state.modal.tranferModal
   );
@@ -122,7 +126,6 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
     status: "All",
   });
   let timeoutId: NodeJS.Timeout | null = null;
-  let intervalId: NodeJS.Timeout | null = null;
 
   const userOptions = [
     { value: "all", name: "All" },
@@ -148,7 +151,7 @@ const loadMoreActivities = async (scrollPosition: number) => {
       pageSize.limit,
       searchValue,
       userStatusMapper(usernameFilter.value),
-      statusMapper(statusFilter.value)
+      heatingOcrStatusMapper(statusFilter.value)
     );
     if (response.result) {
       const newActivities = response.result;
@@ -212,6 +215,82 @@ useEffect(() => {
   if (storedUser) {
     setUser(JSON.parse(storedUser));
   }
+}, []);
+
+// Polling function to check for activities with IN_PROGRESS file_status
+const pollForProcessingActivities = async () => {
+  if (isPolling) return;
+  
+  try {
+    setIsPolling(true);
+    const response = await GetOCRActivities(
+      0,
+      pageSize.skip + pageSize.limit,
+      searchValue,
+      userStatusMapper(usernameFilter.value),
+      heatingOcrStatusMapper(statusFilter.value)
+    );
+    
+    if (response?.result) {
+      const hasProcessingActivities = response.result.some(
+        (activity: Activity) => activity.file_status === "IN_PROGRESS"
+      );
+      
+      // Update activities list
+      setActivities(response.result.slice(0, pageSize.skip + pageSize.limit));
+      setActivityTotal(response.total);
+      
+      // Stop polling if no activities are processing
+      if (!hasProcessingActivities && pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        console.log("Polling stopped: All activities processed");
+      }
+    }
+  } catch (err) {
+    console.error("Error polling activities:", err);
+  } finally {
+    setIsPolling(false);
+  }
+};
+
+// Start polling when there are processing activities
+const startPolling = () => {
+  if (pollingIntervalRef.current) return; // Already polling
+  
+  console.log("Starting polling for processing activities...");
+  pollingIntervalRef.current = setInterval(() => {
+    pollForProcessingActivities();
+  }, 10000); // Poll every 5 seconds
+};
+
+// Stop polling
+const stopPolling = () => {
+  if (pollingIntervalRef.current) {
+    clearInterval(pollingIntervalRef.current);
+    pollingIntervalRef.current = null;
+    console.log("Polling stopped manually");
+  }
+};
+
+// Check for processing activities and start polling if needed
+useEffect(() => {
+  const hasProcessingActivities = activities.some(
+    (activity) => activity.file_status === "IN_PROGRESS"
+  );
+  
+  if (hasProcessingActivities && !pollingIntervalRef.current) {
+    startPolling();
+  } else if (!hasProcessingActivities && pollingIntervalRef.current) {
+    stopPolling();
+  }
+}, [activities]);
+
+// Cleanup polling on unmount
+useEffect(() => {
+  return () => {
+    stopPolling();
+  };
 }, []);
 
 useEffect(() => {
@@ -294,7 +373,7 @@ useEffect(() => {
           pageSize?.limit,
           searchValue,
           userStatusMapper(filter?.user),
-          statusMapper(value?.value)
+          heatingOcrStatusMapper(value?.value)
         );
       }
     }
@@ -306,7 +385,7 @@ useEffect(() => {
           pageSize?.limit,
           searchValue,
           null,
-          statusMapper(filter?.status)
+          heatingOcrStatusMapper(filter?.status)
         );
       } else {
         getAllActivitiesList(
@@ -314,7 +393,7 @@ useEffect(() => {
           pageSize?.limit,
           searchValue,
           userStatusMapper(value?.value),
-          statusMapper(filter?.status)
+          heatingOcrStatusMapper(filter?.status)
         );
       }
     }
@@ -322,12 +401,31 @@ useEffect(() => {
 
 
 
-  const handleCreate = async (title: string, file: File) => {
+  const handleCreate = async (title: string, file: File, template?: string, number?: number) => {
     try {
-      const response = await CreateOCRActivity(title, file);
+      const response = await CreateOCRActivity(title, file, template, number);
       if (response) {
         setCreateModalVisible(false);
-        getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
+        // Refresh the activity list
+        await getAllActivitiesList(0, pageSize.limit, searchValue,
+          userStatusMapper(usernameFilter.value),
+          heatingOcrStatusMapper(statusFilter.value)
+        );
+        // Start polling if the created activity is processing
+        if (response.file_status === "IN_PROGRESS") {
+          startPolling();
+          dispatch.toast.openToast({
+            status: true,
+            message: "Activity created. Processing document in background...",
+            type: "success",
+          });
+        } else {
+          dispatch.toast.openToast({
+            status: true,
+            message: "Activity created successfully",
+            type: "success",
+          });
+        }
       } else {
         console.error("Error creating activity");
       }
@@ -397,13 +495,24 @@ useEffect(() => {
     timeoutId = setTimeout(() => {
       
       getAllActivitiesList(pageSize?.skip, pageSize?.limit, searchTerm, userStatusMapper(usernameFilter.value),
-      statusMapper(statusFilter.value));
+      heatingOcrStatusMapper(statusFilter.value));
     }, 500);
   };
 
   const onActivityCardClick = (activity: Activity) => {
+    // Prevent interaction with activities that are still processing
+    if (activity?.file_status === "IN_PROGRESS") {
+      setPageError(true);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Activity is still processing. Please wait...",
+        type: "warning",
+      });
+      return;
+    }
+    
     if (activity?.user_id === ocrMemberDetails?.user_id) {
-      onSelectActivity(activity);
+        onSelectActivity(activity);
     } else if (
       activity?.status === "SUBMITTED" ||
       activity?.status === "REJECTED"
@@ -411,7 +520,7 @@ useEffect(() => {
       onSelectActivity(activity);
     } else {
       setPageError(true);
-      dispatch.toast.openToast({  
+      dispatch.toast.openToast({
         status: true,
         message: "Sorry you are not the creator",
       });
@@ -514,7 +623,11 @@ useEffect(() => {
     activities.map((activity: any) => (
       <div className="mt-5" key={activity.id}>
         <div
-          className="border main_card p-4 flex justify-between items-center mb-4 cursor-pointer rounded-lg shadow-lg"
+          className={`border main_card p-4 flex justify-between items-center mb-4 rounded-lg shadow-lg ${
+            activity?.file_status === "IN_PROGRESS" 
+              ? "cursor-not-allowed opacity-75" 
+              : "cursor-pointer"
+          }`}
           onClick={(e: any) =>
             (e.target.className.includes("main_card") ||
               e.target.className.includes("title_text")) &&
@@ -543,17 +656,32 @@ useEffect(() => {
 
             </div>
           </div>
-          <div>
-            {/* Placeholder for additional content, such as updated on */}
+          <div className="flex-1 flex justify-center">
+            {/* Centered processing indicator */}
+            {activity?.file_status === "IN_PROGRESS" && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                <Text type="small" className="text-blue-600">
+                  Processing...
+                </Text>
+              </div>
+            )}
+            {activity?.file_status === "FAILED" && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+                <Text type="small" className="text-red-600">
+                  Failed
+                </Text>
+              </div>
+            )}
           </div>
-          <div className="flex items-center relative">
+          <div className="flex items-center relative gap-2">
             <Text
               type="body"
               className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
                 activity?.status
               )} absolute right-24`}
             >
-              {activity?.status && statusMapper(activity.status)}
+              {activity?.status && heatingOcrStatusMapper(activity.status)}
             </Text>
             {/* Empty placeholder to maintain space for dropdown menu */}
             <div className="right-12">
@@ -607,6 +735,9 @@ useEffect(() => {
         onCreate={handleCreate}
         defaultValues={defaultActivity}
         onUpdate={onUpdate}
+        showTemplate={true}
+        showNumber={true}  // Add this prop
+
       />
 
       {tranferModal && (

@@ -7,6 +7,8 @@ import {
   axiosDoctorBot,
   axiosCyberbuddy,
   axiosHeatingOCR,
+  axiosTransmitterOCR,
+  axiosDocumentTranslator,
   axiosEdge,
 } from "./axiosInstances";
 
@@ -22,6 +24,8 @@ import { setInterceptors } from "./axiosConfig";
   axiosDoctorBot,
   axiosCyberbuddy,
   axiosHeatingOCR,
+  axiosTransmitterOCR,
+  axiosDocumentTranslator,
   axiosEdge,
 ].forEach(setInterceptors);
 
@@ -52,6 +56,8 @@ export const TroubleshootAPI = createAPI(axiosTroubleshoot);
 export const DoctorBotAPI = createAPI(axiosDoctorBot);
 export const CyberbuddyAPI = createAPI(axiosCyberbuddy);
 export const HeatingOCRAPI = createAPI(axiosHeatingOCR);
+export const TransmitterOCRAPI = createAPI(axiosTransmitterOCR);
+export const DocumentTranslatorAPI = createAPI(axiosDocumentTranslator);
 export const EdgeAPI = createAPI(axiosEdge);
 
 export async function redirectToLogin(): Promise<void> {
