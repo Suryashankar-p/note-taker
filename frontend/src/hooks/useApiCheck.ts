@@ -8,7 +8,8 @@ import { GetMemberGPTRole } from "../services/thermax_gpt.ts";
 import { GetMemberDoctorConbotRole } from "../services/doctor_conbot.ts";
 import { GetMemberTroubleshootingRole } from "../services/troubleshooting.ts";
 import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
-import { GetHeatingOCRRole} from "../services/heating_ocr.ts"
+import { GetHeatingOCRRole } from "../services/heating_ocr.ts"
+import { GetMemberEdgeRole } from "../services/edge.ts";
 
 type Type =
   | "sales"
@@ -19,7 +20,8 @@ type Type =
   | "ciso_bot"
   | "transmitter_ocr"
   | "cyberbuddy"
-  | "heating_ocr";
+  | "heating_ocr"
+  | "edgeagent-playground";
 
 const useApiCheck = (type?: Type) => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -40,6 +42,8 @@ const useApiCheck = (type?: Type) => {
         return await GetMemberCyberBuddyRole();
       case "heating_ocr":
         return await GetHeatingOCRRole();
+      case "edgeagent-playground":
+        return await GetMemberEdgeRole();
       default:
         return null;
     }

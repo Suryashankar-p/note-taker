@@ -34,6 +34,8 @@ const ProtectedRoute = ({ element }: any) => {
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ChatPage = lazy(() => import("./pages/sales/ChatPageMain"));
 const Settings = lazy(() => import("./pages/sales/settings/Settings"));
+const EdgeChatPage = lazy(() => import("./pages/edge/ChatPageMain"));
+const EdgeSettings = lazy(() => import("./pages/edge/settings/Settings"));
 const TBWES_OCR = lazy(() => import("./pages/tbwes_ocr/OcrMain.tsx"));
 const Thermax_GPT = lazy(() => import("./pages/thermax_gpt/GPTMain.tsx"));
 const Thermax_GPT_Settings = lazy(
@@ -84,6 +86,14 @@ const App = () => (
         element={<ProtectedRoute element={<Settings />} />}
       />
       <Route
+        path="/ai-studio/edge"
+        element={<ProtectedRoute element={<EdgeChatPage />} />}
+      />
+      <Route
+        path="/ai-studio/edge/settings"
+        element={<ProtectedRoute element={<EdgeSettings />} />}
+      />
+      <Route
         path="/ai-studio/thermax_gpt"
         element={<ProtectedRoute element={<Thermax_GPT />} />}
       />
@@ -110,7 +120,7 @@ const App = () => (
       <Route
         path="/ai-studio/cyberbuddy"
         element={<ProtectedRoute element={<CyberBuddyMain />} />}
-      /> 
+      />
       <Route
         path="/ai-studio/cyberbuddy/settings"
         element={<ProtectedRoute element={<CyberBuddySettings />} />}
