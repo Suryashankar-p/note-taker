@@ -89,8 +89,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
         typeof activityId === 'string' ? parseInt(activityId) : activityId
       );
 
-      console.log("API Response:", response); // Debug log
-
       if (response) {
         setActivityDetails(response);
 
@@ -119,8 +117,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
         } else if (response.data && response.data.result && Array.isArray(response.data.result)) {
           dataArray = response.data.result;
         }
-
-        console.log("Data Array:", dataArray); // Debug log
 
         // Map the data to PageData format
         const mappedData: PageData[] = dataArray.map((item, index) => {
@@ -159,8 +155,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
           };
         }).filter(item => item.fields.length > 0); // Filter out empty items
 
-        console.log("Mapped Data:", mappedData); // Debug log
-
         // Extract unique column titles from all fields across all pages
         const allColumns = new Set<string>();
         mappedData.forEach(page => {
@@ -170,7 +164,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
         });
 
         const columnArray = Array.from(allColumns);
-        console.log("Dynamic Columns:", columnArray); // Debug log
 
         setDynamicColumns(columnArray);
         setPageDataList(mappedData);
@@ -377,7 +370,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
                   </tr>
                 ) : (
                   pageDataList.map((pageData, pageIndex) => {
-                    console.log(`Row ${pageIndex} - Page ${pageData.page_number}:`, pageData); // Debug log
 
                     const invalidFields = Array.isArray(pageData.fields)
                       ? pageData.fields.filter(f => !f.is_valid)

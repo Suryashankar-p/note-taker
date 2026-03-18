@@ -64,7 +64,6 @@ const MembersPage: React.FC = () => {
           });
       }
     } catch (err) {
-      console.log(err);
       dispatch.toast.openToast({
         status: true,
         message: "Error fetching data",
@@ -85,33 +84,29 @@ const MembersPage: React.FC = () => {
 
   const handleAddMember = async (member: Member) => {
     let response: any;
-    try {
-      if (memberType === "edit") {
-        response = await UpdateOCRMember(
-          member?.role,
-          member?.name,
-          member?.memberId
-        );
-      } else if (memberType === "add") {
-        response = await CreateOCRMember(
-          member?.role,
-          member?.email,
-          member?.name
-        );
-      }
-      if (response?.id) {
-        dispatch.modal.closeAddMember(); // Close the modal after adding a member
-        getAllMembers(0, 50, "");
-        getOCRRole();
-      } else if (response?.detail) {
-        dispatch.toast.openToast({
-          status: true,
-          message: response?.detail,
-          type: "error",
-        });
-      }
-    } catch (err) {
-      console.log(err);
+    if (memberType === "edit") {
+      response = await UpdateOCRMember(
+        member?.role,
+        member?.name,
+        member?.memberId
+      );
+    } else if (memberType === "add") {
+      response = await CreateOCRMember(
+        member?.role,
+        member?.email,
+        member?.name
+      );
+    }
+    if (response?.id) {
+      dispatch.modal.closeAddMember(); // Close the modal after adding a member
+      getAllMembers(0, 50, "");
+      getOCRRole();
+    } else if (response?.detail) {
+      dispatch.toast.openToast({
+        status: true,
+        message: response?.detail,
+        type: "error",
+      });
     }
   };
 
@@ -127,12 +122,8 @@ const MembersPage: React.FC = () => {
   };
 
   const onDeleteSubmit = async (user: any) => {
-    try {
-      await DeleteOCRMember(user?.id);
-      getAllMembers(0, 50, "");
-    } catch (err) {
-      console.log(err);
-    }
+    await DeleteOCRMember(user?.id);
+    getAllMembers(0, 50, "");
   };
 
   return (

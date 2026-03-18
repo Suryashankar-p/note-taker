@@ -619,7 +619,6 @@ const ChatArea: React.FC<Props> = ({
               );
             }
           } catch (err) {
-            console.log("Error in new chat creation:", err);
             setLoading(false);
           }
         } else {
@@ -839,7 +838,6 @@ const ChatArea: React.FC<Props> = ({
     try {
       // Avoid refetching the same media
       if (videoUrlMap[index]) {
-        console.log(`Media already cached for index ${index}, skipping fetch`);
         return;
       }
       
@@ -849,7 +847,6 @@ const ChatArea: React.FC<Props> = ({
         return;
       }
       
-      console.log(`Fetching media for index ${index}, type: ${mediaType}, chat_id: ${chat_id}`);
       const response = await ReadFile(Number(chat_id), mediaType, blobLink);
       const mediaBlob = new Blob([response.data], {
         type: response.headers["content-type"] || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg'),
@@ -872,7 +869,6 @@ const ChatArea: React.FC<Props> = ({
 
     const handleDownloadFile = async (mediaType: string, link: string) => {
       try {
-        console.log("Downloading file:", mediaType, link);
         
         if (!chatId) {
           console.error('No chat_id available for file download');

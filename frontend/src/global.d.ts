@@ -17,6 +17,7 @@ declare global {
       BACKEND_HEATING_OCR_URL: string;
       BACKEND_TRANSMITTER_OCR_URL: string;
       BACKEND_DOCUMENT_TRANSLATOR_URL: string;
+      BACKEND_EDGE_URL: string;
     };
   }
 }

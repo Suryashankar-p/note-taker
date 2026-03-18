@@ -53,7 +53,6 @@ const LoginPage = () => {
         navigate(state);
       }
     } catch (err) {
-      console.log(err);
       dispatch.toast.openToast({
         status: true,
         message: "Login Failed",

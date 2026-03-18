@@ -226,21 +226,17 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
     limit: number,
     search_term?: string
   ) => {
-    try {
-      const response = await ReadOCRMembers(skip, limit, search_term);
-      if (response?.result) {
-        setMembers(response?.result);
-      } else {
-        setPageError(true);
-        if (response?.detail)
-          dispatch.toast.openToast({
-            status: true,
-            message: response?.detail,
-            type: "error",
-          });
-      }
-    } catch (err) {
-      console.log(err);
+    const response = await ReadOCRMembers(skip, limit, search_term);
+    if (response?.result) {
+      setMembers(response?.result);
+    } else {
+      setPageError(true);
+      if (response?.detail)
+        dispatch.toast.openToast({
+          status: true,
+          message: response?.detail,
+          type: "error",
+        });
     }
   };
 
@@ -331,7 +327,6 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
     } catch (err) {
       setCreateModalVisible(false);
       setPageError(true);
-      console.log(err);
 
       if (err?.response?.data?.detail) {
         dispatch.toast.openToast({
@@ -357,8 +352,6 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
       dispatch.modal.openConfirmation();
     } else if (item === "Tranfer") {
       dispatch.modal.openTranferModal();
-    } else {
-      console.log("error");
     }
   };
 

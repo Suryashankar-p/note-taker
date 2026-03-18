@@ -141,7 +141,6 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
         setLoading(false);
       }
     } catch (err) {
-      console.log("errr", err);
       setLoading(false);
     }
     setIsLoadingMore(false);
@@ -153,21 +152,17 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
     limit: number,
     search_term: string
   ) => {
-    try {
-      const categoryResponse = await ReadCategories(skip, limit, search_term);
-      if (categoryResponse?.result) {
-        setcategorys(categoryResponse?.result);
-        setcategoryTotal(categoryResponse?.total);
-      } else {
-        setPageError(true);
-        if (categoryResponse?.detail)
-          dispatch.toast.openToast({
-            status: true,
-            message: categoryResponse?.detail,
-          });
-      }
-    } catch (err) {
-      console.log(err);
+    const categoryResponse = await ReadCategories(skip, limit, search_term);
+    if (categoryResponse?.result) {
+      setcategorys(categoryResponse?.result);
+      setcategoryTotal(categoryResponse?.total);
+    } else {
+      setPageError(true);
+      if (categoryResponse?.detail)
+        dispatch.toast.openToast({
+          status: true,
+          message: categoryResponse?.detail,
+        });
     }
   };
   const onCategoryOnChange = (item: any, title: string) => {
@@ -181,63 +176,28 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   };
 
   const onCategoryCreate = async (data: any) => {
-    if (data) {
-      let body = {
-        title: data?.title,
-        other_names: data?.other_names ? data?.other_names : "",
-        description: data?.description,
-      };
-      try {
-        dispatch.loadingState.startLoading();
-        const createResponse = await CreateCategory(body);
-        if (createResponse?.id) {
-          getAllCategories(0, 20, "");
-          dispatch.modal.closeAddProduct();
-          dispatch.loadingState.endLoading();
-        } else {
-          setPageError(true);
-          dispatch.loadingState.endLoading();
-          if (createResponse?.detail)
-            dispatch.toast.openToast({
-              status: true,
-              message: createResponse?.detail,
-            });
-        }
-      } catch (err) {
-        console.log(err);
-      }
+    let body = {
+      title: data?.title,
+      other_names: data?.other_names ? data?.other_names : "",
+      description: data?.description,
+    };
+    dispatch.loadingState.startLoading();
+    const createResponse = await CreateCategory(body);
+    if (createResponse?.id) {
+      getAllCategories(0, 20, "");
+      dispatch.modal.closeAddProduct();
+      dispatch.loadingState.endLoading();
     } else {
-      console.log("error");
+      setPageError(true);
+      dispatch.loadingState.endLoading();
+      if (createResponse?.detail)
+        dispatch.toast.openToast({
+          status: true,
+          message: createResponse?.detail,
+        });
     }
   };
 
-  // const onProductEdit = async (data: any) => {
-  //   if (data) {
-  //     try {
-  //       const editResponse = await UpdateProduct(
-  //         data?.id,
-  //         data?.title,
-  //         data?.short_title,
-  //         data?.description
-  //       );
-  //       if (editResponse?.id) {
-  //         getAllProducts(0, 20, "");
-  //         dispatch.modal.closeAddProduct();
-  //       } else {
-  //         setPageError(true);
-  //         if (editResponse?.detail)
-  //           dispatch.toast.openToast({
-  //             status: true,
-  //             message: editResponse?.detail,
-  //           });
-  //       }
-  //     } catch (err) {
-  //       console.log("err", err);
-  //     }
-  //   } else {
-  //     console.log("errror");
-  //   }
-  // };
   const onSubmit = (data: any) => {
     if (isOpen?.type === "edit") {
       // onProductEdit(data);
@@ -247,16 +207,8 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   };
 
   const onDeleteSubmit = async (value: any) => {
-    if (value?.id) {
-      try {
-        await DeleteCategory(value?.id);
-        getAllCategories(0, 20, "");
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      console.log("Failed");
-    }
+    await DeleteCategory(value?.id);
+    getAllCategories(0, 20, "");
   };
   const getCategoryDocuments = async (
     category_id: number | string,
@@ -264,22 +216,18 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
     limit: number,
     search_term: string
   ) => {
-    try {
-      const resp = await ReadCategoryDocuments(
-        category_id,
-        skip,
-        limit,
-        search_term
-      );
-      if (resp?.result) {
-        setFiles(resp.result);
-        return resp.result;
-      } else {
-        setPageError(true);
-        dispatch.toast.openToast({ status: true, message: resp?.detail });
-      }
-    } catch (err) {
-      console.log("err", err);
+    const resp = await ReadCategoryDocuments(
+      category_id,
+      skip,
+      limit,
+      search_term
+    );
+    if (resp?.result) {
+      setFiles(resp.result);
+      return resp.result;
+    } else {
+      setPageError(true);
+      dispatch.toast.openToast({ status: true, message: resp?.detail });
     }
   };
 
@@ -287,13 +235,9 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
     category_id: string | number,
     file_id: string | number
   ) => {
-    try {
-      const resp = await DeleteCategoryDocument(category_id, file_id);
-      getCategoryDocuments(category_id, 0, 100, "");
-      getAllCategories(0, 20, "");
-    } catch (err) {
-      console.log("err", err);
-    }
+    const resp = await DeleteCategoryDocument(category_id, file_id);
+    getCategoryDocuments(category_id, 0, 100, "");
+    getAllCategories(0, 20, "");
   };
 
   const expandFiles = async (key: number, item: any) => {
@@ -390,27 +334,23 @@ const categorys: React.FC<categorysProps> = ({ onSwitch }) => {
   };
 
   const onFileClick = async (file: any) => {
-    try {
-      setFileShow(true)
-      dispatch.loadingState.startLoading();
-      const response = await getCategoryFileBlobUrl(file)
-      if (response) {
-        const blobUrl = URL.createObjectURL(response.data);
-        let fileInfo: any = {
-          name: file.filename,
-          type: getFileType(file?.filename),
-          url: blobUrl,
-          };
-          setFileData(fileInfo);
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
-      }
-    } catch (err) {
-      console.log("err", err);
+    setFileShow(true)
+    dispatch.loadingState.startLoading();
+    const response = await getCategoryFileBlobUrl(file)
+    if (response) {
+      const blobUrl = URL.createObjectURL(response.data);
+      let fileInfo: any = {
+        name: file.filename,
+        type: getFileType(file?.filename),
+        url: blobUrl,
+        };
+        setFileData(fileInfo);
+    } else {
+      dispatch.toast.openToast({
+        status: true,
+        message: "File not found",
+        type: "error",
+      });
     }
   };
 

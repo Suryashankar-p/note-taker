@@ -132,7 +132,6 @@ const Knowledge = () => {
         setLoading(false);
       }
     } catch (err) {
-      console.log("errr", err);
       setLoading(false);
     }
     setIsLoadingMore(false);
@@ -158,7 +157,7 @@ const Knowledge = () => {
           });
       }
     } catch (err) {
-      console.log(err);
+      setPageError(true);
     }
   };
   const onProductOnChange = (item: any, title: string) => {
@@ -192,10 +191,10 @@ const Knowledge = () => {
             });
         }
       } catch (err) {
-        console.log(err);
+        setPageError(true);
       }
     } else {
-      console.log("error");
+      setPageError(true);
     }
   };
 
@@ -221,10 +220,10 @@ const Knowledge = () => {
             });
         }
       } catch (err) {
-        console.log("err", err);
+        setPageError(true);
       }
     } else {
-      console.log("errror");
+      setPageError(true);
     }
   };
 
@@ -248,7 +247,7 @@ const Knowledge = () => {
         dispatch.toast.openToast({ status: true, message: resp?.detail });
       }
     } catch (err) {
-      console.log("err", err);
+      setPageError(true);
     }
   };
 
@@ -268,7 +267,7 @@ const Knowledge = () => {
       const resp = await DeleteProductDocument(product_id, file_id);
       getProductDocuments(product_id, 0, 100, "");
     } catch (err) {
-      console.log("err", err);
+      setPageError(true);
     }
   };
 
@@ -289,10 +288,10 @@ const Knowledge = () => {
         await DeleteProduct(value?.id);
         getAllProducts(0, 20, "");
       } catch (err) {
-        console.log(err);
+        setPageError(true);
       }
     } else {
-      console.log("Failed");
+      setPageError(true);
     }
   };
 
@@ -341,7 +340,7 @@ const Knowledge = () => {
           dispatch.loadingState.endLoading();
         }
       } catch (err: any) {
-        console.log("err", err);
+        setPageError(true);
         let error_message = err?.response?.data?.detail;
         dispatch.loadingState.endLoading();
         setPageError(true);
@@ -370,7 +369,6 @@ const Knowledge = () => {
         file.product_id,
         file.id
       );
-        console.log(file);
         
       if (linkResp?.link) {
         let fileInfo: any = {
@@ -388,7 +386,7 @@ const Knowledge = () => {
         });
       }
     } catch (err) {
-      console.log("err", err);
+      setPageError(true);
     }
   };
 

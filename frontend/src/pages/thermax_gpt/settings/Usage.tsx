@@ -77,25 +77,6 @@ const Usage = () => {
     getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);
   }, []);
 
-  // const getActivityTopUsers = async (
-  //   year: string | number,
-  //   month: string | number,
-  //   n: number
-  // ) => {
-  //   try {
-  //     const topUserResponse = await ReadActivityUsageTopUsers(year, month, n);
-  //     if (topUserResponse?.result) {
-  //       setTopUsers(topUserResponse?.result);
-  //     } else {
-  //       setPageError(true);
-  //       setTopUsers(null);
-  //       // if (topUserResponse?.detail) dispatch.toast.openToast({ status: true, message: topUserResponse?.detail });
-  //     }
-  //   } catch (err) {
-  //     console.log("err", err);
-  //   }
-  // };
-
   const reachedBottom = async () => {
     if (loadingRef.current) return;
     if (!topUsers || topUsers.length >= totalUsers) return;
@@ -121,28 +102,24 @@ const Usage = () => {
     type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
   ) => {
     if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
-    try {
-      const topUserResponse = await ReadActivityUsageTopUsers(
-        year,
-        month,
-        skip,
-        limit,
-        type
-      );
+    const topUserResponse = await ReadActivityUsageTopUsers(
+      year,
+      month,
+      skip,
+      limit,
+      type
+    );
 
-      if (topUserResponse?.result) {
-        setTopUsers((prevData) =>
-          skip === 0
-            ? topUserResponse.result
-            : [...prevData, ...topUserResponse.result]
-        );
-        setTotalUsers(topUserResponse.total);
-      } else {
-        setPageError(true);
-        setTopUsers(null);
-      }
-    } catch (err) {
-      console.log("err", err);
+    if (topUserResponse?.result) {
+      setTopUsers((prevData) =>
+        skip === 0
+          ? topUserResponse.result
+          : [...prevData, ...topUserResponse.result]
+      );
+      setTotalUsers(topUserResponse.total);
+    } else {
+      setPageError(true);
+      setTopUsers(null);
     }
   };
 
@@ -161,7 +138,7 @@ const Usage = () => {
         //if (activityResponse?.detail) dispatch.toast.openToast({ status: true, message: topUserResponse?.detail });
       }
     } catch (err) {
-      console.log("err", err);
+      setPageError(true);
     }
   };
 
@@ -175,7 +152,7 @@ const Usage = () => {
         //     dispatch.toast.openToast({ message: limitResponse?.detail, status: true })
       }
     } catch (err) {
-      console.log(err, "er");
+      setPageError(true);
     }
   };
 
@@ -196,7 +173,7 @@ const Usage = () => {
             });
         }
       } catch (err) {
-        console.log(err, "erer");
+        setPageError(true);
       }
     }
   };
@@ -240,7 +217,7 @@ const Usage = () => {
         setUsageData(null);
       }
     } catch (err) {
-      console.log(err);
+      setPageError(true);
     }
   };
 

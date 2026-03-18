@@ -348,6 +348,8 @@ export const selectImage = (title: string) => {
             return heating_ocr;
         case 'CyberBuddy':
             return cyberbuddy;
+        case 'Edge Bot':
+            return sales;
     }
 }
 

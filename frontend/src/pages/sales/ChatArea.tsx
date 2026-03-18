@@ -22,8 +22,6 @@ import {
 import Loading from "../../components/ChatLoading";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Trash from "../../assets/Trash";
-import Dislike from "../../assets/Dislike";
-import LikeIcon from "../../assets/Like";
 import CopyIcon from "../../assets/Copy";
 import DislikeReason from "../../components/Modals/DislikeReason";
 import Dollar from "../../assets/Dollar";
@@ -85,13 +83,13 @@ const ChatArea: React.FC<Props> = ({
     setChatUpdated((prev) => prev + 1); // Increment counter
   };
 
- useEffect(() => {
-   scrollToBottom()
-   return () => {
-     setChatUpdated(0)
-   }
- }, [chatUpdated])
- 
+  useEffect(() => {
+    scrollToBottom()
+    return () => {
+      setChatUpdated(0)
+    }
+  }, [chatUpdated])
+
   const [feedbackShow, setFeedbackShow] = useState(false);
 
   useEffect(() => {
@@ -105,7 +103,7 @@ const ChatArea: React.FC<Props> = ({
       if (!scrollRef.current) return;
 
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    
+
       setShowButton(scrollTop + clientHeight < scrollHeight);
     };
 
@@ -126,19 +124,19 @@ const ChatArea: React.FC<Props> = ({
   useEffect(() => {
     scrollToBottom(); // Ensures scroll happens when chatContent updates
   }, [chatContent]);
-  
+
   // Scroll only on the first render
   useEffect(() => {
     scrollToBottom(); // Ensures scroll happens after the first render
   }, []);
-  
-const scrollToBottom = () => {
-  if (messagesEndRef.current) {
-    setTimeout(() => {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 5); 
-  }
-};
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      setTimeout(() => {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 5);
+    }
+  };
 
   const getPageChat = async () => {
     try {
@@ -172,7 +170,7 @@ const scrollToBottom = () => {
     setLoading(true);
     dispatch.chatContent.addQuestion([{ human: inputValue }]);
     updateChat()
-    onQuestionAsked(inputValue);
+    onQuestionAsked?.(inputValue);
     try {
       if (chat_id) {
         const chatResponse = await CreateChatHistory(inputValue, chat_id);
@@ -223,7 +221,6 @@ const scrollToBottom = () => {
               navigate(`/ai-studio/sales?chat_id=${newSessionResponse?.id}`);
             }
           } catch (err) {
-            console.log("evde", err);
             setLoading(false);
           }
         } else {
@@ -234,7 +231,6 @@ const scrollToBottom = () => {
             type: "error",
           });
           setLoading(false);
-          console.log("error");
         }
       }
     } catch (error) {
@@ -263,28 +259,6 @@ const scrollToBottom = () => {
     }
   };
 
-  const UpdateChat_history = async (
-    chat_history_id: number,
-    chat_id: number,
-    like: boolean
-  ) => {
-    try {
-      let resp = await updateChatHistory(chat_history_id, chat_id, like);
-      if (resp?.id) {
-        getPageChat();
-      } else {
-        setCopySuccess(false);
-        dispatch.toast.openToast({
-          message: resp?.detail,
-          status: true,
-          type: "error",
-        });
-      }
-    } catch (err) {
-      console.log("err", err);
-    }
-  };
-
   const getInitials = (name: string) => {
     const nameParts = name.trim().split(" ");
     const initials = nameParts
@@ -294,58 +268,37 @@ const scrollToBottom = () => {
     return initials.toUpperCase();
   };
 
-  const onDislikeClick = (e: any, message: any) => {
-    setDefaultChatData(message);
-    e.stopPropagation();
-    if (message?.like === false) return;
-    else {
-      dispatch.modal.openDislikeReason("add");
-    }
-  };
-
-  const onLikeClick = (e: any, message: any) => {
-    e.stopPropagation();
-    if (message?.like) return;
-    else {
-      UpdateChat_history(message?.id, message?.chat_id, true);
-    }
-  };
-
   const onDislikeSubmit = async (data: any) => {
     const dislikeReason =
       data?.dislikeReason === "Other"
         ? data?.customReason
         : data?.dislikeReason;
-    try {
-      if (defaultChatData) {
-        const resp = await updateChatHistory(
-          defaultChatData.id,
-          defaultChatData?.chat_id,
-          false,
-          dislikeReason,
-          data?.suggestedAnswer
-        );
-        if (resp?.id) {
-          getPageChat();
-          dispatch.modal.CloseDislikeReason();
-        } else {
-          setCopySuccess(false);
-          dispatch.toast.openToast({
-            status: true,
-            message: resp?.detail,
-            type: "error",
-          });
-        }
+    if (defaultChatData) {
+      const resp = await updateChatHistory(
+        defaultChatData.id,
+        defaultChatData?.chat_id,
+        false,
+        dislikeReason,
+        data?.suggestedAnswer
+      );
+      if (resp?.id) {
+        getPageChat();
+        dispatch.modal.CloseDislikeReason();
+      } else {
+        setCopySuccess(false);
+        dispatch.toast.openToast({
+          status: true,
+          message: resp?.detail,
+          type: "error",
+        });
       }
-    } catch (err) {
-      console.log("err", err);
     }
   };
 
   const copyToClipboard = (index: number, message: any) => {
     const content: any = document.querySelector(`#message-${index}`);
     if (!content) return;
-    copy(content.innerText); 
+    copy(content.innerText);
     setCopySuccess(true);
     dispatch.toast.openToast({
       status: true,
@@ -354,7 +307,7 @@ const scrollToBottom = () => {
     });
   };
 
-  const onFileClick = async (file: any) => {    
+  const onFileClick = async (file: any) => {
     try {
       if (file?.product_id) {
         const linkResp = await ReadProductDocumentUrl(
@@ -382,7 +335,7 @@ const scrollToBottom = () => {
           file?.feedback_knowledge_id
         );
         if (feedback_response?.updated_answer) {
-          setFileData({...feedback_response, name:file.name, question:feedback_response.updated_question, answer:feedback_response.updated_answer});
+          setFileData({ ...feedback_response, name: file.name, question: feedback_response.updated_question, answer: feedback_response.updated_answer });
           setFeedbackShow(true);
         } else {
           setCopySuccess(false);
@@ -395,7 +348,7 @@ const scrollToBottom = () => {
       } else if (file?.qa_knowledge_id) {
         const qa_response = await ReadQAWithid(file?.qa_knowledge_id);
         if (qa_response?.answer) {
-          setFileData({...qa_response, name:file.name});
+          setFileData({ ...qa_response, name: file.name });
           setFeedbackShow(true);
         } else {
           setCopySuccess(false);
@@ -489,11 +442,10 @@ const scrollToBottom = () => {
                   </div>
                 )}
                 <div
-                  className={`inline-block p-2 rounded-lg bg-white overflow-hidden ${
-                    message?.human
-                      ? "bg-inherit text-small break-words"
-                      : "bg-inherit text-small pl-14 break-words"
-                  }`}
+                  className={`inline-block p-2 rounded-lg bg-white overflow-hidden ${message?.human
+                    ? "bg-inherit text-small break-words"
+                    : "bg-inherit text-small pl-14 break-words"
+                    }`}
                 >
                   <Text className="text-primary_text" type="small">
                     {message?.human}
@@ -535,28 +487,14 @@ const scrollToBottom = () => {
               {message.ai ? (
                 <button
                   disabled={disabled}
-                  className="w-40 min-h-8 rounded-full ml-12 mt-4 border border-grey"
+                  className="w-fit min-h-8 rounded-full ml-12 mt-4 border border-grey"
                 >
                   <div className="flex flex-row mx-2 justify-between">
-                    <LikeIcon
-                      disabled={disabled}
-                      selected={message?.like}
-                      onClick={(e: any) => onLikeClick(e, message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" />
-                    <Dislike
-                      color="blue"
-                      disabled={disabled}
-                      selected={message?.like === false}
-                      onClick={(e: any) => onDislikeClick(e, message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" />
                     <CopyIcon
                       disabled={disabled}
                       onClick={() => copyToClipboard(index, message)}
                     />
                     <img src={Divide} alt="divide" loading="lazy" />
-                    {/* <img src={Delete} onClick={() => onChatDelete(message)} className='h-5' alt='delete' loading='lazy' /> */}
                     <Trash
                       disabled={disabled}
                       className="h-5"

@@ -71,27 +71,23 @@ const Usage = () => {
     limit: number
   ) => {
    if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
-    try {
-      const topUserResponse = await ReadActivityUsageTopUsers(
-        year,
-        month,
-        skip,
-        limit
-      );
+    const topUserResponse = await ReadActivityUsageTopUsers(
+      year,
+      month,
+      skip,
+      limit
+    );
 
-      if (topUserResponse?.result) {
-        setTopUsers((prevData) =>
-          skip === 0
-            ? topUserResponse.result
-            : [...prevData, ...topUserResponse.result]
-        );
-        setTotalUsers(topUserResponse.total);
-      } else {
-        setPageError(true);
-        setTopUsers(null);
-      }
-    } catch (err) {
-      console.log("err", err);
+    if (topUserResponse?.result) {
+      setTopUsers((prevData) =>
+        skip === 0
+          ? topUserResponse.result
+          : [...prevData, ...topUserResponse.result]
+      );
+      setTotalUsers(topUserResponse.total);
+    } else {
+      setPageError(true);
+      setTopUsers(null);
     }
   };
 
@@ -99,52 +95,38 @@ const Usage = () => {
     year: string | number,
     month: string | number
   ) => {
-    try {
-      const activityResponse = await ReadActivityUsage(year, month);
-      if (activityResponse?.question) {
-        setActivityData(activityResponse);
-      } else {
-        setPageError(true);
-        setActivityData(null);
-        //if (activityResponse?.detail) dispatch.toast.openToast({ status: true, message: topUserResponse?.detail });
-      }
-    } catch (err) {
-      console.log("err", err);
+    const activityResponse = await ReadActivityUsage(year, month);
+    if (activityResponse?.question) {
+      setActivityData(activityResponse);
+    } else {
+      setPageError(true);
+      setActivityData(null);
     }
   };
 
   const getUsageLimit = async () => {
-    try {
-      const limitResponse = await ReadUsageLimit();
-      if (limitResponse?.id) {
-        setLimit(limitResponse?.limit);
-      } else {
-        setPageError(true);
-        //     dispatch.toast.openToast({ message: limitResponse?.detail, status: true })
-      }
-    } catch (err) {
-      console.log(err, "er");
+    const limitResponse = await ReadUsageLimit();
+    if (limitResponse?.id) {
+      setLimit(limitResponse?.limit);
+    } else {
+      setPageError(true);
     }
   };
 
   const onLimitEdit = async (data: any) => {
     if (data?.limit) {
-      try {
-        const editLimitResponse = await UpdateUsageLimit(data?.limit);
-        if (editLimitResponse?.id) {
-          setLimit(editLimitResponse?.limit);
-          dispatch.modal.closeEditLimit();
-        } else {
-          setPageError(true);
-          if (editLimitResponse?.detail)
-            dispatch.toast.openToast({
-              message: editLimitResponse?.detail,
-              status: true,
-              type: "error",
-            });
-        }
-      } catch (err) {
-        console.log(err, "erer");
+      const editLimitResponse = await UpdateUsageLimit(data?.limit);
+      if (editLimitResponse?.id) {
+        setLimit(editLimitResponse?.limit);
+        dispatch.modal.closeEditLimit();
+      } else {
+        setPageError(true);
+        if (editLimitResponse?.detail)
+          dispatch.toast.openToast({
+            message: editLimitResponse?.detail,
+            status: true,
+            type: "error",
+          });
       }
     }
   };
@@ -190,16 +172,12 @@ const Usage = () => {
     year: string | number,
     month: string | number
   ) => {
-    try {
-      const usageResponse = await ReadCostUsage(year, month);
-      if (usageResponse?.cost) {
-        setUsageData(usageResponse);
-      } else {
-        setPageError(true);
-        setUsageData(null);
-      }
-    } catch (err) {
-      console.log(err);
+    const usageResponse = await ReadCostUsage(year, month);
+    if (usageResponse?.cost) {
+      setUsageData(usageResponse);
+    } else {
+      setPageError(true);
+      setUsageData(null);
     }
   };
 

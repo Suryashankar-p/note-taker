@@ -56,7 +56,7 @@ const Usage = () => {
       }
     }
     catch (err) {
-      console.log("err", err);
+      setPageError(true);
     }
   }
 
@@ -73,7 +73,7 @@ const Usage = () => {
       }
     }
     catch (err) {
-      console.log("err", err);
+      setPageError(true);
     }
   }
 
@@ -89,8 +89,7 @@ const Usage = () => {
       }
     }
     catch (err) {
-      console.log(err, "er");
-
+      setPageError(true);
     }
   }
 
@@ -109,7 +108,7 @@ const Usage = () => {
         }
       }
       catch (err) {
-        console.log(err, "erer");
+        setPageError(true);
       }
     }
   }
@@ -137,7 +136,7 @@ const Usage = () => {
       }
     }
     catch (err) {
-      console.log(err);
+      setPageError(true);
     }
   }
 
