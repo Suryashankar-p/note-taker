@@ -18,7 +18,7 @@ import {
   ReadProductDocumentUrl,
   ReadQAWithid,
   updateChatHistory,
-} from "../../services/sales.ts";
+} from "../../services/edge.ts";
 import Loading from "../../components/ChatLoading";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Trash from "../../assets/Trash";
@@ -158,7 +158,7 @@ const ChatArea: React.FC<Props> = ({
             type: "error",
           });
         }
-        navigate(`/ai-studio/sales`);
+        navigate(`/ai-studio/edge`);
       }
     } catch (error) {
       console.error("Error fetching chat history:", error);
@@ -202,7 +202,7 @@ const ChatArea: React.FC<Props> = ({
               newSessionResponse.id
             );
             if (chatResponse?.ai) {
-              navigate(`/ai-studio/sales?chat_id=${newSessionResponse?.id}`);
+              navigate(`/ai-studio/edge?chat_id=${newSessionResponse?.id}`);
               setInputValue("");
               setLoading(false);
               setPageError(false);
@@ -218,7 +218,7 @@ const ChatArea: React.FC<Props> = ({
                   type: "error",
                 });
               }
-              navigate(`/ai-studio/sales?chat_id=${newSessionResponse?.id}`);
+              navigate(`/ai-studio/edge?chat_id=${newSessionResponse?.id}`);
             }
           } catch (err) {
             console.log("evde", err);

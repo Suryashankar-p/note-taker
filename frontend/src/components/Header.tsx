@@ -90,9 +90,9 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
       <div className="w-full max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         {/* Logo */}
         <div className="flex absolute top-[1vh] left-[3vw] md:left-[5vw]">
-          <img loading="lazy" src={logo} alt="Logo" onClick={() => navigate('/ai-studio')} className="h-10 mr-2" />
+          <img loading="lazy" src={logo} alt="Logo" className="h-10 mr-2" />
         </div>
-  
+
         {/* Breadcrumb Navigation */}
         <nav className="hidden md:block absolute top-[3vh] left-[14vw] md:left-[18vw] lg:left-[20vw]">
           <ol className="flex items-center space-x-2">
@@ -100,21 +100,28 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
               breadCrumbs.map((item: any, key: number) => (
                 <React.Fragment key={key}>
                   <li>
-                    <a
-                      href={item.url}
-                      className={`text-${
-                        key < breadCrumbs?.length - 1 ? "gray-600" : "link_text"
-                      } hover:text-gray-800`}
-                    >
-                      <Text type="body">{item.title}</Text>
-                    </a>
+                    {item.title === "AI Studio" ? (
+                      <span className="text-gray-600">
+                        <Text type="body">{item.title}</Text>
+                      </span>
+                    ) : (
+                      <a
+                        href={item.url}
+                        className={`text-${key < breadCrumbs?.length - 1
+                            ? "gray-600"
+                            : "link_text"
+                          } hover:text-gray-800`}
+                      >
+                        <Text type="body">{item.title}</Text>
+                      </a>
+                    )}
                   </li>
                   {key < breadCrumbs?.length - 1 && <li>/</li>}
                 </React.Fragment>
               ))}
           </ol>
         </nav>
-  
+
         {/* Profile Dropdown */}
         <div className="flex items-center absolute top-[1vh] right-[0vw] md:right-[1vw]">
           <span className="mr-1 text-gray-700">
@@ -129,7 +136,7 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
       </div>
     </header>
   );
-  
+
 };
 
 export default Header;

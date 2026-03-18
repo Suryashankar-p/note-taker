@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     base: `/`,
+    cacheDir: '/tmp/.vite',
     build: {
       outDir: `dist`,
       assetsDir: 'assets',
@@ -16,6 +17,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 3000,
+      host: true,
+      watch: {
+        usePolling: true,
+      },
+      fs: {
+        cachedChecks: false,
+      },
     },
   }
 })
