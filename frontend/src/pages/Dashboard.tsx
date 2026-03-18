@@ -288,7 +288,7 @@ const Dashboard: React.FC = () => {
       case "Transmitter OCR":
         TransmittergetOCRRole();
         break;
-      case "Edge Agent Playground":
+      case "Edge Bot":
         getEdgeRole();
         break;
     }
