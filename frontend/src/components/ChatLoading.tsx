@@ -14,11 +14,11 @@ const Loading: React.FC<LoadingProps> = ({ related = false }) => {
 
     const timer1 = setTimeout(() => {
       setLoadingText("Searching");
-    }, 4000);
+    }, 5000);
 
     const timer2 = setTimeout(() => {
       setLoadingText("Preparing answers");
-    }, 8000);
+    }, 10000);
 
     return () => {
       clearTimeout(timer1);
