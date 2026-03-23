@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef, useState, useMemo } from "react";
 import { FaRobot, FaGlobe, FaFileAlt } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
@@ -21,7 +21,7 @@ import {
   CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
   CreatePerplexityStream,
-  ReadVideo,
+  ReadFile,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -110,6 +110,7 @@ const ChatArea: React.FC<Props> = ({
   const [isModalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
+  const [streamingSource, setStreamingSource] = useState<any>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const { upload, uploadState, fileId, status, statusState, isDone } =
@@ -136,6 +137,11 @@ const ChatArea: React.FC<Props> = ({
     if (chat_id) {
       getPageChat();
     }
+  }, [chat_id]);
+
+  // Clear media cache when chat_id changes (navigating between chats)
+  useEffect(() => {
+    setVideoUrlMap({});
   }, [chat_id]);
 
   useEffect(() => {
@@ -329,6 +335,10 @@ const ChatArea: React.FC<Props> = ({
           // Handle tool usage if needed
         } else if (data.type === "end") {
           // Stream completed
+          // Capture source field if present
+          if (data.content?.source) {
+            setStreamingSource(data.content.source);
+          }
           handleStreamEnd(data.content, chatId, localFiles, isNewChat);
           eventSource.close();
           eventSourceRef.current = null;
@@ -358,6 +368,8 @@ const ChatArea: React.FC<Props> = ({
     isNewChat: boolean
   ) => {
     setStreamedData(""); // Clear streamed data
+    setStreamingSource(null); // Clear streaming source
+    setVideoUrlMap({}); // Clear media cache when new content is loaded
     setInputValue("");
     setLoading(false);
     setPageError(false);
@@ -395,6 +407,7 @@ const ChatArea: React.FC<Props> = ({
   // Handle stream errors
   const handleStreamError = () => {
     setStreamedData("");
+    setStreamingSource(null);
     setLoading(false);
     setPageError(true);
     dispatch.toast.openToast({
@@ -606,7 +619,6 @@ const ChatArea: React.FC<Props> = ({
               );
             }
           } catch (err) {
-            console.log("Error in new chat creation:", err);
             setLoading(false);
           }
         } else {
@@ -662,23 +674,6 @@ const ChatArea: React.FC<Props> = ({
       .map((part) => part.charAt(0))
       .join("");
     return initials.toUpperCase();
-  };
-
-  const onDislikeClick = (e: any, message: any) => {
-    setDefaultChatData(message);
-    e.stopPropagation();
-    if (message?.like === false) return;
-    else {
-      dispatch.modal.openDislikeReason("add");
-    }
-  };
-
-  const onLikeClick = (e: any, message: any) => {
-    e.stopPropagation();
-    if (message?.like) return;
-    else {
-      UpdateChat_history(message?.id, message?.chat_id, true);
-    }
   };
 
   const handleRemoveFile = (index: number) => {
@@ -825,34 +820,6 @@ const ChatArea: React.FC<Props> = ({
     0
   );
 
-  const extractImageUrl = (text: string): string | null => {
-    // Check for direct image URLs in the text
-    const urlRegex = /(https?:\/\/[^\s]+\.(jpeg|jpg|png|webp|gif)(\?[^\s]*)?)/gi;
-    const matches = text.match(urlRegex);
-    
-    if (matches && matches.length > 0) {
-      // Return the first valid image URL found
-      return matches[0];
-    }
-    
-    return null;
-  };
-
-  const extractVideoUrl = (text: string): string | null => {
-    const markdownUrlRegex = /\((https?:\/\/[^)\s]+)\)/;
-    const markdownMatch = text.match(markdownUrlRegex);
-
-    if (markdownMatch) {
-      return markdownMatch[1];
-    }
-
-    // Fallback: direct video URL anywhere in text
-    const directUrlRegex = /(https?:\/\/[^\s]+?\.(mp4|webm|ogg|avi|mov|wmv)[^\s]*)/i;
-    const directMatch = text.match(directUrlRegex);
-
-    return directMatch ? directMatch[1] : null;
-  };
-
   const renderAttachFile = () => {
     switch (aiProvider) {
       case "Thermax GPT":
@@ -866,24 +833,152 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  const fetchVideo = async (index: number, blobLink: string) => {
+  // Function to fetch and cache media
+  const fetchMedia = async (index: number, mediaType: string, blobLink: string) => {
     try {
-      // Avoid refetching the same video
-      if (videoUrlMap[index]) return;
-      const response = await ReadVideo(Number(chat_id), blobLink);
-      const videoBlob = new Blob([response.data], {
-        type: response.headers["content-type"] || "video/mp4",
+      // Avoid refetching the same media
+      if (videoUrlMap[index]) {
+        return;
+      }
+      
+      // Ensure we have a valid chat_id
+      if (!chat_id) {
+        console.error('No chat_id available for media fetch');
+        return;
+      }
+      
+      const response = await ReadFile(Number(chat_id), mediaType, blobLink);
+      const mediaBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg'),
       });
-      const objectUrl = URL.createObjectURL(videoBlob);
+      const objectUrl = URL.createObjectURL(mediaBlob);
       setVideoUrlMap((prev) => ({
         ...prev,
         [index]: objectUrl,
       }));
     } catch (err) {
-      console.error("Failed to stream video:", err);
+      console.error("Failed to stream media:", err);
     }
   };
 
+  // Component to render media based on source field
+  const MediaRenderer = useMemo(() => ({ source, messageIndex, chatId }: { source: any; messageIndex: number; chatId: string | null }) => {
+    const { media_type, link } = source;
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleDownloadFile = async (mediaType: string, link: string) => {
+      try {
+        
+        if (!chatId) {
+          console.error('No chat_id available for file download');
+          return;
+        }
+        
+        // Extract filename from link URL
+        const url = new URL(link);
+        const filenameParam = url.searchParams.get('filename');
+        const fileName = filenameParam || `generated_file_${Date.now()}.xlsx`;
+        
+        const response = await ReadFile(Number(chatId), mediaType, link);
+        const mediaBlob = new Blob([response.data], {
+          type: response.headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        
+        const downloadUrl = URL.createObjectURL(mediaBlob);
+        const linkElement = document.createElement('a');
+        linkElement.href = downloadUrl;
+        linkElement.download = fileName;
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        document.body.removeChild(linkElement);
+        
+        // Clean up the object URL
+        URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+        console.error("Failed to download file:", error);
+      }
+    };
+
+    useEffect(() => {
+      // Only fetch media for image and video types
+      if (media_type !== 'excel' && !videoUrlMap[messageIndex]) {
+        fetchMedia(messageIndex, media_type, link);
+      }
+    }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
+
+    const mediaUrl = videoUrlMap[messageIndex];
+
+    if (media_type === 'image') {
+      return (
+        <div className="my-4">
+          {mediaUrl ? (
+            <img
+              src={mediaUrl}
+              alt="Generated visual"
+              className="w-[70%] rounded shadow"
+              onError={(e) => {
+                console.error('Failed to load generated image:', link);
+                setError('Failed to load image');
+              }}
+            />
+          ) : (
+            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+              <p className="text-gray-500">Loading image...</p>
+            </div>
+          )}
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (media_type === 'video') {
+      if (!mediaUrl) {
+        return (
+          <div className="my-4">
+            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+              <p className="text-gray-500">Loading video...</p>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="my-4">
+          <video
+            controls
+            src={mediaUrl}
+            className="w-[70%] rounded shadow"
+            onError={(e) => {
+              console.error('Failed to load generated video:', link);
+              setError('Failed to load video');
+            }}
+          />
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (media_type === 'excel') {
+      return (
+        <div className="my-4">
+          <Button
+            onClick={() => handleDownloadFile(media_type, link)}
+            custom_type="danger"
+            className="bg-danger w-32 h-10 p-2 gap-2 rounded-lg"
+            size="custom"
+          >
+            <Text type="small">Download File</Text>
+          </Button>
+        </div>
+      );
+    }
+
+    return null;
+  }, []); // Remove dependencies to prevent recreation on cache updates
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -1043,49 +1138,10 @@ const ChatArea: React.FC<Props> = ({
                       >
                         {message?.ai}
                       </ReactMarkdown>
-                      {/* Check for direct image URLs in the AI message */}
-                      {(() => {
-                        const directImageUrl = extractImageUrl(message?.ai);
-                        if (directImageUrl) {
-                          return (
-                            <div className="my-4">
-                              <img
-                                src={directImageUrl}
-                                alt="Generated visual"
-                                className="w-[70%] rounded shadow"
-                                onError={(e) => {
-                                  // If image fails to load, fallback to markdown rendering
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                      {/* Check for direct video URLs in the AI message */}
-                      {(() => {
-                        const directVideoUrl = extractVideoUrl(message?.ai);
-                        if (!directVideoUrl) return null;
-                        fetchVideo(index, directVideoUrl);
-                        const localVideoUrl = videoUrlMap[index];
-                        if (!localVideoUrl) {
-                          return (
-                            <p className="text-sm text-gray-500 my-2">
-                              Loading video…
-                            </p>
-                          );
-                        }
-                        return (
-                          <div className="my-4">
-                            <video
-                              controls
-                              src={localVideoUrl}
-                              className="w-[70%] rounded shadow"
-                            />
-                          </div>
-                        );
-                      })()}
+                      {/* Handle source field for generated media */}
+                      {message?.source && (
+                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} />
+                      )}
                     </div>
                   ) : (
                     !message?.file_name &&
@@ -1134,49 +1190,10 @@ const ChatArea: React.FC<Props> = ({
                       >
                       {streamedData}
                     </ReactMarkdown>
-                    {/* Check for direct image URLs in streaming data */}
-                    {(() => {
-                      const directImageUrl = extractImageUrl(streamedData);
-                      if (directImageUrl) {
-                        return (
-                          <div className="my-4">
-                            <img
-                              src={directImageUrl}
-                              alt="Generated visual"
-                              className="w-[70%] rounded shadow"
-                              onError={(e) => {
-                                // If image fails to load, fallback to markdown rendering
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                    {/* Check for direct video URLs in streaming data */}
-                    {(() => {
-                      const directVideoUrl = extractVideoUrl(streamedData);
-                      if (!directVideoUrl) return null;
-                      fetchVideo(-1, directVideoUrl); // use -1 or a fixed key
-                      const localVideoUrl = videoUrlMap[-1];
-                      if (!localVideoUrl) {
-                        return (
-                          <p className="text-sm text-gray-500 my-2">
-                            Loading video…
-                          </p>
-                        );
-                      }
-                      return (
-                        <div className="my-4">
-                          <video
-                            controls
-                            src={localVideoUrl}
-                            className="w-[70%] rounded shadow"
-                          />
-                        </div>
-                      );
-                    })()}
+                    {/* Handle source field for streaming media */}
+                    {streamingSource && (
+                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} />
+                    )}
                   </div>
                 </div>
               </div>

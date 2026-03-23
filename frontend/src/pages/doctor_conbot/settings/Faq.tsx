@@ -87,7 +87,6 @@ const Faq = () => {
         setLoading(false);
       }
     } catch (err) {
-      console.log("errr", err);
       setLoading(false);
     }
     setIsLoadingMore(false);
@@ -133,31 +132,23 @@ const Faq = () => {
     limit: number,
     search_term: string
   ) => {
-    try {
-      const resp = await ReadFaqDocuments(skip, limit, search_term);
-      if (resp?.result) {
-        // setFiles(resp.result);
-        const faqDocuments = resp.result.filter(
-          (doc: { kind?: string }) => doc.kind === "FAQ"
-        );
-        setFaqTotal(resp?.total || 0);
-        setFiles(faqDocuments || []);
-      } else {
-        setPageError(true);
-        dispatch.toast.openToast({ status: true, message: resp?.detail });
-      }
-    } catch (err) {
-      console.log("err", err);
+    const resp = await ReadFaqDocuments(skip, limit, search_term);
+    if (resp?.result) {
+      // setFiles(resp.result);
+      const faqDocuments = resp.result.filter(
+        (doc: { kind?: string }) => doc.kind === "FAQ"
+      );
+      setFaqTotal(resp?.total || 0);
+      setFiles(faqDocuments || []);
+    } else {
+      setPageError(true);
+      dispatch.toast.openToast({ status: true, message: resp?.detail });
     }
   };
 
   const deleteCategoryFile = async (file_id: string | number) => {
-    try {
-      const resp = await DeleteFaqDocument(file_id);
-      getFaqDocuments(0, 100, "");
-    } catch (err) {
-      console.log("err", err);
-    }
+    const resp = await DeleteFaqDocument(file_id);
+    getFaqDocuments(0, 100, "");
   };
 
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,26 +211,22 @@ const Faq = () => {
   };
 
   const onFileClick = async (file: any) => {
-    try {
-      const linkResp = await ReadFaqDocumentUrl(file.id);
+    const linkResp = await ReadFaqDocumentUrl(file.id);
 
-      if (linkResp?.link) {
-        let fileInfo: any = {
-          name: file.filename,
-          type: getFileType(file?.filename),
-          url: linkResp?.link,
-        };
-        setFileData(fileInfo);
-        setFileShow(true);
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
-      }
-    } catch (err) {
-      console.log("err", err);
+    if (linkResp?.link) {
+      let fileInfo: any = {
+        name: file.filename,
+        type: getFileType(file?.filename),
+        url: linkResp?.link,
+      };
+      setFileData(fileInfo);
+      setFileShow(true);
+    } else {
+      dispatch.toast.openToast({
+        status: true,
+        message: "File not found",
+        type: "error",
+      });
     }
   };
 

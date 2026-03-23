@@ -9,6 +9,7 @@ import {
   axiosHeatingOCR,
   axiosTransmitterOCR,
   axiosDocumentTranslator,
+  axiosEdge,
 } from "./axiosInstances";
 
 import { setInterceptors } from "./axiosConfig";
@@ -25,6 +26,7 @@ import { setInterceptors } from "./axiosConfig";
   axiosHeatingOCR,
   axiosTransmitterOCR,
   axiosDocumentTranslator,
+  axiosEdge,
 ].forEach(setInterceptors);
 
 // Reusable wrapper for standard HTTP methods
@@ -56,6 +58,7 @@ export const CyberbuddyAPI = createAPI(axiosCyberbuddy);
 export const HeatingOCRAPI = createAPI(axiosHeatingOCR);
 export const TransmitterOCRAPI = createAPI(axiosTransmitterOCR);
 export const DocumentTranslatorAPI = createAPI(axiosDocumentTranslator);
+export const EdgeAPI = createAPI(axiosEdge);
 
 export async function redirectToLogin(): Promise<void> {
   window.location.href = `/`;

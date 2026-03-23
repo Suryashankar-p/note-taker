@@ -47,7 +47,6 @@ const Members = () => {
       }
       setLoading(false);
     } catch (err) {
-      console.log(err);
       setLoading(false);
     }
   };
@@ -65,10 +64,10 @@ const Members = () => {
           if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
         }
       } catch (err) {
-        console.log(err);
+        setPageError(true);
       }
     } else {
-      console.log('error');
+      setPageError(true);
     }
   };
 
@@ -85,7 +84,7 @@ const Members = () => {
           if (response?.detail) dispatch.toast.openToast({ status: true, message: response?.detail, type: 'error' });
         }
       } catch (error) {
-        console.log(error);
+        setPageError(true);
       }
     }
   };
@@ -103,7 +102,7 @@ const Members = () => {
       await DeleteMember(user?.id);
       getAllMembers(0, 30, ''); // Reset to initial state
     } catch (err) {
-      console.log(err);
+      setPageError(true);
     }
   };
 

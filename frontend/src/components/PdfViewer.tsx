@@ -8,7 +8,6 @@ type PdfViewerProps = {
 };
 
 export const PdfViewer: React.FC<PdfViewerProps> = ({ fileUrl, onLoad }) => {
-  console.log("Rendering PDF Viewer with URL:", fileUrl);
 
   const handleDocumentLoad = () => {
     if (onLoad) {

@@ -71,7 +71,6 @@ const Usage = () => {
       }
     }
     catch (err) {
-      console.log("err", err);
       dispatch.toast.openToast({
         status: true,
         message: "Error fetching data",

@@ -116,7 +116,6 @@ const Feedback = () => {
         setLoading(false);
       }
     } catch (err) {
-      console.log("errr", err);
       setLoading(false);
     }
   };
@@ -162,7 +161,7 @@ const Feedback = () => {
           });
       }
     } catch (err) {
-      console.log("err", err);
+      setPageError(true);
     }
   };
 
@@ -184,7 +183,7 @@ const Feedback = () => {
           });
       }
     } catch (err) {
-      console.log(err);
+      setPageError(true);
     }
   };
 
@@ -244,7 +243,6 @@ const Feedback = () => {
           setPageError(true);
         }
       } catch (err) {
-        console.log("err", err);
         dispatch.loadingState.endLoading();
       }
     }

@@ -93,7 +93,6 @@ const Documents = () => {
         setLoading(false);
       }
     } catch (err) {
-      console.log("errr", err);
       setLoading(false);
     }
     setIsLoadingMore(false);
@@ -168,17 +167,12 @@ const Documents = () => {
         dispatch.toast.openToast({ status: true, message: resp?.detail });
       }
     } catch (err) {
-      console.log("err", err);
     }
   };
 
   const deleteProductFile = async (file_id: string | number) => {
-    try {
-      const resp = await DeleteDocument(file_id);
-      getDocuments(0, 100, "");
-    } catch (err) {
-      console.log("err", err);
-    }
+    const resp = await DeleteDocument(file_id);
+    getDocuments(0, 100, "");
   };
 
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,7 +194,6 @@ const Documents = () => {
     if (!data) return;
     dispatch.loadingState.startLoading();
     try {
-      console.log("onFileUpload called with data:", data);
       const response = await CreateDocument(data.kind, data.file);
 
       if (response?.id) {
@@ -235,20 +228,15 @@ const Documents = () => {
   };
 
   const onFileClick = async (file: any) => {
-    try {
-      const linkResp = await ReadDocumentUrl(file.id);
-      const blobUrl = URL.createObjectURL(linkResp.data);
-      console.log(blobUrl)
-      let fileInfo: any = {
-        name: file.filename,
-        type: getFileType(file?.filename),
-        url: blobUrl,
-      };
-      setFileData(fileInfo);
-      setFileShow(true);
-    } catch (err) {
-      console.log("err", err);
-    }
+    const linkResp = await ReadDocumentUrl(file.id);
+    const blobUrl = URL.createObjectURL(linkResp.data);
+    let fileInfo: any = {
+      name: file.filename,
+      type: getFileType(file?.filename),
+      url: blobUrl,
+    };
+    setFileData(fileInfo);
+    setFileShow(true);
   };
 
   const CheckDocumentStatus = async (product_document_id) => {

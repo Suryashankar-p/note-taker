@@ -132,7 +132,6 @@ const Problem = () => {
           setLoading(false);
         }
       } catch (err) {
-        console.log("errr", err);
         setLoading(false);
       }
       setIsLoadingMore(false);
@@ -144,21 +143,17 @@ const Problem = () => {
       limit: number,
       search_term: string
     ) => {
-      try {
-        const productResponse = await ReadProducts(skip, limit, search_term);
-        if (productResponse?.result) {
-          setProducts(productResponse?.result);
-          setProductTotal(productResponse?.total);
-        } else {
-          setPageError(true);
-          if (productResponse?.detail)
-            dispatch.toast.openToast({
-              status: true,
-              message: productResponse?.detail,
-            });
-        }
-      } catch (err) {
-        console.log(err);
+      const productResponse = await ReadProducts(skip, limit, search_term);
+      if (productResponse?.result) {
+        setProducts(productResponse?.result);
+        setProductTotal(productResponse?.total);
+      } else {
+        setPageError(true);
+        if (productResponse?.detail)
+          dispatch.toast.openToast({
+            status: true,
+            message: productResponse?.detail,
+          });
       }
     };
     const onProductOnChange = (item: any, title: string) => {
@@ -172,58 +167,42 @@ const Problem = () => {
     };
   
     const onProductCreate = async (data: any) => {
-      if (data) {
-        try {
-          const createResponse = await CreateProduct(
-            data?.title,
-            data?.short_title,
-            data?.description,
-          );
-          if (createResponse?.id) {
-            getAllProducts(0, 20, "");
-            dispatch.modal.closeAddProduct();
-          } else {
-            setPageError(true);
-            if (createResponse?.detail)
-              dispatch.toast.openToast({
-                status: true,
-                message: createResponse?.detail,
-              });
-          }
-        } catch (err) {
-          console.log(err);
-        }
+      const createResponse = await CreateProduct(
+        data?.title,
+        data?.short_title,
+        data?.description,
+      );
+      if (createResponse?.id) {
+        getAllProducts(0, 20, "");
+        dispatch.modal.closeAddProduct();
       } else {
-        console.log("error");
+        setPageError(true);
+        if (createResponse?.detail)
+          dispatch.toast.openToast({
+            status: true,
+            message: createResponse?.detail,
+          });
       }
     };
   
     const onProductEdit = async (data: any) => {
-      if (data) {
-        try {
-          const editResponse = await UpdateProduct(
-            data?.id,
-            data?.title,
-            data?.short_title,
-            data?.description,
-            data?.models
-          );
-          if (editResponse?.id) {
-            getAllProducts(0, 20, "");
-            dispatch.modal.closeAddProduct();
-          } else {
-            setPageError(true);
-            if (editResponse?.detail)
-              dispatch.toast.openToast({
-                status: true,
-                message: editResponse?.detail,
-              });
-          }
-        } catch (err) {
-          console.log("err", err);
-        }
+      const editResponse = await UpdateProduct(
+        data?.id,
+        data?.title,
+        data?.short_title,
+        data?.description,
+        data?.models
+      );
+      if (editResponse?.id) {
+        getAllProducts(0, 20, "");
+        dispatch.modal.closeAddProduct();
       } else {
-        console.log("errror");
+        setPageError(true);
+        if (editResponse?.detail)
+          dispatch.toast.openToast({
+            status: true,
+            message: editResponse?.detail,
+          });
       }
     };
     const onSubmit = (data: any) => {
@@ -235,38 +214,27 @@ const Problem = () => {
     };
 
     const onDeleteSubmit = async (value: any) => {
-        if (value?.id) {
-          try {
-            await DeleteProduct(value?.id);
-            getAllProducts(0, 20, "");
-          } catch (err) {
-            console.log(err);
-          }
-        } else {
-          console.log("Failed");
-        }
+      await DeleteProduct(value?.id);
+      getAllProducts(0, 20, "");
     };
+
     const getProductDocuments = async (
         product_id: number | string,
         skip: number,
         limit: number,
         search_term: string
       ) => {
-        try {
-          const resp = await ReadProductDocuments(
-            product_id,
-            skip,
-            limit,
-            search_term
-          );
-          if (resp?.result) {
-            setFiles(resp.result);
-          } else {
-            setPageError(true);
-            dispatch.toast.openToast({ status: true, message: resp?.detail });
-          }
-        } catch (err) {
-          console.log("err", err);
+        const resp = await ReadProductDocuments(
+          product_id,
+          skip,
+          limit,
+          search_term
+        );
+        if (resp?.result) {
+          setFiles(resp.result);
+        } else {
+          setPageError(true);
+          dispatch.toast.openToast({ status: true, message: resp?.detail });
         }
       };
 
@@ -274,12 +242,8 @@ const Problem = () => {
         product_id: string | number,
         file_id: string | number
       ) => {
-        try {
           const resp = await DeleteProductDocument(product_id, file_id);
           getProductDocuments(product_id, 0, 100, "");
-        } catch (err) {
-          console.log("err", err);
-        }
       };
 
     const expandFiles = (key: number, item: any) => {
@@ -331,7 +295,6 @@ const Problem = () => {
               dispatch.loadingState.endLoading();
             }
           } catch (err: any) {
-            console.log("err", err);
             let error_message = err?.response?.data?.detail;
             dispatch.loadingState.endLoading();
             setPageError(true);
@@ -354,30 +317,24 @@ const Problem = () => {
       };
     
       const onFileClick = async (file: any) => {
-        try {
-          const linkResp = await ReadProductDocumentUrl(
-            file.product_id,
-            file.id
-          );
-            console.log(file);
-            
-          if (linkResp?.link) {
-            let fileInfo: any = {
-              name: file.filename,
-              type: getFileType(file?.filename),
-              url: linkResp?.link,
-            };
-            setFileData(fileInfo);
-            setFileShow(true);
-          } else {
-            dispatch.toast.openToast({
-              status: true,
-              message: "File not found",
-              type: "error",
-            });
-          }
-        } catch (err) {
-          console.log("err", err);
+        const linkResp = await ReadProductDocumentUrl(
+          file.product_id,
+          file.id
+        );            
+        if (linkResp?.link) {
+          let fileInfo: any = {
+            name: file.filename,
+            type: getFileType(file?.filename),
+            url: linkResp?.link,
+          };
+          setFileData(fileInfo);
+          setFileShow(true);
+        } else {
+          dispatch.toast.openToast({
+            status: true,
+            message: "File not found",
+            type: "error",
+          });
         }
       };
 

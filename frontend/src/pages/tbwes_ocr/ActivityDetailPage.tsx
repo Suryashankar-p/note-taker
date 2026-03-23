@@ -89,12 +89,8 @@ const ActivityDetailPage: React.FC = () => {
   }, []);
 
   const getDocumentLink = async (activity_id: number) => {
-    try {
-      const response = await GetDocumentUrl(activity_id);
-      setPdfUrl(response?.link);
-    } catch (error) {
-      console.error("Error reading document link:", error);
-    }
+    const response = await GetDocumentUrl(activity_id);
+    setPdfUrl(response?.link);
   };
 
   const getActivityDetails = async (activity_id: number) => {
@@ -105,11 +101,10 @@ const ActivityDetailPage: React.FC = () => {
         setActivityDetails(response);
         setFieldData(response?.data?.field);
       } else {
-        console.log("ere");
         navigate("/ai-studio/tbwes_ocr", { replace: true });
       }
     } catch (error) {
-      console.log(error?.message);
+      setPageError(true);
     }
   };
 

@@ -244,7 +244,6 @@ const pollForProcessingActivities = async () => {
       if (!hasProcessingActivities && pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
-        console.log("Polling stopped: All activities processed");
       }
     }
   } catch (err) {
@@ -258,7 +257,6 @@ const pollForProcessingActivities = async () => {
 const startPolling = () => {
   if (pollingIntervalRef.current) return; // Already polling
   
-  console.log("Starting polling for processing activities...");
   pollingIntervalRef.current = setInterval(() => {
     pollForProcessingActivities();
   }, 10000); // Poll every 5 seconds
@@ -269,7 +267,6 @@ const stopPolling = () => {
   if (pollingIntervalRef.current) {
     clearInterval(pollingIntervalRef.current);
     pollingIntervalRef.current = null;
-    console.log("Polling stopped manually");
   }
 };
 
@@ -304,21 +301,17 @@ useEffect(() => {
     limit: number,
     search_term?: string
   ) => {
-    try {
-      const response = await ReadOCRMembers(skip, limit, search_term);
-      if (response?.result) {
-        setMembers(response?.result);
-      } else {
-        setPageError(true);
-        if (response?.detail)
-          dispatch.toast.openToast({
-            status: true,
-            message: response?.detail,
-            type: "error",
-          });
-      }
-    } catch (err) {
-      console.log(err);
+    const response = await ReadOCRMembers(skip, limit, search_term);
+    if (response?.result) {
+      setMembers(response?.result);
+    } else {
+      setPageError(true);
+      if (response?.detail)
+        dispatch.toast.openToast({
+          status: true,
+          message: response?.detail,
+          type: "error",
+        });
     }
   };
 
@@ -432,7 +425,6 @@ useEffect(() => {
     } catch (err) {
       setCreateModalVisible(false);
       setPageError(true);
-      console.log(err);
 
       if (err?.response?.data?.detail) {
         dispatch.toast.openToast({
@@ -458,8 +450,6 @@ useEffect(() => {
       dispatch.modal.openConfirmation();
     } else if (item === "Tranfer") {
       dispatch.modal.openTranferModal();
-    } else {
-      console.log("error");
     }
   };
 

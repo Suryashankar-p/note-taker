@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
@@ -17,7 +17,8 @@ import {
   statusMapper,
   userStatusMapper,
 } from "../../utils/functions.ts";
-import CreateActivity from "../../components/Modals/CreateActivity.tsx";
+// import CreateActivity from "../../components/Modals/CreateActivity.tsx";
+import CreateMasterActivity from "../../components/Modals/CreateMasterActivity.tsx";
 import { Member, url } from "../../utils/constants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
@@ -29,6 +30,7 @@ import {
   TransmitterTransferMasterActivity,
   TransmitterUpdateMasterActivityDetails,
   TransmitterCheckMasterHasChildActivities,
+  TransmitterGetMasterActivityStatus,
 } from "../../services/transmitter_ocr.ts";
 import DropDownButton from "../../components/DropDownButton.tsx";
 import DropDownMenu from "../../components/DropdownMenu.tsx";
@@ -37,6 +39,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
 import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 GlobalWorkerOptions.workerSrc = url;
 export type Activity = {
   id: number;
@@ -47,6 +50,29 @@ export type Activity = {
   username: string;
   fileUrl: string;
   user_id: string;
+  is_extracted: boolean;
+  created_on: string;
+};
+
+const isExtracting = (activity: Activity): boolean =>
+  activity.status === "IN_PROGRESS" && activity.is_extracted !== true;
+
+type ProcessingStage = "uploading" | "extracting";
+
+const getProcessingStage = (elapsedMs: number): ProcessingStage => {
+  if (elapsedMs < 10_000) return "uploading";
+  return "extracting";
+};
+
+const getProcessingLabel = (stage: ProcessingStage): string => {
+  switch (stage) {
+    case "uploading":
+      return "Uploading";
+    case "extracting":
+      return "Extracting";
+    default:
+      return "In Progress";
+  }
 };
 interface MasterActivityPageProps {
   onSelectActivity: (activity: Activity) => void;
@@ -114,8 +140,14 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
     status: "All",
   });
   let timeoutId: NodeJS.Timeout | null = null;
-  let intervalId: NodeJS.Timeout | null = null;
-  
+
+  const pollingIdsRef = useRef<Set<number>>(new Set());
+  const pollTimersRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
+
+  const [nowTickMs, setNowTickMs] = useState<number>(() => Date.now());
+  const stageTickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const extractingFirstSeenRef = useRef<Map<number, number>>(new Map());
+
   // New state for loading
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -127,31 +159,31 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
     { value: "by me", name: "By me" },
     { value: "by other", name: "By other" },
   ];
-  
+
   const statusOptions = [
     { value: "all", name: "All" },
     { value: "inProgress", name: "In progress" },
-    { value: "rejected", name: "Rejected" },
+    { value: "ocrFailed", name: "OCR Failed" },
   ];
   useEffect(() => {
     const handleScroll = () => {
       const { current } = activityListRef;
       if (!current) return;
-      
+
       // Save the scroll position before making an API call
       const scrollPosition = current.scrollTop;
-  
+
       // Check if user has scrolled to the bottom and if more activities need to be fetched
       if (current.scrollHeight - current.scrollTop === current.clientHeight && !isFetching && activities.length < activityTotal) {
         loadMoreActivities(scrollPosition);
       }
     };
-  
+
     const div = activityListRef.current;
     if (div) {
       div.addEventListener('scroll', handleScroll);
     }
-  
+
     return () => {
       if (div) {
         div.removeEventListener('scroll', handleScroll);
@@ -195,13 +227,60 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       setUser(JSON.parse(storedUser));
     }
   }, []);
-  
+
   useEffect(() => {
     if (check && activities?.length > 0) {
       onSelectActivity(findItemById(activities, check));
     }
   }, [check, activities]);
-  
+
+  const updateActivityById = useCallback((id: number, updater: (prev: Activity) => Activity) => {
+    setActivities(prev => prev.map(a => (a.id === id ? updater(a) : a)));
+  }, []);
+
+  const stopPolling = useCallback((id: number) => {
+    const timer = pollTimersRef.current.get(id);
+    if (timer) {
+      clearInterval(timer);
+      pollTimersRef.current.delete(id);
+    }
+    pollingIdsRef.current.delete(id);
+  }, []);
+
+  const startPolling = useCallback((id: number) => {
+    if (pollingIdsRef.current.has(id)) return;
+    pollingIdsRef.current.add(id);
+
+    const timer = setInterval(async () => {
+      try {
+        const updated: Activity = await TransmitterGetMasterActivityStatus(id);
+
+        if (updated.is_extracted || updated.status === "OCR_FAILED") {
+          updateActivityById(id, () => updated);
+          stopPolling(id);
+        }
+      } catch (err) {
+        console.error(`Polling error for activity ${id}`, err);
+      }
+    }, 5000);
+
+    pollTimersRef.current.set(id, timer);
+  }, [updateActivityById, stopPolling]);
+
+  const syncPolling = useCallback((list: Activity[]) => {
+    list.forEach(activity => {
+      if (isExtracting(activity)) {
+        startPolling(activity.id);
+      }
+    });
+  }, [startPolling]);
+
+  const stopAllPolling = useCallback(() => {
+    pollTimersRef.current.forEach((timer) => clearInterval(timer));
+    pollTimersRef.current.clear();
+    pollingIdsRef.current.clear();
+  }, []);
+
   useEffect(() => {
     // Check if we're returning from creating an activity
     const isReturningFromCreate = sessionStorage.getItem('returningFromCreate');
@@ -216,11 +295,63 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       });
     } else {
       // Normal initial load
-      getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
-      getAllMembers(0, 100, "");
+      const fetchData = async () => {
+        setIsLoading(true);
+        await Promise.all([
+          getAllActivitiesList(pageSize?.skip, pageSize?.limit, ""),
+          getAllMembers(0, 100, "")
+        ]);
+        setIsLoading(false);
+      };
+      fetchData();
     }
+
+    return () => {
+      stopAllPolling();
+      if (stageTickTimerRef.current) {
+        clearInterval(stageTickTimerRef.current);
+        stageTickTimerRef.current = null;
+      }
+    };
   }, []);
-  
+
+  useEffect(() => {
+    const hasExtracting = activities.some(isExtracting);
+    if (!hasExtracting) {
+      if (stageTickTimerRef.current) {
+        clearInterval(stageTickTimerRef.current);
+        stageTickTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (stageTickTimerRef.current) return;
+
+    stageTickTimerRef.current = setInterval(() => {
+      setNowTickMs(Date.now());
+    }, 1000);
+
+    return () => {
+      if (stageTickTimerRef.current) {
+        clearInterval(stageTickTimerRef.current);
+        stageTickTimerRef.current = null;
+      }
+    };
+  }, [activities]);
+
+  useEffect(() => {
+    const now = Date.now();
+
+    activities.forEach((a) => {
+      if (isExtracting(a) && !extractingFirstSeenRef.current.has(a.id)) {
+        extractingFirstSeenRef.current.set(a.id, now);
+      }
+      if (!isExtracting(a) && extractingFirstSeenRef.current.has(a.id)) {
+        extractingFirstSeenRef.current.delete(a.id);
+      }
+    });
+  }, [activities]);
+
   const getAllMembers = async (
     skip: number,
     limit: number,
@@ -243,11 +374,11 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       console.log(err);
     }
   };
-  
+
   function findItemById(dataArray: any, id: any) {
     return dataArray.filter((item: any) => item.id == id)[0];
   }
-  
+
   const getAllActivitiesList = async (
     skip: number,
     limit: number,
@@ -256,9 +387,9 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
     status?: string
   ) => {
     // Don't set loading to false if we're in the process of creating an activity
-    if (!isCreatingActivity) {
-      setIsLoading(true);
-    }
+    // if (!isCreatingActivity) {
+    //   setIsLoading(true);
+    // }
     try {
       const response = await TransmitterGetMasterActivities(
         skip,
@@ -270,6 +401,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       if (response.result) {
         setActivities(response.result);
         setActivityTotal(response?.total);
+        syncPolling(response.result);
       } else {
         console.error("Error fetching activities", response.error);
       }
@@ -277,12 +409,12 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       console.error("Error fetching activities", err);
     } finally {
       // Only set loading to false if we're not creating an activity
-      if (!isCreatingActivity) {
-        setIsLoading(false);
-      }
+      // if (!isCreatingActivity) {
+      //   setIsLoading(false);
+      // }
     }
   };
-  
+
   const handleFilter = (type: string, value: any) => {
     if (type === "status") {
       setFilter({ ...filter, status: value?.value });
@@ -324,26 +456,34 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       }
     }
   };
-  const handleCreate = async (title: string, file: File) => {
-    setIsCreatingActivity(true); // API call for creating activity
+  const handleCreate = async (title: string, masterType: string, template: string, file: File) => {
+    setIsCreatingActivity(true);
     try {
-      const response = await TransmitterCreateMasterActivity(title, file);
+      // Pass all required parameters to the API
+      const response = await TransmitterCreateMasterActivity(title, masterType, template, file);
       if (response) {
         setCreateModalVisible(false);
-        // Reset pagination
-        setPageSize({ skip: 0, limit: 50 });
 
-        // Refetch activities after creation
-        setIsLoading(true); // <-- Show loader only for refetch
-        await getAllActivitiesList(
-          0,
-          pageSize.limit,
-          "",
-          userStatusMapper(usernameFilter.value),
-          statusMapper(statusFilter.value)
-        );
+        // Show success message
+        dispatch.toast.openToast({
+          status: true,
+          message: "Master activity created successfully",
+          type: "success",
+        });
+
+        const newActivity = response;
+        setActivities(prev => [newActivity, ...prev]);
+        setActivityTotal(prev => prev + 1);
+        if (isExtracting(newActivity)) {
+          startPolling(newActivity.id);
+        }
       } else {
         console.error("Error creating activity");
+        dispatch.toast.openToast({
+          status: true,
+          message: "Failed to create activity",
+          type: "error",
+        });
       }
     } catch (err) {
       setCreateModalVisible(false);
@@ -363,11 +503,11 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
         });
       }
     } finally {
-      setIsCreatingActivity(false); // Creation finished
-      setIsLoading(false);          // Refetch finished
+      setIsCreatingActivity(false);
+      setIsLoading(false);
     }
   };
-  
+
   const onChange = (item: string, activity: Activity) => {
     setDefaultActivity(activity);
     if (item === "Edit") {
@@ -380,7 +520,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       console.log("error");
     }
   };
-  
+
   const onUpdate = async (title: string) => {
     setIsLoading(true);
     try {
@@ -401,7 +541,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       setIsLoading(false);
     }
   };
-  
+
   const onDeleteSubmit = async (activity: any) => {
     setIsLoading(true);
     try {
@@ -419,6 +559,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       }
 
       // If no child activities, proceed with deletion
+      stopPolling(activity?.id);
       await TransmitterDeleteMasterActivity(activity?.id);
       getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
     } catch (err) {
@@ -433,7 +574,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       setIsLoading(false);
     }
   };
-  
+
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchTerm: string = e.target.value;
     setSearchValue(searchTerm)
@@ -442,11 +583,13 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
     }
     timeoutId = setTimeout(() => {
       getAllActivitiesList(pageSize?.skip, pageSize?.limit, searchTerm, userStatusMapper(usernameFilter.value),
-      statusMapper(statusFilter.value));
+        statusMapper(statusFilter.value));
     }, 500);
   };
-  
+
   const onActivityCardClick = (activity: Activity) => {
+    if (isExtracting(activity)) return;
+
     if (activity?.user_id === ocrMemberDetails?.user_id) {
       onSelectActivity(activity);
     } else if (
@@ -456,13 +599,13 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       onSelectActivity(activity);
     } else {
       setPageError(true);
-      dispatch.toast.openToast({  
+      dispatch.toast.openToast({
         status: true,
         message: "Sorry you are not the creator",
       });
     }
   };
-  
+
   const onTranferSubmit = async (value: any) => {
     setIsLoading(true);
     try {
@@ -480,7 +623,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="flex flex-1 h-screen">
       {toastStatus.status && pageError && (
@@ -498,12 +641,12 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
             </Text>
             {activities && (
               <Text type="small" className="text-faint_text ml-1">{`(${activities?.length > 1
-                  ? activities?.length + " Results"
-                  : activities?.length + " Result"
+                ? activities?.length + " Results"
+                : activities?.length + " Result"
                 } of ${activityTotal})`}</Text>
             )}
           </div>
-          
+
           <div className="items-center space-y-2">
             <div className="flex space-x-6 pr-2">
               <div className="relative flex items-center">
@@ -563,83 +706,110 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
         <div ref={activityListRef} className="mt-4 mb-5 flex-1 h-[calc(100vh-230px)] pr-4 overflow-y-auto">
           {/* Show loader when creating an activity or when initially loading */}
           {isLoading ? (
-            <div className="flex flex-col justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-danger mb-4"></div>
-              <Text type="body" className="text-gray-500">
-                Loading activities...
-              </Text>
-            </div>
+            <PageLoading />
           ) : activities.length > 0 ? (
-            activities.map((activity: any) => (
-              <div className="mt-5" key={activity.id}>
-                <div
-                  className="border main_card p-4 flex justify-between items-center mb-4 cursor-pointer rounded-lg shadow-lg"
-                  onClick={(e: any) =>
-                    (e.target.className.includes("main_card") ||
-                      e.target.className.includes("title_text")) &&
-                    onActivityCardClick(activity)
-                  }
-                >
-                  <div className="flex items-center">
-                    <div
-                      title={activity?.user?.name}
-                      className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center font-small"
-                    >
-                      {getInitials(activity?.user?.name)}
-                    </div>
-                    <div className="flex flex-col ml-4">
-                      <Text
-                        type="header3"
-                        title={activity.title}
-                        className="truncate title_text max-w-2xl ellipsis"
+            activities.map((activity: any) => {
+              const extracting = isExtracting(activity);
+              const extractingFirstSeen = extracting
+                ? extractingFirstSeenRef.current.get(activity.id) ?? nowTickMs
+                : undefined;
+              const elapsedMs = extractingFirstSeen ? Math.max(0, nowTickMs - extractingFirstSeen) : 0;
+
+              const processingLabel = extracting
+                ? getProcessingLabel(getProcessingStage(elapsedMs))
+                : undefined;
+
+              return (
+                <div className="mt-5" key={activity.id}>
+                  <div
+                    className={`border main_card p-4 flex justify-between items-center mb-4 rounded-lg shadow-lg transition-opacity duration-300 ${extracting
+                      ? "opacity-60 cursor-not-allowed bg-gray-50"
+                      : "cursor-pointer"
+                      }`}
+                    onClick={(e: any) => {
+                      if (extracting) return;
+                      if (
+                        e.target.className.includes("main_card") ||
+                        e.target.className.includes("title_text")
+                      )
+                        onActivityCardClick(activity);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <div
+                        title={activity?.user?.name}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center font-small ${extracting ? "bg-gray-200 text-gray-400" : "bg-gray-300"
+                          }`}
                       >
-                        {activity?.title}
-                      </Text>
-                      <Text className="text-[#505F79] max-w-full font-small text-[12px]">
-                        Created on:{" "}
-                        {new Date(activity.created_on).toLocaleDateString()}
-                      </Text>
+                        {getInitials(activity?.user?.name)}
+                      </div>
+                      <div className="flex flex-col ml-4">
+                        <Text
+                          type="header3"
+                          title={activity.title}
+                          className={`truncate title_text max-w-2xl ellipsis ${extracting ? "text-gray-400" : ""
+                            }`}
+                        >
+                          {activity?.title}
+                        </Text>
+                        <Text className={`text-[#505F79] max-w-full font-small text-[12px] ${extracting ? "text-gray-400" : ""}`}>
+                          Created on:{" "}
+                          {new Date(activity.created_on).toLocaleDateString()}
+                        </Text>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    {/* Placeholder for additional content, such as updated on */}
-                  </div>
-                  <div className="flex items-center relative">
-                    <Text
-                      type="body"
-                      className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
-                        activity?.status
-                      )} absolute right-24`}
-                    >
-                      {activity?.status && statusMapper(activity.status)}
-                    </Text>
-                    {/* Empty placeholder to maintain space for dropdown menu */}
-                    <div className="right-12">
-                      {ocrMemberDetails &&
-                        (ocrMemberDetails?.role === "OWNER" ||
-                          ocrMemberDetails?.user_id === activity?.user_id) && (
-                          <DropDownMenu
-                            onChange={(item: string) => onChange(item, activity)}
-                            content={
-                              <img
-                                className="w-8 h-8"
-                                src={Menu}
-                                alt="menu"
-                                loading="lazy"
-                              />
-                            }
-                            menuItems={
-                              activity?.status !== "IN_PROGRESS"
-                                ? MenuItemsWithoutEdit
-                                : MenuItems
-                            }
-                          />
-                        )}
+                    <div>
+                      {/* Placeholder for additional content, such as updated on */}
+                    </div>
+                    <div className="flex items-center relative">
+                      {extracting ? (
+                        <div className="flex items-center space-x-2 absolute right-24 border border-gray-300 rounded-lg w-32 h-12 justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400" />
+                          <Text
+                            type="body"
+                            className="text-gray-400 text-[12px]"
+                          >
+                            {processingLabel}
+                          </Text>
+                        </div>
+                      ) : (
+                        <Text
+                          type="body"
+                          className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
+                            activity?.status
+                          )} absolute right-24`}
+                        >
+                          {activity?.status && statusMapper(activity.status)}
+                        </Text>
+                      )}
+
+                      <div className="right-12">
+                        {!extracting && ocrMemberDetails &&
+                          (ocrMemberDetails?.role === "OWNER" ||
+                            ocrMemberDetails?.user_id === activity?.user_id) && (
+                            <DropDownMenu
+                              onChange={(item: string) => onChange(item, activity)}
+                              content={
+                                <img
+                                  className="w-8 h-8"
+                                  src={Menu}
+                                  alt="menu"
+                                  loading="lazy"
+                                />
+                              }
+                              menuItems={
+                                activity?.status !== "IN_PROGRESS"
+                                  ? MenuItemsWithoutEdit
+                                  : MenuItems
+                              }
+                            />
+                          )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="flex justify-center item-center">
               <NoData />
@@ -661,7 +831,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
         />
       )}
       {/* Create Activity Modal */}
-      <CreateActivity
+      <CreateMasterActivity
         isOpen={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
         onCreate={handleCreate}
