@@ -20,5 +20,5 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     <Navigate to="/login" replace />
   );
 };
-
+//gh
 export default ProtectedRoute;
