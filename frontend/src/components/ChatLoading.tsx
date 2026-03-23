@@ -7,23 +7,43 @@ interface LoadingProps {
 }
 
 const Loading: React.FC<LoadingProps> = ({ related = false }) => {
+  const [loadingText, setLoadingText] = React.useState("Analyzing");
+
+  React.useEffect(() => {
+    if (related) return;
+
+    const timer1 = setTimeout(() => {
+      setLoadingText("Searching");
+    }, 5000);
+
+    const timer2 = setTimeout(() => {
+      setLoadingText("Preparing answers");
+    }, 10000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [related]);
+
   return (
     <div className="loading-container">
       <div className="loading-text">
-        {related ? <Text type='bold-body'>Related Questions</Text> :
-          <div className="loading-title">
+        {related ? (
+          <Text type="bold-body">Related Questions</Text>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <div className="blue-dots-loader">
+                <div className="blue-dot"></div>
+                <div className="blue-dot"></div>
+                <div className="blue-dot"></div>
+              </div>
+              <Text className="loading-text-blue">{loadingText}</Text>
+            </div>
           </div>
-        }
+        )}
       </div>
-      <div className="loading-content">
-        <div className="loading-line"></div>
-        <div className="loading-line"></div>
-        <div className="loading-line"></div>
-        <div className="loading-line short"></div>
-        <div className="loading-line"></div>
-        <div className="loading-line"></div>
-      </div>
-
     </div>
   );
 };

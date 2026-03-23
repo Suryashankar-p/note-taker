@@ -55,3 +55,54 @@ export const GetTranslatorResponse = async (task_id: string) => {
   );
   return response;
 };
+
+
+//<====================================Document Translator Members========================================>
+
+export const ReadMembers = async (
+  skip: number = 0,
+  limit: number = 100,
+  search_term?: string
+) => {
+  const response = await DocumentTranslatorAPI.get(
+    BACKEND_DOC_TRANSLATOR_URL +
+      `/doc_translator/member?skip=${skip}&limit=${limit}${
+        search_term !== "" && search_term !== undefined
+          ? "&search_term=" + search_term
+          : ""
+      }`
+  );
+  return response;
+};
+
+export const CreateMember = async (
+  role: string,
+  email: string,
+  name: string
+) => {
+  const response = await DocumentTranslatorAPI.post(
+    BACKEND_DOC_TRANSLATOR_URL +
+      `/doc_translator/member?role=${role}&email=${email}&name=${name}`
+  );
+  return response;
+};
+
+export const UpdateMember = async (
+  role: string,
+  name: string,
+  member_id: string
+) => {
+  const response = await DocumentTranslatorAPI.patch(
+    BACKEND_DOC_TRANSLATOR_URL +
+      `/doc_translator/member/${member_id}?name=${name}&role=${role}`
+  );
+  return response;
+};
+
+export const DeleteMember = async (member_id: string) => {
+  const response = await DocumentTranslatorAPI.delete(
+    BACKEND_DOC_TRANSLATOR_URL +
+      `/doc_translator/member/${member_id}`
+  );
+  return response;
+};

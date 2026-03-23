@@ -37,13 +37,11 @@ const Translator = () => {
     enabled: loading,
     refetchInterval: loading ? 10000 : false,
   })
-
-    // Stop polling when translation status is "succeeded"
     useEffect(() => {
       if (translatorData?.status === "succeeded") {
-        setLoading(false);  // Stop polling
+        setLoading(false);
       }
-    }, [translatorData]);  // This runs when translatorData changes
+    }, [translatorData]);
   
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,10 +53,7 @@ const Translator = () => {
         const fileURL = URL.createObjectURL(file);
         setFileUrl(fileURL);
       }
-      else {
-        // const fileURL = getIframeSrc(file.name, getFileType(file.name));
-        // console.log(fileURL);
-        
+      else {        
         setFileUrl(null);
       }
       setFile(file);

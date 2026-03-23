@@ -65,7 +65,6 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, title }) => {
     if (selectedFileType && !defaultValues?.kind) {
       setValue("fileType", "Manual");
     }
-    console.log(isOpen);
 
     return () => {
       dispatch.loadingState.endLoading();

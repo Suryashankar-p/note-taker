@@ -18,6 +18,7 @@ import {
 } from "../../utils/functions.ts";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 import { TransmitterGetMasterChildActivities } from "../../services/transmitter_ocr.ts";
 
 interface ChildActivity {
@@ -74,39 +75,6 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
   const toastStatus = useSelector((state: RootState) => state.toast);
 
   let timeoutId: NodeJS.Timeout | null = null;
-
-  // const menuItems = [
-  //   {
-  //     title: "Edit",
-  //     component: <img src={EditIcon} alt="edit" loading="lazy" />,
-  //   },
-  //   {
-  //     title: "Delete",
-  //     component: <img src={TrashIcon} alt="trash" loading="lazy" />,
-  //   },
-  //   {
-  //     title: "Tranfer",
-  //     component: <img src={TranferIcon} alt="Tranfer" loading="lazy" />,
-  //   },
-  // ];
-
-  // const handleMenuClick = (item: string, activity: ChildActivity) => {
-  //   if (item === "Edit") {
-  //     if (onSelectActivity) {
-  //       onSelectActivity(activity);
-  //     } else {
-  //       navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
-  //         state: { activity },
-  //       });
-  //     }
-  //   } else if (item === "Delete") {
-  //     // Handle delete action here
-  //     console.log("Delete activity:", activity);
-  //   } else if (item === "Tranfer") {
-  //     // Handle transfer action here
-  //     console.log("Transfer activity:", activity);
-  //   }
-  // };
 
   useEffect(() => {
     if (masterId) {
@@ -305,9 +273,7 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
           className="flex-1 h-[calc(100vh-220px)] pr-4 overflow-y-auto"
         >
           {isLoading && childActivities.length === 0 ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-danger"></div>
-            </div>
+            <PageLoading />
           ) : childActivities.length > 0 ? (
             <div className="space-y-4">
               {childActivities.map((activity) => (

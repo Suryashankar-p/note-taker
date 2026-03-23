@@ -7,6 +7,7 @@ import Text from "../../components/Text.tsx";
 import Input from "../../components/Input.tsx";
 import Button from "../../components/Button.tsx";
 import Toast from "../../components/Toast.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 import NoData from "../../assets/no_data.tsx";
 
 import Search from "../../assets/search_icon.svg";
@@ -88,8 +89,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
         typeof activityId === 'string' ? parseInt(activityId) : activityId
       );
 
-      console.log("API Response:", response); // Debug log
-
       if (response) {
         setActivityDetails(response);
 
@@ -118,8 +117,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
         } else if (response.data && response.data.result && Array.isArray(response.data.result)) {
           dataArray = response.data.result;
         }
-
-        console.log("Data Array:", dataArray); // Debug log
 
         // Map the data to PageData format
         const mappedData: PageData[] = dataArray.map((item, index) => {
@@ -158,8 +155,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
           };
         }).filter(item => item.fields.length > 0); // Filter out empty items
 
-        console.log("Mapped Data:", mappedData); // Debug log
-
         // Extract unique column titles from all fields across all pages
         const allColumns = new Set<string>();
         mappedData.forEach(page => {
@@ -169,7 +164,6 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
         });
 
         const columnArray = Array.from(allColumns);
-        console.log("Dynamic Columns:", columnArray); // Debug log
 
         setDynamicColumns(columnArray);
         setPageDataList(mappedData);
@@ -371,14 +365,11 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
                 {isLoading ? (
                   <tr>
                     <td colSpan={dynamicColumns.length + 3} className="py-20 text-center">
-                      <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
-                      </div>
+                      <PageLoading />
                     </td>
                   </tr>
                 ) : (
                   pageDataList.map((pageData, pageIndex) => {
-                    console.log(`Row ${pageIndex} - Page ${pageData.page_number}:`, pageData); // Debug log
 
                     const invalidFields = Array.isArray(pageData.fields)
                       ? pageData.fields.filter(f => !f.is_valid)

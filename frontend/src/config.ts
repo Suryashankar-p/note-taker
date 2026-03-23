@@ -8,4 +8,5 @@ export const ACTIVE_SERVICES = {
     "cyberbuddy": true,
     "heating_ocr": true,
     "transmitter_ocr": true,
+    "edgeagent-playground": true,
 }

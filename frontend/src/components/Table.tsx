@@ -55,8 +55,6 @@ const UserTable: React.FC<Props> = ({
       dispatch.modal.openAddMember("edit");
     } else if (item === "Delete") {
       dispatch.modal.openConfirmation();
-    } else {
-      console.log("error");
     }
   };
 

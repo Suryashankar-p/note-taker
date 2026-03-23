@@ -26,6 +26,7 @@ import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
 import { GetHeatingOCRRole } from "../services/heating_ocr.ts";
 import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
 import { GetTranslatorRole } from "../services/doc_translator.ts";
+import { GetMemberEdgeRole } from "../services/edge.ts";
 
 interface Card {
   title: string;
@@ -83,7 +84,6 @@ const Dashboard: React.FC = () => {
       }
       setLoading(false);
     } catch (err) {
-      console.log("error", err);
       setLoading(false);
     }
   };
@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -124,7 +124,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -139,7 +139,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -154,7 +154,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -169,7 +169,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -194,7 +194,7 @@ const Dashboard: React.FC = () => {
         }
       }
     } catch (error) {
-      console.log(error);
+      navigate("/");
     }
   };
 
@@ -210,7 +210,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -225,7 +225,7 @@ const Dashboard: React.FC = () => {
           dispatch.toast.openToast({ status: true, message: response?.detail });
       }
     } catch (err) {
-      console.log("my err");
+      navigate("/");
     }
   };
 
@@ -234,6 +234,21 @@ const Dashboard: React.FC = () => {
       const response = await GetHeatingOCRRole();
       if (response?.role) {
         navigate("./heating_ocr");
+      } else {
+        setPageError(true);
+        if (response?.detail)
+          dispatch.toast.openToast({ status: true, message: response?.detail });
+      }
+    } catch (err) {
+      navigate("/");
+    }
+  };
+
+  const getEdgeRole = async () => {
+    try {
+      const response = await GetMemberEdgeRole();
+      if (response?.role) {
+        navigate("./edge");
       } else {
         setPageError(true);
         if (response?.detail)
@@ -273,6 +288,9 @@ const Dashboard: React.FC = () => {
       case "Transmitter OCR":
         TransmittergetOCRRole();
         break;
+      case "Edge Bot":
+        getEdgeRole();
+        break;
     }
   };
 
@@ -296,11 +314,10 @@ const Dashboard: React.FC = () => {
               AI Studio
             </Text>
             {services && (
-              <Text type="small" className="text-faint_text ml-5">{`(${
-                services?.length > 1
-                  ? services?.length + " Results"
-                  : services?.length + " Result"
-              } of ${totalServies})`}</Text>
+              <Text type="small" className="text-faint_text ml-5">{`(${services?.length > 1
+                ? services?.length + " Results"
+                : services?.length + " Result"
+                } of ${totalServies})`}</Text>
             )}
           </div>
           <Input
@@ -312,8 +329,8 @@ const Dashboard: React.FC = () => {
         </div>
         {services?.length > 0 ? (
           <div
-          className="relative top-5 left-2 w-full 
-          max-h-[60vh] overflow-y-auto 
+            className="relative top-5 left-2 w-full 
+          max-h-[70vh] overflow-y-auto 
           md:max-h-[65vh] 
           lg:max-h-[70vh] 
           sm:max-h-[60vh]"           >

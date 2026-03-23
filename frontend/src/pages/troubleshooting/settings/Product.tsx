@@ -137,7 +137,6 @@ const Products = () => {
         setLoading(false);
       }
     } catch (err) {
-      console.log("errr", err);
       setLoading(false);
     }
     setIsLoadingMore(false);
@@ -150,21 +149,17 @@ const Products = () => {
     limit: number,
     search_term: string
   ) => {
-    try {
-      const productResponse = await ReadProducts(skip, limit, search_term);
-      if (productResponse?.result) {
-        setProducts(productResponse?.result);
-        setProductTotal(productResponse?.total);
-      } else {
-        setPageError(true);
-        if (productResponse?.detail)
-          dispatch.toast.openToast({
-            status: true,
-            message: productResponse?.detail,
-          });
-      }
-    } catch (err) {
-      console.log(err);
+    const productResponse = await ReadProducts(skip, limit, search_term);
+    if (productResponse?.result) {
+      setProducts(productResponse?.result);
+      setProductTotal(productResponse?.total);
+    } else {
+      setPageError(true);
+      if (productResponse?.detail)
+        dispatch.toast.openToast({
+          status: true,
+          message: productResponse?.detail,
+        });
     }
   };
 
@@ -180,25 +175,17 @@ const Products = () => {
   };
 
   const onProductCreate = async (data: any) => {
-    if (data) {
-      try {
-        const createResponse = await CreateProduct(data?.product_title);
-        if (createResponse?.id) {
-          getAllProducts(0, 20, "");
-          dispatch.modal.closeAddProduct();
-        } else {
-          setPageError(true);
-          if (createResponse?.detail)
-            dispatch.toast.openToast({
-              status: true,
-              message: createResponse?.detail,
-            });
-        }
-      } catch (err) {
-        console.log(err);
-      }
+    const createResponse = await CreateProduct(data?.product_title);
+    if (createResponse?.id) {
+      getAllProducts(0, 20, "");
+      dispatch.modal.closeAddProduct();
     } else {
-      console.log("error");
+      setPageError(true);
+      if (createResponse?.detail)
+        dispatch.toast.openToast({
+          status: true,
+          message: createResponse?.detail,
+        });
     }
   };
 
@@ -209,12 +196,8 @@ const Products = () => {
   };
 
   const onDeleteSubmit = async (value: any) => {
-    try {
-      await DeleteProduct(value?.id);
-      getAllProducts(0, 20, "");
-    } catch (err) {
-      console.log(err);
-    }
+    await DeleteProduct(value?.id);
+    getAllProducts(0, 20, "");
   };
 
   const getProductDocuments = async (
@@ -223,7 +206,6 @@ const Products = () => {
     limit: number,
     search_term: string
   ) => {
-    try {
       const resp = await ReadDocuments(product_id, skip, limit, search_term);
       if (resp?.result) {
         setFiles(resp.result);
@@ -231,19 +213,12 @@ const Products = () => {
         setPageError(true);
         dispatch.toast.openToast({ status: true, message: resp?.detail });
       }
-    } catch (err) {
-      console.log("err", err);
-    }
   };
 
   const deleteProductFile = async (product_id: string | number) => {
-    try {
-      await DeleteDocument(product_id);
-      getAllProducts(0, 20, "");
-      getProductDocuments(product_id, 0, 100, "");
-    } catch (err) {
-      console.log("err", err);
-    }
+    await DeleteDocument(product_id);
+    getAllProducts(0, 20, "");
+    getProductDocuments(product_id, 0, 100, "");
   };
 
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,7 +248,6 @@ const Products = () => {
           dispatch.loadingState.endLoading();
         }
       } catch (err: any) {
-        console.log("err", err);
         let error_message = err?.response?.data?.detail;
         dispatch.loadingState.endLoading();
         setPageError(true);
@@ -320,7 +294,6 @@ const Products = () => {
         });
       }
     } catch (err) {
-      console.log("err", err);
       dispatch.toast.openToast({
         status: true,
         message: "Error loading file",

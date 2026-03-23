@@ -54,7 +54,7 @@ const ActivityDetailPage: React.FC = () => {
   });
   const [fieldData, setFieldData] = useState<any>([]);
   const [activityDetails, setActivityDetails] = useState<any>();
-  let timeoutId: NodeJS.Timeout | null = null;
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const dispatch = useDispatch<Dispatch>();
   const [confirmationData, setConfirmationData] = useState<{
@@ -286,22 +286,15 @@ const ActivityDetailPage: React.FC = () => {
     updatedFieldData[index] = {
       ...updatedFieldData[index],
       value: newValue,
-      // Remove the automatic is_valid: true - let backend validate
     };
     setFieldData(updatedFieldData);
+  };
 
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+  const handleFieldBlur = (index: number) => {
+    if (scrollRef.current) {
+      scrollPositionRef.current = scrollRef.current.scrollTop;
     }
-    timeoutId = setTimeout(() => {
-      updateDocument(activity?.id, { field: updatedFieldData });
-    }, 500);
-
-    requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollPositionRef.current;
-      }
-    });
+    updateDocument(activity?.id, { field: fieldData });
   };
 
   const updateDocument = async (activity_id: number, data: any) => {
@@ -313,10 +306,15 @@ const ActivityDetailPage: React.FC = () => {
       
       const response = await UpdateOCRActivitiesDetails(activity_id, payload);
       if (response?.id) {
-        // Always fetch fresh data after update to get validation results
-        if (isGroupView && group) {
-          // Re-fetch group data to get validation
-          await getGroupActivityData(activity_id, group);
+        if (isGroupView && group && response?.data?.field && response?.group) {
+          // Find the group index from the PATCH response directly (no extra GET call)
+          const groupIndex = response.group.findIndex(
+            (g: string[]) => JSON.stringify(g) === JSON.stringify(group)
+          );
+          if (groupIndex !== -1 && response.data.field[groupIndex]) {
+            setFieldData(response.data.field[groupIndex]);
+            setActivityDetails(response);
+          }
         } else {
           setActivityDetails(response);
           setFieldData(response?.data?.field);
@@ -330,6 +328,7 @@ const ActivityDetailPage: React.FC = () => {
         });
       }
     } catch (error: any) {
+      console.error("[DEBUG] PATCH error:", error);
       setPageError(true);
       dispatch.toast.openToast({
         status: true,
@@ -395,7 +394,13 @@ const ActivityDetailPage: React.FC = () => {
             name: opt.mapping_value
           }))}
           initialValue={getDisplayValue(makerOptions, item.value)}
-          onChange={val => handleFieldChange(index, val.value)}
+          onChange={val => {
+            handleFieldChange(index, val.value);
+            // Dropdown selection is a single action, trigger PATCH immediately
+            const updated = [...fieldData];
+            updated[index] = { ...updated[index], value: val.value };
+            updateDocument(activity?.id, { field: updated });
+          }}
           placeholder="Type to search..."
           disabled={disabled}
         />
@@ -410,7 +415,13 @@ const ActivityDetailPage: React.FC = () => {
             name: opt.mapping_value
           }))}
           initialValue={getDisplayValue(processOptions, item.value)}
-          onChange={val => handleFieldChange(index, val.value)}
+          onChange={val => {
+            handleFieldChange(index, val.value);
+            // Dropdown selection is a single action, trigger PATCH immediately
+            const updated = [...fieldData];
+            updated[index] = { ...updated[index], value: val.value };
+            updateDocument(activity?.id, { field: updated });
+          }}
           placeholder="Type to search..."
           disabled={disabled}
         />
@@ -423,7 +434,7 @@ const ActivityDetailPage: React.FC = () => {
         disabled={disabled}
         className={inputClassName}
         style={inputStyle}
-        defaultValue={item?.value}
+        value={item?.value ?? ""}
         onFocus={e => {
           e.target.style.borderColor = item?.is_valid ? "#A7AAB1" : "#E4B106";
           e.target.style.boxShadow = item?.is_valid
@@ -435,6 +446,7 @@ const ActivityDetailPage: React.FC = () => {
           e.target.style.boxShadow = item?.is_valid
             ? "0 0 0 1px rgba(209, 213, 219, 0.5)"
             : "0 0 0 1px rgba(252, 211, 77, 0.5)";
+          handleFieldBlur(index);
         }}
         onChange={e => handleFieldChange(index, e.target.value)}
       />

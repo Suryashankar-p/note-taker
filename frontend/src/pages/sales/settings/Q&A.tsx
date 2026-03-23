@@ -117,7 +117,6 @@ const QandA = () => {
       }
     }
     catch (err) {
-      console.log("errr", err);
       setLoading(false);
     }
   };
@@ -134,7 +133,7 @@ const QandA = () => {
       }
     }
     catch (err) {
-      console.log(err);
+      setPageError(true);
     }
   }
 
@@ -152,7 +151,7 @@ const QandA = () => {
       }
     }
     catch (err) {
-      console.log(err, "err")
+      setPageError(true);
     }
   }
 
@@ -160,12 +159,6 @@ const QandA = () => {
   const onExpandIconClick = (item: any) => {
     setDefaultQA(item)
     dispatch.modal.openQandA('edit');
-    // if (key === expand.value) {
-    //   setExpand({ value: undefined, status: false });
-    // } else {
-    //   setExpand({ value: key, status: true });
-
-    // }
   };
 
   const deleteQaAItem = async (item: any) => {
@@ -175,8 +168,7 @@ const QandA = () => {
         getActiveTabQaA(0, 20, activeTab, '')
       }
       catch (err) {
-        console.log("err", err);
-
+        setPageError(true);
       }
     }
   }
@@ -218,8 +210,7 @@ const QandA = () => {
         }
       }
       catch (err) {
-        console.log(err);
-
+        setPageError(true);
       }
     }
   }
@@ -244,8 +235,7 @@ const QandA = () => {
         }
       }
       catch (err) {
-        console.log(err);
-
+        setPageError(true);
       }
     }
   }

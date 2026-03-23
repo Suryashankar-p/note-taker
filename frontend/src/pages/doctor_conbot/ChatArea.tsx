@@ -276,7 +276,6 @@ const ChatArea: React.FC<Props> = ({
   // Video Authorization Loader
   // ───────────────────────────────
   const loadVideoBlob = async (url: string, key: string) => {
-    console.log("In the function loadVideoBlob");
     try {
       const token = localStorage.getItem("access_token");
       const response = await fetch(url, {
@@ -298,7 +297,6 @@ const ChatArea: React.FC<Props> = ({
   // Image Authorization Loader
   // ───────────────────────────────
   const loadImageBlob = async (url: string, key: string) => {
-    console.log("In the function loadImageBlob");
     try {
       const token = localStorage.getItem("access_token");
       const response = await fetch(url, {

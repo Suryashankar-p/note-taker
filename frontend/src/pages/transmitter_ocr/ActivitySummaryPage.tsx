@@ -8,6 +8,7 @@ import Search from "../../assets/search_icon.svg";
 import { getInitials } from "../../utils/functions.ts";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
 import { TransmitterGetMasterActivities } from "../../services/transmitter_ocr.ts";
 
 interface MasterActivity {
@@ -228,16 +229,14 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
           className="flex-1 h-[calc(100vh-300px)] overflow-y-auto"
         >
           {isLoading && masterActivities.length === 0 ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-danger"></div>
-            </div>
+            <PageLoading />
           ) : masterActivities.length > 0 ? (
             masterActivities.map((activity, index) => (
               <div
                 key={activity.id}
                 className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== masterActivities.length - 1
-                    ? "border-b border-gray-200"
-                    : ""
+                  ? "border-b border-gray-200"
+                  : ""
                   }`}
                 onClick={() => handleMasterClick(activity)}
               >
