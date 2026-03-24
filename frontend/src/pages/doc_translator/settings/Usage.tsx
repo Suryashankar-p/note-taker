@@ -3,7 +3,8 @@ import Text from '../../../components/Text';
 import Cost from './Cost';
 import Activity from './Activity';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { ReadActivityUsage, ReadActivityUsageTopUsers, ReadCostUsage } from '../../../services/doc_translator';
+import { ReadActivityUsage, ReadActivityUsageTopUsers, ReadCostUsage, ReadActiveUsersTrend } from '../../../services/doc_translator';
+
 // import { useDispatch, useSelector } from 'react-redux';
 // import { Dispatch, RootState } from '../../../redux/store';
 import Toast from '../../../components/Toast';
@@ -33,17 +34,20 @@ const Usage = () => {
   const [pageError, setPageError] = useState<boolean>(false)
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const loadingRef = useRef(false);
+  const [trendData, setTrendData] = useState<any | null>(null);
 
 
   // Fetch analytics data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [costRes, activityRes, topUsersRes] = await Promise.all([
+        const [costRes, activityRes, topUsersRes, trendRes] = await Promise.all([
           ReadCostUsage(calender.year, calender.month),
           ReadActivityUsage(calender.year, calender.month),
-          ReadActivityUsageTopUsers(calender.year, calender.month)
+          ReadActivityUsageTopUsers(calender.year, calender.month),
+          ReadActiveUsersTrend(calender.year, calender.month)
         ]);
+        setTrendData(trendRes?.result || trendRes);
         setUsageData(costRes?.result || costRes);
         setActivityData(activityRes?.result || activityRes);
         setTopUsers(topUsersRes?.result || topUsersRes);
@@ -59,7 +63,7 @@ const Usage = () => {
       case 'cost':
         return <Cost usageData={usageData} limit={limit} onLimitEdit={() => {}} month={calender.month} />;
       case 'activity':
-        return <Activity activityData={activityData} month={calender.month} topUsers={topUsers} reachedBottom={() => {}}/>;
+        return <Activity activityData={activityData} month={calender.month} year={Number(calender.year)} topUsers={topUsers} trendData={trendData} />;
       default:
         return null;
     }
@@ -92,7 +96,7 @@ const Usage = () => {
         </div>
       )} */}
   
-      <TabGroup className="h-full flex flex-col gap-2 ">
+      <TabGroup className="flex flex-col gap-2 ">
         <div className="flex flex-wrap md:flex-nowrap justify-between items-center mt-1 gap-3 border-gray-300 mb-4 relative">
           <TabList className="flex flex-wrap space-x-2">
             {tabs.map((tab) => (
@@ -118,9 +122,9 @@ const Usage = () => {
         </div>
   
         {/* Content Panel */}
-        <TabPanels className="bg-white h-auto min-h-[12rem] sm:min-h-[16rem] lg:min-h-[18rem] overflow-y-auto md:overflow-hidden xl:h-[25rem] max-h-[calc(100vh-8rem)] rounded-lg shadow-lg border border-gray-200">
+        <TabPanels className="bg-white rounded-lg shadow-lg border border-gray-200">
 
-          <TabPanel className="h-full pb-56">
+          <TabPanel>
             <Cost
               usageData={usageData}
               month={Number(calender.month)}
@@ -128,12 +132,13 @@ const Usage = () => {
             />
           </TabPanel>
 
-          <TabPanel className="h-full pb-56">
+          <TabPanel className="overflow-y-auto max-h-[calc(100vh-12rem)]">
             <Activity
               activityData={activityData}
               month={Number(calender.month)}
               year={Number(calender.year)}
               topUsers={topUsers}
+              trendData={trendData}
             />
           </TabPanel>
 

@@ -136,3 +136,14 @@ export const ReadActivityUsageTopUsers = async (
   );
   return response;
 };
+
+export const ReadActiveUsersTrend = async (
+  year: string | number,
+  month: string | number
+) => {
+  const response = await DocumentTranslatorAPI.get(
+    BACKEND_DOC_TRANSLATOR_URL +
+      `/doc_translator/usage/activity/trend?year=${year}&month=${month}`
+  );
+  return response;
+};
