@@ -70,15 +70,9 @@ const Dashboard: React.FC = () => {
     //setLoading(true);
     try {
       const servicesList = await GetServices(skip, limit, search_term);
-
-      const titlesToRemove = ["Transmitter OCR", "Heating OCR"];
-      const filteredServices = servicesList.result.filter(
-        (service: any) => !titlesToRemove.includes(service.title)
-      );
-      
       if (servicesList?.result) {
-        setServices(filteredServices);
-        setTotalServices(filteredServices.length);
+        setServices(servicesList?.result);
+        setTotalServices(servicesList?.total);
       } else {
         setPageError(true);
         if (servicesList?.detail)
