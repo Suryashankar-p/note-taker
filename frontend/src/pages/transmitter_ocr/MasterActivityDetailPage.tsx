@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import Toast from "../../components/Toast.tsx";
 import PageLoading from "../../components/PageLoading.tsx";
+import DropDownButton from "../../components/DropDownButton.tsx";
 
 GlobalWorkerOptions.workerSrc = url;
 
@@ -132,6 +133,7 @@ const MasterDataTable: React.FC<{
                   <span title={item["Calibration Range Unit"] || ""}>{item["Calibration Range Unit"] || "-"}</span>
                 ) : (
                   <input
+                    key={`unit-${item["Calibration Range Unit"] || ""}`}
                     type="text"
                     title={item["Calibration Range Unit"] || ""}
                     defaultValue={item["Calibration Range Unit"] || ""}
@@ -292,6 +294,16 @@ const MasterActivityDetailPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [masterData, setMasterData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const unitOptions = [
+    { value: "", name: "Select Unit" },
+    { value: "mmWC", name: "mmWC" },
+    { value: "mmH2O", name: "mmH2O" },
+    { value: "Kg/cm2", name: "Kg/cm2" },
+    { value: "Bar(g)", name: "Bar(g)" },
+    { value: "Degree C", name: "Degree C" },
+  ];
+  const [globalUnit, setGlobalUnit] = useState<{ value: string; name: string }>(unitOptions[0]);
 
   // Use useRef for timeout to avoid closure issues
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -520,6 +532,19 @@ const MasterActivityDetailPage: React.FC = () => {
     }, 2000);
   };
 
+  // Function to handle global unit update
+  const handleGlobalUnitChange = (value: { value: string; name: string }) => {
+    setGlobalUnit(value);
+    if (!value.value) return;
+
+    const updatedMasterData = masterData.map(item => ({
+      ...item,
+      "Calibration Range Unit": value.value
+    }));
+
+    handleMasterDataUpdate(updatedMasterData);
+  };
+
   /**
    * Update activity details by calling the PATCH API
    * @param activity_id - The ID of the activity to update
@@ -666,9 +691,22 @@ const MasterActivityDetailPage: React.FC = () => {
               <Text type="header3" className="text-lg font-medium">
                 Master Data {!isEditingDisabled && <span className="text-sm text-gray-500">(Editable)</span>}
               </Text>
-              <span className="text-sm text-gray-500">
-                {masterData.length} records found
-              </span>
+              <div className="flex items-center space-x-4">
+                {!isEditingDisabled && masterData.length > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <Text type="small" className="text-gray-600 font-medium">Global Unit:</Text>
+                    <DropDownButton
+                      className="w-36"
+                      listValues={unitOptions}
+                      value={globalUnit}
+                      onChange={handleGlobalUnitChange}
+                    />
+                  </div>
+                )}
+                <span className="text-sm text-gray-500">
+                  {masterData.length} records found
+                </span>
+              </div>
             </div>
             {masterData.length > 0 ? (
               <div className="rounded-lg p-4 bg-white shadow-sm">
