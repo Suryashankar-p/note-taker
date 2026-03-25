@@ -131,7 +131,7 @@ const CreateChildActivity: React.FC<CreateChildActivityModalProps> = ({
       >
         <div className="flex justify-between items-center mb-4">
           <Text className="text-[24px] text-black font-medium leading-6">
-            Create Child Activity
+            {defaultValues ? "Edit Child Activity" : "Create Child Activity"}
           </Text>
           <button className="absolute top-4 right-4 z-50" onClick={onClose}>
             <img src={Close} alt="close" loading="lazy" />
@@ -148,9 +148,11 @@ const CreateChildActivity: React.FC<CreateChildActivityModalProps> = ({
           {titleError && <Text className="text-red-500">{titleError}</Text>}
         </div>
         
-        <div className="mb-4">
-          <Text className="text-primary_text">Index Pages to Trim</Text>
-          <input
+        {!defaultValues && (
+          <>
+            <div className="mb-4">
+              <Text className="text-primary_text">Index Pages to Trim</Text>
+              <input
             type="text"
             value={pagesToTrim}
             onChange={handlePagesToTrimChange}
@@ -242,6 +244,8 @@ const CreateChildActivity: React.FC<CreateChildActivityModalProps> = ({
           </div>
           {fileError && <Text className="text-red-500">{fileError}</Text>}
         </div>
+        </>
+        )}
         <div className="flex justify-end space-x-2">
           <button
             onClick={onClose}
