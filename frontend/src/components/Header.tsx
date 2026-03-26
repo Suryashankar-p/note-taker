@@ -86,7 +86,7 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
       <div className="w-full max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         {/* Logo */}
         <div className="flex absolute top-[1vh] left-[3vw] md:left-[5vw]">
-          <img loading="lazy" src={logo} alt="Logo" className="h-10 mr-2" />
+          <img loading="lazy" src={logo} alt="Logo" onClick={() => navigate('/ai-studio')} className="h-10 mr-2" />
         </div>
 
         {/* Breadcrumb Navigation */}
@@ -96,21 +96,14 @@ const Header: React.FC<InputProps> = ({ breadCrumbs }) => {
               breadCrumbs.map((item: any, key: number) => (
                 <React.Fragment key={key}>
                   <li>
-                    {item.title === "AI Studio" ? (
-                      <span className="text-gray-600">
-                        <Text type="body">{item.title}</Text>
-                      </span>
-                    ) : (
-                      <a
-                        href={item.url}
-                        className={`text-${key < breadCrumbs?.length - 1
-                            ? "gray-600"
-                            : "link_text"
-                          } hover:text-gray-800`}
-                      >
-                        <Text type="body">{item.title}</Text>
-                      </a>
-                    )}
+                    <a
+                      href={item.url}
+                      className={`text-${
+                        key < breadCrumbs?.length - 1 ? "gray-600" : "link_text"
+                      } hover:text-gray-800`}
+                    >
+                      <Text type="body">{item.title}</Text>
+                    </a>
                   </li>
                   {key < breadCrumbs?.length - 1 && <li>/</li>}
                 </React.Fragment>
