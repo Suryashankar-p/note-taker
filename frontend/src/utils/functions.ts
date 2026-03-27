@@ -11,13 +11,6 @@ import transmitter_ocr from '../assets/transmitter_ocr.jpg'
 
 const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 
-// const DOMAIN = import.meta.env.VITE_DOMAIN;
-// const URL_PREFIX = import.meta.env.VITE_URL_PREFIX;
-// //const BASE_URL = "http://192.168.29.53:9000/api"
-// const BASE_URL = `${
-//   DOMAIN === "localhost" ? "http:" : "https:"
-// }//${DOMAIN}${URL_PREFIX}`;
-
 export const roundToFourDecimals = (number: any) => {
     return Number(number.toFixed(4));
 };
