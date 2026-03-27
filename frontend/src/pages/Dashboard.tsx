@@ -28,6 +28,8 @@ import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
 import { GetTranslatorRole } from "../services/doc_translator.ts";
 import { GetMemberEdgeRole } from "../services/edge.ts";
 
+const DOMAIN = window.env?.DOMAIN || import.meta.env.VITE_DOMAIN;
+
 interface Card {
   title: string;
   description: string;
@@ -70,8 +72,17 @@ const Dashboard: React.FC = () => {
     //setLoading(true);
     try {
       const servicesList = await GetServices(skip, limit, search_term);
+      console.log("Service List:", servicesList)
       if (servicesList?.result) {
-        setServices(servicesList?.result);
+        let filteredResult = servicesList.result;
+        if (DOMAIN === "https://aistudio.thermaxglobal.com") {
+          const titlesToRemove = ["Transmitter OCR", "Heating OCR"];
+          filteredResult = filteredResult.filter(
+            (service: Card) => !titlesToRemove.includes(service.title)
+          );
+        }
+        console.log("Filtered Result:", filteredResult);
+        setServices(filteredResult);
         setTotalServices(servicesList?.total);
       } else {
         setPageError(true);
