@@ -29,7 +29,7 @@ const DropDownButton: React.FC<Props> = ({ label, listValues = [{ name: '' }], v
             onClick={(e) => e.stopPropagation()} 
           >
 
-            <span className="block truncate">{value?.name}</span>
+            <span className="block truncate" title={value?.name}>{value?.name}</span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
               <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
             </span>
@@ -56,7 +56,7 @@ const DropDownButton: React.FC<Props> = ({ label, listValues = [{ name: '' }], v
                 >
                   {({ selected }) => (
                     <>
-                      <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                      <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`} title={option.name}>
                         <Text>{option.name}</Text>
                       </span>
                       {selected ? (

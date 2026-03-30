@@ -192,13 +192,11 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
       return;
     }
 
-    const filtered = originalPageDataList.map(pageData => ({
-      ...pageData,
-      fields: Array.isArray(pageData.fields) ? pageData.fields.filter(field =>
-        field.title.toLowerCase().includes(val.toLowerCase()) ||
-        (field.value?.toLowerCase().includes(val.toLowerCase()))
-      ) : []
-    })).filter(pageData => pageData.fields.length > 0);
+    const filtered = originalPageDataList.filter(pageData =>
+      Array.isArray(pageData.fields) && pageData.fields.some(field =>
+        field.value?.toLowerCase().includes(val.toLowerCase())
+      )
+    );
 
     setPageDataList(filtered);
   };
