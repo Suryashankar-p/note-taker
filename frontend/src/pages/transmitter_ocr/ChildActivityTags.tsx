@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import Toast from "../../components/Toast.tsx";
@@ -56,11 +56,18 @@ const ChildActivityTags: React.FC<ChildActivityTagsProps> = ({
   onSelectTag,
   onBack, // Add onBack prop
 }) => {
-  const { activityTitle: paramActivityTitle } = useParams<{ activityTitle: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch<Dispatch>();
   const tagListRef = useRef<HTMLDivElement>(null);
 
-  const activityTitle = propActivityTitle || paramActivityTitle;
+  // Use prop, then fallback to location state, then to title/id from URL
+  const activityIdFromUrl = searchParams.get("id");
+  const activityTitleFromUrl = searchParams.get("title");
+  const activityFromState = location.state?.activity;
+  const activityTitle = propActivityTitle || activityFromState?.title || activityTitleFromUrl || activityIdFromUrl;
+  const activityId = activityFromState?.id || activityIdFromUrl;
 
   // ── State ───────────────────────────────────────────────────────────────────
   const [tagNumbers, setTagNumbers] = useState<TagNumberStatus[]>([]);

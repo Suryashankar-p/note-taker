@@ -6,7 +6,7 @@ import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
 import Text from "../../components/Text.tsx";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { url } from "../../utils/constants.ts";
 import Button from "../../components/Button.tsx";
 import { TransmitterUpdateMasterActivityDetails, TransmitterGetMasterActivityDetails, TransmitterGetMasterDocumentUrl } from "../../services/transmitter_ocr.ts";
@@ -273,6 +273,8 @@ interface Item {
 
 const MasterActivityDetailPage: React.FC = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const activityId = location?.state?.activity?.id || searchParams.get("id");
   const activity = location?.state?.activity;
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [pdfUrl, setPdfUrl] = useState<string>("");
@@ -310,15 +312,16 @@ const MasterActivityDetailPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!activityId) return;
       setLoading(true);
       await Promise.all([
-        getActivityDetails(activity?.id),
-        getDocumentLink(activity?.id)
+        getActivityDetails(Number(activityId)),
+        getDocumentLink(Number(activityId))
       ]);
       setLoading(false);
     };
     fetchData();
-  }, [activity?.id]);
+  }, [activityId]);
 
   // Initialize editable tables and master data when activity details are loaded
   useEffect(() => {
