@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
       if (servicesList?.result) {
         let filteredResult = servicesList.result;
         if (DOMAIN === "https://aistudio.thermaxglobal.com") {
-          const titlesToRemove = ["Transmitter OCR", "Heating OCR"];
+          const titlesToRemove = ["Heating OCR"];
           filteredResult = filteredResult.filter(
             (service: Card) => !titlesToRemove.includes(service.title)
           );
