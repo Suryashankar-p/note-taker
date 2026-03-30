@@ -192,6 +192,7 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
       return;
     }
 
+    
     const filtered = originalPageDataList.filter(pageData =>
       Array.isArray(pageData.fields) && pageData.fields.some(field =>
         field.value?.toLowerCase().includes(val.toLowerCase())
