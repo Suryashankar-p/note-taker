@@ -1,20 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import Text from "../../components/Text.tsx";
 import Input from "../../components/Input.tsx";
 import Button from "../../components/Button.tsx";
 import Search from "../../assets/search_icon.svg";
-
-
-
-import DropDownMenu from "../../components/DropdownMenu.tsx";
 import {
   getInitials,
   getBorderColor,
   statusMapper,
-  userStatusMapper,
 } from "../../utils/functions.ts";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
@@ -50,16 +45,16 @@ interface ActivitySummaryChildListProps {
 }
 
 const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onSelectActivity, onBack }) => {
-  const { masterId: paramMasterId } = useParams<{ masterId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-  // Prefer location state activity, then query param logic could be added if needed
+  // Prefer location state activity, then fallback to activityId from URL
   const [masterActivity, setMasterActivity] = useState<MasterActivity | null>(
     location.state?.activity || null
   );
 
-  const masterId = masterActivity?.id?.toString() || paramMasterId;
+  const masterId = masterActivity?.id?.toString() || searchParams.get("id");
 
   const dispatch = useDispatch<Dispatch>();
   const activityListRef = useRef<HTMLDivElement>(null);
@@ -201,14 +196,12 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
     }, 500);
   };
 
-
-
   const handleChildActivityClick = (activity: ChildActivity) => {
     if (onSelectActivity) {
       onSelectActivity(activity);
     } else {
       // Navigate to child activity detail page
-      navigate(`/ai-studio/transmitter_ocr/child-activity/${activity.id}`, {
+      navigate(`/ai-studio/transmitter_ocr?page=SummaryDetail&id=${activity.id}`, {
         state: { activity },
       });
     }
@@ -309,23 +302,6 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
                     >
                       {activity?.status && statusMapper(activity.status)}
                     </Text>
-
-                    {/* <div onClick={(e) => e.stopPropagation()}>
-                      <DropDownMenu
-                        onChange={(item: string) =>
-                          handleMenuClick(item, activity)
-                        }
-                        content={
-                          <img
-                            className="w-8 h-8"
-                            src={Menu}
-                            alt="menu"
-                            loading="lazy"
-                          />
-                        }
-                        menuItems={menuItems}
-                      />
-                    </div> */}
                   </div>
                 </div>
               ))}
@@ -342,8 +318,8 @@ const ActivitySummaryChildList: React.FC<ActivitySummaryChildListProps> = ({ onS
             </div>
           )}
         </div>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 };
 

@@ -6,7 +6,7 @@ import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
 import Text from "../../components/Text.tsx";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { url } from "../../utils/constants.ts";
 import Button from "../../components/Button.tsx";
 import {
@@ -59,8 +59,16 @@ interface ChildActivityDetailPageProps {
 
 const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBack }) => {
   const location = useLocation();
-  const activity = location?.state?.activity;
-  const tagData = activity?.tagData;
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const activityFromState = location?.state?.activity;
+  console.log(activityFromState,'activityFromState');
+  const activityId = activityFromState?.id || searchParams.get("parent_id");
+  const tagNumber = activityFromState?.tagData?.tag_number || searchParams.get("id");
+  
+  const activity = activityFromState || { id: activityId, title: searchParams.get("title") || "" };
+  const tagData = activityFromState?.tagData || (tagNumber ? { tag_number: tagNumber } : null);
   const [reason, setReason] = useState(null);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [pdfUrl, setPdfUrl] = useState<string>("");
@@ -82,7 +90,6 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
   const confirmationStatus = useSelector(
     (state: RootState) => state.modal.confirmation
   );
-  const navigate = useNavigate();
   const [coordinates, setCoordinates] = useState<
     { coordinates: any; pageNumber: number }[]
   >([]);
