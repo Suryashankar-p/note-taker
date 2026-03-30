@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
@@ -59,9 +59,8 @@ const ActivitySummaryDetail: React.FC<ActivitySummaryDetailProps> = ({ onBack })
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch<Dispatch>();
-  const searchParams = new URLSearchParams(location.search);
-  const activityIdFromQuery = searchParams.get("summary_detail_id");
-  const activityId = activityIdFromQuery || location.state?.activity?.id;
+  const [searchParams] = useSearchParams();
+  const activityId = searchParams.get("id") || searchParams.get("summary_detail_id") || location.state?.activity?.id;
   const listRef = useRef<HTMLDivElement>(null);
 
   const [activityDetails, setActivityDetails] = useState<BackendResponse | null>(null);
