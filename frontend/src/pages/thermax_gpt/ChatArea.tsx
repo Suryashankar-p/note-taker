@@ -1216,7 +1216,7 @@ const ChatArea: React.FC<Props> = ({
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex flex-col items-center justify-start bg-inherit">
           <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-orange-50 border border-orange-200 mb-2 w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] mx-auto">
             <Text type="small" className="text-orange-700 font-medium text-center">
-              Image and video generation is kindly suspended due to model unavailability. Will be enabled soon.
+              Hi everyone, image and video generation are temporarily suspended. We apologize for the inconvenience caused and will share an update as soon as they are available again
             </Text>
           </div>
           <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
