@@ -17,7 +17,8 @@ export const GetTranslatorRole = async () => {
 
 export const TranslateDocument = async (
   language: string,
-  file: File
+  file: File,
+  sourceLanguage: string
 ) => {
   const token = localStorage.getItem("access_token");
   const formData = new FormData();
@@ -25,6 +26,7 @@ export const TranslateDocument = async (
   if (file) {
     formData.append("document", file, file.name);
   }
+  formData.append("source_language", sourceLanguage);
 
   try {
     const response = await axios.post(
@@ -103,6 +105,45 @@ export const DeleteMember = async (member_id: string) => {
   const response = await DocumentTranslatorAPI.delete(
     BACKEND_DOC_TRANSLATOR_URL +
       `/doc_translator/member/${member_id}`
+  );
+  return response;
+};
+
+
+//<====================================Document Translator Analytics========================================>
+
+// Usage Analytics APIs
+export const ReadCostUsage = async (year: string | number, month: string | number) => {
+  const response = await DocumentTranslatorAPI.get(
+    BACKEND_DOC_TRANSLATOR_URL + `/doc_translator/usage/cost?year=${year}&month=${month}`
+  );
+  return response;
+};
+
+export const ReadActivityUsage = async (year: string | number, month: string | number) => {
+  const response = await DocumentTranslatorAPI.get(
+    BACKEND_DOC_TRANSLATOR_URL + `/doc_translator/usage/activity?year=${year}&month=${month}`
+  );
+  return response;
+};
+
+export const ReadActivityUsageTopUsers = async (
+  year: string | number,
+  month: string | number
+) => {
+  const response = await DocumentTranslatorAPI.get(
+    BACKEND_DOC_TRANSLATOR_URL + `/doc_translator/usage/activity/top?year=${year}&month=${month}`
+  );
+  return response;
+};
+
+export const ReadActiveUsersTrend = async (
+  year: string | number,
+  month: string | number
+) => {
+  const response = await DocumentTranslatorAPI.get(
+    BACKEND_DOC_TRANSLATOR_URL +
+      `/doc_translator/usage/activity/trend?year=${year}&month=${month}`
   );
   return response;
 };

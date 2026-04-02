@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import Text from "../../../components/Text";
 import SettingsIcon from "../../../assets/setting-2.svg";
 import Community from "../../../assets/people-group.svg";
-
+import Usage from "../../../assets/usage.svg";
 import { RootState } from "../../../redux/store";
 
 type SettingsValueType = {
@@ -34,6 +34,12 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
       src: Community,
       alt: "members",
       key: "members",
+    },
+    {
+      title: "Usage Analytics",
+      src: Usage, // You may want a different icon for analytics
+      alt: "usage",
+      key: "usage",
     },
   ];
 

@@ -4,6 +4,7 @@ import PageLoading from "../../../components/PageLoading";
 import useApiCheck from "../../../hooks/useApiCheck";
 import SettingsSidebar from "./SideBar";
 import Members from "./Members";
+import Usage from "./Usage";
 
 const breadCrumbs = [
   {
@@ -27,6 +28,10 @@ const Settings: React.FC = () => {
     members: {
       title: "Members",
       component: <Members />,
+    },
+    usage: {
+      title: "Usage Analytics",
+      component: <Usage />,
     },
   };
 

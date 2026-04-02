@@ -1,23 +1,12 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { PDFDocument, rgb } from "pdf-lib";
-import { Viewer } from "@react-pdf-viewer/core";
-import "@react-pdf-viewer/core/lib/styles/index.css";
-import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
-import "@react-pdf-viewer/default-layout/lib/styles/index.css";
-import { GlobalWorkerOptions, version } from "pdfjs-dist";
 import Text from "../../components/Text.tsx";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { url } from "../../utils/constants.ts";
-import Button from "../../components/Button.tsx";
-import { TransmitterUpdateMasterActivityDetails, TransmitterGetMasterActivityDetails, TransmitterGetMasterDocumentUrl } from "../../services/transmitter_ocr.ts";
+import { TransmitterUpdateMasterActivityDetails, TransmitterGetMasterActivityDetails } from "../../services/transmitter_ocr.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store.ts";
 import Toast from "../../components/Toast.tsx";
 import PageLoading from "../../components/PageLoading.tsx";
 import DropDownButton from "../../components/DropDownButton.tsx";
-
-GlobalWorkerOptions.workerSrc = url;
-
 // Component for displaying master data table (NOW EDITABLE)
 const MasterDataTable: React.FC<{
   masterData: any[];
@@ -43,25 +32,25 @@ const MasterDataTable: React.FC<{
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
+      <table className="min-w-full border-collapse table-fixed">
         <thead className="bg-gray-50">
           <tr>
-            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 w-16">
               S.No
             </th>
-            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 w-44">
               Tag Number
             </th>
-            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 w-auto">
               Model Number
             </th>
-            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 w-32">
               Lower Calibration Range
             </th>
-            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 w-32">
               Upper Calibration Range
             </th>
-            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 w-32">
               Calibration Range Unit
             </th>
           </tr>
@@ -276,8 +265,6 @@ const MasterActivityDetailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const activityId = location?.state?.activity?.id || searchParams.get("id");
   const activity = location?.state?.activity;
-  const defaultLayoutPluginInstance = defaultLayoutPlugin();
-  const [pdfUrl, setPdfUrl] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
   const [fieldData, setFieldData] = useState<any>([]);
@@ -286,10 +273,7 @@ const MasterActivityDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [pageError, setPageError] = useState<boolean>(false);
   const toast = useSelector((state: RootState) => state.toast);
-  // Resizable panel state
-  const [leftPanelWidth, setLeftPanelWidth] = useState(60); // Initial width as percentage
-  const [isResizing, setIsResizing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+
 
   // State for editable tables and master data
   const [editableTables, setEditableTables] = useState<any[]>([]);
@@ -315,8 +299,7 @@ const MasterActivityDetailPage: React.FC = () => {
       if (!activityId) return;
       setLoading(true);
       await Promise.all([
-        getActivityDetails(Number(activityId)),
-        getDocumentLink(Number(activityId))
+        getActivityDetails(Number(activityId))
       ]);
       setLoading(false);
     };
@@ -345,54 +328,6 @@ const MasterActivityDetailPage: React.FC = () => {
     }
   }, [activityDetails]);
 
-  // Mouse event handlers for resizing
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isResizing || !containerRef.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const containerWidth = containerRect.width;
-    const newLeftWidth = ((e.clientX - containerRect.left) / containerWidth) * 100;
-
-    // Set boundaries (min 30%, max 70%)
-    if (newLeftWidth >= 30 && newLeftWidth <= 70) {
-      setLeftPanelWidth(newLeftWidth);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsResizing(false);
-  };
-
-  // Effect to handle mouse events
-  useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    } else {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing]);
-
-  const getDocumentLink = async (activity_id: number) => {
-    try {
-      const response = await TransmitterGetMasterDocumentUrl(activity_id);
-      setPdfUrl(response?.link);
-    } catch (error) {
-      console.error("Error reading document link:", error);
-    }
-  };
-
   const getActivityDetails = async (activity_id: number) => {
     try {
       const response = await TransmitterGetMasterActivityDetails(activity_id);
@@ -406,50 +341,6 @@ const MasterActivityDetailPage: React.FC = () => {
     } catch (error) {
       console.log(error?.message);
     }
-  };
-
-  const highlightFields = async (fieldsToHighlight: any) => {
-    const existingPdfBytes = await fetch(pdfUrl).then((res) =>
-      res.arrayBuffer()
-    );
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
-    const pages = pdfDoc.getPages();
-
-    fieldsToHighlight.forEach((field) => {
-      const { pageNumber, coordinates } = field;
-      if (pageNumber < 1 || pageNumber > pages.length) {
-        console.error(
-          `Invalid page number: ${pageNumber}. PDF has ${pages.length} pages.`
-        );
-        return;
-      }
-
-      const targetPage = pages[pageNumber - 1];
-      const { width: pdfWidth, height: pdfHeight } = targetPage.getSize();
-      const { current_min_x, current_max_x, current_min_y, current_max_y } =
-        coordinates;
-
-      const box_x = current_min_x * pdfWidth;
-      const box_y = current_min_y * pdfHeight;
-      const box_width = (current_max_x - current_min_x) * pdfWidth;
-      const box_height = (current_max_y - current_min_y) * pdfHeight;
-
-      targetPage.drawRectangle({
-        x: box_x,
-        y: pdfHeight - box_y - box_height,
-        width: box_width,
-        height: box_height,
-        borderColor: rgb(1, 0, 0),
-        borderWidth: 1,
-      });
-    });
-
-    const pdfBytes = await pdfDoc.save();
-    // Create a regular Uint8Array from the pdfBytes
-    const uint8Array = new Uint8Array(pdfBytes);
-    const blob = new Blob([uint8Array], { type: "application/pdf" });
-    const newUrl = URL.createObjectURL(blob);
-    setPdfUrl(newUrl);
   };
 
   useLayoutEffect(() => {
@@ -654,38 +545,13 @@ const MasterActivityDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main content area with PDF viewer and extracted data */}
+      {/* Main content area with extracted data */}
       <div
-        ref={containerRef}
-        className="flex flex-row pb-36 h-screen"
+        className="flex flex-col pb-36 h-screen"
       >
-        {/* Left side - PDF Viewer */}
+        {/* Extracted Data - Now Full Width */}
         <div
-          className="pr-4 pb-2 h-full overflow-y-auto"
-          style={{ width: `${leftPanelWidth}%` }}
-        >
-          <div className="mt-1">
-            {pdfUrl && (
-              <Viewer
-                fileUrl={pdfUrl}
-                plugins={[defaultLayoutPluginInstance]}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Resizable divider */}
-        <div
-          className="w-2 bg-gray-200 hover:bg-gray-300 cursor-col-resize flex items-center justify-center"
-          onMouseDown={handleMouseDown}
-        >
-          <div className="w-1 h-8 bg-gray-400 rounded-full"></div>
-        </div>
-
-        {/* Right side - Extracted Data */}
-        <div
-          className="pl-2 pb-2 h-full overflow-y-auto pr-4"
-          style={{ width: `${100 - leftPanelWidth}%` }}
+          className="pb-2 h-full overflow-y-auto px-4"
           ref={scrollRef}
         >
           {/* Master Data Section - Only Section Displayed */}
