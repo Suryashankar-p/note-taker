@@ -11,6 +11,7 @@ import Toast from '../../../components/Toast';
 import { months } from '../../../utils/constants';
 import { getCurrentDate } from '../../../utils/functions';
 import { IoMdDownload } from "react-icons/io";
+import { ReadActiveUsersTrend } from '../../../services/troubleshooting';
 
 const tabs = [
   { key: 'cost', label: 'Cost' },
@@ -44,13 +45,24 @@ const Usage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const member = useSelector((state: RootState) => state.memberRole);
   const TroubleshootingMemberDetails = member.service === "troubleshooting" ? member?.details : {};
+  const [trendData, setTrendData] = useState<any | null>(null);
 
   useEffect(() => {
     getCostUsage(calender.year, calender.month)
     getUsageLimit()
     getActivityUsage(calender.year, calender.month)
     getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);
+    getActiveUsersTrend(calender.year, calender.month)
   }, [])
+  
+  const getActiveUsersTrend = async (year: string | number, month: string | number) => {
+    try {
+      const res = await ReadActiveUsersTrend(year, month);
+      setTrendData(res?.result || res);
+    } catch (err) {
+      console.log("trend err", err);
+    }
+  };
 
   const getActivityTopUsers = async (
       year: string | number,
@@ -152,7 +164,7 @@ const Usage = () => {
       case 'cost':
         return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calender.month} />;
       case 'activity':
-        return <Activity activityData={activityData} month={calender.month} topUsers={topUsers} reachedBottom={reachedBottom}/>;
+        return <Activity activityData={activityData} month={calender.month} topUsers={topUsers} reachedBottom={reachedBottom} trendData={trendData}/>;
       default:
         return null;
     }
@@ -181,6 +193,7 @@ const Usage = () => {
       getCostUsage(data, calender.month)
       getActivityUsage(data, calender.month)
       getActivityTopUsers(data, calender.month, 0, 4);
+      getActiveUsersTrend(data, calender.month)
     }
   }
 
@@ -190,6 +203,7 @@ const Usage = () => {
       getCostUsage(calender.year, data)
       getActivityUsage(calender.year, data)
       getActivityTopUsers(calender.year, data, 0, 4);
+      getActiveUsersTrend(calender.year, data)
     }
   }
 
@@ -265,14 +279,14 @@ const Usage = () => {
           <div className="flex gap-2 sm:gap-4 items-center">
             <YearButton onSubmit={onYearChange} year={year} />
             <MonthButton onSubmit={onMonthChange} month={month} />
-          </div>
+          </div>  
         </div>
   
         {/* Content Panel */}
-        <TabPanels className="bg-white h-auto min-h-[12rem] sm:min-h-[16rem] lg:min-h-[18rem] xl:h-[24rem] xl:min-h-[10rem] rounded-lg shadow-lg border border-gray-200">
+        <TabPanels className="bg-white rounded-lg shadow-lg border border-gray-200">
           {tabs.map((tab) => (
-            <TabPanel key={tab.key} className="h-full">
-              {renderContent()}
+            <TabPanel key={tab.key} className={tab.key === 'activity' ? 'overflow-y-auto max-h-[calc(100vh-12rem)]' : 'h-full'}>
+            {renderContent()}
             </TabPanel>
           ))}
         </TabPanels>

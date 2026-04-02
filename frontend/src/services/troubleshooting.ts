@@ -2,7 +2,7 @@ import store, { Dispatch } from "../redux/store";
 import { TroubleshootAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_TROUBLESHOOTING_URL = import.meta.env.VITE_BACKEND_TROUBLESHOOTING_URL || window.env?.BACKEND_SMART_TROUBLESHOOT_URL;
+const BACKEND_TROUBLESHOOTING_URL = import.meta.env.VITE_BACKEND_SMART_TROUBLESHOOT_URL || window.env?.BACKEND_SMART_TROUBLESHOOT_URL;
 
 //<====================================Troubleshooting Auth========================================>
 
@@ -202,6 +202,17 @@ export const DownloadUsageActivity = async (fromDate: string, toDate: string) =>
   }
   const response = await TroubleshootAPI.post(
     BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/usage/download`, body, {responseType: "blob"}
+  );
+  return response;
+};
+
+export const ReadActiveUsersTrend = async (
+  year: string | number,
+  month: string | number
+) => {
+  const response = await TroubleshootAPI.get(
+    BACKEND_TROUBLESHOOTING_URL +
+      `/troubleshooting/usage/activity/trend?year=${year}&month=${month}`
   );
   return response;
 };
