@@ -42,7 +42,7 @@ export default function Activity({ activityData, month, topUsers, reachedBottom,
 
   // ── Derived stat cards ───────────────────────────────────────────
   const activeUsers = topUsers?.filter((u: any) => u.question > 0) ?? [];
-  const activeUsersCount = activeUsers.length;
+  const activeUsersCount = (activityData?.totalActiveUsers ?? activeUsers.length);
   const avgPerActiveUser = activeUsersCount > 0
     ? Math.round((totalQuestions ?? 0) / activeUsersCount)
     : 0;
@@ -198,7 +198,7 @@ export default function Activity({ activityData, month, topUsers, reachedBottom,
 
         {/* RIGHT: Top Users — full height */}
         <div
-          className="flex flex-col w-[280px] xl:w-[320px] flex-shrink-0 overflow-y-auto"
+          className="flex flex-col w-[280px] xl:w-[320px] flex-shrink-0 overflow-y-auto max-h-[380px]"
           onScroll={handleScroll}
         >
           <Text className="mb-2 text-lg md:text-xl" type="header3">Top Users</Text>
