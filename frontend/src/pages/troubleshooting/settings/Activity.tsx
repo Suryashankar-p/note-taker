@@ -33,11 +33,10 @@ interface Props {
   activityData: any;
   month: any;
   topUsers: any;
-  reachedBottom: () => void;
   trendData?: any;
 }
 
-export default function Activity({ activityData, month, topUsers, reachedBottom, trendData }: Props) {
+export default function Activity({ activityData, month, topUsers, trendData }: Props) {
   const totalQuestions = activityData?.total;
 
   // ── Derived stat cards ───────────────────────────────────────────
@@ -153,13 +152,6 @@ export default function Activity({ activityData, month, topUsers, reachedBottom,
     return findPercentage(user?.question, totalQuestions).toString();
   };
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollTop + clientHeight + 2 >= scrollHeight) {
-      reachedBottom();
-    }
-  };
-
   return (
     <div className="flex flex-col px-4 py-4 gap-0">
       {/* ── BAR CHART + TOP USERS ────────────────────────────────────── */}
@@ -199,7 +191,6 @@ export default function Activity({ activityData, month, topUsers, reachedBottom,
         {/* RIGHT: Top Users — full height */}
         <div
           className="flex flex-col w-[280px] xl:w-[320px] flex-shrink-0 overflow-y-auto max-h-[380px]"
-          onScroll={handleScroll}
         >
           <Text className="mb-2 text-lg md:text-xl" type="header3">Top Users</Text>
           {topUsers?.map((user: any, index: number) => (

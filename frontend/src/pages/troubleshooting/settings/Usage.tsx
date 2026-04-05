@@ -23,11 +23,6 @@ type Calender = {
   month: string | number
 }
 
-type Page = {
-  skip: number,
-  limit: number
-}
-
 const Usage = () => {
   const { year, month } = getCurrentDate()
   const [activeTab, setActiveTab] = useState<'cost' | 'activity'>('cost');
@@ -40,7 +35,6 @@ const Usage = () => {
   const [topUsers, setTopUsers] = useState<any | null>([])
   const [pageError, setPageError] = useState<boolean>(false)
   const [totalUsers, setTotalUsers] = useState<number>(0);
-  const loadingRef = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const member = useSelector((state: RootState) => state.memberRole);
   const TroubleshootingMemberDetails = member.service === "troubleshooting" ? member?.details : {};
@@ -50,8 +44,6 @@ const Usage = () => {
     getCostUsage(calender.year, calender.month)
     getUsageLimit()
     getActivityUsage(calender.year, calender.month)
-    setTopUsers([]);
-    setTotalUsers(0);
     // Load all users at once with a high limit
     getActivityTopUsers(calender.year, calender.month, 0, 1000);
     getActiveUsersTrend(calender.year, calender.month)
@@ -86,6 +78,7 @@ const Usage = () => {
         } else {
           setPageError(true);
           setTopUsers(null);
+          setTotalUsers(0);
         }
       } catch (err) {
         console.log("err", err);
@@ -144,24 +137,12 @@ const Usage = () => {
     }
   }
 
-  const reachedBottom = async () => {
-    if (loadingRef.current) return;
-    if (!topUsers || topUsers.length >= totalUsers) return;
-
-    loadingRef.current = true;
-    const newSkip = topUsers.length;
-    setPage((prev) => ({ ...prev, skip: newSkip }));
-
-    await getActivityTopUsers(calender.year, calender.month, newSkip, page.limit);
-    loadingRef.current = false;
-  };
-
   const renderContent = () => {
     switch (activeTab) {
       case 'cost':
         return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calender.month} />;
       case 'activity':
-        return <Activity activityData={{...activityData, totalActiveUsers: totalUsers}} month={calender.month} topUsers={topUsers} reachedBottom={reachedBottom} trendData={trendData}/>;
+        return <Activity activityData={{...activityData, totalActiveUsers: totalUsers}} month={calender.month} topUsers={topUsers} trendData={trendData}/>;
       default:
         return null;
     }
@@ -187,20 +168,12 @@ const Usage = () => {
   const onYearChange = (data: string) => {
     if (data !== calender?.year) {
       setCalender({ ...calender, year: data })
-      setTopUsers([]);
-      setTotalUsers(0);
-      setActivityData(null);
-      setUsageData(null);
     }
   }
 
   const onMonthChange = (data: string) => {
     if (data !== calender?.month) {
       setCalender({ ...calender, month: data })
-      setTopUsers([]);
-      setTotalUsers(0);
-      setActivityData(null);
-      setUsageData(null);
     }
   }
 
