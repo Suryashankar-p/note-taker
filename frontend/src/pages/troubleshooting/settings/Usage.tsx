@@ -23,11 +23,6 @@ type Calender = {
   month: string | number
 }
 
-type Page = {
-  skip: number,
-  limit: number
-}
-
 const Usage = () => {
   const { year, month } = getCurrentDate()
   const [activeTab, setActiveTab] = useState<'cost' | 'activity'>('cost');
@@ -37,11 +32,9 @@ const Usage = () => {
   const [limit, setLimit] = useState<number | null>()
   const toastStatus = useSelector((state: RootState) => state.toast.status)
   const dispatch = useDispatch<Dispatch>()
-  const [topUsers, setTopUsers] = useState<any | null>()
+  const [topUsers, setTopUsers] = useState<any | null>([])
   const [pageError, setPageError] = useState<boolean>(false)
-  const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
   const [totalUsers, setTotalUsers] = useState<number>(0);
-  const loadingRef = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const member = useSelector((state: RootState) => state.memberRole);
   const TroubleshootingMemberDetails = member.service === "troubleshooting" ? member?.details : {};
@@ -51,9 +44,11 @@ const Usage = () => {
     getCostUsage(calender.year, calender.month)
     getUsageLimit()
     getActivityUsage(calender.year, calender.month)
-    getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);
+    // Load all users at once with a high limit
+    getActivityTopUsers(calender.year, calender.month, 0, 1000);
     getActiveUsersTrend(calender.year, calender.month)
-  }, [])
+  }, [calender.year, calender.month])
+
   
   const getActiveUsersTrend = async (year: string | number, month: string | number) => {
     try {
@@ -70,7 +65,6 @@ const Usage = () => {
       skip: number,
       limit: number
     ) => {
-     if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
       try {
         const topUserResponse = await ReadActivityUsageTopUsers(
           year,
@@ -78,17 +72,13 @@ const Usage = () => {
           skip,
           limit
         );
-  
         if (topUserResponse?.result) {
-          setTopUsers((prevData: any) =>
-            skip === 0
-              ? topUserResponse.result
-              : [...prevData, ...topUserResponse.result]
-          );
+          setTopUsers(topUserResponse.result);
           setTotalUsers(topUserResponse.total);
         } else {
           setPageError(true);
           setTopUsers(null);
+          setTotalUsers(0);
         }
       } catch (err) {
         console.log("err", err);
@@ -147,24 +137,12 @@ const Usage = () => {
     }
   }
 
-  const reachedBottom = async () => {
-    if (loadingRef.current) return;
-    if (!topUsers || topUsers.length >= totalUsers) return;
-
-    loadingRef.current = true;
-    const newSkip = topUsers.length;
-    setPage((prev) => ({ ...prev, skip: newSkip }));
-
-    await getActivityTopUsers(calender.year, calender.month, newSkip, page.limit);
-    loadingRef.current = false;
-  };
-
   const renderContent = () => {
     switch (activeTab) {
       case 'cost':
         return <Cost usageData={usageData} limit={limit} onLimitEdit={onLimitEdit} month={calender.month} />;
       case 'activity':
-        return <Activity activityData={activityData} month={calender.month} topUsers={topUsers} reachedBottom={reachedBottom} trendData={trendData}/>;
+        return <Activity activityData={{...activityData, totalActiveUsers: totalUsers}} month={calender.month} topUsers={topUsers} trendData={trendData}/>;
       default:
         return null;
     }
@@ -190,20 +168,12 @@ const Usage = () => {
   const onYearChange = (data: string) => {
     if (data !== calender?.year) {
       setCalender({ ...calender, year: data })
-      getCostUsage(data, calender.month)
-      getActivityUsage(data, calender.month)
-      getActivityTopUsers(data, calender.month, 0, 4);
-      getActiveUsersTrend(data, calender.month)
     }
   }
 
   const onMonthChange = (data: string) => {
     if (data !== calender?.month) {
       setCalender({ ...calender, month: data })
-      getCostUsage(calender.year, data)
-      getActivityUsage(calender.year, data)
-      getActivityTopUsers(calender.year, data, 0, 4);
-      getActiveUsersTrend(calender.year, data)
     }
   }
 
