@@ -25,7 +25,7 @@ const Members = () => {
   const [hasMore, setHasMore] = useState(true); // Track if more members are available to load
   let timeoutId: NodeJS.Timeout | null = null;
   const member = useSelector((state: RootState) => state.memberRole);
-  const salesMemberDetails = member.service === 'edgeagent-playground' ? member?.details : {};
+  const edgeMemberDetails = member.service === 'edgeagent-playground' ? member?.details : {};
   const dispatch = useDispatch<Dispatch>();
   const memberType = useSelector((state: RootState) => state.modal.addMember.type);
   const toastStatus = useSelector((state: RootState) => state.toast);
@@ -144,7 +144,7 @@ const Members = () => {
           )}
         </div>
         <div className="flex flex-row items-center gap-5">
-          {salesMemberDetails?.role === 'OWNER' && (
+          {edgeMemberDetails?.role === 'OWNER' && (
             <Button onClick={() => dispatch.modal.openAddMember('add')} custom_type="danger" className="bg-danger w-20 h-10 p-2 gap-2 rounded-lg" size="custom">
               <img src={AddIcon} alt="add" loading="lazy" />
               <Text type="small">Add</Text>
