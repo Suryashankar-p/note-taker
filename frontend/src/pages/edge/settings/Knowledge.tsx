@@ -55,7 +55,7 @@ const Knowledge = () => {
   const [files, setFiles] = useState<any>();
   const [defaultProduct, setDefaultProduct] = useState<DefaultValue>();
   const member = useSelector((state: RootState) => state.memberRole);
-  const salesMemberDetails = member.service === "sales" ? member?.details : {};
+  const edgeMemberDetails = member.service === "edgeagent-playground" ? member?.details : {};
   const dispatch = useDispatch<Dispatch>();
   let timeoutId: NodeJS.Timeout | null = null;
   const confirmationStatus = useSelector(
@@ -77,14 +77,17 @@ const Knowledge = () => {
   const [fileShow, setFileShow] = useState(false);
   const [fileData, setFileData] = useState();
 
+  const hasMoreProducts = products.length < productTotal;
+
   useEffect(() => {
     getAllProducts(pageSize.skip, pageSize.limit, "");
   }, []);
 
   useEffect(() => {
     const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      if (scrollTop + clientHeight >= scrollHeight && !loading) {
+      if (!scrollRef.current) return;
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current as any;
+      if (Math.ceil(scrollTop + clientHeight) >= scrollHeight - 30 && !loading && hasMoreProducts) {
         setHasReachedEnd(true);
         setLoading(true);
         setPageSize((prevPageSize) => {
@@ -97,7 +100,7 @@ const Knowledge = () => {
       }
     };
 
-    const refCurrent = scrollRef.current;
+    const refCurrent = scrollRef.current as any;
 
     if (refCurrent) {
       refCurrent.addEventListener("scroll", handleScroll);
@@ -108,7 +111,7 @@ const Knowledge = () => {
         refCurrent.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [loading]);
+  }, [loading, hasMoreProducts, searchTerm]);
 
   const loadMore = async (skip: number, limit: number) => {
     if (isLoadingMore) return;
@@ -137,7 +140,6 @@ const Knowledge = () => {
     }
     setIsLoadingMore(false);
   };
-  const hasMoreProducts = products.length < productTotal;
 
   const getAllProducts = async (
     skip: number,
@@ -332,7 +334,7 @@ const Knowledge = () => {
           data?.fileType,
           data?.file,
           data?.models,
-          defaultProductDocument?.id
+          data?.category
         );
         if (response?.id) {
           dispatch.modal.closeModal();
@@ -369,9 +371,7 @@ const Knowledge = () => {
       const linkResp = await ReadProductDocumentUrl(
         file.product_id,
         file.id
-      );
-        console.log(file);
-        
+      );        
       if (linkResp?.link) {
         let fileInfo: any = {
           name: file.filename,
@@ -442,7 +442,7 @@ const Knowledge = () => {
           )}
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-5 mt-1 sm:mt-0">
-          {salesMemberDetails?.role === "OWNER" && (
+          {edgeMemberDetails?.role === "OWNER" && (
             <Button
               onClick={() => {
                 dispatch.modal.openAddProduct("add");
@@ -466,7 +466,7 @@ const Knowledge = () => {
       </div>
       <div
         ref={scrollRef}
-        className=" self-center h-fit items-center overflow-y-scroll w-full flex flex-col mb-20 gap-4 "
+        className=" self-center flex-1 items-center overflow-y-scroll w-full flex flex-col mb-20 gap-4 "
       >
         {products?.length > 0 ? (
           products.map((item: any, key: number) => (
@@ -483,7 +483,7 @@ const Knowledge = () => {
                 >
                   {item.title} {`(${item.short_title})`}
                 </Text>
-                {salesMemberDetails?.role === "OWNER" && (
+                {edgeMemberDetails?.role === "OWNER" && (
                   <DropDownMenu
                     onChange={(title: string) => onProductOnChange(item, title)}
                     content={
@@ -557,7 +557,7 @@ const Knowledge = () => {
                                 {fileItem?.filename}
                               </Text>
                             </button>
-                            {salesMemberDetails?.role === "OWNER" && (
+                            {edgeMemberDetails?.role === "OWNER" && (
                               <DropDownMenu
                                 content={
                                   <img
@@ -585,7 +585,7 @@ const Knowledge = () => {
                         </div>
                       )}
                     </div>
-                    {salesMemberDetails?.role === "OWNER" && (
+                    {edgeMemberDetails?.role === "OWNER" && (
                       <div className="flex flex-row mt-4 sm:mt-0">
                         <label
                           onClick={() => {

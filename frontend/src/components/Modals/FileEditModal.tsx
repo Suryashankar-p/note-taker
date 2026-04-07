@@ -12,8 +12,8 @@ import { fileTypeSelctor } from '../../utils/functions';
 
 const listValues = [
     { name: 'Manual' },
-    { name: 'Technical Spec' },
-    { name: 'Brochure' }
+    // { name: 'Technical Spec' },
+    // { name: 'Brochure' }
 ];
 
 interface Tag {
@@ -27,6 +27,7 @@ interface IFormInput {
     fileType: string;
     file: any
     models: Tag[]; // Adding models field
+    category?: string; // Adding category field
 }
 
 interface Props {
@@ -78,6 +79,7 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, options, onSubmit }) =>
             setValue('fileType', fileTypeSelctor(defaultValues?.kind))
             setValue('file', defaultValues?.file)
             setValue('models', defaultValues?.models)
+            setValue('category', defaultValues?.category)
             setSelectedModels(defaultValues?.models)
         }
     }, [defaultValues])
@@ -147,13 +149,13 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, options, onSubmit }) =>
                                 leaveTo="opacity-0 scale-95"
                             >
                                 <DialogPanel
-                                    className="w-full max-w-4xl h-fit transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all"
+                                    className="w-full max-w-4xl h-fit max-h-[85vh] flex flex-col transform rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all"
                                     style={{ transform: 'translate(60px, 10px)' }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <DialogTitle
                                         as="h3"
-                                        className="text-[24px] relative text-black font-medium flex justify-between leading-6 text-gray-900"
+                                        className="text-[24px] shrink-0 relative text-black font-medium flex justify-between leading-6 text-gray-900"
                                     >
                                         <Text>{isOpen?.type === 'edit' ? 'Edit File' : 'Add file'}</Text>
                                         <button
@@ -164,13 +166,13 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, options, onSubmit }) =>
                                             <img src={Close} alt="close" loading="lazy" />
                                         </button>
                                     </DialogTitle>
-                                    <form onSubmit={handleSubmit(onHandle)}>
+                                    <form onSubmit={handleSubmit(onHandle)} className="flex flex-col flex-1 overflow-hidden min-h-0">
                                         {toastStatus.status && (
                                             <div className="fixed top-2 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
                                                 <Toast type='error' />
                                             </div>
                                         )}
-                                        <div className="flex mt-3 flex-col gap-2">
+                                        <div className="flex mt-3 flex-col gap-2 overflow-y-auto pr-2 pb-2 min-h-0 flex-1">
                                             <div className="flex flex-row mt-2 w-full gap-5 justify-between">
                                                 <div className="flex flex-col w-2/3 gap-1">
                                                     <label><Text className='text-primary_text'>Upload File*</Text></label>
@@ -212,7 +214,17 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, options, onSubmit }) =>
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="w-full flex-col gap-5 w-full">
+                                            <div className="w-full flex-col gap-5 mt-3">
+                                                <label><Text className='text-primary_text'>Category</Text></label>
+                                                <input
+                                                    type="text"
+                                                    {...register("category")}
+                                                    className="border rounded-md w-full border-grey h-12 flex-grow focus:outline-none p-4 mt-1"
+                                                    placeholder="Enter category..."
+                                                />
+                                                <Text type='small' className='text-danger'>{errors?.category?.message}</Text>
+                                            </div>
+                                            <div className="w-full flex-col gap-5 w-full mt-3">
                                                 <label><Text className='text-primary_text'>Models</Text></label>
                                                 <SelectTagInput
                                                     value={selectedModels}
@@ -236,7 +248,7 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, options, onSubmit }) =>
                                                 <Text type='small' className='text-danger'>{errors?.description?.message}</Text>
                                             </div>
                                         </div>
-                                        <div className="mt-10 flex justify-end gap-4">
+                                        <div className="mt-6 shrink-0 flex justify-end gap-4">
                                             <button
                                                 type="button"
                                                 className="inline-flex justify-center rounded-md border border-transparent bg-none text-primary_text px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
