@@ -133,33 +133,27 @@ export const CreateProductDocument = async (
   description: string,
   kind: string,
   file: File,
-  models: any,
-  product_document_id?: string | number
+  models?: any,
+  category?: string,
 ) => {
-  const token = localStorage.getItem('access_token');
-  const formData = new FormData();
-  if (file) {
-    formData.append('document', file, file.name);
+  const formData = new FormData()
+  formData.append('document', file)
+  formData.append('description', description)
+  formData.append('kind', kind.toUpperCase())
+
+  if (models) {
+    formData.append('models', JSON.stringify(models))
   }
-  formData.append('models', JSON.stringify(models));
-  try {
-    const response = await axios.post(
-      `${BACKEND_EDGE_URL}/edgeagent-playground/product/${productId}/document${product_document_id ? '/' + product_document_id : ''}?description=${description}&kind=${fileTypeSelctor(kind)}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error: any) {
-    if (error?.response?.status === 415)
-      (store.dispatch as Dispatch).toast.openToast({ status: true, message: "Unsupported extension(s) only use .pdf, .xls, .xlsx" })
-    throw error;
+  if (category) {
+    formData.append('category', category)
   }
-};
+
+  const response = await EdgeAPI.post(
+    BACKEND_EDGE_URL + `/edgeagent-playground/product/${productId}/document`,
+    formData,
+  )
+  return response
+}
 
 export const DeleteProductDocument = async (product_id: string | number, product_document_id: string | number) => {
   const response = await EdgeAPI.delete(BACKEND_EDGE_URL + `/edgeagent-playground/product/${product_id}/document/${product_document_id}`)
