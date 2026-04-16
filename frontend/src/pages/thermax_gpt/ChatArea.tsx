@@ -869,30 +869,40 @@ const ChatArea: React.FC<Props> = ({
 
     const handleDownloadFile = async (mediaType: string, link: string) => {
       try {
-        
         if (!chatId) {
-          console.error('No chat_id available for file download');
+          console.error("No chat_id available for file download");
           return;
         }
-        
-        // Extract filename from link URL
+
         const url = new URL(link);
-        const filenameParam = url.searchParams.get('filename');
-        const fileName = filenameParam || `generated_file_${Date.now()}.xlsx`;
-        
+        const filenameParam = url.searchParams.get("filename");
+
+        let defaultExtension = ".xlsx";
+        let defaultMimeType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        if (mediaType === "docx") {
+          defaultExtension = ".docx";
+          defaultMimeType =
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+
+        const fileName =
+          filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
+
         const response = await ReadFile(Number(chatId), mediaType, link);
         const mediaBlob = new Blob([response.data], {
-          type: response.headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          type: response.headers["content-type"] || defaultMimeType,
         });
-        
+
         const downloadUrl = URL.createObjectURL(mediaBlob);
-        const linkElement = document.createElement('a');
+        const linkElement = document.createElement("a");
         linkElement.href = downloadUrl;
         linkElement.download = fileName;
         document.body.appendChild(linkElement);
         linkElement.click();
         document.body.removeChild(linkElement);
-        
+
         // Clean up the object URL
         URL.revokeObjectURL(downloadUrl);
       } catch (error) {
@@ -902,7 +912,11 @@ const ChatArea: React.FC<Props> = ({
 
     useEffect(() => {
       // Only fetch media for image and video types
-      if (media_type !== 'excel' && !videoUrlMap[messageIndex]) {
+      if (
+        media_type !== "excel" &&
+        media_type !== "docx" &&
+        !videoUrlMap[messageIndex]
+      ) {
         fetchMedia(messageIndex, media_type, link);
       }
     }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
@@ -962,16 +976,21 @@ const ChatArea: React.FC<Props> = ({
       );
     }
 
-    if (media_type === 'excel') {
+    if (media_type === "excel" || media_type === "docx") {
       return (
         <div className="my-4">
           <Button
             onClick={() => handleDownloadFile(media_type, link)}
             custom_type="danger"
-            className="bg-danger w-32 h-10 p-2 gap-2 rounded-lg"
+            className="bg-danger w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
             size="custom"
           >
-            <Text type="small">Download File</Text>
+            <div className="flex items-center gap-2">
+              {renderFileIcon(media_type === "excel" ? "file.xlsx" : "file.docx")}
+              <Text type="small" className="text-white">
+                Download {media_type === "excel" ? "Excel" : "Word"}
+              </Text>
+            </div>
           </Button>
         </div>
       );
