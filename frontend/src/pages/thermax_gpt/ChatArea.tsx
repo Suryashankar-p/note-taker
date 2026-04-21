@@ -448,7 +448,7 @@ const ChatArea: React.FC<Props> = ({
           streamResponse = await CreateChatHistoryStream(
             inputValue,
             chat_id,
-            uploadedFiles?.length > 0 && uploadedFiles[0]
+            uploadedFiles
           );
           if (streamResponse) {
             startStreaming(chat_id, streamResponse?.id, localMessages, false);
@@ -530,7 +530,7 @@ const ChatArea: React.FC<Props> = ({
               streamResponse = await CreateChatHistoryStream(
                 inputValue,
                 newSessionResponse.id,
-                uploadedFiles?.length > 0 && uploadedFiles[0]
+                uploadedFiles
               );
 
               if (streamResponse) {
@@ -1350,7 +1350,7 @@ const ChatArea: React.FC<Props> = ({
                     <UploadFileModal
                       isOpen={isModalOpen}
                       onClose={() => setModalOpen(false)}
-                      onFileUpload={(file) => handleFileChange(file)}
+                      onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
                       aiProvider={aiProvider}
                       disabled={loading}
                     />

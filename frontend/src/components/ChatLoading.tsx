@@ -13,7 +13,7 @@ const Loading: React.FC<LoadingProps> = ({ related = false }) => {
     if (related) return;
 
     const timer1 = setTimeout(() => {
-      setLoadingText("Searching");
+      setLoadingText("Analyzing deeper");
     }, 5000);
 
     const timer2 = setTimeout(() => {
