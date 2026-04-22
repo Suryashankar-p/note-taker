@@ -226,6 +226,17 @@ export const DownloadUsageActivity = async (fromDate: string, toDate: string) =>
   return response;
 };
 
+export const ReadActiveUsersTrend = async (
+  year: string | number,
+  month: string | number
+) => {
+  const response = await DoctorBotAPI.get(
+    BACKEND_DOCTOR_CONBOT_URL +
+      `/doctor_conbot/usage/activity/trend?year=${year}&month=${month}`
+  );
+  return response;
+};
+
 //<====================================Dr. Conbot product========================================>
 
 export const ReadProducts = async (
