@@ -5,7 +5,7 @@ import Close from "../../assets/close.svg";
 interface UploadFileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onFileUpload: (file: File) => void;
+  onFileUpload: (files: File[]) => void;
   aiProvider: string;
   disabled?: boolean;
 }
@@ -17,23 +17,23 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
   aiProvider,
   disabled = false,
 }) => {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) {
-      setFile(e.target.files[0]);
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
     }
   };
 
   const handleClose = () => {
-    setFile(null);
+    setFiles([]);
     onClose();
   };
 
   const handleUpload = () => {
-    if (file) {
-      onFileUpload(file);
-      setFile(null);
+    if (files.length > 0) {
+      onFileUpload(files);
+      setFiles([]);
       onClose();
     }
   };
@@ -61,11 +61,18 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
         {/* Custom File Upload Box */}
         <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-red-400 rounded-xl p-6 text-center bg-red-50 hover:bg-red-100 transition-colors duration-200 cursor-pointer">
           <FaCloudUploadAlt className="w-10 h-10 text-red-600 mb-2" />
-          {file ? (
-            <span className="text-green-600">{file.name}</span>
+          {files.length > 0 ? (
+            <div className="flex flex-col items-center">
+              <span className="text-green-600 font-medium">
+                {files.length} {files.length === 1 ? "file" : "files"} selected
+              </span>
+              <div className="text-xs text-gray-500 mt-1 max-w-md truncate">
+                {files.map((f) => f.name).join(", ")}
+              </div>
+            </div>
           ) : (
             <span className="text-red-700 font-medium hover:underline">
-              Click to select a file
+              Click to select files
             </span>
           )}
           <p className="text-xs text-gray-500 mt-2">
@@ -78,6 +85,7 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
             accept={aiProvider === "Document Analyzer" ? ".pdf" : "*"}
             onChange={handleFileChange}
             disabled={disabled}
+            multiple
             className="hidden"
           />
         </label>
@@ -104,9 +112,9 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
           </button>
           <button
             onClick={handleUpload}
-            disabled={!file || disabled}
+            disabled={files.length === 0 || disabled}
             className={`px-4 py-2 rounded-lg text-white font-medium transition ${
-              !file || disabled
+              files.length === 0 || disabled
                 ? "bg-blue-300 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}

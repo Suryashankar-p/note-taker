@@ -448,7 +448,7 @@ const ChatArea: React.FC<Props> = ({
           streamResponse = await CreateChatHistoryStream(
             inputValue,
             chat_id,
-            uploadedFiles?.length > 0 && uploadedFiles[0]
+            uploadedFiles
           );
           if (streamResponse) {
             startStreaming(chat_id, streamResponse?.id, localMessages, false);
@@ -530,7 +530,7 @@ const ChatArea: React.FC<Props> = ({
               streamResponse = await CreateChatHistoryStream(
                 inputValue,
                 newSessionResponse.id,
-                uploadedFiles?.length > 0 && uploadedFiles[0]
+                uploadedFiles
               );
 
               if (streamResponse) {
@@ -869,30 +869,40 @@ const ChatArea: React.FC<Props> = ({
 
     const handleDownloadFile = async (mediaType: string, link: string) => {
       try {
-        
         if (!chatId) {
-          console.error('No chat_id available for file download');
+          console.error("No chat_id available for file download");
           return;
         }
-        
-        // Extract filename from link URL
+
         const url = new URL(link);
-        const filenameParam = url.searchParams.get('filename');
-        const fileName = filenameParam || `generated_file_${Date.now()}.xlsx`;
-        
+        const filenameParam = url.searchParams.get("filename");
+
+        let defaultExtension = ".xlsx";
+        let defaultMimeType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        if (mediaType === "docx") {
+          defaultExtension = ".docx";
+          defaultMimeType =
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+
+        const fileName =
+          filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
+
         const response = await ReadFile(Number(chatId), mediaType, link);
         const mediaBlob = new Blob([response.data], {
-          type: response.headers["content-type"] || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          type: response.headers["content-type"] || defaultMimeType,
         });
-        
+
         const downloadUrl = URL.createObjectURL(mediaBlob);
-        const linkElement = document.createElement('a');
+        const linkElement = document.createElement("a");
         linkElement.href = downloadUrl;
         linkElement.download = fileName;
         document.body.appendChild(linkElement);
         linkElement.click();
         document.body.removeChild(linkElement);
-        
+
         // Clean up the object URL
         URL.revokeObjectURL(downloadUrl);
       } catch (error) {
@@ -902,7 +912,11 @@ const ChatArea: React.FC<Props> = ({
 
     useEffect(() => {
       // Only fetch media for image and video types
-      if (media_type !== 'excel' && !videoUrlMap[messageIndex]) {
+      if (
+        media_type !== "excel" &&
+        media_type !== "docx" &&
+        !videoUrlMap[messageIndex]
+      ) {
         fetchMedia(messageIndex, media_type, link);
       }
     }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
@@ -962,16 +976,21 @@ const ChatArea: React.FC<Props> = ({
       );
     }
 
-    if (media_type === 'excel') {
+    if (media_type === "excel" || media_type === "docx") {
       return (
         <div className="my-4">
           <Button
             onClick={() => handleDownloadFile(media_type, link)}
             custom_type="danger"
-            className="bg-danger w-32 h-10 p-2 gap-2 rounded-lg"
+            className="bg-danger w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
             size="custom"
           >
-            <Text type="small">Download File</Text>
+            <div className="flex items-center gap-2">
+              {renderFileIcon(media_type === "excel" ? "file.xlsx" : "file.docx")}
+              <Text type="small" className="text-white">
+                Download {media_type === "excel" ? "Excel" : "Word"}
+              </Text>
+            </div>
           </Button>
         </div>
       );
@@ -1214,11 +1233,7 @@ const ChatArea: React.FC<Props> = ({
           </button>
         )}
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex flex-col items-center justify-start bg-inherit">
-          <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-orange-50 border border-orange-200 mb-2 w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] mx-auto">
-            <Text className="text-[11px] leading-tight text-orange-700 font-normal text-center">
-  Hi everyone, image and video generation are temporarily suspended. We apologize for the inconvenience caused and will share an update as soon as they are available again
-</Text>
-          </div>
+
           <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
             <div className="w-full flex items-center gap-2">
               <div className="flex flex-col w-full">
@@ -1335,7 +1350,7 @@ const ChatArea: React.FC<Props> = ({
                     <UploadFileModal
                       isOpen={isModalOpen}
                       onClose={() => setModalOpen(false)}
-                      onFileUpload={(file) => handleFileChange(file)}
+                      onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
                       aiProvider={aiProvider}
                       disabled={loading}
                     />

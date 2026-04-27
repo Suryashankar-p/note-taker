@@ -72,15 +72,17 @@ export const ReadChatHistories = async (
 export const CreateChatHistory = async (
   query: string,
   chat_id: string,
-  file?: File
+  files?: File[]
 ) => {
   const formData = new FormData();
   const token = localStorage.getItem("access_token");
 
   formData.append("human", query);
 
-  if (file) {
-    formData.append("file", file);
+  if (files && files.length > 0) {
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
   }
 
   const response = await axios.post(
@@ -242,14 +244,16 @@ export const getThermaxServices = async () => {
 export const CreateChatHistoryStream = async (
   query: string,
   chat_id: string,
-  file?: File
+  files?: File[]
 ) => {
   const formData = new FormData();
 
   formData.append("human", query);
 
-  if (file) {
-    formData.append("file", file);
+  if (files && files.length > 0) {
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
   }
 
   const response = await GPTAPI.post(
