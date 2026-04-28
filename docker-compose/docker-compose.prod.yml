@@ -21,6 +21,7 @@ services:
         VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008/api"
         VITE_BACKEND_EDGE_URL: "http://edge-service:3009/api"
         VITE_BACKEND_TRANSMITTER_OCR_URL: "http://transmitter-ocr-service:3009"
+        VITE_BACKEND_DOCUMENT_TRANSLATOR_URL: "http://sales-service:3005/api"
     environment:
       VITE_ENABLE_SSO: "true"
       VITE_FIRST_USER_EMAIL: "admin@example.com"
@@ -36,6 +37,7 @@ services:
       VITE_BACKEND_HEATING_OCR_URL: "http://heating-ocr-service:3008/api"
       VITE_BACKEND_EDGE_URL: "http://edge-service:3009/api"
       VITE_BACKEND_TRANSMITTER_OCR_URL: "http://transmitter-ocr-service:3009"
+      VITE_BACKEND_DOCUMENT_TRANSLATOR_URL: "http://sales-service:3005/api"
     ports:
       - "3000:80" 
     restart: unless-stopped
