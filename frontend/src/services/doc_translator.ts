@@ -69,9 +69,7 @@ export const ReadMembers = async (
   const response = await DocumentTranslatorAPI.get(
     BACKEND_DOC_TRANSLATOR_URL +
       `/doc_translator/member?skip=${skip}&limit=${limit}${
-        search_term !== "" && search_term !== undefined
-          ? "&search_term=" + search_term
-          : ""
+        search_term ? "&search_term=" + search_term : ""
       }`
   );
   return response;

@@ -202,7 +202,7 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 		<div className="flex flex-col px-4 py-4 gap-0">
 
 			{/* ── TOP SECTION: stat cards + bar chart (left) | user list (right) ── */}
-			<div className="flex flex-row gap-6 min-h-[420px]">
+			<div className="flex flex-row gap-6 min-h-[380px]">
 
 				{/* LEFT */}
 				<div className="flex flex-col flex-1 gap-3 min-w-0">
@@ -236,7 +236,7 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 				<div className="w-px bg-gray-200 self-stretch" />
 
 				{/* RIGHT: User Activity */}
-				<div className="flex flex-col w-[280px] xl:w-[320px] flex-shrink-0">
+				<div className="flex flex-col w-[280px] xl:w-[320px] flex-shrink-0 overflow-y-auto max-h-[380px]">
 					<Text className="mb-3 text-lg md:text-xl" type="header3">User Activity</Text>
 					{topUsers?.map((user: any, index: number) => (
 						<div key={index} className="py-2 flex items-center w-full">
@@ -271,7 +271,7 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 							</div>
 						</div>
 					))}
-					<div className="pt-2 mt-auto border-t border-gray-200">
+					<div className="pt-2 mt-2 border-t border-gray-200">
 						<span className="text-[11px] text-gray-400">
 							Showing {activeUsersCount} active user{activeUsersCount !== 1 ? 's' : ''} this month
 						</span>
