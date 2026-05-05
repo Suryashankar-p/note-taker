@@ -23,31 +23,13 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      
-      let allowedExtensions: string[];
-      let errorMessage: string;
-      
-      if (aiProvider === "Document Analyzer") {
-        allowedExtensions = ['.pdf'];
-        errorMessage = "Only PDF files are allowed.";
-        
-        // Check if more than one file is selected for Document Analyzer
-        if (selectedFiles.length > 1) {
-          setError("Document Analyzer only allows single file upload.");
-          setFiles([]);
-          return;
-        }
-      } else {
-        allowedExtensions = ['.pdf', '.txt', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
-        errorMessage = "Only .pdf, .txt, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv files are allowed.";
-      }
-      
+      const allowedExtensions = ['.pdf', '.txt', '.json', '.html', '.htm', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
       const invalidFiles = selectedFiles.filter(file => 
         !allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
       );
       
       if (invalidFiles.length > 0) {
-        setError(`${errorMessage} ${invalidFiles.length} invalid file(s) selected.`);
+        setError(`Only .pdf, .txt, .json, .html, .htm, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv files are allowed. ${invalidFiles.length} invalid file(s) selected.`);
         setFiles([]);
       } else {
         setError("");
@@ -116,17 +98,14 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
             </span>
           )}
           <p className="text-xs text-gray-500 mt-2">
-            {aiProvider === "Document Analyzer" 
-              ? "Only PDF files allowed. No size limit."
-              : "Supported formats: .pdf, .txt, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv. File size max 100MB."
-            }
+            Supported formats: .pdf, .txt, .json, .html, .htm, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv. File size max 100MB.
           </p>
           <input
             type="file"
-            accept={aiProvider === "Document Analyzer" ? ".pdf" : ".pdf,.txt,.docx,.doc,.ppt,.pptx,.xlsx,.xls,.csv"}
+            accept=".pdf,.txt,.json,.html,.htm,.docx,.doc,.ppt,.pptx,.xlsx,.xls,.csv"
             onChange={handleFileChange}
             disabled={disabled}
-            multiple={aiProvider !== "Document Analyzer"}
+            multiple
             className="hidden"
           />
         </label>
