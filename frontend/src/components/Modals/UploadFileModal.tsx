@@ -29,7 +29,7 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
       );
       
       if (invalidFiles.length > 0) {
-        setError(`Only .pdf, .txt, '.png',.json, .html, .htm, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv files are allowed. ${invalidFiles.length} invalid file(s) selected.`);
+        setError(`Only .pdf, .txt, .png,.json, .html, .htm, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv files are allowed. ${invalidFiles.length} invalid file(s) selected.`);
         setFiles([]);
       } else {
         setError("");
