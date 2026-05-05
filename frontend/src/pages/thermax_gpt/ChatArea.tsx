@@ -808,12 +808,19 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  const tabs =
-  // Remove this to enable Deep Search(Preplexity)
-    access_details?.filter((service) => service.title !== "Deep Search").map((service) => ({
-      label: service.title,
-      icon: iconMapping[service.title],
-    })) ?? []; // fallback to []
+  const tabs = [
+    "Thermax GPT",
+    // "Deep Search", 
+    "Document Analyzer"
+  ]
+    .filter(title => access_details?.some(service => service.title === title))
+    .map(title => {
+      const service = access_details?.find(s => s.title === title);
+      return {
+        label: title,
+        icon: iconMapping[title],
+      };
+    }) ?? []; // fallback to []
 
   const activeIndex = Math.max(
     tabs.findIndex((tab) => tab.label === aiProvider),
@@ -823,13 +830,13 @@ const ChatArea: React.FC<Props> = ({
   const renderAttachFile = () => {
     switch (aiProvider) {
       case "Thermax GPT":
-        return "Attach File (Up to 10MB)";
+        return "Attach File (Up to 100MB)";
       case "Deep Search":
         return null;
       case "Document Analyzer":
         return "Attach PDF Document (No size limit)";
       default:
-        return "Attach File (Up to 10MB)";
+        return "Attach File (Up to 100MB)";
     }
   };
 
@@ -1605,10 +1612,10 @@ const ChatArea: React.FC<Props> = ({
                             key={tab.label}
                             onClick={() => handleTabChange(tab.label)}
                             className={`relative z-10 flex items-center justify-center gap-2 px-5 py-1 text-sm font-medium transition-colors duration-300 whitespace-nowrap
-              ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
+                            ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
                             style={{ width: "200px" }}
                           >
-                            {tab.icon}
+                            {React.createElement(tab.icon)}
                             <span>{tab.label}</span>
                           </button>
                         );
