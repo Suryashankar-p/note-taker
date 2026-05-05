@@ -811,7 +811,7 @@ const ChatArea: React.FC<Props> = ({
   const tabs = [
     "Thermax GPT",
     // "Deep Search", 
-    "Document Analyzer"
+    // "Document Analyzer"
   ]
     .filter(title => access_details?.some(service => service.title === title))
     .map(title => {
