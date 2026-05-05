@@ -1099,22 +1099,115 @@ const ChatArea: React.FC<Props> = ({
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
-                        className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
+                        className="markdown-content text-[14px] font-normal text-primary_text"
                         components={{
+                          h1: ({ node, ...props }) => (
+                            <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
+                              {props.children}
+                            </h1>
+                          ),
+                          h2: ({ node, ...props }) => (
+                            <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
+                              {props.children}
+                            </h2>
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
+                              {props.children}
+                            </h3>
+                          ),
+                          h4: ({ node, ...props }) => (
+                            <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
+                              {props.children}
+                            </h4>
+                          ),
+                          h5: ({ node, ...props }) => (
+                            <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
+                              {props.children}
+                            </h5>
+                          ),
+                          h6: ({ node, ...props }) => (
+                            <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
+                              {props.children}
+                            </h6>
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p className="mb-4 leading-relaxed" {...props}>
+                              {props.children}
+                            </p>
+                          ),
+                          strong: ({ node, ...props }) => (
+                            <strong className="font-bold text-gray-900" {...props}>
+                              {props.children}
+                            </strong>
+                          ),
+                          em: ({ node, ...props }) => (
+                            <em className="italic text-gray-800" {...props}>
+                              {props.children}
+                            </em>
+                          ),
+                          hr: ({ node, ...props }) => (
+                            <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
+                          ),
+                          blockquote: ({ node, ...props }) => (
+                            <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
+                              {props.children}
+                            </blockquote>
+                          ),
+                          ul: ({ node, ...props }) => (
+                            <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
+                              {props.children}
+                            </ul>
+                          ),
+                          ol: ({ node, ...props }) => (
+                            <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
+                              {props.children}
+                            </ol>
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li className="leading-relaxed" {...props}>
+                              {props.children}
+                            </li>
+                          ),
+                          code: ({ node, className, children, ...props }: any) => {
+                            const match = /language-(\w+)/.exec(className || '');
+                            const isInline = !className || !match;
+                            return !isInline ? (
+                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
+                                <code className={className} {...props}>
+                                  {children}
+                                </code>
+                              </pre>
+                            ) : (
+                              <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
+                                {children}
+                              </code>
+                            );
+                          },
+                          pre: ({ node, ...props }) => (
+                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
+                              {props.children}
+                            </pre>
+                          ),
                           table: ({ node, ...props }) => (
-                            <div className="overflow-x-auto">
-                              <table className="w-full table-auto border-collapse break-words">
+                            <div className="overflow-x-auto my-4">
+                              <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
                                 {props.children}
                               </table>
                             </div>
                           ),
+                          thead: ({ node, ...props }) => (
+                            <thead className="bg-gray-100" {...props}>
+                              {props.children}
+                            </thead>
+                          ),
                           th: ({ node, ...props }) => (
-                            <th className="border px-4 py-2 text-left font-semibold bg-gray-100">
+                            <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
                               {props.children}
                             </th>
                           ),
                           td: ({ node, ...props }) => (
-                            <td className="border px-4 py-2 align-top">
+                            <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
                               {props.children}
                             </td>
                           ),
@@ -1140,14 +1233,28 @@ const ChatArea: React.FC<Props> = ({
                                 </div>
                               );
                             }
-
+                            if (isVideo) {
+                              return (
+                                <div className="my-4">
+                                  <p className="mb-2 text-sm text-gray-600">
+                                    Here is the generated video:
+                                  </p>
+                                  <video
+                                    controls
+                                    className="w-[70%] rounded shadow"
+                                  >
+                                    <source src={href} type="video/mp4" />
+                                  </video>
+                                </div>
+                              );
+                            }
                             return (
                               <a
                                 href={href}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline transition-colors"
                                 {...props}
-                                className="text-blue-600 underline"
                               >
                                 {children}
                               </a>
@@ -1205,7 +1312,130 @@ const ChatArea: React.FC<Props> = ({
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
-                      className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
+                      className="markdown-content text-[14px] font-normal text-primary_text"
+                      components={{
+                        h1: ({ node, ...props }) => (
+                          <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
+                            {props.children}
+                          </h1>
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
+                            {props.children}
+                          </h2>
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
+                            {props.children}
+                          </h3>
+                        ),
+                        h4: ({ node, ...props }) => (
+                          <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
+                            {props.children}
+                          </h4>
+                        ),
+                        h5: ({ node, ...props }) => (
+                          <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
+                            {props.children}
+                          </h5>
+                        ),
+                        h6: ({ node, ...props }) => (
+                          <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
+                            {props.children}
+                          </h6>
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p className="mb-4 leading-relaxed" {...props}>
+                            {props.children}
+                          </p>
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong className="font-bold text-gray-900" {...props}>
+                            {props.children}
+                          </strong>
+                        ),
+                        em: ({ node, ...props }) => (
+                          <em className="italic text-gray-800" {...props}>
+                            {props.children}
+                          </em>
+                        ),
+                        hr: ({ node, ...props }) => (
+                          <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
+                        ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
+                            {props.children}
+                          </blockquote>
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
+                            {props.children}
+                          </ul>
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
+                            {props.children}
+                          </ol>
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="leading-relaxed" {...props}>
+                            {props.children}
+                          </li>
+                        ),
+                        code: ({ node, className, children, ...props }: any) => {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const isInline = !className || !match;
+                          return !isInline ? (
+                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            </pre>
+                          ) : (
+                            <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
+                              {children}
+                            </code>
+                          );
+                        },
+                        pre: ({ node, ...props }) => (
+                          <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
+                            {props.children}
+                          </pre>
+                        ),
+                        table: ({ node, ...props }) => (
+                          <div className="overflow-x-auto my-4">
+                            <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
+                              {props.children}
+                            </table>
+                          </div>
+                        ),
+                        thead: ({ node, ...props }) => (
+                          <thead className="bg-gray-100" {...props}>
+                            {props.children}
+                          </thead>
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
+                            {props.children}
+                          </th>
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
+                            {props.children}
+                          </td>
+                        ),
+                        a: ({ node, href, children, ...props }) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline transition-colors"
+                            {...props}
+                          >
+                            {children}
+                          </a>
+                        ),
+                      }}
                       >
                       {streamedData}
                     </ReactMarkdown>
