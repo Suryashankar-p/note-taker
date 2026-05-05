@@ -232,9 +232,7 @@ const ChatArea: React.FC<Props> = ({
   const { upload, uploadState, fileId, status, statusState, isDone } =
     useDocumentUploadWithStatus();
 
-  const [aiProvider, setAiProvider] = useState(() => {
-    return currentChatType || "Thermax GPT";
-  });
+  const [aiProvider, setAiProvider] = useState("Thermax GPT");
 
   useEffect(() => {
     if (
@@ -245,7 +243,11 @@ const ChatArea: React.FC<Props> = ({
     ) {
       setAiProvider(currentChatType);
     } else {
-      setAiProvider(access_details?.[0]?.title);
+      // Always default to Thermax GPT if available
+      const hasThermaxGPT = access_details?.some(
+        (d) => d.title.toLowerCase() === "thermax gpt"
+      );
+      setAiProvider(hasThermaxGPT ? "Thermax GPT" : (access_details?.[0]?.title || "Thermax GPT"));
     }
   }, [currentChatType, access_details]);
 
