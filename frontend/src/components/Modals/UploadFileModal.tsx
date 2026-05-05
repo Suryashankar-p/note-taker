@@ -23,10 +23,13 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      const invalidFiles = selectedFiles.filter(file => !file.name.toLowerCase().endsWith('.pdf'));
+      const allowedExtensions = ['.txt', '.json', '.html', '.htm', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
+      const invalidFiles = selectedFiles.filter(file => 
+        !allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+      );
       
       if (invalidFiles.length > 0) {
-        setError(`Only PDF files are allowed. ${invalidFiles.length} invalid file(s) selected.`);
+        setError(`Only .txt, .json, .html, .htm, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv files are allowed. ${invalidFiles.length} invalid file(s) selected.`);
         setFiles([]);
       } else {
         setError("");
@@ -95,11 +98,11 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
             </span>
           )}
           <p className="text-xs text-gray-500 mt-2">
-            Only PDF files allowed. No size limit.
+            Supported formats: .txt, .json, .html, .htm, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv. File size max 100MB.
           </p>
           <input
             type="file"
-            accept=".pdf"
+            accept=".txt,.json,.html,.htm,.docx,.doc,.ppt,.pptx,.xlsx,.xls,.csv"
             onChange={handleFileChange}
             disabled={disabled}
             multiple
