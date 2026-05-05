@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useRef, useState, useMemo } from "react";
+import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { FaRobot, FaGlobe, FaFileAlt } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
@@ -52,6 +52,120 @@ import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUpl
 import { set } from "react-hook-form";
 import { iconMapping } from "../../utils/constants.ts";
 
+interface MediaRendererProps {
+  source: { media_type: string; link: string };
+  messageIndex: number;
+  chatId: string | null;
+  mediaUrl: string | undefined;
+  onFetchMedia: (index: number, mediaType: string, link: string) => void;
+}
+
+const MediaRenderer: React.FC<MediaRendererProps> = ({
+  source,
+  messageIndex,
+  chatId,
+  mediaUrl,
+  onFetchMedia,
+}) => {
+  const { media_type, link } = source;
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (media_type !== "excel" && media_type !== "docx" && !mediaUrl) {
+      onFetchMedia(messageIndex, media_type, link);
+    }
+  }, [messageIndex, mediaUrl, media_type, link, onFetchMedia]);
+
+  const handleDownloadFile = async (mediaType: string, fileLink: string) => {
+    try {
+      if (!chatId) return;
+      const url = new URL(fileLink);
+      const filenameParam = url.searchParams.get("filename");
+      let defaultExtension = ".xlsx";
+      let defaultMimeType =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      if (mediaType === "docx") {
+        defaultExtension = ".docx";
+        defaultMimeType =
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      }
+      const fileName =
+        filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
+      const response = await ReadFile(Number(chatId), mediaType, fileLink);
+      const mediaBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || defaultMimeType,
+      });
+      const downloadUrl = URL.createObjectURL(mediaBlob);
+      const linkEl = document.createElement("a");
+      linkEl.href = downloadUrl;
+      linkEl.download = fileName;
+      document.body.appendChild(linkEl);
+      linkEl.click();
+      document.body.removeChild(linkEl);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error("Failed to download file:", err);
+    }
+  };
+
+  if (media_type === "image") {
+    return (
+      <div className="my-4">
+        {mediaUrl ? (
+          <img
+            src={mediaUrl}
+            alt="Generated visual"
+            className="w-[70%] rounded shadow"
+            onError={() => setError("Failed to load image")}
+          />
+        ) : (
+          <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+            <p className="text-gray-500">Loading image...</p>
+          </div>
+        )}
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      </div>
+    );
+  }
+
+  if (media_type === "video") {
+    return (
+      <div className="my-4">
+        {mediaUrl ? (
+          <video
+            controls
+            src={mediaUrl}
+            className="w-[70%] rounded shadow"
+            onError={() => setError("Failed to load video")}
+          />
+        ) : (
+          <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+            <p className="text-gray-500">Loading video...</p>
+          </div>
+        )}
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      </div>
+    );
+  }
+
+  if (media_type === "excel" || media_type === "docx") {
+    return (
+      <div className="my-4">
+        <button
+          onClick={() => handleDownloadFile(media_type, link)}
+          className="bg-red-600 w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
+        >
+          <span className="text-white text-sm">
+            Download {media_type === "excel" ? "Excel" : "Word"}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 interface Props {
   onNewChatAddition: () => void;
   disabled?: boolean;
@@ -104,6 +218,7 @@ const ChatArea: React.FC<Props> = ({
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
   const [videoUrlMap, setVideoUrlMap] = useState<Record<number, string>>({});
+  const fetchingRef = useRef<Set<number>>(new Set());
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
@@ -367,9 +482,11 @@ const ChatArea: React.FC<Props> = ({
     localFiles: any[],
     isNewChat: boolean
   ) => {
-    setStreamedData(""); // Clear streamed data
-    setStreamingSource(null); // Clear streaming source
-    setVideoUrlMap({}); // Clear media cache when new content is loaded
+    setStreamedData("");
+    setStreamingSource(null);
+    // Only evict the streaming slot (-1) so history images stay cached
+    setVideoUrlMap((prev) => { const next = { ...prev }; delete next[-1]; return next; });
+    fetchingRef.current.delete(-1);
     setInputValue("");
     setLoading(false);
     setPageError(false);
@@ -808,12 +925,19 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  const tabs =
-  // Remove this to enable Deep Search(Preplexity)
-    access_details?.filter((service) => service.title !== "Deep Search").map((service) => ({
-      label: service.title,
-      icon: iconMapping[service.title],
-    })) ?? []; // fallback to []
+  const tabs = [
+    "Thermax GPT",
+    // "Deep Search", 
+    "Document Analyzer"
+  ]
+    .filter(title => access_details?.some(service => service.title === title))
+    .map(title => {
+      const service = access_details?.find(s => s.title === title);
+      return {
+        label: title,
+        icon: iconMapping[title],
+      };
+    }) ?? []; // fallback to []
 
   const activeIndex = Math.max(
     tabs.findIndex((tab) => tab.label === aiProvider),
@@ -823,181 +947,36 @@ const ChatArea: React.FC<Props> = ({
   const renderAttachFile = () => {
     switch (aiProvider) {
       case "Thermax GPT":
-        return "Attach File (Up to 10MB)";
+        return "Attach File (Up to 100MB)";
       case "Deep Search":
         return null;
       case "Document Analyzer":
         return "Attach PDF Document (No size limit)";
       default:
-        return "Attach File (Up to 10MB)";
+        return "Attach File (Up to 100MB)";
     }
   };
 
-  // Function to fetch and cache media
-  const fetchMedia = async (index: number, mediaType: string, blobLink: string) => {
+  const fetchMedia = useCallback(async (index: number, mediaType: string, blobLink: string) => {
+    if (fetchingRef.current.has(index)) return;
+    fetchingRef.current.add(index);
     try {
-      // Avoid refetching the same media
-      if (videoUrlMap[index]) {
-        return;
-      }
-      
-      // Ensure we have a valid chat_id
       if (!chat_id) {
-        console.error('No chat_id available for media fetch');
+        fetchingRef.current.delete(index);
         return;
       }
-      
       const response = await ReadFile(Number(chat_id), mediaType, blobLink);
       const mediaBlob = new Blob([response.data], {
-        type: response.headers["content-type"] || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg'),
+        type: response.headers["content-type"] || (mediaType === "video" ? "video/mp4" : "image/jpeg"),
       });
       const objectUrl = URL.createObjectURL(mediaBlob);
-      setVideoUrlMap((prev) => ({
-        ...prev,
-        [index]: objectUrl,
-      }));
+      setVideoUrlMap((prev) => ({ ...prev, [index]: objectUrl }));
     } catch (err) {
       console.error("Failed to stream media:", err);
+      fetchingRef.current.delete(index);
     }
-  };
+  }, [chat_id]);
 
-  // Component to render media based on source field
-  const MediaRenderer = useMemo(() => ({ source, messageIndex, chatId }: { source: any; messageIndex: number; chatId: string | null }) => {
-    const { media_type, link } = source;
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleDownloadFile = async (mediaType: string, link: string) => {
-      try {
-        if (!chatId) {
-          console.error("No chat_id available for file download");
-          return;
-        }
-
-        const url = new URL(link);
-        const filenameParam = url.searchParams.get("filename");
-
-        let defaultExtension = ".xlsx";
-        let defaultMimeType =
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
-        if (mediaType === "docx") {
-          defaultExtension = ".docx";
-          defaultMimeType =
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        }
-
-        const fileName =
-          filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
-
-        const response = await ReadFile(Number(chatId), mediaType, link);
-        const mediaBlob = new Blob([response.data], {
-          type: response.headers["content-type"] || defaultMimeType,
-        });
-
-        const downloadUrl = URL.createObjectURL(mediaBlob);
-        const linkElement = document.createElement("a");
-        linkElement.href = downloadUrl;
-        linkElement.download = fileName;
-        document.body.appendChild(linkElement);
-        linkElement.click();
-        document.body.removeChild(linkElement);
-
-        // Clean up the object URL
-        URL.revokeObjectURL(downloadUrl);
-      } catch (error) {
-        console.error("Failed to download file:", error);
-      }
-    };
-
-    useEffect(() => {
-      // Only fetch media for image and video types
-      if (
-        media_type !== "excel" &&
-        media_type !== "docx" &&
-        !videoUrlMap[messageIndex]
-      ) {
-        fetchMedia(messageIndex, media_type, link);
-      }
-    }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
-
-    const mediaUrl = videoUrlMap[messageIndex];
-
-    if (media_type === 'image') {
-      return (
-        <div className="my-4">
-          {mediaUrl ? (
-            <img
-              src={mediaUrl}
-              alt="Generated visual"
-              className="w-[70%] rounded shadow"
-              onError={(e) => {
-                console.error('Failed to load generated image:', link);
-                setError('Failed to load image');
-              }}
-            />
-          ) : (
-            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
-              <p className="text-gray-500">Loading image...</p>
-            </div>
-          )}
-          {error && (
-            <p className="text-red-500 text-sm mt-2">{error}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (media_type === 'video') {
-      if (!mediaUrl) {
-        return (
-          <div className="my-4">
-            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
-              <p className="text-gray-500">Loading video...</p>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div className="my-4">
-          <video
-            controls
-            src={mediaUrl}
-            className="w-[70%] rounded shadow"
-            onError={(e) => {
-              console.error('Failed to load generated video:', link);
-              setError('Failed to load video');
-            }}
-          />
-          {error && (
-            <p className="text-red-500 text-sm mt-2">{error}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (media_type === "excel" || media_type === "docx") {
-      return (
-        <div className="my-4">
-          <Button
-            onClick={() => handleDownloadFile(media_type, link)}
-            custom_type="danger"
-            className="bg-danger w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
-            size="custom"
-          >
-            <div className="flex items-center gap-2">
-              {renderFileIcon(media_type === "excel" ? "file.xlsx" : "file.docx")}
-              <Text type="small" className="text-white">
-                Download {media_type === "excel" ? "Excel" : "Word"}
-              </Text>
-            </div>
-          </Button>
-        </div>
-      );
-    }
-
-    return null;
-  }, []); // Remove dependencies to prevent recreation on cache updates
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -1099,115 +1078,22 @@ const ChatArea: React.FC<Props> = ({
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
-                        className="markdown-content text-[14px] font-normal text-primary_text"
+                        className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
                         components={{
-                          h1: ({ node, ...props }) => (
-                            <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
-                              {props.children}
-                            </h1>
-                          ),
-                          h2: ({ node, ...props }) => (
-                            <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
-                              {props.children}
-                            </h2>
-                          ),
-                          h3: ({ node, ...props }) => (
-                            <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
-                              {props.children}
-                            </h3>
-                          ),
-                          h4: ({ node, ...props }) => (
-                            <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
-                              {props.children}
-                            </h4>
-                          ),
-                          h5: ({ node, ...props }) => (
-                            <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
-                              {props.children}
-                            </h5>
-                          ),
-                          h6: ({ node, ...props }) => (
-                            <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
-                              {props.children}
-                            </h6>
-                          ),
-                          p: ({ node, ...props }) => (
-                            <p className="mb-4 leading-relaxed" {...props}>
-                              {props.children}
-                            </p>
-                          ),
-                          strong: ({ node, ...props }) => (
-                            <strong className="font-bold text-gray-900" {...props}>
-                              {props.children}
-                            </strong>
-                          ),
-                          em: ({ node, ...props }) => (
-                            <em className="italic text-gray-800" {...props}>
-                              {props.children}
-                            </em>
-                          ),
-                          hr: ({ node, ...props }) => (
-                            <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
-                          ),
-                          blockquote: ({ node, ...props }) => (
-                            <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
-                              {props.children}
-                            </blockquote>
-                          ),
-                          ul: ({ node, ...props }) => (
-                            <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
-                              {props.children}
-                            </ul>
-                          ),
-                          ol: ({ node, ...props }) => (
-                            <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
-                              {props.children}
-                            </ol>
-                          ),
-                          li: ({ node, ...props }) => (
-                            <li className="leading-relaxed" {...props}>
-                              {props.children}
-                            </li>
-                          ),
-                          code: ({ node, className, children, ...props }: any) => {
-                            const match = /language-(\w+)/.exec(className || '');
-                            const isInline = !className || !match;
-                            return !isInline ? (
-                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
-                                <code className={className} {...props}>
-                                  {children}
-                                </code>
-                              </pre>
-                            ) : (
-                              <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
-                                {children}
-                              </code>
-                            );
-                          },
-                          pre: ({ node, ...props }) => (
-                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
-                              {props.children}
-                            </pre>
-                          ),
                           table: ({ node, ...props }) => (
-                            <div className="overflow-x-auto my-4">
-                              <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
+                            <div className="overflow-x-auto">
+                              <table className="w-full table-auto border-collapse break-words">
                                 {props.children}
                               </table>
                             </div>
                           ),
-                          thead: ({ node, ...props }) => (
-                            <thead className="bg-gray-100" {...props}>
-                              {props.children}
-                            </thead>
-                          ),
                           th: ({ node, ...props }) => (
-                            <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
+                            <th className="border px-4 py-2 text-left font-semibold bg-gray-100">
                               {props.children}
                             </th>
                           ),
                           td: ({ node, ...props }) => (
-                            <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
+                            <td className="border px-4 py-2 align-top">
                               {props.children}
                             </td>
                           ),
@@ -1233,28 +1119,14 @@ const ChatArea: React.FC<Props> = ({
                                 </div>
                               );
                             }
-                            if (isVideo) {
-                              return (
-                                <div className="my-4">
-                                  <p className="mb-2 text-sm text-gray-600">
-                                    Here is the generated video:
-                                  </p>
-                                  <video
-                                    controls
-                                    className="w-[70%] rounded shadow"
-                                  >
-                                    <source src={href} type="video/mp4" />
-                                  </video>
-                                </div>
-                              );
-                            }
+
                             return (
                               <a
                                 href={href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline transition-colors"
                                 {...props}
+                                className="text-blue-600 underline"
                               >
                                 {children}
                               </a>
@@ -1266,7 +1138,7 @@ const ChatArea: React.FC<Props> = ({
                       </ReactMarkdown>
                       {/* Handle source field for generated media */}
                       {message?.source && (
-                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} />
+                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} mediaUrl={videoUrlMap[index]} onFetchMedia={fetchMedia} />
                       )}
                     </div>
                   ) : (
@@ -1312,136 +1184,13 @@ const ChatArea: React.FC<Props> = ({
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
-                      className="markdown-content text-[14px] font-normal text-primary_text"
-                      components={{
-                        h1: ({ node, ...props }) => (
-                          <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
-                            {props.children}
-                          </h1>
-                        ),
-                        h2: ({ node, ...props }) => (
-                          <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
-                            {props.children}
-                          </h2>
-                        ),
-                        h3: ({ node, ...props }) => (
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
-                            {props.children}
-                          </h3>
-                        ),
-                        h4: ({ node, ...props }) => (
-                          <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
-                            {props.children}
-                          </h4>
-                        ),
-                        h5: ({ node, ...props }) => (
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
-                            {props.children}
-                          </h5>
-                        ),
-                        h6: ({ node, ...props }) => (
-                          <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
-                            {props.children}
-                          </h6>
-                        ),
-                        p: ({ node, ...props }) => (
-                          <p className="mb-4 leading-relaxed" {...props}>
-                            {props.children}
-                          </p>
-                        ),
-                        strong: ({ node, ...props }) => (
-                          <strong className="font-bold text-gray-900" {...props}>
-                            {props.children}
-                          </strong>
-                        ),
-                        em: ({ node, ...props }) => (
-                          <em className="italic text-gray-800" {...props}>
-                            {props.children}
-                          </em>
-                        ),
-                        hr: ({ node, ...props }) => (
-                          <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
-                        ),
-                        blockquote: ({ node, ...props }) => (
-                          <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
-                            {props.children}
-                          </blockquote>
-                        ),
-                        ul: ({ node, ...props }) => (
-                          <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
-                            {props.children}
-                          </ul>
-                        ),
-                        ol: ({ node, ...props }) => (
-                          <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
-                            {props.children}
-                          </ol>
-                        ),
-                        li: ({ node, ...props }) => (
-                          <li className="leading-relaxed" {...props}>
-                            {props.children}
-                          </li>
-                        ),
-                        code: ({ node, className, children, ...props }: any) => {
-                          const match = /language-(\w+)/.exec(className || '');
-                          const isInline = !className || !match;
-                          return !isInline ? (
-                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
-                              <code className={className} {...props}>
-                                {children}
-                              </code>
-                            </pre>
-                          ) : (
-                            <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
-                              {children}
-                            </code>
-                          );
-                        },
-                        pre: ({ node, ...props }) => (
-                          <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
-                            {props.children}
-                          </pre>
-                        ),
-                        table: ({ node, ...props }) => (
-                          <div className="overflow-x-auto my-4">
-                            <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
-                              {props.children}
-                            </table>
-                          </div>
-                        ),
-                        thead: ({ node, ...props }) => (
-                          <thead className="bg-gray-100" {...props}>
-                            {props.children}
-                          </thead>
-                        ),
-                        th: ({ node, ...props }) => (
-                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
-                            {props.children}
-                          </th>
-                        ),
-                        td: ({ node, ...props }) => (
-                          <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
-                            {props.children}
-                          </td>
-                        ),
-                        a: ({ node, href, children, ...props }) => (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline transition-colors"
-                            {...props}
-                          >
-                            {children}
-                          </a>
-                        ),
-                      }}
+                      className="prose prose-sm w-full max-w-none text-[14px] font-normal text-primary_text"
                       >
                       {streamedData}
                     </ReactMarkdown>
                     {/* Handle source field for streaming media */}
                     {streamingSource && (
-                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} />
+                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} mediaUrl={videoUrlMap[-1]} onFetchMedia={fetchMedia} />
                     )}
                   </div>
                 </div>
@@ -1462,8 +1211,7 @@ const ChatArea: React.FC<Props> = ({
             <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
           </button>
         )}
-        <div className="fixed bottom-4 left-[19%] right-0 px-4 flex flex-col items-center justify-start bg-inherit">
-
+        <div className="fixed bottom-4 left-[19%] right-0 px-4 flex items-center justify-start bg-inherit">
           <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
             <div className="w-full flex items-center gap-2">
               <div className="flex flex-col w-full">
@@ -1580,7 +1328,7 @@ const ChatArea: React.FC<Props> = ({
                     <UploadFileModal
                       isOpen={isModalOpen}
                       onClose={() => setModalOpen(false)}
-                      onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
+                      onFileUpload={(file) => handleFileChange(file)}
                       aiProvider={aiProvider}
                       disabled={loading}
                     />
@@ -1605,10 +1353,11 @@ const ChatArea: React.FC<Props> = ({
                             key={tab.label}
                             onClick={() => handleTabChange(tab.label)}
                             className={`relative z-10 flex items-center justify-center gap-2 px-5 py-1 text-sm font-medium transition-colors duration-300 whitespace-nowrap
-              ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
+                            ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
                             style={{ width: "200px" }}
+                            title={tab.label === "Document Analyzer" ? "If the PDF file is more that 100MB use Document Analyser" : ""}
                           >
-                            {tab.icon}
+                            {React.createElement(tab.icon)}
                             <span>{tab.label}</span>
                           </button>
                         );
