@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useRef, useState, useMemo } from "react";
+import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { FaRobot, FaGlobe, FaFileAlt } from "react-icons/fa";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
@@ -52,6 +52,121 @@ import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUpl
 import { set } from "react-hook-form";
 import { iconMapping } from "../../utils/constants.ts";
 
+
+interface MediaRendererProps {
+  source: { media_type: string; link: string };
+  messageIndex: number;
+  chatId: string | null;
+  mediaUrl: string | undefined;
+  onFetchMedia: (index: number, mediaType: string, link: string) => void;
+}
+
+const MediaRenderer: React.FC<MediaRendererProps> = ({
+  source,
+  messageIndex,
+  chatId,
+  mediaUrl,
+  onFetchMedia,
+}) => {
+  const { media_type, link } = source;
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (media_type !== "excel" && media_type !== "docx" && !mediaUrl) {
+      onFetchMedia(messageIndex, media_type, link);
+    }
+  }, [messageIndex, mediaUrl, media_type, link, onFetchMedia]);
+
+  const handleDownloadFile = async (mediaType: string, fileLink: string) => {
+    try {
+      if (!chatId) return;
+      const url = new URL(fileLink);
+      const filenameParam = url.searchParams.get("filename");
+      let defaultExtension = ".xlsx";
+      let defaultMimeType =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      if (mediaType === "docx") {
+        defaultExtension = ".docx";
+        defaultMimeType =
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      }
+      const fileName =
+        filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
+      const response = await ReadFile(Number(chatId), mediaType, fileLink);
+      const mediaBlob = new Blob([response.data], {
+        type: response.headers["content-type"] || defaultMimeType,
+      });
+      const downloadUrl = URL.createObjectURL(mediaBlob);
+      const linkEl = document.createElement("a");
+      linkEl.href = downloadUrl;
+      linkEl.download = fileName;
+      document.body.appendChild(linkEl);
+      linkEl.click();
+      document.body.removeChild(linkEl);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error("Failed to download file:", err);
+    }
+  };
+
+  if (media_type === "image") {
+    return (
+      <div className="my-4">
+        {mediaUrl ? (
+          <img
+            src={mediaUrl}
+            alt="Generated visual"
+            className="w-[70%] rounded shadow"
+            onError={() => setError("Failed to load image")}
+          />
+        ) : (
+          <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+            <p className="text-gray-500">Loading image...</p>
+          </div>
+        )}
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      </div>
+    );
+  }
+
+  if (media_type === "video") {
+    return (
+      <div className="my-4">
+        {mediaUrl ? (
+          <video
+            controls
+            src={mediaUrl}
+            className="w-[70%] rounded shadow"
+            onError={() => setError("Failed to load video")}
+          />
+        ) : (
+          <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
+            <p className="text-gray-500">Loading video...</p>
+          </div>
+        )}
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      </div>
+    );
+  }
+
+  if (media_type === "excel" || media_type === "docx") {
+    return (
+      <div className="my-4">
+        <button
+          onClick={() => handleDownloadFile(media_type, link)}
+          className="bg-red-600 w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
+        >
+          <span className="text-white text-sm">
+            Download {media_type === "excel" ? "Excel" : "Word"}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 interface Props {
   onNewChatAddition: () => void;
   disabled?: boolean;
@@ -104,6 +219,7 @@ const ChatArea: React.FC<Props> = ({
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
   const [videoUrlMap, setVideoUrlMap] = useState<Record<number, string>>({});
+  const fetchingRef = useRef<Set<number>>(new Set());
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
@@ -367,9 +483,11 @@ const ChatArea: React.FC<Props> = ({
     localFiles: any[],
     isNewChat: boolean
   ) => {
-    setStreamedData(""); // Clear streamed data
-    setStreamingSource(null); // Clear streaming source
-    setVideoUrlMap({}); // Clear media cache when new content is loaded
+    setStreamedData("");
+    setStreamingSource(null);
+    // Only evict the streaming slot (-1) so history images stay cached
+    setVideoUrlMap((prev) => { const next = { ...prev }; delete next[-1]; return next; });
+    fetchingRef.current.delete(-1);
     setInputValue("");
     setLoading(false);
     setPageError(false);
@@ -841,170 +959,26 @@ const ChatArea: React.FC<Props> = ({
   };
 
   // Function to fetch and cache media
-  const fetchMedia = async (index: number, mediaType: string, blobLink: string) => {
+  
+  const fetchMedia = useCallback(async (index: number, mediaType: string, blobLink: string) => {
+    if (fetchingRef.current.has(index)) return;
+    fetchingRef.current.add(index);
     try {
-      // Avoid refetching the same media
-      if (videoUrlMap[index]) {
-        return;
-      }
-      
-      // Ensure we have a valid chat_id
       if (!chat_id) {
-        console.error('No chat_id available for media fetch');
+        fetchingRef.current.delete(index);
         return;
       }
-      
       const response = await ReadFile(Number(chat_id), mediaType, blobLink);
       const mediaBlob = new Blob([response.data], {
-        type: response.headers["content-type"] || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg'),
+        type: response.headers["content-type"] || (mediaType === "video" ? "video/mp4" : "image/jpeg"),
       });
       const objectUrl = URL.createObjectURL(mediaBlob);
-      setVideoUrlMap((prev) => ({
-        ...prev,
-        [index]: objectUrl,
-      }));
+      setVideoUrlMap((prev) => ({ ...prev, [index]: objectUrl }));
     } catch (err) {
       console.error("Failed to stream media:", err);
+      fetchingRef.current.delete(index);
     }
-  };
-
-  // Component to render media based on source field
-  const MediaRenderer = useMemo(() => ({ source, messageIndex, chatId }: { source: any; messageIndex: number; chatId: string | null }) => {
-    const { media_type, link } = source;
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleDownloadFile = async (mediaType: string, link: string) => {
-      try {
-        if (!chatId) {
-          console.error("No chat_id available for file download");
-          return;
-        }
-
-        const url = new URL(link);
-        const filenameParam = url.searchParams.get("filename");
-
-        let defaultExtension = ".xlsx";
-        let defaultMimeType =
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
-        if (mediaType === "docx") {
-          defaultExtension = ".docx";
-          defaultMimeType =
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        }
-
-        const fileName =
-          filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
-
-        const response = await ReadFile(Number(chatId), mediaType, link);
-        const mediaBlob = new Blob([response.data], {
-          type: response.headers["content-type"] || defaultMimeType,
-        });
-
-        const downloadUrl = URL.createObjectURL(mediaBlob);
-        const linkElement = document.createElement("a");
-        linkElement.href = downloadUrl;
-        linkElement.download = fileName;
-        document.body.appendChild(linkElement);
-        linkElement.click();
-        document.body.removeChild(linkElement);
-
-        // Clean up the object URL
-        URL.revokeObjectURL(downloadUrl);
-      } catch (error) {
-        console.error("Failed to download file:", error);
-      }
-    };
-
-    useEffect(() => {
-      // Only fetch media for image and video types
-      if (
-        media_type !== "excel" &&
-        media_type !== "docx" &&
-        !videoUrlMap[messageIndex]
-      ) {
-        fetchMedia(messageIndex, media_type, link);
-      }
-    }, [messageIndex]); // Only depend on messageIndex to prevent re-fetches
-
-    const mediaUrl = videoUrlMap[messageIndex];
-
-    if (media_type === 'image') {
-      return (
-        <div className="my-4">
-          {mediaUrl ? (
-            <img
-              src={mediaUrl}
-              alt="Generated visual"
-              className="w-[70%] rounded shadow"
-              onError={(e) => {
-                console.error('Failed to load generated image:', link);
-                setError('Failed to load image');
-              }}
-            />
-          ) : (
-            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
-              <p className="text-gray-500">Loading image...</p>
-            </div>
-          )}
-          {error && (
-            <p className="text-red-500 text-sm mt-2">{error}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (media_type === 'video') {
-      if (!mediaUrl) {
-        return (
-          <div className="my-4">
-            <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
-              <p className="text-gray-500">Loading video...</p>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div className="my-4">
-          <video
-            controls
-            src={mediaUrl}
-            className="w-[70%] rounded shadow"
-            onError={(e) => {
-              console.error('Failed to load generated video:', link);
-              setError('Failed to load video');
-            }}
-          />
-          {error && (
-            <p className="text-red-500 text-sm mt-2">{error}</p>
-          )}
-        </div>
-      );
-    }
-
-    if (media_type === "excel" || media_type === "docx") {
-      return (
-        <div className="my-4">
-          <Button
-            onClick={() => handleDownloadFile(media_type, link)}
-            custom_type="danger"
-            className="bg-danger w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
-            size="custom"
-          >
-            <div className="flex items-center gap-2">
-              {renderFileIcon(media_type === "excel" ? "file.xlsx" : "file.docx")}
-              <Text type="small" className="text-white">
-                Download {media_type === "excel" ? "Excel" : "Word"}
-              </Text>
-            </div>
-          </Button>
-        </div>
-      );
-    }
-
-    return null;
-  }, []); // Remove dependencies to prevent recreation on cache updates
+  }, [chat_id]);
 
   return (
     <div className="flex flex-col w-full pt-12 h-full bg-inherit">
@@ -1273,7 +1247,7 @@ const ChatArea: React.FC<Props> = ({
                       </ReactMarkdown>
                       {/* Handle source field for generated media */}
                       {message?.source && (
-                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} />
+                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} mediaUrl={videoUrlMap[index]} onFetchMedia={fetchMedia} />
                       )}
                     </div>
                   ) : (
@@ -1448,7 +1422,7 @@ const ChatArea: React.FC<Props> = ({
                     </ReactMarkdown>
                     {/* Handle source field for streaming media */}
                     {streamingSource && (
-                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} />
+                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} mediaUrl={videoUrlMap[-1]} onFetchMedia={fetchMedia} />
                     )}
                   </div>
                 </div>
