@@ -1355,6 +1355,7 @@ const ChatArea: React.FC<Props> = ({
                             className={`relative z-10 flex items-center justify-center gap-2 px-5 py-1 text-sm font-medium transition-colors duration-300 whitespace-nowrap
                             ${isActive ? "text-red-600" : "text-red-300 hover:text-red-600"}`}
                             style={{ width: "200px" }}
+                            title={tab.label === "Document Analyzer" ? "If the PDF file is more that 100MB use Document Analyser" : ""}
                           >
                             {React.createElement(tab.icon)}
                             <span>{tab.label}</span>
