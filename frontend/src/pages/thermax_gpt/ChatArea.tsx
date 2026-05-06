@@ -72,7 +72,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (media_type !== "excel" && media_type !== "docx" && !mediaUrl) {
+    if (media_type !== "excel" && media_type !== "docx" && media_type !== "ppt" && !mediaUrl) {
       onFetchMedia(messageIndex, media_type, link);
     }
   }, [messageIndex, mediaUrl, media_type, link, onFetchMedia]);
@@ -89,6 +89,10 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
         defaultExtension = ".docx";
         defaultMimeType =
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      } else if (mediaType === "ppt") {
+        defaultExtension = ".pptx";
+        defaultMimeType =
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation";
       }
       const fileName =
         filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
@@ -149,7 +153,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
     );
   }
 
-  if (media_type === "excel" || media_type === "docx") {
+  if (media_type === "excel" || media_type === "docx" || media_type === "ppt") {
     return (
       <div className="my-4">
         <button
@@ -157,7 +161,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
           className="bg-red-600 w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
         >
           <span className="text-white text-sm">
-            Download {media_type === "excel" ? "Excel" : "Word"}
+            Download {media_type === "excel" ? "Excel" : media_type === "docx" ? "Word" : "PowerPoint"}
           </span>
         </button>
       </div>
@@ -884,7 +888,7 @@ const ChatArea: React.FC<Props> = ({
     switch (type) {
       case "PDF":
         return (
-          <span className=" text-red-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border border-red-500">
+          <span className=" text-red-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border border-red-500">
             PDF
           </span>
         );
@@ -892,7 +896,7 @@ const ChatArea: React.FC<Props> = ({
       case "xls":
       case "Excel":
         return (
-          <span className="px-6 text-green-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
+          <span className="px-6 text-green-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
             {file_name?.split(".").pop()?.toLocaleUpperCase()}
           </span>
         );
@@ -900,13 +904,13 @@ const ChatArea: React.FC<Props> = ({
       case "docx":
       case "DOC":
         return (
-          <span className="px-4 text-blue-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-blue-500">
+          <span className="px-4 text-blue-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-blue-500">
             DOC
           </span>
         );
       case "CSV":
         return (
-          <span className="px-4 text-green-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
+          <span className="px-4 text-green-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
             CSV
           </span>
         );
@@ -915,13 +919,13 @@ const ChatArea: React.FC<Props> = ({
       case "png":
       case "gif":
         return (
-          <span className="px-4 text-yellow-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-yellow-500">
+          <span className="px-4 text-yellow-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-yellow-500">
             IMG
           </span>
         );
       default:
         return (
-          <span className="px-6 text-gray-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-gray-500">
+          <span className="px-6 text-gray-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-gray-500">
             {file_name?.split(".").pop()?.toLocaleUpperCase()}
           </span>
         );
