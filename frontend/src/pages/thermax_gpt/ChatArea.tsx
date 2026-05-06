@@ -1,5 +1,7 @@
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
-import { FaRobot, FaGlobe, FaFileAlt } from "react-icons/fa";
+import { createPortal } from "react-dom";
+import { FaRobot, FaGlobe, FaFileAlt, FaCloudUploadAlt } from "react-icons/fa";
+import Plot from "react-plotly.js";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
 import Sent from "../../assets/sent.png";
@@ -54,7 +56,7 @@ import { iconMapping } from "../../utils/constants.ts";
 
 
 interface MediaRendererProps {
-  source: { media_type: string; link: string };
+  source: { media_type: string; link?: string; chart_data?: any };
   messageIndex: number;
   chatId: string | null;
   mediaUrl: string | undefined;
@@ -72,8 +74,10 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (media_type !== "excel" && media_type !== "docx" && !mediaUrl) {
-      onFetchMedia(messageIndex, media_type, link);
+    if (media_type !== "excel" && media_type !== "docx" && media_type !== "ppt" && media_type !== "chart" && !mediaUrl) {
+      if (link) {
+        onFetchMedia(messageIndex, media_type, link);
+      }
     }
   }, [messageIndex, mediaUrl, media_type, link, onFetchMedia]);
 
@@ -89,6 +93,10 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
         defaultExtension = ".docx";
         defaultMimeType =
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      } else if (mediaType === "ppt") {
+        defaultExtension = ".pptx";
+        defaultMimeType =
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation";
       }
       const fileName =
         filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
@@ -149,7 +157,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
     );
   }
 
-  if (media_type === "excel" || media_type === "docx") {
+  if (media_type === "excel" || media_type === "docx" || media_type === "ppt") {
     return (
       <div className="my-4">
         <button
@@ -157,9 +165,35 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
           className="bg-red-600 w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
         >
           <span className="text-white text-sm">
-            Download {media_type === "excel" ? "Excel" : "Word"}
+            Download {media_type === "excel" ? "Excel" : media_type === "docx" ? "Word" : "PowerPoint"}
           </span>
         </button>
+      </div>
+    );
+  }
+
+  if (media_type === "chart" || source.chart_data) {
+    return (
+      <div className="my-6 w-full h-[420px] bg-white rounded-xl shadow-sm border border-gray-100 p-2 overflow-hidden hover:shadow-md transition-shadow duration-300">
+        {source.chart_data ? (
+          <Plot
+            data={source.chart_data.data}
+            layout={{
+              ...source.chart_data.layout,
+              autosize: true,
+            }}
+            useResizeHandler={true}
+            style={{ width: "100%", height: "100%" }}
+            config={{ responsive: true, displayModeBar: "hover", displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d'] }}
+          />
+        ) : (
+          <div className="w-full h-full rounded-xl flex items-center justify-center bg-gray-50 animate-pulse">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-500 font-medium font-sans tracking-wide">Generating visual...</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -228,6 +262,8 @@ const ChatArea: React.FC<Props> = ({
   const [streamedData, setStreamedData] = useState<string>("");
   const [streamingSource, setStreamingSource] = useState<any>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
 
   const { upload, uploadState, fileId, status, statusState, isDone } =
     useDocumentUploadWithStatus();
@@ -410,6 +446,44 @@ const ChatArea: React.FC<Props> = ({
   const handleFileAttachClick = () => {
     if (uploadedFiles.length === 0 && aiProvider !== "Deep Search") {
       setModalOpen(true);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+
+    if (aiProvider === "Deep Search") return;
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      files.forEach((file) => handleFileChange(file));
+      e.dataTransfer.clearData();
     }
   };
 
@@ -884,7 +958,7 @@ const ChatArea: React.FC<Props> = ({
     switch (type) {
       case "PDF":
         return (
-          <span className=" text-red-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border border-red-500">
+          <span className=" text-red-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border border-red-500">
             PDF
           </span>
         );
@@ -892,7 +966,7 @@ const ChatArea: React.FC<Props> = ({
       case "xls":
       case "Excel":
         return (
-          <span className="px-6 text-green-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
+          <span className="px-6 text-green-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
             {file_name?.split(".").pop()?.toLocaleUpperCase()}
           </span>
         );
@@ -900,13 +974,13 @@ const ChatArea: React.FC<Props> = ({
       case "docx":
       case "DOC":
         return (
-          <span className="px-4 text-blue-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-blue-500">
+          <span className="px-4 text-blue-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-blue-500">
             DOC
           </span>
         );
       case "CSV":
         return (
-          <span className="px-4 text-green-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
+          <span className="px-4 text-green-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-green-500">
             CSV
           </span>
         );
@@ -915,13 +989,13 @@ const ChatArea: React.FC<Props> = ({
       case "png":
       case "gif":
         return (
-          <span className="px-4 text-yellow-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-yellow-500">
+          <span className="px-4 text-yellow-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-yellow-500">
             IMG
           </span>
         );
       default:
         return (
-          <span className="px-6 text-gray-500 font-bold text-sm self-center items-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-gray-500">
+          <span className="px-6 text-gray-500 font-bold text-sm self-center flex justify-center items-center w-8 h-8 rounded-md border-2 border-gray-500">
             {file_name?.split(".").pop()?.toLocaleUpperCase()}
           </span>
         );
@@ -961,7 +1035,7 @@ const ChatArea: React.FC<Props> = ({
   };
 
   // Function to fetch and cache media
-  
+
   const fetchMedia = useCallback(async (index: number, mediaType: string, blobLink: string) => {
     if (fetchingRef.current.has(index)) return;
     fetchingRef.current.add(index);
@@ -983,7 +1057,25 @@ const ChatArea: React.FC<Props> = ({
   }, [chat_id]);
 
   return (
-    <div className="flex flex-col w-full pt-12 h-full bg-inherit">
+    <div
+      className="flex flex-col w-full pt-12 h-full bg-inherit relative"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && aiProvider !== "Deep Search" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0061F3]/10 backdrop-blur-md pointer-events-none transition-all duration-300">
+          <FaCloudUploadAlt className="w-24 h-24 text-primary mb-6" />
+          <Text className="text-2xl font-bold">
+            Drop files to upload
+          </Text>
+          <Text className="mt-2" type="small">
+            Attach files to your {aiProvider} conversation
+          </Text>
+        </div>,
+        document.body
+      )}
       {dislikeModalStatus && <DislikeReason onSubmit={onDislikeSubmit} />}
       {toast?.status && toast?.type === "error" && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
@@ -1022,11 +1114,10 @@ const ChatArea: React.FC<Props> = ({
                   className={`flex items-end space-x-2 px-2 overflow-hidden self-end justify-end w-[70%]`}
                 >
                   <div
-                    className={`inline-block p-2 rounded-lg ${
-                      message?.human
-                        ? "bg-gray-200 text-small break-words"
-                        : "bg-inherit text-small break-words"
-                    }`}
+                    className={`inline-block p-2 rounded-lg ${message?.human
+                      ? "bg-gray-200 text-small break-words"
+                      : "bg-inherit text-small break-words"
+                      }`}
                   >
                     {message?.human && (
                       <Text className="text-primary_text" type="small">
@@ -1048,8 +1139,8 @@ const ChatArea: React.FC<Props> = ({
                               ? message?.file_size < 1024
                                 ? `${message?.file_size.toFixed(2)} Bytes`
                                 : message?.file_size < 1048576
-                                ? `${(message?.file_size / 1024).toFixed(2)} KB`
-                                : `${(message?.file_size / 1048576).toFixed(
+                                  ? `${(message?.file_size / 1024).toFixed(2)} KB`
+                                  : `${(message?.file_size / 1048576).toFixed(
                                     2
                                   )} MB`
                               : ""}
@@ -1419,7 +1510,7 @@ const ChatArea: React.FC<Props> = ({
                           </a>
                         ),
                       }}
-                      >
+                    >
                       {streamedData}
                     </ReactMarkdown>
                     {/* Handle source field for streaming media */}
@@ -1524,13 +1615,12 @@ const ChatArea: React.FC<Props> = ({
                     aiProvider === "Thermax GPT"
                       ? "Ask anything ..."
                       : aiProvider === "Deep Search"
-                      ? "Search anything..."
-                      : "Ask questions related to the uploaded document..."
+                        ? "Search anything..."
+                        : "Ask questions related to the uploaded document..."
                   }
                   rows={1}
-                  className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${
-                    disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
-                  }`}
+                  className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
+                    }`}
                   style={{ lineHeight: "1.9rem" }}
                 />
                 <div className="flex items-start justify-start">
@@ -1538,24 +1628,22 @@ const ChatArea: React.FC<Props> = ({
                     <div className="relative group cursor-pointer">
                       <img
                         src={Attach}
-                        className={`w-8 h-8 ${
-                          uploadedFiles.length > 0 ||
+                        className={`w-8 h-8 ${uploadedFiles.length > 0 ||
                           aiProvider === "Deep Search"
-                            ? "cursor-default opacity-50"
-                            : "cursor-pointer"
-                        }`}
+                          ? "cursor-default opacity-50"
+                          : "cursor-pointer"
+                          }`}
                         alt="Attach file"
                         loading="lazy"
                         onClick={handleFileAttachClick}
                       />
 
                       <span
-                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${
-                          uploadedFiles.length === 0 &&
+                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${uploadedFiles.length === 0 &&
                           aiProvider !== "Deep Search"
-                            ? "opacity-0 group-hover:opacity-70"
-                            : "hidden"
-                        }`}
+                          ? "opacity-0 group-hover:opacity-70"
+                          : "hidden"
+                          }`}
                       >
                         {renderAttachFile()}
                       </span>
