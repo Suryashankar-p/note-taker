@@ -244,11 +244,21 @@ export const getThermaxServices = async () => {
 export const CreateChatHistoryStream = async (
   query: string,
   chat_id: string,
-  files?: File[]
+  files?: File[],
+  model?: string,
+  thinking?: boolean
 ) => {
   const formData = new FormData();
 
   formData.append("human", query);
+
+  if (model) {
+    formData.append("model", model);
+  }
+
+  if (thinking) {
+    formData.append("thinking", "true");
+  }
 
   if (files && files.length > 0) {
     files.forEach((file) => {
