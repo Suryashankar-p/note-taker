@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FaRobot, FaGlobe, FaFileAlt, FaCloudUploadAlt } from "react-icons/fa";
+import Plot from "react-plotly.js";
 import Input from "../../components/Input.tsx";
 import ThermaxIcon from "../../assets/thermax_icon.svg";
 import Sent from "../../assets/sent.png";
@@ -55,7 +56,7 @@ import { iconMapping } from "../../utils/constants.ts";
 
 
 interface MediaRendererProps {
-  source: { media_type: string; link: string };
+  source: { media_type: string; link?: string; chart_data?: any };
   messageIndex: number;
   chatId: string | null;
   mediaUrl: string | undefined;
@@ -73,8 +74,10 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (media_type !== "excel" && media_type !== "docx" && media_type !== "ppt" && !mediaUrl) {
-      onFetchMedia(messageIndex, media_type, link);
+    if (media_type !== "excel" && media_type !== "docx" && media_type !== "ppt" && media_type !== "chart" && !mediaUrl) {
+      if (link) {
+        onFetchMedia(messageIndex, media_type, link);
+      }
     }
   }, [messageIndex, mediaUrl, media_type, link, onFetchMedia]);
 
@@ -165,6 +168,32 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
             Download {media_type === "excel" ? "Excel" : media_type === "docx" ? "Word" : "PowerPoint"}
           </span>
         </button>
+      </div>
+    );
+  }
+
+  if (media_type === "chart" || source.chart_data) {
+    return (
+      <div className="my-6 w-full h-[420px] bg-white rounded-xl shadow-sm border border-gray-100 p-2 overflow-hidden hover:shadow-md transition-shadow duration-300">
+        {source.chart_data ? (
+          <Plot
+            data={source.chart_data.data}
+            layout={{
+              ...source.chart_data.layout,
+              autosize: true,
+            }}
+            useResizeHandler={true}
+            style={{ width: "100%", height: "100%" }}
+            config={{ responsive: true, displayModeBar: "hover", displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d'] }}
+          />
+        ) : (
+          <div className="w-full h-full rounded-xl flex items-center justify-center bg-gray-50 animate-pulse">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-500 font-medium font-sans tracking-wide">Generating visual...</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
