@@ -57,10 +57,18 @@ import { iconMapping } from "../../utils/constants.ts";
 
 interface MediaRendererProps {
   source: { media_type: string; link?: string; chart_data?: any };
-  messageIndex: number;
+  messageIndex: string | number;
   chatId: string | null;
   mediaUrl: string | undefined;
-  onFetchMedia: (index: number, mediaType: string, link: string) => void;
+  onFetchMedia: (index: string | number, mediaType: string, link: string) => void;
+}
+
+interface MultipleMediaRendererProps {
+  sources: { media_type: string; link?: string; chart_data?: any }[];
+  messageIndex: number;
+  chatId: string | null;
+  mediaUrlMap: Record<string, string>;
+  onFetchMedia: (index: string | number, mediaType: string, link: string) => void;
 }
 
 const MediaRenderer: React.FC<MediaRendererProps> = ({
@@ -76,7 +84,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   useEffect(() => {
     if (media_type !== "excel" && media_type !== "docx" && media_type !== "ppt" && media_type !== "chart" && !mediaUrl) {
       if (link) {
-        onFetchMedia(messageIndex, media_type, link);
+        onFetchMedia(String(messageIndex), media_type, link);
       }
     }
   }, [messageIndex, mediaUrl, media_type, link, onFetchMedia]);
@@ -201,6 +209,47 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   return null;
 };
 
+const MultipleMediaRenderer: React.FC<MultipleMediaRendererProps> = ({
+  sources,
+  messageIndex,
+  chatId,
+  mediaUrlMap,
+  onFetchMedia,
+}) => {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="my-4 space-y-4">
+      {sources.map((source, mediaIndex) => {
+        // Create a unique index for each media item
+        const uniqueIndex = `${messageIndex}-${mediaIndex}`;
+        const mediaUrl = mediaUrlMap[uniqueIndex] || mediaUrlMap[messageIndex];
+        
+        return (
+          <div key={mediaIndex} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+            <div className="text-sm font-medium text-gray-600 mb-2">
+              {source.media_type === 'image' && 'Generated Image'}
+              {source.media_type === 'video' && 'Generated Video'}
+              {source.media_type === 'excel' && 'Excel File'}
+              {source.media_type === 'docx' && 'Word Document'}
+              {source.media_type === 'ppt' && 'PowerPoint Presentation'}
+              {source.media_type === 'chart' && 'Generated Chart'}
+              {source.media_type === 'unknown' && 'Generated File'}
+            </div>
+            <MediaRenderer 
+              source={source} 
+              messageIndex={uniqueIndex}
+              chatId={chatId} 
+              mediaUrl={mediaUrl} 
+              onFetchMedia={onFetchMedia} 
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 interface Props {
   onNewChatAddition: () => void;
   disabled?: boolean;
@@ -252,8 +301,8 @@ const ChatArea: React.FC<Props> = ({
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
   const [currentChatType, setCurrentChatType] = useState<string>("");
   const [progress, setProgress] = useState<number | null>(null);
-  const [videoUrlMap, setVideoUrlMap] = useState<Record<number, string>>({});
-  const fetchingRef = useRef<Set<number>>(new Set());
+  const [videoUrlMap, setVideoUrlMap] = useState<Record<string, string>>({});
+  const fetchingRef = useRef<Set<string>>(new Set());
   const currentChatContent = useSelector(
     (state: any) => state.chatContent.chatContent
   );
@@ -562,8 +611,8 @@ const ChatArea: React.FC<Props> = ({
     setStreamedData("");
     setStreamingSource(null);
     // Only evict the streaming slot (-1) so history images stay cached
-    setVideoUrlMap((prev) => { const next = { ...prev }; delete next[-1]; return next; });
-    fetchingRef.current.delete(-1);
+    setVideoUrlMap((prev) => { const next = { ...prev }; delete next["-1"]; return next; });
+    fetchingRef.current.delete("-1");
     setInputValue("");
     setLoading(false);
     setPageError(false);
@@ -1036,12 +1085,13 @@ const ChatArea: React.FC<Props> = ({
 
   // Function to fetch and cache media
 
-  const fetchMedia = useCallback(async (index: number, mediaType: string, blobLink: string) => {
-    if (fetchingRef.current.has(index)) return;
-    fetchingRef.current.add(index);
+  const fetchMedia = useCallback(async (index: string | number, mediaType: string, blobLink: string) => {
+    const indexKey = String(index);
+    if (fetchingRef.current.has(indexKey)) return;
+    fetchingRef.current.add(indexKey);
     try {
       if (!chat_id) {
-        fetchingRef.current.delete(index);
+        fetchingRef.current.delete(indexKey);
         return;
       }
       const response = await ReadFile(Number(chat_id), mediaType, blobLink);
@@ -1049,10 +1099,10 @@ const ChatArea: React.FC<Props> = ({
         type: response.headers["content-type"] || (mediaType === "video" ? "video/mp4" : "image/jpeg"),
       });
       const objectUrl = URL.createObjectURL(mediaBlob);
-      setVideoUrlMap((prev) => ({ ...prev, [index]: objectUrl }));
+      setVideoUrlMap((prev) => ({ ...prev, [indexKey]: objectUrl }));
     } catch (err) {
       console.error("Failed to stream media:", err);
-      fetchingRef.current.delete(index);
+      fetchingRef.current.delete(indexKey);
     }
   }, [chat_id]);
 
@@ -1340,7 +1390,25 @@ const ChatArea: React.FC<Props> = ({
                       </ReactMarkdown>
                       {/* Handle source field for generated media */}
                       {message?.source && (
-                        <MediaRenderer source={message.source} messageIndex={index} chatId={chat_id} mediaUrl={videoUrlMap[index]} onFetchMedia={fetchMedia} />
+                        <>
+                          {message.source?.generated_media ? (
+                            <MultipleMediaRenderer 
+                              sources={message.source.generated_media} 
+                              messageIndex={index} 
+                              chatId={chat_id} 
+                              mediaUrlMap={videoUrlMap} 
+                              onFetchMedia={fetchMedia} 
+                            />
+                          ) : (
+                            <MediaRenderer 
+                              source={message.source} 
+                              messageIndex={index} 
+                              chatId={chat_id} 
+                              mediaUrl={videoUrlMap[index]} 
+                              onFetchMedia={fetchMedia} 
+                            />
+                          )}
+                        </>
                       )}
                     </div>
                   ) : (
@@ -1515,7 +1583,25 @@ const ChatArea: React.FC<Props> = ({
                     </ReactMarkdown>
                     {/* Handle source field for streaming media */}
                     {streamingSource && (
-                      <MediaRenderer source={streamingSource} messageIndex={-1} chatId={chat_id} mediaUrl={videoUrlMap[-1]} onFetchMedia={fetchMedia} />
+                      <>
+                        {streamingSource?.generated_media ? (
+                          <MultipleMediaRenderer 
+                            sources={streamingSource.generated_media} 
+                            messageIndex={-1} 
+                            chatId={chat_id} 
+                            mediaUrlMap={videoUrlMap} 
+                            onFetchMedia={fetchMedia} 
+                          />
+                        ) : (
+                          <MediaRenderer 
+                            source={streamingSource} 
+                            messageIndex={-1} 
+                            chatId={chat_id} 
+                            mediaUrl={videoUrlMap[-1]} 
+                            onFetchMedia={fetchMedia} 
+                          />
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
