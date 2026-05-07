@@ -1656,7 +1656,7 @@ const ChatArea: React.FC<Props> = ({
                       disabled={loading}
                     />
                   </div>
-                  <div className="flex justify-start mb-2 ml-4 px-1">
+                  <div className="flex justify-start mb-2 ml-4 px-1 hidden">
                     <div className="relative inline-flex bg-gray-200 rounded-lg overflow-hidden min-w-[200px]">
                       {/* Sliding background indicator */}
                       <div
