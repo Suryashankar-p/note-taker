@@ -418,7 +418,8 @@ const ChatArea: React.FC<Props> = ({
     const evenSourceUrl = selectEvensourceUrl(
       aiProvider,
       chatId,
-      chat_history_id
+      chat_history_id,
+      isThinking
     );
 
     eventSource = new EventSource(evenSourceUrl);

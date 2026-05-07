@@ -23,21 +23,21 @@ export function categorizeDate(inputDate: string): string {
     const today = new Date();
     const date = new Date(inputDate);
 
-    
+
     today.setHours(0, 0, 0, 0);
     date.setHours(0, 0, 0, 0);
 
     const diffInTime = today.getTime() - date.getTime();
     const diffInDays = diffInTime / (1000 * 3600 * 24);
 
-    
+
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     startOfMonth.setHours(0, 0, 0, 0);
 
     const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     startOfLastMonth.setHours(0, 0, 0, 0);
 
-   
+
     const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
     endOfLastMonth.setHours(23, 59, 59, 999);
 
@@ -355,14 +355,15 @@ export const getIframeSrc = (url, type) => {
     return "";
 };
 
-export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number) => {
+export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number, thinking: boolean) => {
     switch (type) {
         case "Thermax GPT":
-            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}`
+            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}&thinking=${thinking}`
         case "Deep Search":
-            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/perplexity/stream?chat_history_id=${chat_history_id}`
+            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/perplexity/stream?chat_history_id=${chat_history_id}&thinking=${thinking}`
         default:
-            return ''
+            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}&thinking=${thinking}`
+        // return ''
     }
 
-}
+}       
