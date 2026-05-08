@@ -1744,10 +1744,9 @@ const ChatArea: React.FC<Props> = ({
                   >
                     {isThinking ?
                       <FaLightbulb className="size-4 text-primary" /> :
-
                       <LightBulbIcon className="size-4" />
                     }
-                    <span className="font-medium text-sm">Think</span>
+                    <span className="font-medium text-sm">Deep Search</span>
                   </Button>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1765,6 +1764,9 @@ const ChatArea: React.FC<Props> = ({
                     ]}
                     onChange={(val) => {
                       setAiProvider(val);
+                      if (val === "sonnet4.6") {
+                        setIsThinking(true);
+                      }
                     }}
                   />
                   <Button
