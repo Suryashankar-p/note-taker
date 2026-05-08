@@ -49,9 +49,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import UploadStatusIndicator from "../../components/UploadStatusIndicator";
 import { UploadFileModal } from "../../components/Modals/UploadFileModal.tsx";
-// import { useDocumentUploadWebSocket } from "../../services/hooks/useDocumentUploadWebSocket.ts";
 import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus.ts";
-import { set } from "react-hook-form";
 import { iconMapping } from "../../utils/constants.ts";
 
 
@@ -70,6 +68,93 @@ interface MultipleMediaRendererProps {
   mediaUrlMap: Record<string, string>;
   onFetchMedia: (index: string | number, mediaType: string, link: string) => void;
 }
+
+const MemoizedMarkdown = React.memo(({ content }: { content: string }) => {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
+      className="markdown-content text-[14px] font-normal text-primary_text leading-relaxed"
+      components={{
+        h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props} />,
+        h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props} />,
+        h3: ({ node, ...props }) => <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props} />,
+        p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700 rounded-r-md" {...props} />,
+        ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props} />,
+        ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props} />,
+        table: ({ node, ...props }) => (
+          <div className="overflow-x-auto my-4 shadow-sm rounded-lg border border-gray-200">
+            <table className="w-full table-auto border-collapse" {...props} />
+          </div>
+        ),
+        th: ({ node, ...props }) => <th className="bg-gray-50 border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700 text-sm" {...props} />,
+        td: ({ node, ...props }) => <td className="border-b border-gray-100 px-4 py-3 text-gray-600 text-sm align-top" {...props} />,
+        code: ({ node, className, children, ...props }: any) => {
+          const match = /language-(\w+)/.exec(className || '');
+          const isInline = !className || !match;
+          return !isInline ? (
+            <div className="relative group my-4">
+              <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button 
+                  onClick={() => copy(String(children).replace(/\n$/, ''))}
+                  className="p-1.5 bg-gray-800/80 backdrop-blur-sm hover:bg-gray-700 rounded-lg text-gray-300 transition-all border border-gray-700"
+                  title="Copy code"
+                >
+                  <CopyIcon className="w-4 h-4" />
+                </button>
+              </div>
+              <pre className="bg-[#0d1117] text-gray-300 p-5 rounded-2xl overflow-x-auto font-mono text-[13px] leading-6 shadow-xl border border-gray-800">
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              </pre>
+            </div>
+          ) : (
+            <code className="bg-gray-100 text-red-500 px-1.5 py-0.5 rounded-md text-[13px] font-mono border border-gray-200" {...props}>
+              {children}
+            </code>
+          );
+        },
+        // Avoid double pre wrapping
+        pre: ({ node, children, ...props }) => <>{children}</>,
+        a: ({ node, href, children, ...props }) => {
+          const isVideo = href?.endsWith(".mp4") || href?.includes("generated_videos");
+          const isImage = href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) && href?.includes("generated_videos");
+          if (isImage) {
+            return (
+              <div className="my-6">
+                <p className="mb-3 text-xs text-gray-400 font-semibold uppercase tracking-wider">Generated visualization</p>
+                <div className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white p-2">
+                  <img src={href} alt="Generated visual" className="w-full rounded-xl" />
+                </div>
+              </div>
+            );
+          }
+          if (isVideo) {
+            return (
+              <div className="my-6">
+                <p className="mb-3 text-xs text-gray-400 font-semibold uppercase tracking-wider">Generated video</p>
+                <div className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-black">
+                  <video controls className="w-full">
+                    <source src={href} type="video/mp4" />
+                  </video>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-4 font-medium transition-colors" {...props}>
+              {children}
+            </a>
+          );
+        },
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+});
 
 const MediaRenderer: React.FC<MediaRendererProps> = ({
   source,
@@ -166,14 +251,24 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   }
 
   if (media_type === "excel" || media_type === "docx" || media_type === "ppt") {
+    const labels = {
+      excel: { text: "Excel Spreadsheet", color: "bg-green-600", hover: "hover:bg-green-700" },
+      docx: { text: "Word Document", color: "bg-blue-600", hover: "hover:bg-blue-700" },
+      ppt: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" }
+    };
+    const config = labels[media_type as keyof typeof labels] || labels.excel;
+
     return (
       <div className="my-4">
         <button
           onClick={() => handleDownloadFile(media_type, link)}
-          className="bg-red-600 w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
+          className={`${config.color} ${config.hover} text-white px-5 py-2.5 rounded-xl flex items-center gap-3 shadow-md transition-all hover:shadow-lg active:scale-95`}
         >
-          <span className="text-white text-sm">
-            Download {media_type === "excel" ? "Excel" : media_type === "docx" ? "Word" : "PowerPoint"}
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span className="text-sm font-semibold">
+            Download {config.text}
           </span>
         </button>
       </div>
@@ -303,9 +398,6 @@ const ChatArea: React.FC<Props> = ({
   const [progress, setProgress] = useState<number | null>(null);
   const [videoUrlMap, setVideoUrlMap] = useState<Record<string, string>>({});
   const fetchingRef = useRef<Set<string>>(new Set());
-  const currentChatContent = useSelector(
-    (state: any) => state.chatContent.chatContent
-  );
   const [isModalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
@@ -344,7 +436,11 @@ const ChatArea: React.FC<Props> = ({
 
   // Clear media cache when chat_id changes (navigating between chats)
   useEffect(() => {
-    setVideoUrlMap({});
+    setVideoUrlMap((prev) => {
+      Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+      return {};
+    });
+    fetchingRef.current.clear();
   }, [chat_id]);
 
   useEffect(() => {
@@ -393,7 +489,7 @@ const ChatArea: React.FC<Props> = ({
       refCurrent.addEventListener("scroll", handleScroll);
     }
 
-    if (currentChatContent.length < 0) {
+    if (chatContent.length === 0) {
       setShowButton(false);
     }
 
@@ -617,7 +713,8 @@ const ChatArea: React.FC<Props> = ({
     setLoading(false);
     setPageError(false);
     setUploadedFiles([]);
-    const updatedChatHistory = [...localFiles, data];
+
+    getPageChat();
     // Store uploaded files if any
     if (localFiles?.length > 0) {
       const existingUploads = JSON.parse(
@@ -631,19 +728,8 @@ const ChatArea: React.FC<Props> = ({
     }
 
     if (isNewChat) {
-      dispatch.chatContent.replaceChatHistoryWithLocal({
-        apiHistory: updatedChatHistory,
-        localMessages: [],
-      });
       navigate(`/ai-studio/thermax_gpt?chat_id=${chatId}`);
       onNewChatAddition();
-    } else {
-      // Refresh chat content for existing chat
-      // getPageChat();
-      dispatch.chatContent.replaceChatHistoryWithLocal({
-        apiHistory: updatedChatHistory,
-        localMessages: [],
-      });
     }
   };
 
@@ -680,7 +766,7 @@ const ChatArea: React.FC<Props> = ({
     });
     dispatch.chatContent.addQuestion([{ human: inputValue }]);
 
-    const localMessages = [...localFiles, ...chatContent];
+    const localMessages = [...chatContent, ...localFiles];
 
     try {
       if (chat_id && currentChatType === aiProvider) {
@@ -723,7 +809,6 @@ const ChatArea: React.FC<Props> = ({
         // Handle non-streaming responses
         if (chatResponse?.ai) {
           setInputValue("");
-          const updatedChatHistory = [...localFiles, chatResponse];
           if (localFiles?.length > 0) {
             const existingUploads = JSON.parse(
               localStorage.getItem("uploadedFiles") || "{}"
@@ -737,13 +822,10 @@ const ChatArea: React.FC<Props> = ({
               JSON.stringify(updatedUploads)
             );
           }
-          dispatch.chatContent.replaceChatHistoryWithLocal({
-            apiHistory: updatedChatHistory,
-            localMessages: [],
-          });
           setLoading(false);
           setPageError(false);
           setUploadedFiles([]);
+          getPageChat();
         } else {
           if (chatResponse?.detail) {
             dispatch.toast.openToast({
@@ -1146,7 +1228,7 @@ const ChatArea: React.FC<Props> = ({
       )}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-scroll smooth-scroll px-12 pt-8 space-y-2 bg-inherit"
+        className="flex-1 overflow-y-auto smooth-scroll px-12 pt-8 space-y-2 bg-inherit"
       >
         <div
           id={`message-`}
@@ -1157,16 +1239,16 @@ const ChatArea: React.FC<Props> = ({
             {chatContent.map((message: any, index: number) => (
               <div
                 key={message?.id || message?.tempId || index}
-                className="flex flex-col bg-inherit w-full gap-4"
+                className="flex flex-col bg-inherit w-full gap-4 group"
               >
                 <div
                   key={message?.id || message?.tempId || index}
                   className={`flex items-end space-x-2 px-2 overflow-hidden self-end justify-end w-[70%]`}
                 >
                   <div
-                    className={`inline-block p-2 rounded-lg ${message?.human
-                      ? "bg-gray-200 text-small break-words"
-                      : "bg-inherit text-small break-words"
+                    className={`inline-block p-4 rounded-2xl shadow-sm ${message?.human
+                      ? "bg-gray-100 text-gray-800 border border-gray-200"
+                      : "bg-white text-gray-800 border border-gray-100"
                       }`}
                   >
                     {message?.human && (
@@ -1209,191 +1291,22 @@ const ChatArea: React.FC<Props> = ({
                 </div>
 
                 <div className="flex flex-row items-start justify-start w-[100%]">
-                  {(message?.ai || message?.source || loading) && !message.file_name && (
+                  {(message?.ai || message?.source) && !message.file_name && (
                     <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
                       <span className="text-gray-600">{"AI"}</span>
                     </div>
                   )}
-
+                  {/* AI Content and Media */}
                   {(message?.ai || message?.source) ? (
                     <div
                       id={`message-${index}`}
                       className="w-full max-w-4xl py-1 px-4 rounded-lg"
                     >
-                      {message?.ai && (
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                          className="markdown-content text-[14px] font-normal text-primary_text"
-                          components={{
-                            h1: ({ node, ...props }) => (
-                              <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
-                                {props.children}
-                              </h1>
-                            ),
-                            h2: ({ node, ...props }) => (
-                              <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
-                                {props.children}
-                              </h2>
-                            ),
-                            h3: ({ node, ...props }) => (
-                              <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
-                                {props.children}
-                              </h3>
-                            ),
-                            h4: ({ node, ...props }) => (
-                              <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
-                                {props.children}
-                              </h4>
-                            ),
-                            h5: ({ node, ...props }) => (
-                              <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
-                                {props.children}
-                              </h5>
-                            ),
-                            h6: ({ node, ...props }) => (
-                              <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
-                                {props.children}
-                              </h6>
-                            ),
-                            p: ({ node, ...props }) => (
-                              <p className="mb-4 leading-relaxed" {...props}>
-                                {props.children}
-                              </p>
-                            ),
-                            strong: ({ node, ...props }) => (
-                              <strong className="font-bold text-gray-900" {...props}>
-                                {props.children}
-                              </strong>
-                            ),
-                            em: ({ node, ...props }) => (
-                              <em className="italic text-gray-800" {...props}>
-                                {props.children}
-                              </em>
-                            ),
-                            hr: ({ node, ...props }) => (
-                              <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
-                            ),
-                            blockquote: ({ node, ...props }) => (
-                              <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
-                                {props.children}
-                              </blockquote>
-                            ),
-                            ul: ({ node, ...props }) => (
-                              <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
-                                {props.children}
-                              </ul>
-                            ),
-                            ol: ({ node, ...props }) => (
-                              <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
-                                {props.children}
-                              </ol>
-                            ),
-                            li: ({ node, ...props }) => (
-                              <li className="leading-relaxed" {...props}>
-                                {props.children}
-                              </li>
-                            ),
-                            code: ({ node, className, children, ...props }: any) => {
-                              const match = /language-(\w+)/.exec(className || '');
-                              const isInline = !className || !match;
-                              return !isInline ? (
-                                <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
-                                  <code className={className} {...props}>
-                                    {children}
-                                  </code>
-                                </pre>
-                              ) : (
-                                <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
-                                  {children}
-                                </code>
-                              );
-                            },
-                            pre: ({ node, ...props }) => (
-                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
-                                {props.children}
-                              </pre>
-                            ),
-                            table: ({ node, ...props }) => (
-                              <div className="overflow-x-auto my-4">
-                                <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
-                                  {props.children}
-                                </table>
-                              </div>
-                            ),
-                            thead: ({ node, ...props }) => (
-                              <thead className="bg-gray-100" {...props}>
-                                {props.children}
-                              </thead>
-                            ),
-                            th: ({ node, ...props }) => (
-                              <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
-                                {props.children}
-                              </th>
-                            ),
-                            td: ({ node, ...props }) => (
-                              <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
-                                {props.children}
-                              </td>
-                            ),
-                            a: ({ node, href, children, ...props }) => {
-                              const isVideo =
-                                href?.endsWith(".mp4") ||
-                                href?.includes("generated_videos");
-
-                              const isImage =
-                                href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
-                                href?.includes("generated_videos");
-                              if (isImage) {
-                                return (
-                                  <div className="my-4">
-                                    <p className="mb-2 text-sm text-gray-600">
-                                      Here is the generated image:
-                                    </p>
-                                    <img
-                                      src={href}
-                                      alt="Generated visual"
-                                      className="w-[70%] rounded shadow"
-                                    />
-                                  </div>
-                                );
-                              }
-                              if (isVideo) {
-                                return (
-                                  <div className="my-4">
-                                    <p className="mb-2 text-sm text-gray-600">
-                                      Here is the generated video:
-                                    </p>
-                                    <video
-                                      controls
-                                      className="w-[70%] rounded shadow"
-                                    >
-                                      <source src={href} type="video/mp4" />
-                                    </video>
-                                  </div>
-                                );
-                              }
-                              return (
-                                <a
-                                  href={href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800 underline transition-colors"
-                                  {...props}
-                                >
-                                  {children}
-                                </a>
-                              );
-                            },
-                          }}
-                        >
-                          {message?.ai}
-                        </ReactMarkdown>
-                      )}
-                      {/* Handle source field for generated media — renders independently of ai text */}
-                      {message?.source && (
-                        <>
-                          {message.source?.generated_media ? (
+                      {message.ai && <MemoizedMarkdown content={message.ai} />}
+                      
+                      {message.source && (
+                        <div className="mt-4">
+                          {message.source.generated_media ? (
                             <MultipleMediaRenderer 
                               sources={message.source.generated_media} 
                               messageIndex={index} 
@@ -1410,12 +1323,11 @@ const ChatArea: React.FC<Props> = ({
                               onFetchMedia={fetchMedia} 
                             />
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   ) : (
-                    !message?.file_name &&
-                    loading && (
+                    !message?.file_name && loading && index === chatContent.length - 1 && (
                       <div className="-ml-12 w-full">
                         <Loading />
                       </div>
@@ -1424,23 +1336,25 @@ const ChatArea: React.FC<Props> = ({
                 </div>
 
                 {(message?.ai || message?.source) && (
-                  <button
-                    disabled={disabled}
-                    className="w-20 min-h-8 rounded-full ml-12 -mt-2 border border-grey"
-                  >
-                    <div className="flex flex-row mx-2 justify-between">
-                      <CopyIcon
-                        disabled={disabled}
+                  <div className="flex items-center gap-3 ml-12 -mt-1">
+                    <div className="flex items-center bg-white border border-gray-200 rounded-xl shadow-sm px-2 py-1 gap-1">
+                      <button 
                         onClick={() => copyToClipboard(index, message)}
-                      />
-                      <img src={Divide} alt="divide" loading="lazy" />
-                      <Dollar
-                        className="h-5"
-                        disabled={disabled}
-                        data={message?.price}
-                      />
+                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+                        title="Copy message"
+                      >
+                        <CopyIcon className="w-4 h-4" />
+                      </button>
+                      <div className="w-[1px] h-4 bg-gray-200 mx-0.5" />
+                      <div className="flex items-center px-1.5 gap-1.5 text-gray-600">
+                        <Dollar
+                          className="h-4 w-4"
+                          disabled={disabled}
+                          data={message?.price}
+                        />
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -1453,136 +1367,7 @@ const ChatArea: React.FC<Props> = ({
                     <span className="text-gray-600">{"AI"}</span>
                   </div>
                   <div className="w-full max-w-4xl py-1 px-4 rounded-lg">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm, remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                      className="markdown-content text-[14px] font-normal text-primary_text"
-                      components={{
-                        h1: ({ node, ...props }) => (
-                          <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
-                            {props.children}
-                          </h1>
-                        ),
-                        h2: ({ node, ...props }) => (
-                          <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
-                            {props.children}
-                          </h2>
-                        ),
-                        h3: ({ node, ...props }) => (
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
-                            {props.children}
-                          </h3>
-                        ),
-                        h4: ({ node, ...props }) => (
-                          <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
-                            {props.children}
-                          </h4>
-                        ),
-                        h5: ({ node, ...props }) => (
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
-                            {props.children}
-                          </h5>
-                        ),
-                        h6: ({ node, ...props }) => (
-                          <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
-                            {props.children}
-                          </h6>
-                        ),
-                        p: ({ node, ...props }) => (
-                          <p className="mb-4 leading-relaxed" {...props}>
-                            {props.children}
-                          </p>
-                        ),
-                        strong: ({ node, ...props }) => (
-                          <strong className="font-bold text-gray-900" {...props}>
-                            {props.children}
-                          </strong>
-                        ),
-                        em: ({ node, ...props }) => (
-                          <em className="italic text-gray-800" {...props}>
-                            {props.children}
-                          </em>
-                        ),
-                        hr: ({ node, ...props }) => (
-                          <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
-                        ),
-                        blockquote: ({ node, ...props }) => (
-                          <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
-                            {props.children}
-                          </blockquote>
-                        ),
-                        ul: ({ node, ...props }) => (
-                          <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
-                            {props.children}
-                          </ul>
-                        ),
-                        ol: ({ node, ...props }) => (
-                          <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
-                            {props.children}
-                          </ol>
-                        ),
-                        li: ({ node, ...props }) => (
-                          <li className="leading-relaxed" {...props}>
-                            {props.children}
-                          </li>
-                        ),
-                        code: ({ node, className, children, ...props }: any) => {
-                          const match = /language-(\w+)/.exec(className || '');
-                          const isInline = !className || !match;
-                          return !isInline ? (
-                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
-                              <code className={className} {...props}>
-                                {children}
-                              </code>
-                            </pre>
-                          ) : (
-                            <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
-                              {children}
-                            </code>
-                          );
-                        },
-                        pre: ({ node, ...props }) => (
-                          <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
-                            {props.children}
-                          </pre>
-                        ),
-                        table: ({ node, ...props }) => (
-                          <div className="overflow-x-auto my-4">
-                            <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
-                              {props.children}
-                            </table>
-                          </div>
-                        ),
-                        thead: ({ node, ...props }) => (
-                          <thead className="bg-gray-100" {...props}>
-                            {props.children}
-                          </thead>
-                        ),
-                        th: ({ node, ...props }) => (
-                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
-                            {props.children}
-                          </th>
-                        ),
-                        td: ({ node, ...props }) => (
-                          <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
-                            {props.children}
-                          </td>
-                        ),
-                        a: ({ node, href, children, ...props }) => (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline transition-colors"
-                            {...props}
-                          >
-                            {children}
-                          </a>
-                        ),
-                      }}
-                    >
-                      {streamedData}
-                    </ReactMarkdown>
+                    <MemoizedMarkdown content={streamedData} />
                     {/* Handle source field for streaming media */}
                     {streamingSource && (
                       <>
@@ -1611,9 +1396,45 @@ const ChatArea: React.FC<Props> = ({
             )}
           </>
         ) : (
-          <EmptyChat />
+          // Here here
+          <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center max-w-5xl mx-auto py-8 animate-in fade-in duration-700">
+            {/* <div className="mb-8 p-6 bg-red-50 rounded-3xl shadow-sm border border-red-100">
+              <EmptyChat />
+            </div> */}
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">How can I assist you today?</h1>
+            <p className="text-lg text-gray-500 mb-12 max-w-2xl leading-relaxed">
+              Experience the power of Thermax GPT. Upload documents, analyze data, or generate professional reports in seconds.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              {[
+                { title: "Analyze Financial Data", desc: "Get deep insights from your Excel reports", prompt: "Can you analyze my financial data and suggest improvements?" },
+                { title: "Generate Market Summary", desc: "Stay ahead with latest industry trends", prompt: "Summarize the latest trends in the global energy sector." },
+                { title: "Technical Assistance", desc: "Solve complex engineering problems", prompt: "Help me troubleshoot a technical issue with a steam boiler." },
+                { title: "Draft Professional Report", desc: "Create high-end summaries and docs", prompt: "Draft a professional project status report based on my inputs." }
+              ].map((item, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => setInputValue(item.prompt)}
+                  className="flex flex-col items-start p-5 bg-white border border-gray-200 rounded-2xl hover:border-red-500 hover:shadow-xl hover:-translate-y-1 transition-all text-left group"
+                >
+                  <span className="font-bold text-gray-900 group-hover:text-red-600 mb-1 flex items-center gap-2">
+                    {item.title}
+                    <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </span>
+                  <span className="text-sm text-gray-500">{item.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
-        <div className="mt-12 mb-12" ref={messagesEndRef}></div>
+        {/* Here here */}
+        {chatContent?.length > 0 && (
+          <div className="mt-12 mb-12" ref={messagesEndRef}></div>
+        )}
+        {!chatContent?.length && <div ref={messagesEndRef}></div>}
       </div>
       <div className="relative">
         {showButton && (
@@ -1626,7 +1447,7 @@ const ChatArea: React.FC<Props> = ({
         )}
         <div className="fixed bottom-4 left-[19%] right-0 px-4 flex flex-col items-center justify-start bg-inherit">
 
-          <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
+          <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border border-gray-200 rounded-[24px] p-4 bg-white shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.12)] transition-shadow duration-300">
             <div className="w-full flex items-center gap-2">
               <div className="flex flex-col w-full">
                 <div className="flex flex-wrap gap-2 mb-1 relative">
@@ -1780,7 +1601,9 @@ const ChatArea: React.FC<Props> = ({
                 disabled={loading || disabled}
                 onClick={handleSend}
                 custom_type="secondary"
-                className="flex-shrink-0 w-14 h-14 mt-1.5 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
+                className={`flex-shrink-0 w-14 h-14 mt-1.5 flex items-center justify-center rounded-full transition-all duration-300 ${
+                  loading || disabled ? "bg-gray-200 text-gray-400" : "bg-[#0061F3] hover:bg-[#0052cc] hover:shadow-lg hover:scale-105 active:scale-95 text-white"
+                }`}
                 size="very_small"
                 rounded
               >
