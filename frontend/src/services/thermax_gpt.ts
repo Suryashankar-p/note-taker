@@ -301,7 +301,7 @@ export const ReadFile = async (
   media_type: string,
   link: string
 ) => {
-  const response = await GPTAPI.post(
+  const response = await axios.post(
     BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history/file_stream`,
     {
       media_type: media_type,
