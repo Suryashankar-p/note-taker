@@ -256,8 +256,15 @@ export const CreateChatHistoryStream = async (
     formData.append("model", model);
   }
 
-  if (thinking) {
-    formData.append("thinking", "true");
+  let actualThinking = thinking;
+  if (model === "Sonnet 4.6") {
+    actualThinking = true;
+  } else if (model === "GPT 5.4") {
+    actualThinking = false;
+  }
+
+  if (actualThinking !== undefined) {
+    formData.append("thinking", actualThinking ? "true" : "false");
   }
 
   if (files && files.length > 0) {
