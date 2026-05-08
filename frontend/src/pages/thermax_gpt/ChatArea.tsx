@@ -1727,7 +1727,13 @@ const ChatArea: React.FC<Props> = ({
                   </div>
                   <Button
                     type="button"
-                    onClick={() => setIsThinking(!isThinking)}
+                    onClick={() => {
+                      const nextThinking = !isThinking;
+                      setIsThinking(nextThinking);
+                      if (nextThinking) {
+                        setAiProvider("Sonnet 4.6");
+                      }
+                    }}
                     custom_type="secondary"
                     className={`flex items-center gap-1.5 px-3 py-1.5 transition-all duration-200 rounded-lg ${isThinking
                       ? "!text-primary"
@@ -1746,8 +1752,9 @@ const ChatArea: React.FC<Props> = ({
                 </div>
                 <div className="flex items-center gap-3">
                   <DropDownMenu
+                    disabled={isThinking}
                     content={
-                      <div className="w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group">
+                      <div className={`w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group ${isThinking ? "opacity-50" : ""}`}>
                         <span className="text-sm font-semibold text-primary">{aiProvider}</span>
                         <ChevronDownIcon className="w-4 h-4 text-primary" />
                       </div>
@@ -1766,7 +1773,6 @@ const ChatArea: React.FC<Props> = ({
                     custom_type="secondary"
                     className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
                     size="very_small"
-                  // rounded
                   >
                     <img src={Sent} alt="Send" className="mt-1.5" loading="lazy" />
                   </Button>
