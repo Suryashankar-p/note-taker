@@ -354,16 +354,3 @@ export const getIframeSrc = (url, type) => {
     }
     return "";
 };
-
-export const selectEvensourceUrl = (type: string, chatId: string | number, chat_history_id: string | number, thinking: boolean) => {
-    switch (type) {
-        case "Thermax GPT":
-            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}&thinking=${thinking}`
-        case "Deep Search":
-            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/perplexity/stream?chat_history_id=${chat_history_id}&thinking=${thinking}`
-        default:
-            return BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}&thinking=${thinking}`
-        // return ''
-    }
-
-}       

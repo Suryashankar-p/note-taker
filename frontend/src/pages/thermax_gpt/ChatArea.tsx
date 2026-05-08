@@ -42,7 +42,7 @@ import { marked, use } from "marked";
 import DOMPurify from "dompurify";
 import "github-markdown-css/github-markdown.css";
 import FileViewModal from "../../components/Modals/FileViewModal.tsx";
-import { getFileType, selectEvensourceUrl } from "../../utils/functions.ts";
+import { getFileType } from "../../utils/functions.ts";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -56,7 +56,7 @@ import { set } from "react-hook-form";
 import { iconMapping } from "../../utils/constants.ts";
 import { FaLightbulb } from "react-icons/fa6";
 
-
+const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
 interface MediaRendererProps {
   source: { media_type: string; link?: string; chart_data?: any };
   messageIndex: string | number;
@@ -536,15 +536,11 @@ const ChatArea: React.FC<Props> = ({
     chat_history_id: string,
     localFiles: any[],
     isNewChat = false,
-    thinkingOverride?: boolean
+    thinkingOverride?: boolean,
+    isFile?: boolean
   ) => {
     let eventSource: EventSource;
-    const evenSourceUrl = selectEvensourceUrl(
-      aiProvider,
-      chatId,
-      chat_history_id,
-      thinkingOverride !== undefined ? thinkingOverride : isThinking
-    );
+    const evenSourceUrl = BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chatId}/chat_history/stream?chat_history_id=${chat_history_id}&thinking=${thinkingOverride !== undefined ? thinkingOverride : isThinking}&is_file=${isFile}`
 
     eventSource = new EventSource(evenSourceUrl);
     eventSourceRef.current = eventSource;
@@ -659,6 +655,7 @@ const ChatArea: React.FC<Props> = ({
   const handleSend = async () => {
     if (!inputValue.trim() || !aiProvider) return;
     setLoading(true);
+    const isFile = uploadedFiles?.length > 0;
 
     const localFiles =
       uploadedFiles?.map((file) => ({
@@ -693,7 +690,7 @@ const ChatArea: React.FC<Props> = ({
             effectiveThinking
           );
           if (streamResponse) {
-            startStreaming(chat_id, streamResponse?.id, localMessages, false, effectiveThinking);
+            startStreaming(chat_id, streamResponse?.id, localMessages, false, effectiveThinking, isFile);
             return; // Exit early for streaming
           }
         } else if (aiProvider === "Deep Search") {
@@ -707,7 +704,9 @@ const ChatArea: React.FC<Props> = ({
               chat_id,
               perplexityStreamResponse?.id,
               localMessages,
-              false
+              false,
+              false,
+              isFile
             );
             return;
           }
@@ -784,7 +783,8 @@ const ChatArea: React.FC<Props> = ({
                   streamResponse?.id,
                   localFiles,
                   true,
-                  effectiveThinking
+                  effectiveThinking,
+                  isFile
                 );
                 return; // Exit early for streaming
               }
@@ -798,7 +798,9 @@ const ChatArea: React.FC<Props> = ({
                   newSessionResponse.id,
                   perplexityStreamResponse?.id,
                   localFiles,
-                  true
+                  true,
+                  false,
+                  isFile
                 );
               }
             } else if (aiProvider === "Document Analyzer") {
