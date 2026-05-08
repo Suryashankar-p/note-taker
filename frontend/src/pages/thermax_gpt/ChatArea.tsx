@@ -325,8 +325,10 @@ const ChatArea: React.FC<Props> = ({
   useEffect(() => {
     if (currentChatType) {
       setAiProvider(currentChatType);
+      setIsThinking(currentChatType === "Sonnet 4.6");
     } else {
       setAiProvider("GPT 5.4");
+      setIsThinking(false);
     }
   }, [currentChatType]);
 
@@ -609,6 +611,9 @@ const ChatArea: React.FC<Props> = ({
     setLoading(false);
     setPageError(false);
     setUploadedFiles([]);
+    if (data?.type) {
+      setCurrentChatType(data.type);
+    }
     const updatedChatHistory = [...localFiles, data];
     // Store uploaded files if any
     if (localFiles?.length > 0) {
@@ -676,7 +681,7 @@ const ChatArea: React.FC<Props> = ({
     const localMessages = [...localFiles, ...chatContent];
 
     try {
-      if (chat_id && currentChatType === aiProvider) {
+      if (chat_id) {
         let chatResponse;
         let streamResponse;
 
@@ -721,6 +726,7 @@ const ChatArea: React.FC<Props> = ({
         // Handle non-streaming responses
         if (chatResponse?.ai) {
           setInputValue("");
+          setCurrentChatType(aiProvider);
           const updatedChatHistory = [...localFiles, chatResponse];
           if (localFiles?.length > 0) {
             const existingUploads = JSON.parse(
