@@ -535,14 +535,15 @@ const ChatArea: React.FC<Props> = ({
     chatId: string,
     chat_history_id: string,
     localFiles: any[],
-    isNewChat = false
+    isNewChat = false,
+    thinkingOverride?: boolean
   ) => {
     let eventSource: EventSource;
     const evenSourceUrl = selectEvensourceUrl(
       aiProvider,
       chatId,
       chat_history_id,
-      isThinking
+      thinkingOverride !== undefined ? thinkingOverride : isThinking
     );
 
     eventSource = new EventSource(evenSourceUrl);
@@ -683,15 +684,16 @@ const ChatArea: React.FC<Props> = ({
         let streamResponse;
 
         if (aiProvider === "Sonnet 4.6" || aiProvider === "GPT 5.4") {
+          const effectiveThinking = aiProvider === "Sonnet 4.6" ? true : false;
           streamResponse = await CreateChatHistoryStream(
             inputValue,
             chat_id,
             uploadedFiles,
             aiProvider,
-            isThinking
+            effectiveThinking
           );
           if (streamResponse) {
-            startStreaming(chat_id, streamResponse?.id, localMessages, false);
+            startStreaming(chat_id, streamResponse?.id, localMessages, false, effectiveThinking);
             return; // Exit early for streaming
           }
         } else if (aiProvider === "Deep Search") {
@@ -767,12 +769,13 @@ const ChatArea: React.FC<Props> = ({
             let streamResponse;
 
             if (aiProvider === "Sonnet 4.6" || aiProvider === "GPT 5.4") {
+              const effectiveThinking = aiProvider === "Sonnet 4.6" ? true : false;
               streamResponse = await CreateChatHistoryStream(
                 inputValue,
                 newSessionResponse.id,
                 uploadedFiles,
                 aiProvider,
-                isThinking
+                effectiveThinking
               );
 
               if (streamResponse) {
@@ -780,7 +783,8 @@ const ChatArea: React.FC<Props> = ({
                   newSessionResponse.id,
                   streamResponse?.id,
                   localFiles,
-                  true
+                  true,
+                  effectiveThinking
                 );
                 return; // Exit early for streaming
               }
@@ -1759,13 +1763,15 @@ const ChatArea: React.FC<Props> = ({
                       </div>
                     }
                     menuItems={[
-                      { title: "Sonnet 4.6", value: "sonnet4.6" },
-                      { title: "GPT 5.4", value: "gpt5.4" }
+                      { title: "Sonnet 4.6", value: "Sonnet 4.6" },
+                      { title: "GPT 5.4", value: "GPT 5.4" }
                     ]}
                     onChange={(val) => {
                       setAiProvider(val);
-                      if (val === "sonnet4.6") {
+                      if (val === "Sonnet 4.6") {
                         setIsThinking(true);
+                      } else if (val === "GPT 5.4") {
+                        setIsThinking(false);
                       }
                     }}
                   />
