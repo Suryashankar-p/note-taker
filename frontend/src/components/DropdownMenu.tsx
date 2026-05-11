@@ -20,6 +20,7 @@ interface DropDownMenuProps {
   position?: any;
   onChange?: any;
   profile?: boolean; // Add profile parameter
+  disabled?: boolean;
 }
 
 const DropDownMenu: React.FC<DropDownMenuProps> = ({
@@ -28,6 +29,7 @@ const DropDownMenu: React.FC<DropDownMenuProps> = ({
   position = "bottom end",
   onChange,
   profile,
+  disabled,
 }) => {
   const userDetails = JSON.parse(localStorage.getItem("user") || "{}");
   const [userData, setuserData] = useState(userDetails);
@@ -44,8 +46,9 @@ const DropDownMenu: React.FC<DropDownMenuProps> = ({
     <div className="relative">
       <Menu>
         <MenuButton
+          disabled={disabled}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-2 rounded-md py-1.5 px-3 focus:outline-none"
+          className={`inline-flex items-center gap-2 rounded-md py-1.5 px-3 focus:outline-none ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
         >
           {content}
         </MenuButton>
