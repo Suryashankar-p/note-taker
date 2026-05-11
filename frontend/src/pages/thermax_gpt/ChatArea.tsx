@@ -705,7 +705,7 @@ const ChatArea: React.FC<Props> = ({
     };
   };
   // Handle successful stream completion
-  const handleStreamEnd = (
+  const handleStreamEnd = async (
     data: any,
     chatId: string,
     localFiles: any[],
@@ -717,7 +717,6 @@ const ChatArea: React.FC<Props> = ({
     setVideoUrlMap((prev) => { const next = { ...prev }; delete next["-1"]; return next; });
     fetchingRef.current.delete("-1");
     setInputValue("");
-    setLoading(false);
     setPageError(false);
     setUploadedFiles([]);
     if (data?.type) {
@@ -739,6 +738,10 @@ const ChatArea: React.FC<Props> = ({
     if (isNewChat) {
       navigate(`/ai-studio/thermax_gpt?chat_id=${chatId}`);
       onNewChatAddition();
+      setLoading(false);
+    } else {
+      await getPageChat();
+      setLoading(false);
     }
   };
 
@@ -746,8 +749,9 @@ const ChatArea: React.FC<Props> = ({
   const handleStreamError = () => {
     setStreamedData("");
     setStreamingSource(null);
-    setLoading(false);
     setPageError(true);
+    getPageChat();
+    setLoading(false);
     dispatch.toast.openToast({
       status: true,
       message: "Streaming failed. Please try again.",
@@ -816,10 +820,10 @@ const ChatArea: React.FC<Props> = ({
               JSON.stringify(updatedUploads)
             );
           }
-          setLoading(false);
           setPageError(false);
           setUploadedFiles([]);
-          getPageChat();
+          await getPageChat();
+          setLoading(false);
         } else {
           if (chatResponse?.detail) {
             dispatch.toast.openToast({
@@ -829,8 +833,8 @@ const ChatArea: React.FC<Props> = ({
             });
           }
           setPageError(true);
+          await getPageChat();
           setLoading(false);
-          getPageChat();
         }
       } else {
         // Create new chat
