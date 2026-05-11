@@ -20,10 +20,7 @@ import {
   CreateChatHistory,
   DeleteChatHistory,
   ReadChatHistories,
-  CreateChatHistoryPerplexity,
-  CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
-  CreatePerplexityStream,
   ReadFile,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
@@ -50,9 +47,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import UploadStatusIndicator from "../../components/UploadStatusIndicator";
 import { UploadFileModal } from "../../components/Modals/UploadFileModal.tsx";
-// import { useDocumentUploadWebSocket } from "../../services/hooks/useDocumentUploadWebSocket.ts";
 import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus.ts";
-import { set } from "react-hook-form";
 import { iconMapping } from "../../utils/constants.ts";
 import { FaLightbulb } from "react-icons/fa6";
 
@@ -72,6 +67,93 @@ interface MultipleMediaRendererProps {
   mediaUrlMap: Record<string, string>;
   onFetchMedia: (index: string | number, mediaType: string, link: string) => void;
 }
+
+const MemoizedMarkdown = React.memo(({ content }: { content: string }) => {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
+      className="markdown-content text-[14px] font-normal text-primary_text leading-relaxed"
+      components={{
+        h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props} />,
+        h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props} />,
+        h3: ({ node, ...props }) => <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props} />,
+        p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700 rounded-r-md" {...props} />,
+        ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props} />,
+        ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props} />,
+        table: ({ node, ...props }) => (
+          <div className="overflow-x-auto my-4 shadow-sm rounded-lg border border-gray-200">
+            <table className="w-full table-auto border-collapse" {...props} />
+          </div>
+        ),
+        th: ({ node, ...props }) => <th className="bg-gray-50 border-b border-gray-200 px-4 py-3 text-left font-semibold text-gray-700 text-sm" {...props} />,
+        td: ({ node, ...props }) => <td className="border-b border-gray-100 px-4 py-3 text-gray-600 text-sm align-top" {...props} />,
+        code: ({ node, className, children, ...props }: any) => {
+          const match = /language-(\w+)/.exec(className || '');
+          const isInline = !className || !match;
+          return !isInline ? (
+            <div className="relative group my-4">
+              <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button 
+                  onClick={() => copy(String(children).replace(/\n$/, ''))}
+                  className="p-1.5 bg-gray-800/80 backdrop-blur-sm hover:bg-gray-700 rounded-lg text-gray-300 transition-all border border-gray-700"
+                  title="Copy code"
+                >
+                  <CopyIcon className="w-4 h-4" />
+                </button>
+              </div>
+              <pre className="bg-[#0d1117] text-gray-300 p-5 rounded-2xl overflow-x-auto font-mono text-[13px] leading-6 shadow-xl border border-gray-800">
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              </pre>
+            </div>
+          ) : (
+            <code className="bg-gray-100 text-red-500 px-1.5 py-0.5 rounded-md text-[13px] font-mono border border-gray-200" {...props}>
+              {children}
+            </code>
+          );
+        },
+        // Avoid double pre wrapping
+        pre: ({ node, children, ...props }) => <>{children}</>,
+        a: ({ node, href, children, ...props }) => {
+          const isVideo = href?.endsWith(".mp4") || href?.includes("generated_videos");
+          const isImage = href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) && href?.includes("generated_videos");
+          if (isImage) {
+            return (
+              <div className="my-6">
+                <p className="mb-3 text-xs text-gray-400 font-semibold uppercase tracking-wider">Generated visualization</p>
+                <div className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white p-2">
+                  <img src={href} alt="Generated visual" className="w-full rounded-xl" />
+                </div>
+              </div>
+            );
+          }
+          if (isVideo) {
+            return (
+              <div className="my-6">
+                <p className="mb-3 text-xs text-gray-400 font-semibold uppercase tracking-wider">Generated video</p>
+                <div className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-black">
+                  <video controls className="w-full">
+                    <source src={href} type="video/mp4" />
+                  </video>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline decoration-blue-200 underline-offset-4 font-medium transition-colors" {...props}>
+              {children}
+            </a>
+          );
+        },
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+});
 
 const MediaRenderer: React.FC<MediaRendererProps> = ({
   source,
@@ -138,8 +220,26 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
             onError={() => setError("Failed to load image")}
           />
         ) : (
-          <div className="w-[70%] h-32 bg-gray-200 rounded flex items-center justify-center">
-            <p className="text-gray-500">Loading image...</p>
+          <div className="w-[70%] h-64 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 opacity-50" />
+            
+            <div className="relative">
+              {/* Spinning ring */}
+              <div className="absolute inset-[-8px] rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+              <div className="p-5 bg-white rounded-full shadow-xl relative z-10">
+                <svg className="w-10 h-10 text-blue-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center gap-1 z-10">
+              <div className="flex gap-1.5">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" />
+              </div>
+            </div>
           </div>
         )}
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
@@ -168,14 +268,24 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   }
 
   if (media_type === "excel" || media_type === "docx" || media_type === "ppt") {
+    const labels = {
+      excel: { text: "Excel Spreadsheet", color: "bg-green-600", hover: "hover:bg-green-700" },
+      docx: { text: "Word Document", color: "bg-blue-600", hover: "hover:bg-blue-700" },
+      ppt: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" }
+    };
+    const config = labels[media_type as keyof typeof labels] || labels.excel;
+
     return (
       <div className="my-4">
         <button
           onClick={() => handleDownloadFile(media_type, link)}
-          className="bg-red-600 w-fit h-10 px-4 py-2 gap-2 rounded-lg flex items-center justify-center"
+          className={`${config.color} ${config.hover} text-white px-5 py-2.5 rounded-xl flex items-center gap-3 shadow-md transition-all hover:shadow-lg active:scale-95`}
         >
-          <span className="text-white text-sm">
-            Download {media_type === "excel" ? "Excel" : media_type === "docx" ? "Word" : "PowerPoint"}
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span className="text-sm font-semibold">
+            Download {config.text}
           </span>
         </button>
       </div>
@@ -305,9 +415,6 @@ const ChatArea: React.FC<Props> = ({
   const [progress, setProgress] = useState<number | null>(null);
   const [videoUrlMap, setVideoUrlMap] = useState<Record<string, string>>({});
   const fetchingRef = useRef<Set<string>>(new Set());
-  const currentChatContent = useSelector(
-    (state: any) => state.chatContent.chatContent
-  );
   const [isModalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
@@ -340,7 +447,11 @@ const ChatArea: React.FC<Props> = ({
 
   // Clear media cache when chat_id changes (navigating between chats)
   useEffect(() => {
-    setVideoUrlMap({});
+    setVideoUrlMap((prev) => {
+      Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+      return {};
+    });
+    fetchingRef.current.clear();
   }, [chat_id]);
 
   useEffect(() => {
@@ -389,7 +500,7 @@ const ChatArea: React.FC<Props> = ({
       refCurrent.addEventListener("scroll", handleScroll);
     }
 
-    if (currentChatContent.length < 0) {
+    if (chatContent.length === 0) {
       setShowButton(false);
     }
 
@@ -489,7 +600,7 @@ const ChatArea: React.FC<Props> = ({
     }
   };
   const handleFileAttachClick = () => {
-    if (uploadedFiles.length === 0 && aiProvider !== "Deep Search") {
+    if (uploadedFiles.length === 0) {
       setModalOpen(true);
     }
   };
@@ -522,8 +633,6 @@ const ChatArea: React.FC<Props> = ({
     e.stopPropagation();
     setIsDragging(false);
     dragCounter.current = 0;
-
-    if (aiProvider === "Deep Search") return;
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const files = Array.from(e.dataTransfer.files);
@@ -628,19 +737,8 @@ const ChatArea: React.FC<Props> = ({
     }
 
     if (isNewChat) {
-      dispatch.chatContent.replaceChatHistoryWithLocal({
-        apiHistory: updatedChatHistory,
-        localMessages: [],
-      });
       navigate(`/ai-studio/thermax_gpt?chat_id=${chatId}`);
       onNewChatAddition();
-    } else {
-      // Refresh chat content for existing chat
-      // getPageChat();
-      dispatch.chatContent.replaceChatHistoryWithLocal({
-        apiHistory: updatedChatHistory,
-        localMessages: [],
-      });
     }
   };
 
@@ -678,7 +776,7 @@ const ChatArea: React.FC<Props> = ({
     });
     dispatch.chatContent.addQuestion([{ human: inputValue }]);
 
-    const localMessages = [...localFiles, ...chatContent];
+    const localMessages = [...chatContent, ...localFiles];
 
     try {
       if (chat_id) {
@@ -698,29 +796,6 @@ const ChatArea: React.FC<Props> = ({
             startStreaming(chat_id, streamResponse?.id, localMessages, false, effectiveThinking, isFile);
             return; // Exit early for streaming
           }
-        } else if (aiProvider === "Deep Search") {
-          // chatResponse = await CreateChatHistoryPerplexity(inputValue, chat_id);
-          const perplexityStreamResponse = await CreatePerplexityStream(
-            inputValue,
-            chat_id
-          );
-          if (perplexityStreamResponse) {
-            startStreaming(
-              chat_id,
-              perplexityStreamResponse?.id,
-              localMessages,
-              false,
-              false,
-              isFile
-            );
-            return;
-          }
-        } else if (aiProvider === "Document Analyzer") {
-          let body = {
-            question: inputValue,
-            document_ids: fileId ? [fileId] : undefined,
-          };
-          chatResponse = await CreateDocumentAnalyserChatHistory(body, chat_id);
         }
 
         // Handle non-streaming responses
@@ -741,13 +816,10 @@ const ChatArea: React.FC<Props> = ({
               JSON.stringify(updatedUploads)
             );
           }
-          dispatch.chatContent.replaceChatHistoryWithLocal({
-            apiHistory: updatedChatHistory,
-            localMessages: [],
-          });
           setLoading(false);
           setPageError(false);
           setUploadedFiles([]);
+          getPageChat();
         } else {
           if (chatResponse?.detail) {
             dispatch.toast.openToast({
@@ -793,41 +865,6 @@ const ChatArea: React.FC<Props> = ({
                   isFile
                 );
                 return; // Exit early for streaming
-              }
-            } else if (aiProvider === "Deep Search") {
-              const perplexityStreamResponse = await CreatePerplexityStream(
-                inputValue,
-                newSessionResponse.id
-              );
-              if (perplexityStreamResponse) {
-                startStreaming(
-                  newSessionResponse.id,
-                  perplexityStreamResponse?.id,
-                  localFiles,
-                  true,
-                  false,
-                  isFile
-                );
-              }
-            } else if (aiProvider === "Document Analyzer") {
-              if (uploadedFiles?.length > 0) {
-                let body = {
-                  question: inputValue,
-                  document_ids: fileId ? [fileId] : undefined,
-                };
-                chatResponse = await CreateDocumentAnalyserChatHistory(
-                  body,
-                  newSessionResponse.id
-                );
-              } else {
-                setCopySuccess(false);
-                setLoading(false);
-                dispatch.toast.openToast({
-                  status: true,
-                  message: "Please attach a document to analyze.",
-                  type: "error",
-                });
-                return;
               }
             }
 
@@ -931,9 +968,6 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const handleRemoveFile = (index: number) => {
-    if (aiProvider === "Document Analyzer") {
-      // cancelUpload if needed
-    }
     const newFiles = [...uploadedFiles];
     newFiles.splice(index, 1);
     setUploadedFiles(newFiles);
@@ -965,45 +999,20 @@ const ChatArea: React.FC<Props> = ({
   const handleFileChange = async (file: any) => {
     if (!file) return;
 
-    if (aiProvider === "Document Analyzer") {
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
+    setUploadedFiles((prevFiles) => [...prevFiles, file]);
+    const index = uploadedFiles.length;
+    setLoadingIndex(index);
+    setProgress(0);
 
-      if (!allowedTypes.includes(file.type)) {
-        alert(
-          "Invalid file type. Please upload a PDF or Word document (.doc/.docx)."
-        );
-        return;
-      }
-      try {
-        setLoadingIndex(uploadedFiles.length);
-        setProgress(0);
-        await upload(file);
+    let progressValue = 0;
+    const interval = setInterval(() => {
+      progressValue += 5;
+      setProgress(progressValue);
+      if (progressValue >= 105) {
+        clearInterval(interval);
         setLoadingIndex(null);
-        setProgress(100);
-      } catch (err) {
-        console.error("Upload failed:", err);
       }
-      setUploadedFiles((prevFiles) => [...prevFiles, file]);
-    } else {
-      setUploadedFiles((prevFiles) => [...prevFiles, file]);
-      const index = uploadedFiles.length;
-      setLoadingIndex(index);
-      setProgress(0);
-
-      let progressValue = 0;
-      const interval = setInterval(() => {
-        progressValue += 5;
-        setProgress(progressValue);
-        if (progressValue >= 105) {
-          clearInterval(interval);
-          setLoadingIndex(null);
-        }
-      }, 150);
-    }
+    }, 150);
   };
 
   const handleTabChange = (tab) => {
@@ -1063,17 +1072,7 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const renderAttachFile = () => {
-    switch (aiProvider) {
-      case "Sonnet 4.6":
-      case "GPT 5.4":
-        return "Attach File (Up to 100MB)";
-      case "Deep Search":
-        return null;
-      case "Document Analyzer":
-        return "Attach PDF Document (No size limit)";
-      default:
-        return "Attach File (Up to 100MB)";
-    }
+    return "Attach File (Up to 100MB)";
   };
 
   // Function to fetch and cache media
@@ -1107,14 +1106,14 @@ const ChatArea: React.FC<Props> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {isDragging && aiProvider !== "Deep Search" && createPortal(
+      {isDragging && createPortal(
         <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0061F3]/10 backdrop-blur-md pointer-events-none transition-all duration-300">
           <FaCloudUploadAlt className="w-24 h-24 text-primary mb-6" />
           <Text className="text-2xl font-bold">
             Drop files to upload
           </Text>
           <Text className="mt-2" type="small">
-            Attach files to your {aiProvider} conversation
+            Attach files to your conversation
           </Text>
         </div>,
         document.body
@@ -1139,7 +1138,7 @@ const ChatArea: React.FC<Props> = ({
       )}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-scroll smooth-scroll px-12 pt-8 space-y-2 bg-inherit"
+        className="flex-1 overflow-y-auto smooth-scroll px-12 pt-8 pb-60 space-y-2 bg-inherit"
       >
         <div
           id={`message-`}
@@ -1150,16 +1149,16 @@ const ChatArea: React.FC<Props> = ({
             {chatContent.map((message: any, index: number) => (
               <div
                 key={message?.id || message?.tempId || index}
-                className="flex flex-col bg-inherit w-full gap-4"
+                className="flex flex-col bg-inherit w-full gap-4 group"
               >
                 <div
                   key={message?.id || message?.tempId || index}
                   className={`flex items-end space-x-2 px-2 overflow-hidden self-end justify-end w-[70%]`}
                 >
                   <div
-                    className={`inline-block p-2 rounded-lg ${message?.human
-                      ? "bg-gray-200 text-small break-words"
-                      : "bg-inherit text-small break-words"
+                    className={`inline-block p-4 rounded-2xl shadow-sm ${message?.human
+                      ? "bg-gray-100 text-gray-800 border border-gray-200"
+                      : "bg-white text-gray-800 border border-gray-100"
                       }`}
                   >
                     {message?.human && (
@@ -1202,191 +1201,22 @@ const ChatArea: React.FC<Props> = ({
                 </div>
 
                 <div className="flex flex-row items-start justify-start w-[100%]">
-                  {(message?.ai || message?.source || loading) && !message.file_name && (
+                  {(message?.ai || message?.source) && !message.file_name && (
                     <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
                       <span className="text-gray-600">{"AI"}</span>
                     </div>
                   )}
-
+                  {/* AI Content and Media */}
                   {(message?.ai || message?.source) ? (
                     <div
                       id={`message-${index}`}
                       className="w-full max-w-4xl py-1 px-4 rounded-lg"
                     >
-                      {message?.ai && (
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                          className="markdown-content text-[14px] font-normal text-primary_text"
-                          components={{
-                            h1: ({ node, ...props }) => (
-                              <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
-                                {props.children}
-                              </h1>
-                            ),
-                            h2: ({ node, ...props }) => (
-                              <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
-                                {props.children}
-                              </h2>
-                            ),
-                            h3: ({ node, ...props }) => (
-                              <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
-                                {props.children}
-                              </h3>
-                            ),
-                            h4: ({ node, ...props }) => (
-                              <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
-                                {props.children}
-                              </h4>
-                            ),
-                            h5: ({ node, ...props }) => (
-                              <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
-                                {props.children}
-                              </h5>
-                            ),
-                            h6: ({ node, ...props }) => (
-                              <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
-                                {props.children}
-                              </h6>
-                            ),
-                            p: ({ node, ...props }) => (
-                              <p className="mb-4 leading-relaxed" {...props}>
-                                {props.children}
-                              </p>
-                            ),
-                            strong: ({ node, ...props }) => (
-                              <strong className="font-bold text-gray-900" {...props}>
-                                {props.children}
-                              </strong>
-                            ),
-                            em: ({ node, ...props }) => (
-                              <em className="italic text-gray-800" {...props}>
-                                {props.children}
-                              </em>
-                            ),
-                            hr: ({ node, ...props }) => (
-                              <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
-                            ),
-                            blockquote: ({ node, ...props }) => (
-                              <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
-                                {props.children}
-                              </blockquote>
-                            ),
-                            ul: ({ node, ...props }) => (
-                              <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
-                                {props.children}
-                              </ul>
-                            ),
-                            ol: ({ node, ...props }) => (
-                              <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
-                                {props.children}
-                              </ol>
-                            ),
-                            li: ({ node, ...props }) => (
-                              <li className="leading-relaxed" {...props}>
-                                {props.children}
-                              </li>
-                            ),
-                            code: ({ node, className, children, ...props }: any) => {
-                              const match = /language-(\w+)/.exec(className || '');
-                              const isInline = !className || !match;
-                              return !isInline ? (
-                                <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
-                                  <code className={className} {...props}>
-                                    {children}
-                                  </code>
-                                </pre>
-                              ) : (
-                                <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
-                                  {children}
-                                </code>
-                              );
-                            },
-                            pre: ({ node, ...props }) => (
-                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
-                                {props.children}
-                              </pre>
-                            ),
-                            table: ({ node, ...props }) => (
-                              <div className="overflow-x-auto my-4">
-                                <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
-                                  {props.children}
-                                </table>
-                              </div>
-                            ),
-                            thead: ({ node, ...props }) => (
-                              <thead className="bg-gray-100" {...props}>
-                                {props.children}
-                              </thead>
-                            ),
-                            th: ({ node, ...props }) => (
-                              <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
-                                {props.children}
-                              </th>
-                            ),
-                            td: ({ node, ...props }) => (
-                              <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
-                                {props.children}
-                              </td>
-                            ),
-                            a: ({ node, href, children, ...props }) => {
-                              const isVideo =
-                                href?.endsWith(".mp4") ||
-                                href?.includes("generated_videos");
-
-                              const isImage =
-                                href?.match(/\.(jpeg|jpg|png|webp|gif)$/i) &&
-                                href?.includes("generated_videos");
-                              if (isImage) {
-                                return (
-                                  <div className="my-4">
-                                    <p className="mb-2 text-sm text-gray-600">
-                                      Here is the generated image:
-                                    </p>
-                                    <img
-                                      src={href}
-                                      alt="Generated visual"
-                                      className="w-[70%] rounded shadow"
-                                    />
-                                  </div>
-                                );
-                              }
-                              if (isVideo) {
-                                return (
-                                  <div className="my-4">
-                                    <p className="mb-2 text-sm text-gray-600">
-                                      Here is the generated video:
-                                    </p>
-                                    <video
-                                      controls
-                                      className="w-[70%] rounded shadow"
-                                    >
-                                      <source src={href} type="video/mp4" />
-                                    </video>
-                                  </div>
-                                );
-                              }
-                              return (
-                                <a
-                                  href={href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800 underline transition-colors"
-                                  {...props}
-                                >
-                                  {children}
-                                </a>
-                              );
-                            },
-                          }}
-                        >
-                          {message?.ai}
-                        </ReactMarkdown>
-                      )}
-                      {/* Handle source field for generated media — renders independently of ai text */}
-                      {message?.source && (
-                        <>
-                          {message.source?.generated_media ? (
+                      {message.ai && <MemoizedMarkdown content={message.ai} />}
+                      
+                      {message.source && (
+                        <div className="mt-4">
+                          {message.source.generated_media ? (
                             <MultipleMediaRenderer 
                               sources={message.source.generated_media} 
                               messageIndex={index} 
@@ -1403,12 +1233,11 @@ const ChatArea: React.FC<Props> = ({
                               onFetchMedia={fetchMedia} 
                             />
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   ) : (
-                    !message?.file_name &&
-                    loading && (
+                    !message?.file_name && loading && index === chatContent.length - 1 && (
                       <div className="-ml-12 w-full">
                         <Loading />
                       </div>
@@ -1417,23 +1246,25 @@ const ChatArea: React.FC<Props> = ({
                 </div>
 
                 {(message?.ai || message?.source) && (
-                  <button
-                    disabled={disabled}
-                    className="w-20 min-h-8 rounded-full ml-12 -mt-2 border border-grey"
-                  >
-                    <div className="flex flex-row mx-2 justify-between">
-                      <CopyIcon
-                        disabled={disabled}
+                  <div className="flex items-center gap-3 ml-12 -mt-1">
+                    <div className="flex items-center bg-white border border-gray-300 rounded-xl shadow-md px-2 py-1 gap-1 hover:border-gray-400 hover:shadow-lg transition-all duration-300">
+                      <button 
                         onClick={() => copyToClipboard(index, message)}
-                      />
-                      <img src={Divide} alt="divide" loading="lazy" />
-                      <Dollar
-                        className="h-5"
-                        disabled={disabled}
-                        data={message?.price}
-                      />
+                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-700 transition-colors"
+                        title="Copy message"
+                      >
+                        <CopyIcon className="w-4 h-4" />
+                      </button>
+                      <div className="w-[1px] h-4 bg-gray-300 mx-0.5" />
+                      <div className="flex items-center px-1.5 gap-1.5 text-gray-600">
+                        <Dollar
+                          className="h-4 w-4"
+                          disabled={disabled}
+                          data={message?.price}
+                        />
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -1446,136 +1277,7 @@ const ChatArea: React.FC<Props> = ({
                     <span className="text-gray-600">{"AI"}</span>
                   </div>
                   <div className="w-full max-w-4xl py-1 px-4 rounded-lg">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm, remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                      className="markdown-content text-[14px] font-normal text-primary_text"
-                      components={{
-                        h1: ({ node, ...props }) => (
-                          <h1 className="text-2xl font-bold text-gray-900 mb-4 mt-6 pb-2 border-b-2 border-gray-200" {...props}>
-                            {props.children}
-                          </h1>
-                        ),
-                        h2: ({ node, ...props }) => (
-                          <h2 className="text-xl font-bold text-gray-800 mb-3 mt-5 pb-1 border-b border-gray-300" {...props}>
-                            {props.children}
-                          </h2>
-                        ),
-                        h3: ({ node, ...props }) => (
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4" {...props}>
-                            {props.children}
-                          </h3>
-                        ),
-                        h4: ({ node, ...props }) => (
-                          <h4 className="text-base font-semibold text-gray-700 mb-2 mt-3" {...props}>
-                            {props.children}
-                          </h4>
-                        ),
-                        h5: ({ node, ...props }) => (
-                          <h5 className="text-sm font-semibold text-gray-700 mb-2 mt-2" {...props}>
-                            {props.children}
-                          </h5>
-                        ),
-                        h6: ({ node, ...props }) => (
-                          <h6 className="text-sm font-medium text-gray-600 mb-2 mt-2" {...props}>
-                            {props.children}
-                          </h6>
-                        ),
-                        p: ({ node, ...props }) => (
-                          <p className="mb-4 leading-relaxed" {...props}>
-                            {props.children}
-                          </p>
-                        ),
-                        strong: ({ node, ...props }) => (
-                          <strong className="font-bold text-gray-900" {...props}>
-                            {props.children}
-                          </strong>
-                        ),
-                        em: ({ node, ...props }) => (
-                          <em className="italic text-gray-800" {...props}>
-                            {props.children}
-                          </em>
-                        ),
-                        hr: ({ node, ...props }) => (
-                          <hr className="my-6 border-0 border-t-2 border-gray-300" {...props} />
-                        ),
-                        blockquote: ({ node, ...props }) => (
-                          <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700" {...props}>
-                            {props.children}
-                          </blockquote>
-                        ),
-                        ul: ({ node, ...props }) => (
-                          <ul className="list-disc list-outside ml-6 mb-4 space-y-2" {...props}>
-                            {props.children}
-                          </ul>
-                        ),
-                        ol: ({ node, ...props }) => (
-                          <ol className="list-decimal list-outside ml-6 mb-4 space-y-2" {...props}>
-                            {props.children}
-                          </ol>
-                        ),
-                        li: ({ node, ...props }) => (
-                          <li className="leading-relaxed" {...props}>
-                            {props.children}
-                          </li>
-                        ),
-                        code: ({ node, className, children, ...props }: any) => {
-                          const match = /language-(\w+)/.exec(className || '');
-                          const isInline = !className || !match;
-                          return !isInline ? (
-                            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4">
-                              <code className={className} {...props}>
-                                {children}
-                              </code>
-                            </pre>
-                          ) : (
-                            <code className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-sm font-mono" {...props}>
-                              {children}
-                            </code>
-                          );
-                        },
-                        pre: ({ node, ...props }) => (
-                          <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props}>
-                            {props.children}
-                          </pre>
-                        ),
-                        table: ({ node, ...props }) => (
-                          <div className="overflow-x-auto my-4">
-                            <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg overflow-hidden">
-                              {props.children}
-                            </table>
-                          </div>
-                        ),
-                        thead: ({ node, ...props }) => (
-                          <thead className="bg-gray-100" {...props}>
-                            {props.children}
-                          </thead>
-                        ),
-                        th: ({ node, ...props }) => (
-                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-800" {...props}>
-                            {props.children}
-                          </th>
-                        ),
-                        td: ({ node, ...props }) => (
-                          <td className="border border-gray-300 px-4 py-2 text-gray-700 align-top" {...props}>
-                            {props.children}
-                          </td>
-                        ),
-                        a: ({ node, href, children, ...props }) => (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline transition-colors"
-                            {...props}
-                          >
-                            {children}
-                          </a>
-                        ),
-                      }}
-                    >
-                      {streamedData}
-                    </ReactMarkdown>
+                    <MemoizedMarkdown content={streamedData} />
                     {/* Handle source field for streaming media */}
                     {streamingSource && (
                       <>
@@ -1604,201 +1306,224 @@ const ChatArea: React.FC<Props> = ({
             )}
           </>
         ) : (
-          <EmptyChat />
+          <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center max-w-5xl mx-auto py-8 animate-in fade-in duration-700">
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-14 tracking-tight">How can I assist you today?</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-fit">
+              {[
+                { title: "File Summarization", desc: "Extract key insights from documents", prompt: "Summarize the key points from the document I just uploaded." },
+                { title: "Word Generation", desc: "Create professional documents", prompt: "Draft a professional Word document based on my requirements." },
+                { title: "Excel Generation", desc: "Turn data into spreadsheets", prompt: "Convert this data into a formatted Excel spreadsheet." },
+                { title: "PPT Generation", desc: "Build stunning presentations", prompt: "Create a 5-slide PowerPoint presentation about energy trends." },
+                { title: "Image Generation", desc: "Visualize ideas instantly", prompt: "Generate a high-quality image of a modern industrial plant." },
+                { title: "Chart Generation", desc: "Create interactive visualizations", prompt: "Create a bar chart comparing performance metrics from my data." },
+              ].map((item, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => setInputValue(item.prompt)}
+                  className="flex flex-col items-start p-5 bg-white border border-gray-200 rounded-2xl hover:border-red-500 hover:shadow-xl hover:-translate-y-1 transition-all text-left group"
+                >
+                  <span className="font-bold text-gray-900 group-hover:text-red-600 mb-1 flex items-center gap-2">
+                    {item.title}
+                    <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </span>
+                  <span className="text-sm text-gray-500">{item.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
-        <div className="mt-12 mb-12" ref={messagesEndRef}></div>
+        {chatContent?.length > 0 && (
+          <div className="mt-12 mb-12" ref={messagesEndRef}></div>
+        )}
+        {!chatContent?.length && <div ref={messagesEndRef}></div>}
       </div>
-      <div className="relative">
+      <div className="fixed bottom-6 left-[19%] right-0 px-4 flex flex-col items-center pointer-events-none z-30">
         {showButton && (
           <button
-            className="w-fit top-[-2.5rem] left-[45%] self-center h-7 bg-white absolute border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white"
+            className="pointer-events-auto mb-4 flex items-center gap-2 bg-white border border-gray-200 shadow-lg rounded-full px-4 py-2 hover:bg-gray-50 text-gray-700 transition-all active:scale-95 border-b-2 active:border-b-0 translate-y-0 active:translate-y-[2px]"
             onClick={scrollToBottom}
           >
-            <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
+            <svg className="w-4 h-4 text-primary animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+            <span className="text-[13px] font-bold">New messages below</span>
           </button>
         )}
-        <div className="fixed bottom-4 left-[19%] right-0 px-4 flex flex-col items-center justify-start bg-inherit">
-
-          <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
-            <div className="flex flex-col w-full">
-              <div className="flex flex-wrap gap-2 mb-1 relative">
-                {uploadedFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex min-h-4 items-center max-w-xl gap-1 px-2 py-1 rounded-md text-lg relative"
-                  >
-                    <div className="relative">
-                      {loadingIndex === index && (
-                        <div className="absolute inset-0 flex justify-center items-center">
-                          <svg
-                            className="w-6 h-6 transform -rotate-90"
-                            viewBox="0 0 36 36"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              stroke=""
-                              strokeWidth="3"
-                              fill="none"
-                            />
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              stroke="rgb(177, 174, 174)"
-                              strokeWidth="3"
-                              fill="none"
-                              strokeDasharray="94.24777960769379"
-                              strokeDashoffset={
-                                progress !== null
-                                  ? 94.24777960769379 * (1 - progress / 100)
-                                  : 94.24777960769379
-                              }
-                              style={{
-                                transition:
-                                  "stroke-dashoffset 0.1s ease-in-out",
-                              }}
-                            />
-                          </svg>
-                        </div>
-                      )}
-                      {renderFileIcon(file.name)}
-                    </div>
-                    <span
-                      className="w-32 text-sm truncate overflow-hidden whitespace-nowrap"
-                      title={file.name}
+        <div className="pointer-events-auto relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border border-gray-200 rounded-[24px] p-4 bg-white shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.12)] transition-shadow duration-300">
+            <div className="w-full flex items-center gap-2">
+              <div className="flex flex-col w-full">
+                <div className="flex flex-wrap gap-2 mb-1 relative">
+                  {uploadedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex min-h-4 items-center max-w-xl gap-1 px-2 py-1 rounded-md text-lg relative"
                     >
-                      {file.name}
-                    </span>
-                    {uploadState?.status !== "success" && (
-                      <button
-                        onClick={() => handleRemoveFile(index)}
-                        disabled={loading}
-                        className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <UploadStatusIndicator uploadStatus={status} />
-              </div>
-              <textarea
-                disabled={loading || disabled}
-                onKeyDown={onKeyDown}
-                maxLength={5000}
-                onChange={(event) => setInputValue(event.target.value)}
-                value={inputValue}
-                placeholder={
-                  aiProvider === "Sonnet 4.6" || aiProvider === "GPT 5.4"
-                    ? "Ask anything ..."
-                    : aiProvider === "Deep Search"
-                      ? "Search anything..."
-                      : "Ask questions related to the uploaded document..."
-                }
-                rows={1}
-                className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
-                  }`}
-                style={{ lineHeight: "1.9rem" }}
-              />
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-shrink-0">
-                    <div className="relative group cursor-pointer">
-                      <img
-                        src={Attach}
-                        className={`w-8 h-8 ${uploadedFiles.length > 0 ||
-                          aiProvider === "Deep Search"
-                          ? "cursor-default opacity-50"
-                          : "cursor-pointer"
-                          }`}
-                        alt="Attach file"
-                        loading="lazy"
-                        onClick={handleFileAttachClick}
-                      />
-
-                      <span
-                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${uploadedFiles.length === 0 &&
-                          aiProvider !== "Deep Search"
-                          ? "opacity-0 group-hover:opacity-70"
-                          : "hidden"
-                          }`}
-                      >
-                        {renderAttachFile()}
-                      </span>
-                    </div>
-                    <UploadFileModal
-                      isOpen={isModalOpen}
-                      onClose={() => setModalOpen(false)}
-                      onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
-                      aiProvider={aiProvider}
-                      disabled={loading}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const nextThinking = !isThinking;
-                      setIsThinking(nextThinking);
-                      if (nextThinking) {
-                        setAiProvider("Sonnet 4.6");
-                      }
-                    }}
-                    custom_type="secondary"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 transition-all duration-200 rounded-lg ${isThinking
-                      ? "!text-primary"
-                      : "!text-input_text"
-                      }`}
-                    size="custom"
-                    rounded
-                  >
-                    {isThinking ?
-                      <FaLightbulb className="size-4 text-primary" /> :
-                      <LightBulbIcon className="size-4" />
-                    }
-                    <span className="font-medium text-sm">Deep Search</span>
-                  </Button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <DropDownMenu
-                    disabled={isThinking}
-                    content={
-                      <div className={`w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group ${isThinking ? "opacity-50" : ""}`}>
-                        <span className="text-sm font-semibold text-primary">{aiProvider}</span>
-                        <ChevronDownIcon className="w-4 h-4 text-primary" />
+                      <div className="relative">
+                        {loadingIndex === index && (
+                          <div className="absolute inset-0 flex justify-center items-center">
+                            <svg
+                              className="w-6 h-6 transform -rotate-90"
+                              viewBox="0 0 36 36"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <circle
+                                cx="18"
+                                cy="18"
+                                r="15"
+                                stroke=""
+                                strokeWidth="3"
+                                fill="none"
+                              />
+                              <circle
+                                cx="18"
+                                cy="18"
+                                r="15"
+                                stroke="rgb(177, 174, 174)"
+                                strokeWidth="3"
+                                fill="none"
+                                strokeDasharray="94.24777960769379"
+                                strokeDashoffset={
+                                  progress !== null
+                                    ? 94.24777960769379 * (1 - progress / 100)
+                                    : 94.24777960769379
+                                }
+                                style={{
+                                  transition:
+                                    "stroke-dashoffset 0.1s ease-in-out",
+                                }}
+                              />
+                            </svg>
+                          </div>
+                        )}
+                        {renderFileIcon(file.name)}
                       </div>
-                    }
-                    menuItems={[
-                      { title: "Sonnet 4.6", value: "Sonnet 4.6" },
-                      { title: "GPT 5.4", value: "GPT 5.4" }
-                    ]}
-                    onChange={(val) => {
-                      setAiProvider(val);
-                      if (val === "Sonnet 4.6") {
-                        setIsThinking(true);
-                      } else if (val === "GPT 5.4") {
-                        setIsThinking(false);
+                      <span
+                        className="w-32 text-sm truncate overflow-hidden whitespace-nowrap"
+                        title={file.name}
+                      >
+                        {file.name}
+                      </span>
+                      {uploadState?.status !== "success" && (
+                        <button
+                          onClick={() => handleRemoveFile(index)}
+                          disabled={loading}
+                          className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <UploadStatusIndicator uploadStatus={status} />
+                </div>
+                <textarea
+                  disabled={loading || disabled}
+                  onKeyDown={onKeyDown}
+                  maxLength={5000}
+                  onChange={(event) => setInputValue(event.target.value)}
+                  value={inputValue}
+                  placeholder="Ask anything ..."
+                  rows={1}
+                  className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"}`}
+                  style={{ lineHeight: "1.9rem" }}
+                />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
+                      <div className="relative group cursor-pointer">
+                        <img
+                          src={Attach}
+                          className={`w-8 h-8 ${uploadedFiles.length > 0
+                            ? "cursor-default opacity-50"
+                            : "cursor-pointer"
+                            }`}
+                          alt="Attach file"
+                          loading="lazy"
+                          onClick={handleFileAttachClick}
+                        />
+
+                        <span
+                          className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${uploadedFiles.length === 0
+                            ? "opacity-0 group-hover:opacity-70"
+                            : "hidden"
+                            }`}
+                        >
+                          {renderAttachFile()}
+                        </span>
+                      </div>
+                      <UploadFileModal
+                        isOpen={isModalOpen}
+                        onClose={() => setModalOpen(false)}
+                        onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
+                        aiProvider={aiProvider}
+                        disabled={loading}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const nextThinking = !isThinking;
+                        setIsThinking(nextThinking);
+                        if (nextThinking) {
+                          setAiProvider("Sonnet 4.6");
+                        }
+                      }}
+                      custom_type="secondary"
+                      className={`flex items-center gap-1.5 px-3 py-1.5 transition-all duration-200 rounded-lg ${isThinking
+                        ? "!text-primary"
+                        : "!text-input_text"
+                        }`}
+                      size="custom"
+                      rounded
+                    >
+                      {isThinking ?
+                        <FaLightbulb className="size-4 text-primary" /> :
+                        <LightBulbIcon className="size-4" />
                       }
-                    }}
-                  />
-                  <Button
-                    disabled={loading || disabled}
-                    onClick={handleSend}
-                    custom_type="secondary"
-                    className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
-                    size="very_small"
-                  >
-                    <img src={Sent} alt="Send" className="mt-1.5" loading="lazy" />
-                  </Button>
+                      <span className="font-medium text-sm">Think</span>
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <DropDownMenu
+                      disabled={isThinking}
+                      content={
+                        <div className={`w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group ${isThinking ? "opacity-50" : ""}`}>
+                          <span className="text-sm font-semibold text-primary">{aiProvider}</span>
+                          <ChevronDownIcon className="w-4 h-4 text-primary" />
+                        </div>
+                      }
+                      menuItems={[
+                        { title: "Sonnet 4.6", value: "Sonnet 4.6" },
+                        { title: "GPT 5.4", value: "GPT 5.4" }
+                      ]}
+                      onChange={(val) => {
+                        setAiProvider(val);
+                        if (val === "Sonnet 4.6") {
+                          setIsThinking(true);
+                        } else if (val === "GPT 5.4") {
+                          setIsThinking(false);
+                        }
+                      }}
+                    />
+                    <Button
+                      disabled={loading || disabled}
+                      onClick={handleSend}
+                      custom_type="secondary"
+                      className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
+                      size="very_small"
+                    >
+                      <img src={Sent} alt="Send" className="mt-1.5" loading="lazy" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
