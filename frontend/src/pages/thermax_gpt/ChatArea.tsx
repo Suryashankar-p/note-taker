@@ -1486,7 +1486,7 @@ const ChatArea: React.FC<Props> = ({
                         <FaLightbulb className="size-4 text-primary" /> :
                         <LightBulbIcon className="size-4" />
                       }
-                      <span className="font-medium text-sm">Think</span>
+                      <span className="font-medium text-sm">Deep Search</span>
                     </Button>
                   </div>
 
