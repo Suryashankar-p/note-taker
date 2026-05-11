@@ -1312,7 +1312,7 @@ const ChatArea: React.FC<Props> = ({
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center max-w-5xl mx-auto py-8 animate-in fade-in duration-700">
             <h1 className="text-4xl font-extrabold text-gray-900 mb-14 tracking-tight">How can I assist you today?</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-fit">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-fit">
               {[
                 { title: "File Summarization", desc: "Extract key insights from documents", prompt: "Summarize the key points from the document I just uploaded." },
                 { title: "Word Generation", desc: "Create professional documents", prompt: "Draft a professional Word document based on my requirements." },
@@ -1335,7 +1335,7 @@ const ChatArea: React.FC<Props> = ({
                   <span className="text-sm text-gray-500">{item.desc}</span>
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
         )}
         {chatContent?.length > 0 && (
