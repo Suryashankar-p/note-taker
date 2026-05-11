@@ -20,10 +20,7 @@ import {
   CreateChatHistory,
   DeleteChatHistory,
   ReadChatHistories,
-  CreateChatHistoryPerplexity,
-  CreateDocumentAnalyserChatHistory,
   CreateChatHistoryStream,
-  CreatePerplexityStream,
   ReadFile,
 } from "../../services/thermax_gpt.ts";
 import Loading from "../../components/ChatLoading.tsx";
@@ -603,7 +600,7 @@ const ChatArea: React.FC<Props> = ({
     }
   };
   const handleFileAttachClick = () => {
-    if (uploadedFiles.length === 0 && aiProvider !== "Deep Search") {
+    if (uploadedFiles.length === 0) {
       setModalOpen(true);
     }
   };
@@ -636,8 +633,6 @@ const ChatArea: React.FC<Props> = ({
     e.stopPropagation();
     setIsDragging(false);
     dragCounter.current = 0;
-
-    if (aiProvider === "Deep Search") return;
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const files = Array.from(e.dataTransfer.files);
@@ -801,29 +796,6 @@ const ChatArea: React.FC<Props> = ({
             startStreaming(chat_id, streamResponse?.id, localMessages, false, effectiveThinking, isFile);
             return; // Exit early for streaming
           }
-        } else if (aiProvider === "Deep Search") {
-          // chatResponse = await CreateChatHistoryPerplexity(inputValue, chat_id);
-          const perplexityStreamResponse = await CreatePerplexityStream(
-            inputValue,
-            chat_id
-          );
-          if (perplexityStreamResponse) {
-            startStreaming(
-              chat_id,
-              perplexityStreamResponse?.id,
-              localMessages,
-              false,
-              false,
-              isFile
-            );
-            return;
-          }
-        } else if (aiProvider === "Document Analyzer") {
-          let body = {
-            question: inputValue,
-            document_ids: fileId ? [fileId] : undefined,
-          };
-          chatResponse = await CreateDocumentAnalyserChatHistory(body, chat_id);
         }
 
         // Handle non-streaming responses
@@ -893,41 +865,6 @@ const ChatArea: React.FC<Props> = ({
                   isFile
                 );
                 return; // Exit early for streaming
-              }
-            } else if (aiProvider === "Deep Search") {
-              const perplexityStreamResponse = await CreatePerplexityStream(
-                inputValue,
-                newSessionResponse.id
-              );
-              if (perplexityStreamResponse) {
-                startStreaming(
-                  newSessionResponse.id,
-                  perplexityStreamResponse?.id,
-                  localFiles,
-                  true,
-                  false,
-                  isFile
-                );
-              }
-            } else if (aiProvider === "Document Analyzer") {
-              if (uploadedFiles?.length > 0) {
-                let body = {
-                  question: inputValue,
-                  document_ids: fileId ? [fileId] : undefined,
-                };
-                chatResponse = await CreateDocumentAnalyserChatHistory(
-                  body,
-                  newSessionResponse.id
-                );
-              } else {
-                setCopySuccess(false);
-                setLoading(false);
-                dispatch.toast.openToast({
-                  status: true,
-                  message: "Please attach a document to analyze.",
-                  type: "error",
-                });
-                return;
               }
             }
 
@@ -1031,9 +968,6 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const handleRemoveFile = (index: number) => {
-    if (aiProvider === "Document Analyzer") {
-      // cancelUpload if needed
-    }
     const newFiles = [...uploadedFiles];
     newFiles.splice(index, 1);
     setUploadedFiles(newFiles);
@@ -1065,45 +999,20 @@ const ChatArea: React.FC<Props> = ({
   const handleFileChange = async (file: any) => {
     if (!file) return;
 
-    if (aiProvider === "Document Analyzer") {
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
+    setUploadedFiles((prevFiles) => [...prevFiles, file]);
+    const index = uploadedFiles.length;
+    setLoadingIndex(index);
+    setProgress(0);
 
-      if (!allowedTypes.includes(file.type)) {
-        alert(
-          "Invalid file type. Please upload a PDF or Word document (.doc/.docx)."
-        );
-        return;
-      }
-      try {
-        setLoadingIndex(uploadedFiles.length);
-        setProgress(0);
-        await upload(file);
+    let progressValue = 0;
+    const interval = setInterval(() => {
+      progressValue += 5;
+      setProgress(progressValue);
+      if (progressValue >= 105) {
+        clearInterval(interval);
         setLoadingIndex(null);
-        setProgress(100);
-      } catch (err) {
-        console.error("Upload failed:", err);
       }
-      setUploadedFiles((prevFiles) => [...prevFiles, file]);
-    } else {
-      setUploadedFiles((prevFiles) => [...prevFiles, file]);
-      const index = uploadedFiles.length;
-      setLoadingIndex(index);
-      setProgress(0);
-
-      let progressValue = 0;
-      const interval = setInterval(() => {
-        progressValue += 5;
-        setProgress(progressValue);
-        if (progressValue >= 105) {
-          clearInterval(interval);
-          setLoadingIndex(null);
-        }
-      }, 150);
-    }
+    }, 150);
   };
 
   const handleTabChange = (tab) => {
@@ -1163,17 +1072,7 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const renderAttachFile = () => {
-    switch (aiProvider) {
-      case "Sonnet 4.6":
-      case "GPT 5.4":
-        return "Attach File (Up to 100MB)";
-      case "Deep Search":
-        return null;
-      case "Document Analyzer":
-        return "Attach PDF Document (No size limit)";
-      default:
-        return "Attach File (Up to 100MB)";
-    }
+    return "Attach File (Up to 100MB)";
   };
 
   // Function to fetch and cache media
@@ -1207,14 +1106,14 @@ const ChatArea: React.FC<Props> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {isDragging && aiProvider !== "Deep Search" && createPortal(
+      {isDragging && createPortal(
         <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0061F3]/10 backdrop-blur-md pointer-events-none transition-all duration-300">
           <FaCloudUploadAlt className="w-24 h-24 text-primary mb-6" />
           <Text className="text-2xl font-bold">
             Drop files to upload
           </Text>
           <Text className="mt-2" type="small">
-            Attach files to your {aiProvider} conversation
+            Attach files to your conversation
           </Text>
         </div>,
         document.body
@@ -1239,7 +1138,7 @@ const ChatArea: React.FC<Props> = ({
       )}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto smooth-scroll px-12 pt-8 space-y-2 bg-inherit"
+        className="flex-1 overflow-y-auto smooth-scroll px-12 pt-8 pb-60 space-y-2 bg-inherit"
       >
         <div
           id={`message-`}
@@ -1348,15 +1247,15 @@ const ChatArea: React.FC<Props> = ({
 
                 {(message?.ai || message?.source) && (
                   <div className="flex items-center gap-3 ml-12 -mt-1">
-                    <div className="flex items-center bg-white border border-gray-200 rounded-xl shadow-sm px-2 py-1 gap-1">
+                    <div className="flex items-center bg-white border border-gray-300 rounded-xl shadow-md px-2 py-1 gap-1 hover:border-gray-400 hover:shadow-lg transition-all duration-300">
                       <button 
                         onClick={() => copyToClipboard(index, message)}
-                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-700 transition-colors"
                         title="Copy message"
                       >
                         <CopyIcon className="w-4 h-4" />
                       </button>
-                      <div className="w-[1px] h-4 bg-gray-200 mx-0.5" />
+                      <div className="w-[1px] h-4 bg-gray-300 mx-0.5" />
                       <div className="flex items-center px-1.5 gap-1.5 text-gray-600">
                         <Dollar
                           className="h-4 w-4"
@@ -1407,16 +1306,8 @@ const ChatArea: React.FC<Props> = ({
             )}
           </>
         ) : (
-          // Here here
           <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center max-w-5xl mx-auto py-8 animate-in fade-in duration-700">
-            {/* <div className="mb-8 p-6 bg-red-50 rounded-3xl shadow-sm border border-red-100">
-              <EmptyChat />
-            </div> */}
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">How can I assist you today?</h1>
-            <p className="text-lg text-gray-500 mb-12 max-w-2xl leading-relaxed">
-              Experience the power of Thermax GPT. Upload documents, analyze data, or generate professional reports in seconds.
-            </p>
-            
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-14 tracking-tight">How can I assist you today?</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-fit">
               {[
                 { title: "File Summarization", desc: "Extract key insights from documents", prompt: "Summarize the key points from the document I just uploaded." },
@@ -1443,110 +1334,24 @@ const ChatArea: React.FC<Props> = ({
             </div>
           </div>
         )}
-        {/* Here here */}
         {chatContent?.length > 0 && (
           <div className="mt-12 mb-12" ref={messagesEndRef}></div>
         )}
         {!chatContent?.length && <div ref={messagesEndRef}></div>}
       </div>
-      <div className="relative">
+      <div className="fixed bottom-6 left-[19%] right-0 px-4 flex flex-col items-center pointer-events-none z-30">
         {showButton && (
           <button
-            className="w-fit top-[-2.5rem] left-[45%] self-center h-7 bg-white absolute border border-grey rounded-lg px-2 hover:bg-[#0061F3] text-primary_text hover:text-white"
+            className="pointer-events-auto mb-4 flex items-center gap-2 bg-white border border-gray-200 shadow-lg rounded-full px-4 py-2 hover:bg-gray-50 text-gray-700 transition-all active:scale-95 border-b-2 active:border-b-0 translate-y-0 active:translate-y-[2px]"
             onClick={scrollToBottom}
           >
-            <Text className="text-[14px] font-medium ">Scroll to bottom</Text>
+            <svg className="w-4 h-4 text-primary animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+            <span className="text-[13px] font-bold">New messages below</span>
           </button>
         )}
-        <div className="fixed bottom-4 left-[19%] right-0 px-4 flex flex-col items-center justify-start bg-inherit">
-
-          <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border rounded-2xl p-3 bg-white shadow-lg">
-            <div className="flex flex-col w-full">
-              <div className="flex flex-wrap gap-2 mb-1 relative">
-                {uploadedFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex min-h-4 items-center max-w-xl gap-1 px-2 py-1 rounded-md text-lg relative"
-                  >
-                    <div className="relative">
-                      {loadingIndex === index && (
-                        <div className="absolute inset-0 flex justify-center items-center">
-                          <svg
-                            className="w-6 h-6 transform -rotate-90"
-                            viewBox="0 0 36 36"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              stroke=""
-                              strokeWidth="3"
-                              fill="none"
-                            />
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              stroke="rgb(177, 174, 174)"
-                              strokeWidth="3"
-                              fill="none"
-                              strokeDasharray="94.24777960769379"
-                              strokeDashoffset={
-                                progress !== null
-                                  ? 94.24777960769379 * (1 - progress / 100)
-                                  : 94.24777960769379
-                              }
-                              style={{
-                                transition:
-                                  "stroke-dashoffset 0.1s ease-in-out",
-                              }}
-                            />
-                          </svg>
-                        </div>
-                      )}
-                      {renderFileIcon(file.name)}
-                    </div>
-                    <span
-                      className="w-32 text-sm truncate overflow-hidden whitespace-nowrap"
-                      title={file.name}
-                    >
-                      {file.name}
-                    </span>
-                    {uploadState?.status !== "success" && (
-                      <button
-                        onClick={() => handleRemoveFile(index)}
-                        disabled={loading}
-                        className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <UploadStatusIndicator uploadStatus={status} />
-              </div>
-              <textarea
-                disabled={loading || disabled}
-                onKeyDown={onKeyDown}
-                maxLength={5000}
-                onChange={(event) => setInputValue(event.target.value)}
-                value={inputValue}
-                placeholder={
-                  aiProvider === "Sonnet 4.6" || aiProvider === "GPT 5.4"
-                    ? "Ask anything ..."
-                    : aiProvider === "Deep Search"
-                      ? "Search anything..."
-                      : "Ask questions related to the uploaded document..."
-                }
-                rows={1}
-                className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
-                  }`}
-                style={{ lineHeight: "1.9rem" }}
-              />
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-          <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border border-gray-200 rounded-[24px] p-4 bg-white shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.12)] transition-shadow duration-300">
+        <div className="pointer-events-auto relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border border-gray-200 rounded-[24px] p-4 bg-white shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.12)] transition-shadow duration-300">
             <div className="w-full flex items-center gap-2">
               <div className="flex flex-col w-full">
                 <div className="flex flex-wrap gap-2 mb-1 relative">
@@ -1619,113 +1424,106 @@ const ChatArea: React.FC<Props> = ({
                   maxLength={5000}
                   onChange={(event) => setInputValue(event.target.value)}
                   value={inputValue}
-                  placeholder={
-                    aiProvider === "Thermax GPT"
-                      ? "Ask anything ..."
-                      : aiProvider === "Deep Search"
-                        ? "Search anything..."
-                        : "Ask questions related to the uploaded document..."
-                  }
+                  placeholder="Ask anything ..."
                   rows={1}
-                  className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"
-                    }`}
+                  className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"}`}
                   style={{ lineHeight: "1.9rem" }}
                 />
-                <div className="flex items-start justify-start">
-                  <div className="relative flex-shrink-0">
-                    <div className="relative group cursor-pointer">
-                      <img
-                        src={Attach}
-                        className={`w-8 h-8 ${uploadedFiles.length > 0 ||
-                          aiProvider === "Deep Search"
-                          ? "cursor-default opacity-50"
-                          : "cursor-pointer"
-                          }`}
-                        alt="Attach file"
-                        loading="lazy"
-                        onClick={handleFileAttachClick}
-                      />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
+                      <div className="relative group cursor-pointer">
+                        <img
+                          src={Attach}
+                          className={`w-8 h-8 ${uploadedFiles.length > 0
+                            ? "cursor-default opacity-50"
+                            : "cursor-pointer"
+                            }`}
+                          alt="Attach file"
+                          loading="lazy"
+                          onClick={handleFileAttachClick}
+                        />
 
-                      <span
-                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${uploadedFiles.length === 0 &&
-                          aiProvider !== "Deep Search"
-                          ? "opacity-0 group-hover:opacity-70"
-                          : "hidden"
-                          }`}
-                      >
-                        {renderAttachFile()}
-                      </span>
-                    </div>
-                    <UploadFileModal
-                      isOpen={isModalOpen}
-                      onClose={() => setModalOpen(false)}
-                      onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
-                      aiProvider={aiProvider}
-                      disabled={loading}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const nextThinking = !isThinking;
-                      setIsThinking(nextThinking);
-                      if (nextThinking) {
-                        setAiProvider("Sonnet 4.6");
-                      }
-                    }}
-                    custom_type="secondary"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 transition-all duration-200 rounded-lg ${isThinking
-                      ? "!text-primary"
-                      : "!text-input_text"
-                      }`}
-                    size="custom"
-                    rounded
-                  >
-                    {isThinking ?
-                      <FaLightbulb className="size-4 text-primary" /> :
-                      <LightBulbIcon className="size-4" />
-                    }
-                    <span className="font-medium text-sm">Deep Search</span>
-                  </Button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <DropDownMenu
-                    disabled={isThinking}
-                    content={
-                      <div className={`w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group ${isThinking ? "opacity-50" : ""}`}>
-                        <span className="text-sm font-semibold text-primary">{aiProvider}</span>
-                        <ChevronDownIcon className="w-4 h-4 text-primary" />
+                        <span
+                          className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${uploadedFiles.length === 0
+                            ? "opacity-0 group-hover:opacity-70"
+                            : "hidden"
+                            }`}
+                        >
+                          {renderAttachFile()}
+                        </span>
                       </div>
-                    }
-                    menuItems={[
-                      { title: "Sonnet 4.6", value: "Sonnet 4.6" },
-                      { title: "GPT 5.4", value: "GPT 5.4" }
-                    ]}
-                    onChange={(val) => {
-                      setAiProvider(val);
-                      if (val === "Sonnet 4.6") {
-                        setIsThinking(true);
-                      } else if (val === "GPT 5.4") {
-                        setIsThinking(false);
+                      <UploadFileModal
+                        isOpen={isModalOpen}
+                        onClose={() => setModalOpen(false)}
+                        onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
+                        aiProvider={aiProvider}
+                        disabled={loading}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const nextThinking = !isThinking;
+                        setIsThinking(nextThinking);
+                        if (nextThinking) {
+                          setAiProvider("Sonnet 4.6");
+                        }
+                      }}
+                      custom_type="secondary"
+                      className={`flex items-center gap-1.5 px-3 py-1.5 transition-all duration-200 rounded-lg ${isThinking
+                        ? "!text-primary"
+                        : "!text-input_text"
+                        }`}
+                      size="custom"
+                      rounded
+                    >
+                      {isThinking ?
+                        <FaLightbulb className="size-4 text-primary" /> :
+                        <LightBulbIcon className="size-4" />
                       }
-                    }}
-                  />
-                  <Button
-                    disabled={loading || disabled}
-                    onClick={handleSend}
-                    custom_type="secondary"
-                    className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
-                    size="very_small"
-                  >
-                    <img src={Sent} alt="Send" className="mt-1.5" loading="lazy" />
-                  </Button>
+                      <span className="font-medium text-sm">Think</span>
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <DropDownMenu
+                      disabled={isThinking}
+                      content={
+                        <div className={`w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group ${isThinking ? "opacity-50" : ""}`}>
+                          <span className="text-sm font-semibold text-primary">{aiProvider}</span>
+                          <ChevronDownIcon className="w-4 h-4 text-primary" />
+                        </div>
+                      }
+                      menuItems={[
+                        { title: "Sonnet 4.6", value: "Sonnet 4.6" },
+                        { title: "GPT 5.4", value: "GPT 5.4" }
+                      ]}
+                      onChange={(val) => {
+                        setAiProvider(val);
+                        if (val === "Sonnet 4.6") {
+                          setIsThinking(true);
+                        } else if (val === "GPT 5.4") {
+                          setIsThinking(false);
+                        }
+                      }}
+                    />
+                    <Button
+                      disabled={loading || disabled}
+                      onClick={handleSend}
+                      custom_type="secondary"
+                      className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
+                      size="very_small"
+                    >
+                      <img src={Sent} alt="Send" className="mt-1.5" loading="lazy" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
