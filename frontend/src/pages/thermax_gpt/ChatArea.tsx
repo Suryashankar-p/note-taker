@@ -383,6 +383,7 @@ const ChatArea: React.FC<Props> = ({
   const dispatch = useDispatch<Dispatch>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const onNewChatAdditionRef = useRef(onNewChatAddition);
   const chatContent = useSelector(
     (state: RootState) => state.chatContent.chatContent
   );
@@ -439,6 +440,10 @@ const ChatArea: React.FC<Props> = ({
       setIsThinking(false);
     }
   }, [currentChatType]);
+
+  useEffect(() => {
+    onNewChatAdditionRef.current = onNewChatAddition;
+  }, [onNewChatAddition]);
 
   useEffect(() => {
     if (chat_id) {
@@ -696,7 +701,7 @@ const ChatArea: React.FC<Props> = ({
         } else if (data.type === "error") {
           console.error("Streaming error:", data.content);
           setStreamingStatus(null);
-          handleStreamError();
+          handleStreamError(isNewChat ? String(chatId) : undefined);
           eventSource.close();
           eventSourceRef.current = null;
         }
@@ -707,7 +712,7 @@ const ChatArea: React.FC<Props> = ({
 
     eventSource.onerror = (error) => {
       console.error("EventSource error:", error);
-      handleStreamError();
+      handleStreamError(isNewChat ? String(chatId) : undefined);
       eventSource.close();
       eventSourceRef.current = null;
     };
@@ -745,7 +750,7 @@ const ChatArea: React.FC<Props> = ({
 
     if (isNewChat) {
       navigate(`/ai-studio/thermax_gpt?chat_id=${chatId}`);
-      onNewChatAddition();
+      onNewChatAdditionRef.current();
       setLoading(false);
     } else {
       await getPageChat();
@@ -754,12 +759,17 @@ const ChatArea: React.FC<Props> = ({
   };
 
   // Handle stream errors
-  const handleStreamError = () => {
+  const handleStreamError = (newChatId?: string) => {
     setStreamedData("");
     setStreamingSource(null);
     setStreamingStatus(null);
     setPageError(true);
-    getPageChat();
+    if (newChatId) {
+      navigate(`/ai-studio/thermax_gpt?chat_id=${newChatId}`);
+      onNewChatAdditionRef.current();
+    } else {
+      getPageChat();
+    }
     setLoading(false);
     dispatch.toast.openToast({
       status: true,
