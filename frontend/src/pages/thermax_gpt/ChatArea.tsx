@@ -432,10 +432,11 @@ const ChatArea: React.FC<Props> = ({
   const [isThinking, setIsThinking] = useState(false);
 
   useEffect(() => {
-    if (currentChatType) {
-      setAiProvider(currentChatType);
-      setIsThinking(currentChatType === "Sonnet 4.6");
+    if (currentChatType === "Sonnet 4.6") {
+      setAiProvider("Sonnet 4.6");
+      setIsThinking(true);
     } else {
+      // Default to GPT 5.4 for any other type (including empty or "Thermax GPT")
       setAiProvider("GPT 5.4");
       setIsThinking(false);
     }
@@ -448,6 +449,11 @@ const ChatArea: React.FC<Props> = ({
   useEffect(() => {
     if (chat_id) {
       getPageChat();
+    } else {
+      // Reset state for New Chat
+      setCurrentChatType("");
+      setAiProvider("GPT 5.4");
+      setIsThinking(false);
     }
   }, [chat_id]);
 
