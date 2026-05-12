@@ -4,12 +4,17 @@ import Text from './Text';
 
 interface LoadingProps {
   related?: boolean;
+  text?: string;
 }
 
-const Loading: React.FC<LoadingProps> = ({ related = false }) => {
-  const [loadingText, setLoadingText] = React.useState("Analyzing");
+const Loading: React.FC<LoadingProps> = ({ related = false, text }) => {
+  const [loadingText, setLoadingText] = React.useState(text || "Analyzing");
 
   React.useEffect(() => {
+    if (text) {
+      setLoadingText(text);
+      return;
+    }
     if (related) return;
 
     const timer1 = setTimeout(() => {

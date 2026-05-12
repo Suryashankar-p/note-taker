@@ -419,6 +419,7 @@ const ChatArea: React.FC<Props> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [streamedData, setStreamedData] = useState<string>("");
   const [streamingSource, setStreamingSource] = useState<any>(null);
+  const [streamingStatus, setStreamingStatus] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
@@ -669,9 +670,14 @@ const ChatArea: React.FC<Props> = ({
         const data = JSON.parse(event.data);
         if (data.type === "text" && data.content) {
           // Accumulate streaming content
-          if (data.content !== "") setLoading(false);
+          if (data.content !== "") {
+            setLoading(false);
+            setStreamingStatus("text");
+          }
           setStreamedData((prev) => prev + data.content);
         } else if (data.type === "tool") {
+          setLoading(false);
+          setStreamingStatus(data.tool);
           // handleStreamEnd(data.content, chatId, localFiles, isNewChat)
           if (data.tool === "image") {
             // setStreamedData
@@ -679,6 +685,7 @@ const ChatArea: React.FC<Props> = ({
           // Handle tool usage if needed
         } else if (data.type === "end") {
           // Stream completed
+          setStreamingStatus(null);
           // Capture source field if present
           if (data.content?.source) {
             setStreamingSource(data.content.source);
@@ -688,6 +695,7 @@ const ChatArea: React.FC<Props> = ({
           eventSourceRef.current = null;
         } else if (data.type === "error") {
           console.error("Streaming error:", data.content);
+          setStreamingStatus(null);
           handleStreamError();
           eventSource.close();
           eventSourceRef.current = null;
@@ -749,6 +757,7 @@ const ChatArea: React.FC<Props> = ({
   const handleStreamError = () => {
     setStreamedData("");
     setStreamingSource(null);
+    setStreamingStatus(null);
     setPageError(true);
     getPageChat();
     setLoading(false);
@@ -762,6 +771,7 @@ const ChatArea: React.FC<Props> = ({
   const handleSend = async () => {
     if (!inputValue.trim() || !aiProvider) return;
     setLoading(true);
+    setStreamingStatus("thinking");
     const isFile = uploadedFiles?.length > 0;
 
     const localFiles =
@@ -1079,6 +1089,20 @@ const ChatArea: React.FC<Props> = ({
     return "Attach File (Up to 100MB)";
   };
 
+  const getStreamingStatusText = (status: string | null) => {
+    if (!status) return "";
+    switch (status) {
+      case 'text': return 'Generating response...';
+      case 'thinking': return 'Thinking...';
+      case 'image': return 'Generating visualization...';
+      case 'chart': return 'Creating chart...';
+      case 'excel': return 'Preparing spreadsheet...';
+      case 'docx': return 'Drafting document...';
+      case 'ppt': return 'Building presentation...';
+      default: return `Processing ${status}...`;
+    }
+  };
+
   // Function to fetch and cache media
 
   const fetchMedia = useCallback(async (index: string | number, mediaType: string, blobLink: string) => {
@@ -1241,9 +1265,9 @@ const ChatArea: React.FC<Props> = ({
                       )}
                     </div>
                   ) : (
-                    !message?.file_name && loading && index === chatContent.length - 1 && (
+                    !message?.file_name && (loading || streamingStatus) && index === chatContent.length - 1 && !streamedData && (
                       <div className="-ml-12 w-full">
-                        <Loading />
+                        <Loading text={getStreamingStatusText(streamingStatus)} />
                       </div>
                     )
                   )}
@@ -1282,6 +1306,20 @@ const ChatArea: React.FC<Props> = ({
                   </div>
                   <div className="w-full max-w-4xl py-1 px-4 rounded-lg">
                     <MemoizedMarkdown content={streamedData} />
+                    
+                    {streamingStatus && (
+                      <div className="flex items-center gap-2 mt-4 px-1 py-2 bg-gray-50/50 rounded-xl w-fit border border-gray-100/50">
+                        <div className="flex gap-1.5 px-2">
+                          <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                          <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" />
+                        </div>
+                        <span className="text-xs font-medium text-gray-500 tracking-wide uppercase">
+                          {getStreamingStatusText(streamingStatus)}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Handle source field for streaming media */}
                     {streamingSource && (
                       <>
