@@ -21,8 +21,6 @@ export const getKeyByValue = (object: any, value: any) => {
 };
 
 const Members = () => {
-
-
   useEffect(() => {
     getAllMembers(0, 30, "");
   }, []);

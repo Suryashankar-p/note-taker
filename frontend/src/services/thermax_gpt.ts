@@ -115,7 +115,7 @@ export const DeleteChatHistory = async (
 export const ReadCostUsage = async (
   year: string | number,
   month: string | number,
-  type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
 ) => {
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL +
@@ -140,7 +140,7 @@ export const UpdateUsageLimit = async (limit: number) => {
 export const ReadActivityUsage = async (
   year: string | number,
   month: string | number,
-  type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
 ) => {
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL +
@@ -154,7 +154,7 @@ export const ReadActivityUsageTopUsers = async (
   month: string | number,
   skip: number = 0,
   limit: number = 6,
-  type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
 ) => {
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL +
