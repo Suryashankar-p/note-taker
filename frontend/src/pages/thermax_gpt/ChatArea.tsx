@@ -1182,7 +1182,7 @@ const ChatArea: React.FC<Props> = ({
       )}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto smooth-scroll px-12 pt-8 pb-60 space-y-2 bg-inherit"
+        className="flex-1 overflow-y-auto smooth-scroll px-12 pt-8 mb-20 space-y-2 bg-inherit"
       >
         <div
           id={`message-`}
