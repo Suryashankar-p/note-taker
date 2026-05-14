@@ -142,10 +142,10 @@ const Usage = () => {
   };
 
   const getUsageLimit = async () => {
-    setLimit(200);
     try {
       const limitResponse = await ReadUsageLimit();
       if (limitResponse?.id) {
+        setLimit(limitResponse?.limit);
       } else {
         setPageError(true);
         //     dispatch.toast.openToast({ message: limitResponse?.detail, status: true })
