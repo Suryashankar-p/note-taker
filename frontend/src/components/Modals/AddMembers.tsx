@@ -172,26 +172,41 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
     let servicesToSubmit = selectedServices;
 
     if (isThermaxPath) {
-      // Find ThermaxGPT service from the list if available, otherwise use a default fallback
       const thermaxGPTService = allThermaxServices.find(
         (service) =>
           service.title.replace(/\s/g, "").toLowerCase() === "thermaxgpt"
       );
 
       if (thermaxGPTService) {
-        servicesToSubmit = [thermaxGPTService];
+        servicesToSubmit = [
+          {
+            id: String(thermaxGPTService.id), // ✅ convert to string
+            title: thermaxGPTService.title,
+          },
+        ];
       } else {
-        // Fallback: Defaulting to ThermaxGPT with a generic ID if not found in fetched list
-        servicesToSubmit = [{ id: 1, title: "ThermaxGPT" }];
+        // ✅ fallback with string id
+        servicesToSubmit = [
+          {
+            id: "1",
+            title: "ThermaxGPT",
+          },
+        ];
       }
     }
+
+    // ✅ ensure all ids are strings before API call
+    const formattedServices = servicesToSubmit.map((service) => ({
+      id: String(service.id),
+      title: service.title,
+    }));
 
     const body = {
       name: data.name,
       email: data.email,
       role: roleMappingToUse[role],
       memberId: defaultValue?.id,
-      thrmx_gpt_user_service_mapping: servicesToSubmit,
+      thrmx_gpt_user_service_mapping: formattedServices,
     };
     onSubmit(body);
   };
