@@ -822,9 +822,19 @@ const ChatArea: React.FC<Props> = ({
             aiProvider,
             effectiveThinking
           );
-          if (streamResponse) {
-            startStreaming(chat_id, streamResponse?.id, localMessages, false, effectiveThinking, isFile);
+          if (streamResponse?.id) {
+            startStreaming(chat_id, streamResponse.id, localMessages, false, effectiveThinking, isFile);
             return; // Exit early for streaming
+          } else {
+            dispatch.toast.openToast({
+              status: true,
+              message: streamResponse?.detail || "Failed to create chat history",
+              type: "error",
+            });
+            setPageError(true);
+            await getPageChat();
+            setLoading(false);
+            return;
           }
         }
 
@@ -885,16 +895,26 @@ const ChatArea: React.FC<Props> = ({
                 effectiveThinking
               );
 
-              if (streamResponse) {
+              if (streamResponse?.id) {
                 startStreaming(
                   newSessionResponse.id,
-                  streamResponse?.id,
+                  streamResponse.id,
                   localFiles,
                   true,
                   effectiveThinking,
                   isFile
                 );
                 return; // Exit early for streaming
+              } else {
+                dispatch.toast.openToast({
+                  status: true,
+                  message: streamResponse?.detail || "Failed to create chat history",
+                  type: "error",
+                });
+                setPageError(true);
+                navigate(`/ai-studio/thermax_gpt?chat_id=${newSessionResponse.id}`);
+                setLoading(false);
+                return;
               }
             }
 
