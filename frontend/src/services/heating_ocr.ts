@@ -2,7 +2,7 @@ import store, { Dispatch } from "../redux/store";
 import { HeatingOCRAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_HEATING_OCR_URL=import.meta.env.VITE_BACKEND_HEATING_OCR_URL  || window.env?.BACKEND_HEATING_OCR_URL;
+const BACKEND_HEATING_OCR_URL=import.meta.env.VITE_BACKEND_HEATING_OCR_URL;
 
 /////////////////<<<<<<<<<<<<<<<<<<<OCR APIs>>>>>>>>>>>>>>>>>>>>>\\\\\\\\\\\\\\\\\\
 

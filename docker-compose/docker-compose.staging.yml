@@ -8,13 +8,13 @@ services:
       dockerfile: ./docker/Dockerfile.staging
       args:
         VITE_ENABLE_SSO: "true"
-        VITE_FIRST_USER_EMAIL: "admin@example.com"
+        VITE_ADMIN_USER_EMAIL: "admin@example.com"
         VITE_DOMAIN: "staging.thermax.thoughtmlabs.com"
         VITE_URL_PREFIX: "/thermax"
         VITE_BACKEND_SSO_URL: "http://sso-service:3001/api"
         VITE_BACKEND_THERMAX_GPT_URL: "http://gpt-service:3002/api"
         VITE_BACKEND_DOCTOR_CONBOT_URL: "http://doctor-service:3003/api"
-        VITE_BACKEND_TROUBLESHOOTING_URL: "http://troubleshoot-service:3004/api"
+        VITE_BACKEND_SMART_TROUBLESHOOT_URL: "http://troubleshoot-service:3004/api"
         VITE_BACKEND_SALES_URL: "http://sales-service:3005/api"
         VITE_BACKEND_TBWES_OCR_URL: "http://ocr-service:3006/api"
         VITE_BACKEND_CYBERBUDDY_URL: "http://cyberbuddy-service:3007/api"
@@ -22,22 +22,6 @@ services:
         VITE_BACKEND_EDGE_URL: "http://edge-service:3009/api"
         VITE_BACKEND_TRANSMITTER_OCR_URL: "http://transmitter-ocr-service:3009"
         VITE_BACKEND_DOCUMENT_TRANSLATOR_URL: "http://sales-service:3005/api"
-    environment:
-        ENABLE_SSO: ${VITE_ENABLE_SSO}
-        ADMIN_USER_EMAIL: ${VITE_FIRST_USER_EMAIL}
-        DOMAIN: ${VITE_DOMAIN}
-        URL_PREFIX: ${VITE_URL_PREFIX}
-        BACKEND_SSO_URL: ${VITE_BACKEND_SSO_URL}
-        BACKEND_THERMAX_GPT_URL: ${VITE_BACKEND_THERMAX_GPT_URL}
-        BACKEND_DOCTOR_CONBOT_URL: ${VITE_BACKEND_DOCTOR_CONBOT_URL}
-        BACKEND_SMART_TROUBLESHOOT_URL: ${VITE_BACKEND_TROUBLESHOOTING_URL}
-        BACKEND_SALES_URL: ${VITE_BACKEND_SALES_URL}
-        BACKEND_TBWES_OCR_URL: ${VITE_BACKEND_TBWES_OCR_URL}
-        BACKEND_CYBERBUDDY_URL: ${VITE_BACKEND_CYBERBUDDY_URL}
-        BACKEND_HEATING_OCR_URL: ${VITE_BACKEND_HEATING_OCR_URL}
-        BACKEND_TRANSMITTER_OCR_URL: ${VITE_BACKEND_TRANSMITTER_OCR_URL}
-        BACKEND_EDGE_URL: ${VITE_BACKEND_EDGE_URL}
-        VITE_BACKEND_DOCUMENT_TRANSLATOR_URL: "http://sales-service:3005/api"
     ports:
-      - "3000:80"  
+      - "3000:80"
     restart: unless-stopped

@@ -3,7 +3,7 @@ import {SSOAPI } from "./Axios";
 import axios from "axios";
 
 
-const BACKEND_SSO_URL = window.env?.BACKEND_SSO_URL || import.meta.env.VITE_BACKEND_SSO_URL
+const BACKEND_SSO_URL = import.meta.env.VITE_BACKEND_SSO_URL
 
 export interface LoginBody {
   username: string;

@@ -3,7 +3,7 @@ import { fileTypeSelctor } from "../utils/functions";
 import { DocumentTranslatorAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_DOC_TRANSLATOR_URL =  import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL || window.env?.BACKEND_DOCUMENT_TRANSLATOR_URL;
+const BACKEND_DOC_TRANSLATOR_URL =  import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL;
 
 ////===============================================\\\\\\\\\\\\
 // Translation APIs

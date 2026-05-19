@@ -2,7 +2,7 @@ import store, { Dispatch } from "../redux/store";
 import { CyberbuddyAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_CYBERBUDDY_URL = import.meta.env.VITE_BACKEND_CYBERBUDDY_URL || window.env?.BACKEND_CYBERBUDDY_URL;
+const BACKEND_CYBERBUDDY_URL = import.meta.env.VITE_BACKEND_CYBERBUDDY_URL;
 
 //<====================================CyberBuddy Auth========================================>
 

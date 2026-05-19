@@ -51,7 +51,7 @@ import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUpl
 import { iconMapping } from "../../utils/constants.ts";
 import { FaLightbulb } from "react-icons/fa6";
 
-const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
+const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
 interface MediaRendererProps {
   source: { media_type: string; link?: string; chart_data?: any };
   messageIndex: string | number;

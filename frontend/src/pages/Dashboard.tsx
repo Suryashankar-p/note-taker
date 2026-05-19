@@ -28,7 +28,7 @@ import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
 import { GetTranslatorRole } from "../services/doc_translator.ts";
 import { GetMemberEdgeRole } from "../services/edge.ts";
 
-const DOMAIN = window.env?.DOMAIN || import.meta.env.VITE_DOMAIN;
+const DOMAIN = import.meta.env.VITE_DOMAIN;
 
 interface Card {
   title: string;
