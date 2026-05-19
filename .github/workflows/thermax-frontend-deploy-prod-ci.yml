@@ -32,21 +32,21 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -f docker/Dockerfile.prod \
-            --build-arg VITE_ENABLE_SSO="${{ vars.VITE_ENABLE_SSO }}" \
-            --build-arg VITE_ADMIN_USER_EMAIL="${{ secrets.VITE_ADMIN_USER_EMAIL }}" \
-            --build-arg VITE_DOMAIN="${{ vars.VITE_DOMAIN }}" \
-            --build-arg VITE_URL_PREFIX="${{ vars.VITE_URL_PREFIX }}" \
-            --build-arg VITE_BACKEND_SSO_URL="${{ secrets.VITE_BACKEND_SSO_URL }}" \
-            --build-arg VITE_BACKEND_THERMAX_GPT_URL="${{ secrets.VITE_BACKEND_THERMAX_GPT_URL }}" \
-            --build-arg VITE_BACKEND_DOCTOR_CONBOT_URL="${{ secrets.VITE_BACKEND_DOCTOR_CONBOT_URL }}" \
-            --build-arg VITE_BACKEND_SMART_TROUBLESHOOT_URL="${{ secrets.VITE_BACKEND_SMART_TROUBLESHOOT_URL }}" \
-            --build-arg VITE_BACKEND_SALES_URL="${{ secrets.VITE_BACKEND_SALES_URL }}" \
-            --build-arg VITE_BACKEND_TBWES_OCR_URL="${{ secrets.VITE_BACKEND_TBWES_OCR_URL }}" \
-            --build-arg VITE_BACKEND_CYBERBUDDY_URL="${{ secrets.VITE_BACKEND_CYBERBUDDY_URL }}" \
-            --build-arg VITE_BACKEND_HEATING_OCR_URL="${{ secrets.VITE_BACKEND_HEATING_OCR_URL }}" \
-            --build-arg VITE_BACKEND_TRANSMITTER_OCR_URL="${{ secrets.VITE_BACKEND_TRANSMITTER_OCR_URL }}" \
-            --build-arg VITE_BACKEND_DOCUMENT_TRANSLATOR_URL="${{ secrets.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL }}" \
-            --build-arg VITE_BACKEND_EDGE_URL="${{ secrets.VITE_BACKEND_EDGE_URL }}" \
+            --build-arg VITE_ENABLE_SSO="${{ vars.PROD_ENABLE_SSO }}" \
+            --build-arg VITE_ADMIN_USER_EMAIL="${{ secrets.PROD_ADMIN_USER_EMAIL }}" \
+            --build-arg VITE_DOMAIN="${{ vars.PROD_DOMAIN }}" \
+            --build-arg VITE_URL_PREFIX="${{ vars.PROD_URL_PREFIX }}" \
+            --build-arg VITE_BACKEND_SSO_URL="${{ secrets.PROD_BACKEND_SSO_URL }}" \
+            --build-arg VITE_BACKEND_THERMAX_GPT_URL="${{ secrets.PROD_BACKEND_THERMAX_GPT_URL }}" \
+            --build-arg VITE_BACKEND_DOCTOR_CONBOT_URL="${{ secrets.PROD_BACKEND_DOCTOR_CONBOT_URL }}" \
+            --build-arg VITE_BACKEND_SMART_TROUBLESHOOT_URL="${{ secrets.PROD_BACKEND_SMART_TROUBLESHOOT_URL }}" \
+            --build-arg VITE_BACKEND_SALES_URL="${{ secrets.PROD_BACKEND_SALES_URL }}" \
+            --build-arg VITE_BACKEND_TBWES_OCR_URL="${{ secrets.PROD_BACKEND_TBWES_OCR_URL }}" \
+            --build-arg VITE_BACKEND_CYBERBUDDY_URL="${{ secrets.PROD_BACKEND_CYBERBUDDY_URL }}" \
+            --build-arg VITE_BACKEND_HEATING_OCR_URL="${{ secrets.PROD_BACKEND_HEATING_OCR_URL }}" \
+            --build-arg VITE_BACKEND_TRANSMITTER_OCR_URL="${{ secrets.PROD_BACKEND_TRANSMITTER_OCR_URL }}" \
+            --build-arg VITE_BACKEND_DOCUMENT_TRANSLATOR_URL="${{ secrets.PROD_BACKEND_DOCUMENT_TRANSLATOR_URL }}" \
+            --build-arg VITE_BACKEND_EDGE_URL="${{ secrets.PROD_BACKEND_EDGE_URL }}" \
             -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
 
       - name: Push Docker image to Prod ACR
