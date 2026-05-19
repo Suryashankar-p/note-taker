@@ -2,7 +2,7 @@ import store, { Dispatch } from "../redux/store";
 import { TransmitterOCRAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_TBWES_OCR_URL = import.meta.env.VITE_BACKEND_TRANSMITTER_OCR_URL || window.env?.BACKEND_TRANSMITTER_OCR_URL;
+const BACKEND_TBWES_OCR_URL = import.meta.env.VITE_BACKEND_TRANSMITTER_OCR_URL;
 
 /////////////////<<<<<<<<<<<<<<<<<<<Transmitter OCR APIs>>>>>>>>>>>>>>>>>>>>>\\\\\\\\\\\\\\\\\\
 export const TransmitterGetMemberOCRRole = async () => {

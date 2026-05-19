@@ -3,7 +3,7 @@ import { fileTypeSelctor } from "../utils/functions";
 import { EdgeAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_EDGE_URL = import.meta.env.VITE_BACKEND_EDGE_URL || window.env?.BACKEND_EDGE_URL;
+const BACKEND_EDGE_URL = import.meta.env.VITE_BACKEND_EDGE_URL;
 
 
 //<====================================Sales Auth========================================>

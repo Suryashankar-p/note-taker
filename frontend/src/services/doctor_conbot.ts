@@ -3,9 +3,7 @@ import { fileTypeSelectorDoctorConBot } from "../utils/functions";
 import { DoctorBotAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_DOCTOR_CONBOT_URL =
-  import.meta.env.VITE_BACKEND_DOCTOR_CONBOT_URL ||
-  window.env?.BACKEND_DOCTOR_CONBOT_URL;
+const BACKEND_DOCTOR_CONBOT_URL = import.meta.env.VITE_BACKEND_DOCTOR_CONBOT_URL;
 
 //<====================================Dr. Conbot Auth========================================>
 

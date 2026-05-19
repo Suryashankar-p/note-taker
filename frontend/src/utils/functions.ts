@@ -9,7 +9,7 @@ import heating_ocr from '../assets/heating_ocr.png'
 import cyberbuddy from '../assets/cyberbuddy.png'
 import transmitter_ocr from '../assets/transmitter_ocr.jpg'
 
-const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
+const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
 
 export const roundToFourDecimals = (number: any) => {
     return Number(number.toFixed(4));
