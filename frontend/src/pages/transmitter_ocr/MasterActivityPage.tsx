@@ -299,7 +299,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
         setIsLoading(true);
         await Promise.all([
           getAllActivitiesList(pageSize?.skip, pageSize?.limit, ""),
-          getAllMembers(0, 100, "")
+          getAllMembers(0, 1000, "")
         ]);
         setIsLoading(false);
       };
