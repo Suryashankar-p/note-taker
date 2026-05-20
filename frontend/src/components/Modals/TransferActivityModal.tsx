@@ -17,15 +17,15 @@ interface Props {
 }
 
 interface IFormInput {
-    tranfer_user: string;
+    transfer_user: string;
 }
 
-const TranferActivityModal: React.FC<Props> = ({ defaultValue, onSubmit, userList }) => {
-    const tranferModal = useSelector((state: RootState) => state.modal.tranferModal);
+const TransferActivityModal: React.FC<Props> = ({ defaultValue, onSubmit, userList }) => {
+    const transferModal = useSelector((state: RootState) => state.modal.transferModal);
     const dispatch = useDispatch<Dispatch>();
     const { register, handleSubmit, formState: { errors }, watch, setValue, clearErrors } = useForm<IFormInput>({
         defaultValues: {
-            tranfer_user: defaultValue || '',
+            transfer_user: defaultValue || '',
         }
     });
     const toastStatus = useSelector((state: RootState) => state.toast);
@@ -38,23 +38,17 @@ const TranferActivityModal: React.FC<Props> = ({ defaultValue, onSubmit, userLis
         }
     }, [defaultValue, setValue, userList]);
 
-    // useEffect(() => {
-    //     if (selectedUser) {
-    //         setValue('tranfer_user', selectedUser.name);
-    //     }
-    // }, [selectedUser, setValue]);
-
     const closeModal = () => {
-        dispatch.modal.closeTranferModal();
+        dispatch.modal.closeTransferModal();
     };
 
-    const onTranferSubmit = (data: IFormInput) => {
+    const onTransferSubmit = (data: IFormInput) => {
        onSubmit(selectedUser);
     };
     
 
     return (
-        <Transition appear show={tranferModal} as={Fragment}>
+        <Transition appear show={transferModal} as={Fragment}>
             <Dialog as="div" className="relative z-10" onClose={closeModal}>
                 <TransitionChild
                     as={Fragment}
@@ -87,12 +81,12 @@ const TranferActivityModal: React.FC<Props> = ({ defaultValue, onSubmit, userLis
                                     as="h3"
                                     className="text-[24px] relative text-black font-medium flex justify-between leading-6 text-gray-900"
                                 >
-                                    <Text>Tranfer Activity</Text>
+                                    <Text>Transfer Activity</Text>
                                     <button className='absolute -right-2 -top-4' onClick={closeModal}>
                                         <img src={Close} alt="close" loading="lazy" />
                                     </button>
                                 </DialogTitle>
-                                <form onSubmit={handleSubmit(onTranferSubmit)}>
+                                <form onSubmit={handleSubmit(onTransferSubmit)}>
                                     {toastStatus.status && (
                                         <div className="fixed top-2 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
                                             <Toast type='error' />
@@ -100,9 +94,9 @@ const TranferActivityModal: React.FC<Props> = ({ defaultValue, onSubmit, userLis
                                     )}
                                     <div className="flex flex-col mt-5 gap-6">
                                         <div className="w-full flex-col space-y-2">
-                                            <label><Text className='text-primary_text'>Tranfer to User*</Text></label>
+                                            <label><Text className='text-primary_text'>Transfer to User*</Text></label>
                                             <SearchDropdown onChange={(value: any) => setSelectedUser(value)} listValues={userList} initialValue={selectedUser} />
-                                            {errors.tranfer_user && <span className="text-red-500">{errors.tranfer_user.message}</span>}
+                                            {errors.transfer_user && <span className="text-red-500">{errors.transfer_user.message}</span>}
                                         </div>
                                     </div>
                                     <div className="mt-8 flex justify-end gap-4">
@@ -117,7 +111,7 @@ const TranferActivityModal: React.FC<Props> = ({ defaultValue, onSubmit, userLis
                                             type="submit"
                                             className="inline-flex justify-center rounded-md border border-transparent bg-[#0061F3] px-4 py-2 text-sm font-medium text-background focus:outline-none focus-visible:ring-offset-2"
                                         >
-                                            <Text type='small'>Tranfer</Text>
+                                            <Text type='small'>Transfer</Text>
                                         </button>
                                     </div>
                                 </form>
@@ -130,4 +124,4 @@ const TranferActivityModal: React.FC<Props> = ({ defaultValue, onSubmit, userLis
     );
 }
 
-export default TranferActivityModal;
+export default TransferActivityModal;

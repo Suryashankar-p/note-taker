@@ -16,7 +16,7 @@ export interface ModalState {
   dislikeReason: ModalType;
   editLimit: boolean;
   feedbackReview: ModalType;
-  tranferModal: boolean;
+  transferModal: boolean;
 }
 
 const initialValue: ModalType = {
@@ -34,7 +34,7 @@ const modal = {
     dislikeReason: initialValue,
     editLimit: false,
     feedbackReview: initialValue,
-    tranferModal: false,
+    transferModal: false,
   } as ModalState,
   reducers: {
     openModal(state: ModalState, payload: string) {
@@ -85,11 +85,11 @@ const modal = {
     closeFeedbackReview(state: ModalState) {
       return { ...state, feedbackReview: { status: false, type: state.feedbackReview.type } }
     },
-    openTranferModal(state: ModalState) {
-      return { ...state, tranferModal: true }
+    openTransferModal(state: ModalState) {
+      return { ...state, transferModal: true }
     },
-    closeTranferModal(state: ModalState) {
-      return { ...state, tranferModal: false }
+    closeTransferModal(state: ModalState) {
+      return { ...state, transferModal: false }
     }
   }
 }

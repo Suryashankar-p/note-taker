@@ -10,7 +10,7 @@ import Input from "../../components/Input.tsx";
 import Text from "../../components/Text.tsx";
 import Button from "../../components/Button.tsx";
 import AddIcon from "../../assets/circle_plus.svg";
-import Tranfer from "../../assets/exchange.svg";
+import Transfer from "../../assets/exchange.svg";
 import {
   getBorderColor,
   getInitials,
@@ -38,7 +38,7 @@ import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
-import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
+import TransferActivityModal from "../../components/Modals/TransferActivityModal.tsx";
 import PageLoading from "../../components/PageLoading.tsx";
 GlobalWorkerOptions.workerSrc = url;
 export type Activity = {
@@ -87,8 +87,8 @@ const MenuItems = [
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
   {
-    title: "Tranfer",
-    component: <img src={Tranfer} alt="Tranfer" loading="lazy" />,
+    title: "Transfer",
+    component: <img src={Transfer} alt="Transfer" loading="lazy" />,
   },
 ];
 const MenuItemsWithoutEdit = [
@@ -97,8 +97,8 @@ const MenuItemsWithoutEdit = [
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
   {
-    title: "Tranfer",
-    component: <img src={Tranfer} alt="Tranfer" loading="lazy" />,
+    title: "Transfer",
+    component: <img src={Transfer} alt="Transfer" loading="lazy" />,
   },
 ];
 const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivity }) => {
@@ -129,8 +129,8 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
   const [isFetching, setIsFetching] = useState(false);
   const [pollingSkip, setPollingSkip] = useState(pageSize.skip);
   let isPolling = false;
-  const tranferModal = useSelector(
-    (state: RootState) => state.modal.tranferModal
+  const transferModal = useSelector(
+    (state: RootState) => state.modal.transferModal
   );
   const confirmationStatus = useSelector(
     (state: RootState) => state.modal.confirmation
@@ -514,8 +514,8 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       setCreateModalVisible(true);
     } else if (item === "Delete") {
       dispatch.modal.openConfirmation();
-    } else if (item === "Tranfer") {
-      dispatch.modal.openTranferModal();
+    } else if (item === "Transfer") {
+      dispatch.modal.openTransferModal();
     } else {
       console.log("error");
     }
@@ -606,7 +606,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
     }
   };
 
-  const onTranferSubmit = async (value: any) => {
+  const onTransferSubmit = async (value: any) => {
     setIsLoading(true);
     try {
       const response = await TransmitterTransferMasterActivity(
@@ -615,7 +615,7 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
       );
       if (response?.id) {
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
-        dispatch.modal.closeTranferModal();
+        dispatch.modal.closeTransferModal();
       }
     } catch (err) {
       console.error("Error transferring activity", err);
@@ -838,10 +838,10 @@ const MasterActivityPage: React.FC<MasterActivityPageProps> = ({ onSelectActivit
         defaultValues={defaultActivity}
         onUpdate={onUpdate}
       />
-      {tranferModal && (
-        <TranferActivityModal
+      {transferModal && (
+        <TransferActivityModal
           defaultValue={defaultActivity?.user?.name}
-          onSubmit={(value: any) => onTranferSubmit(value)}
+          onSubmit={(value: any) => onTransferSubmit(value)}
           userList={members}
         />
       )}

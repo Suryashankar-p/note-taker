@@ -10,7 +10,7 @@ import Input from "../../components/Input";
 import Text from "../../components/Text";
 import Button from "../../components/Button";
 import AddIcon from "../../assets/circle_plus.svg";
-import Tranfer from "../../assets/exchange.svg";
+import Transfer from "../../assets/exchange.svg";
 import {
   getBorderColor,
   getInitials,
@@ -26,7 +26,7 @@ import {
   DeleteOCRActivities,
   GetOCRActivities,
   ReadOCRMembers,
-  TranferActivity,
+  TransferActivity,
   UpdateOCRActivitiesDetails,
 } from "../../services/heating_ocr.ts";
 import DropDownButton from "../../components/DropDownButton.tsx";
@@ -35,7 +35,7 @@ import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
-import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
+import TransferActivityModal from "../../components/Modals/TransferActivityModal.tsx";
 import { getOCRRole } from "./Member.tsx";
 
 
@@ -68,8 +68,8 @@ const MenuItems = [
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
   {
-    title: "Tranfer",
-    component: <img src={Tranfer} alt="Tranfer" loading="lazy" />,
+    title: "Transfer",
+    component: <img src={Transfer} alt="Transfer" loading="lazy" />,
   },
 ];
 
@@ -79,8 +79,8 @@ const MenuItemsWithoutEdit = [
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
   {
-    title: "Tranfer",
-    component: <img src={Tranfer} alt="Tranfer" loading="lazy" />,
+    title: "Transfer",
+    component: <img src={Transfer} alt="Transfer" loading="lazy" />,
   },
 ];
 
@@ -96,7 +96,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
     value: string;
     name: string;
   }>({ value: "all", name: "All" });
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [user, setUser] = useState<any>(null);
@@ -115,8 +115,8 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
   const [isPolling, setIsPolling] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const tranferModal = useSelector(
-    (state: RootState) => state.modal.tranferModal
+  const transferModal = useSelector(
+    (state: RootState) => state.modal.transferModal
   );
   const confirmationStatus = useSelector(
     (state: RootState) => state.modal.confirmation
@@ -143,158 +143,158 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
   ];
 
 
-const loadMoreActivities = async (scrollPosition: number) => {
-  setIsFetching(true);
-  try {
-    const response = await GetOCRActivities(
-      pageSize.skip + pageSize.limit,
-      pageSize.limit,
-      searchValue,
-      userStatusMapper(usernameFilter.value),
-      heatingOcrStatusMapper(statusFilter.value)
-    );
-    if (response.result) {
-      const newActivities = response.result;
-      if (newActivities && newActivities.length > 0) {
-        setActivities((prevActivities) => [...prevActivities, ...newActivities]);
-        setActivityTotal(response.total);
-        setPageSize((prevPageSize) => ({
-          ...prevPageSize,
-          skip: prevPageSize.skip + prevPageSize.limit,
-        }));
-        // Restore the scroll position
-        if (activityListRef.current) {
-          activityListRef.current.scrollTo(0, scrollPosition);
+  const loadMoreActivities = async (scrollPosition: number) => {
+    setIsFetching(true);
+    try {
+      const response = await GetOCRActivities(
+        pageSize.skip + pageSize.limit,
+        pageSize.limit,
+        searchValue,
+        userStatusMapper(usernameFilter.value),
+        heatingOcrStatusMapper(statusFilter.value)
+      );
+      if (response.result) {
+        const newActivities = response.result;
+        if (newActivities && newActivities.length > 0) {
+          setActivities((prevActivities) => [...prevActivities, ...newActivities]);
+          setActivityTotal(response.total);
+          setPageSize((prevPageSize) => ({
+            ...prevPageSize,
+            skip: prevPageSize.skip + prevPageSize.limit,
+          }));
+          // Restore the scroll position
+          if (activityListRef.current) {
+            activityListRef.current.scrollTo(0, scrollPosition);
+          }
         }
       }
-    }
-  } catch (err) {
-    console.error("Error loading more activities", err);
-  } finally {
-    setIsFetching(false);
-  }
-};
-
-// ✅ Handle scroll
-useEffect(() => {
-  const handleScroll = () => {
-    const current = activityListRef.current;
-    if (!current) return;
-
-    const scrollPosition = current.scrollTop;
-
-    const atBottom =
-      current.scrollHeight - current.scrollTop <= current.clientHeight + 5; // tolerance
-
-    if (atBottom && !isFetching && activities.length < activityTotal) {
-      loadMoreActivities(scrollPosition);
+    } catch (err) {
+      console.error("Error loading more activities", err);
+    } finally {
+      setIsFetching(false);
     }
   };
 
-  const div = activityListRef.current;
-  if (div) {
-    div.addEventListener("scroll", handleScroll);
-  }
+  // ✅ Handle scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const current = activityListRef.current;
+      if (!current) return;
 
-  return () => {
-    if (div) {
-      div.removeEventListener("scroll", handleScroll);
-    }
-  };
-}, [isFetching, activities.length, activityTotal, pageSize]);
+      const scrollPosition = current.scrollTop;
 
-// ✅ Initial load
-useEffect(() => {
-  getAllActivitiesList(0, pageSize.limit, "");
-  getAllMembers(0, 100, "");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+      const atBottom =
+        current.scrollHeight - current.scrollTop <= current.clientHeight + 5; // tolerance
 
-useEffect(() => {
-  const storedUser = localStorage.getItem("user");
-  if (storedUser) {
-    setUser(JSON.parse(storedUser));
-  }
-}, []);
-
-// Polling function to check for activities with IN_PROGRESS file_status
-const pollForProcessingActivities = async () => {
-  if (isPolling) return;
-  
-  try {
-    setIsPolling(true);
-    const response = await GetOCRActivities(
-      0,
-      pageSize.skip + pageSize.limit,
-      searchValue,
-      userStatusMapper(usernameFilter.value),
-      heatingOcrStatusMapper(statusFilter.value)
-    );
-    
-    if (response?.result) {
-      const hasProcessingActivities = response.result.some(
-        (activity: Activity) => activity.file_status === "IN_PROGRESS"
-      );
-      
-      // Update activities list
-      setActivities(response.result.slice(0, pageSize.skip + pageSize.limit));
-      setActivityTotal(response.total);
-      
-      // Stop polling if no activities are processing
-      if (!hasProcessingActivities && pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
+      if (atBottom && !isFetching && activities.length < activityTotal) {
+        loadMoreActivities(scrollPosition);
       }
+    };
+
+    const div = activityListRef.current;
+    if (div) {
+      div.addEventListener("scroll", handleScroll);
     }
-  } catch (err) {
-    console.error("Error polling activities:", err);
-  } finally {
-    setIsPolling(false);
-  }
-};
 
-// Start polling when there are processing activities
-const startPolling = () => {
-  if (pollingIntervalRef.current) return; // Already polling
-  
-  pollingIntervalRef.current = setInterval(() => {
-    pollForProcessingActivities();
-  }, 10000); // Poll every 5 seconds
-};
+    return () => {
+      if (div) {
+        div.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [isFetching, activities.length, activityTotal, pageSize]);
 
-// Stop polling
-const stopPolling = () => {
-  if (pollingIntervalRef.current) {
-    clearInterval(pollingIntervalRef.current);
-    pollingIntervalRef.current = null;
-  }
-};
+  // ✅ Initial load
+  useEffect(() => {
+    getAllActivitiesList(0, pageSize.limit, "");
+    getAllMembers(0, 1000, "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-// Check for processing activities and start polling if needed
-useEffect(() => {
-  const hasProcessingActivities = activities.some(
-    (activity) => activity.file_status === "IN_PROGRESS"
-  );
-  
-  if (hasProcessingActivities && !pollingIntervalRef.current) {
-    startPolling();
-  } else if (!hasProcessingActivities && pollingIntervalRef.current) {
-    stopPolling();
-  }
-}, [activities]);
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
-// Cleanup polling on unmount
-useEffect(() => {
-  return () => {
-    stopPolling();
+  // Polling function to check for activities with IN_PROGRESS file_status
+  const pollForProcessingActivities = async () => {
+    if (isPolling) return;
+
+    try {
+      setIsPolling(true);
+      const response = await GetOCRActivities(
+        0,
+        pageSize.skip + pageSize.limit,
+        searchValue,
+        userStatusMapper(usernameFilter.value),
+        heatingOcrStatusMapper(statusFilter.value)
+      );
+
+      if (response?.result) {
+        const hasProcessingActivities = response.result.some(
+          (activity: Activity) => activity.file_status === "IN_PROGRESS"
+        );
+
+        // Update activities list
+        setActivities(response.result.slice(0, pageSize.skip + pageSize.limit));
+        setActivityTotal(response.total);
+
+        // Stop polling if no activities are processing
+        if (!hasProcessingActivities && pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      }
+    } catch (err) {
+      console.error("Error polling activities:", err);
+    } finally {
+      setIsPolling(false);
+    }
   };
-}, []);
 
-useEffect(() => {
-  if (check && activities?.length > 0) {
-    onSelectActivity(findItemById(activities, check));
-  }
-}, [check, activities]);
+  // Start polling when there are processing activities
+  const startPolling = () => {
+    if (pollingIntervalRef.current) return; // Already polling
+
+    pollingIntervalRef.current = setInterval(() => {
+      pollForProcessingActivities();
+    }, 10000); // Poll every 5 seconds
+  };
+
+  // Stop polling
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
+  // Check for processing activities and start polling if needed
+  useEffect(() => {
+    const hasProcessingActivities = activities.some(
+      (activity) => activity.file_status === "IN_PROGRESS"
+    );
+
+    if (hasProcessingActivities && !pollingIntervalRef.current) {
+      startPolling();
+    } else if (!hasProcessingActivities && pollingIntervalRef.current) {
+      stopPolling();
+    }
+  }, [activities]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (check && activities?.length > 0) {
+      onSelectActivity(findItemById(activities, check));
+    }
+  }, [check, activities]);
 
   const getAllMembers = async (
     skip: number,
@@ -448,8 +448,8 @@ useEffect(() => {
       setCreateModalVisible(true);
     } else if (item === "Delete") {
       dispatch.modal.openConfirmation();
-    } else if (item === "Tranfer") {
-      dispatch.modal.openTranferModal();
+    } else if (item === "Transfer") {
+      dispatch.modal.openTransferModal();
     }
   };
 
@@ -483,9 +483,9 @@ useEffect(() => {
       clearTimeout(timeoutId);
     }
     timeoutId = setTimeout(() => {
-      
+
       getAllActivitiesList(pageSize?.skip, pageSize?.limit, searchTerm, userStatusMapper(usernameFilter.value),
-      heatingOcrStatusMapper(statusFilter.value));
+        heatingOcrStatusMapper(statusFilter.value));
     }, 500);
   };
 
@@ -500,9 +500,9 @@ useEffect(() => {
       });
       return;
     }
-    
+
     if (activity?.user_id === ocrMemberDetails?.user_id) {
-        onSelectActivity(activity);
+      onSelectActivity(activity);
     } else if (
       activity?.status === "SUBMITTED" ||
       activity?.status === "REJECTED"
@@ -517,40 +517,39 @@ useEffect(() => {
     }
   };
 
-  const onTranferSubmit = async (value: any) => {
+  const onTransferSubmit = async (value: any) => {
     try {
-      const response = await TranferActivity(
+      const response = await TransferActivity(
         defaultActivity?.id,
         value?.user_id
       );
       if (response?.id) {
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
-        dispatch.modal.closeTranferModal();
+        dispatch.modal.closeTransferModal();
       }
     } catch (err) {
       console.error("Error transferring activity", err);
     }
   };
   return (
-  <div className="flex flex-1 h-screen min-h-0">
+    <div className="flex flex-1 h-screen min-h-0">
       {toastStatus.status && pageError && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
           <Toast type="error" />
         </div>
       )}
       {/* Main content */}
-  <div className="flex-1 p-6 h-full min-h-0 flex flex-col">
+      <div className="flex-1 p-6 h-full min-h-0 flex flex-col">
         <div className="flex justify-between items-center mt-1.5 mb-4 w-full">
           <div className="flex flex-col">
             <Text className="text-2xl -mt-1 font-bold" type="header2">
               Activity
             </Text>
             {activities && (
-              <Text type="small" className="text-faint_text ml-1">{`(${
-                activities?.length > 1
+              <Text type="small" className="text-faint_text ml-1">{`(${activities?.length > 1
                   ? activities?.length + " Results"
                   : activities?.length + " Result"
-              } of ${activityTotal})`}</Text>
+                } of ${activityTotal})`}</Text>
             )}
           </div>
           <div className="flex space-x-6">
@@ -606,105 +605,104 @@ useEffect(() => {
             />
           </div>
         </div>
-  <div ref={activityListRef} className="mt-4 h-[calc(100vh-250px)] xl:h-[33rem] pr-4 overflow-y-auto flex-shrink min-h-0">
+        <div ref={activityListRef} className="mt-4 h-[calc(100vh-250px)] xl:h-[33rem] pr-4 overflow-y-auto flex-shrink min-h-0">
           {" "}
           {/* Add margin top here */}
           {activities?.length > 0 ? (
-    activities.map((activity: any) => (
-      <div className="mt-5" key={activity.id}>
-        <div
-          className={`border main_card p-4 flex justify-between items-center mb-4 rounded-lg shadow-lg ${
-            activity?.file_status === "IN_PROGRESS" 
-              ? "cursor-not-allowed opacity-75" 
-              : "cursor-pointer"
-          }`}
-          onClick={(e: any) =>
-            (e.target.className.includes("main_card") ||
-              e.target.className.includes("title_text")) &&
-            onActivityCardClick(activity)
-          }
-        >
-          <div className="flex items-center">
-            <div
-              title={activity?.user?.name}
-              className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center font-small"
-            >
-              {getInitials(activity?.user?.name)}
-            </div>
-            <div className="flex flex-col ml-4">
-              <Text
-                type="header3"
-                title={activity.title}
-                className="truncate title_text max-w-2xl ellipsis"
-              >
-                {activity?.title}
-              </Text>
-              <Text className="text-[#505F79] max-w-full font-small text-[12px]">
-                Created on:{" "}
-                {new Date(activity.created_on).toLocaleDateString()}
-              </Text>
+            activities.map((activity: any) => (
+              <div className="mt-5" key={activity.id}>
+                <div
+                  className={`border main_card p-4 flex justify-between items-center mb-4 rounded-lg shadow-lg ${activity?.file_status === "IN_PROGRESS"
+                      ? "cursor-not-allowed opacity-75"
+                      : "cursor-pointer"
+                    }`}
+                  onClick={(e: any) =>
+                    (e.target.className.includes("main_card") ||
+                      e.target.className.includes("title_text")) &&
+                    onActivityCardClick(activity)
+                  }
+                >
+                  <div className="flex items-center">
+                    <div
+                      title={activity?.user?.name}
+                      className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center font-small"
+                    >
+                      {getInitials(activity?.user?.name)}
+                    </div>
+                    <div className="flex flex-col ml-4">
+                      <Text
+                        type="header3"
+                        title={activity.title}
+                        className="truncate title_text max-w-2xl ellipsis"
+                      >
+                        {activity?.title}
+                      </Text>
+                      <Text className="text-[#505F79] max-w-full font-small text-[12px]">
+                        Created on:{" "}
+                        {new Date(activity.created_on).toLocaleDateString()}
+                      </Text>
 
-            </div>
-          </div>
-          <div className="flex-1 flex justify-center">
-            {/* Centered processing indicator */}
-            {activity?.file_status === "IN_PROGRESS" && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                <Text type="small" className="text-blue-600">
-                  Processing...
-                </Text>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex justify-center">
+                    {/* Centered processing indicator */}
+                    {activity?.file_status === "IN_PROGRESS" && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                        <Text type="small" className="text-blue-600">
+                          Processing...
+                        </Text>
+                      </div>
+                    )}
+                    {activity?.file_status === "FAILED" && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+                        <Text type="small" className="text-red-600">
+                          Failed
+                        </Text>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center relative gap-2">
+                    <Text
+                      type="body"
+                      className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
+                        activity?.status
+                      )} absolute right-24`}
+                    >
+                      {activity?.status && heatingOcrStatusMapper(activity.status)}
+                    </Text>
+                    {/* Empty placeholder to maintain space for dropdown menu */}
+                    <div className="right-12">
+                      {ocrMemberDetails &&
+                        (ocrMemberDetails?.role === "OWNER" ||
+                          ocrMemberDetails?.user_id === activity?.user_id) && (
+                          <DropDownMenu
+                            onChange={(item: string) => onChange(item, activity)}
+                            content={
+                              <img
+                                className="w-8 h-8"
+                                src={Menu}
+                                alt="menu"
+                                loading="lazy"
+                              />
+                            }
+                            menuItems={
+                              activity?.status !== "IN_PROGRESS"
+                                ? MenuItemsWithoutEdit
+                                : MenuItems
+                            }
+                          />
+                        )}
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            {activity?.file_status === "FAILED" && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
-                <Text type="small" className="text-red-600">
-                  Failed
-                </Text>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center relative gap-2">
-            <Text
-              type="body"
-              className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
-                activity?.status
-              )} absolute right-24`}
-            >
-              {activity?.status && heatingOcrStatusMapper(activity.status)}
-            </Text>
-            {/* Empty placeholder to maintain space for dropdown menu */}
-            <div className="right-12">
-              {ocrMemberDetails &&
-                (ocrMemberDetails?.role === "OWNER" ||
-                  ocrMemberDetails?.user_id === activity?.user_id) && (
-                  <DropDownMenu
-                    onChange={(item: string) => onChange(item, activity)}
-                    content={
-                      <img
-                        className="w-8 h-8"
-                        src={Menu}
-                        alt="menu"
-                        loading="lazy"
-                      />
-                    }
-                    menuItems={
-                      activity?.status !== "IN_PROGRESS"
-                        ? MenuItemsWithoutEdit
-                        : MenuItems
-                    }
-                  />
-                )}
+            ))
+          ) : (
+            <div className="flex justify-center item-center">
+              <NoData />
             </div>
-          </div>
-        </div>
-      </div>
-    ))
-  ) : (
-    <div className="flex justify-center item-center">
-      <NoData />
-    </div>
-  )}
+          )}
 
 
 
@@ -730,10 +728,10 @@ useEffect(() => {
 
       />
 
-      {tranferModal && (
-        <TranferActivityModal
+      {transferModal && (
+        <TransferActivityModal
           defaultValue={defaultActivity?.user?.name}
-          onSubmit={(value: any) => onTranferSubmit(value)}
+          onSubmit={(value: any) => onTransferSubmit(value)}
           userList={members}
         />
       )}

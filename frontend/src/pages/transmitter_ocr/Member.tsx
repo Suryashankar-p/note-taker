@@ -178,6 +178,7 @@ const MembersPage: React.FC = () => {
         <div
           className="mx-16 mt-2 overflow-y-scroll"
           ref={scrollContainerRef}
+          onScroll={handleScroll}
         >
           {members.length > 0 ? (
             <UserTable

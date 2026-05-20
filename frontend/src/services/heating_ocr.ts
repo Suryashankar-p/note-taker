@@ -151,7 +151,7 @@ export const GetHeatingOCRRole = async () => {
     return response
   }
   
-  export const TranferActivity = async (activity_id: string, user_id: string) => {
+  export const TransferActivity = async (activity_id: string, user_id: string) => {
     const response = await HeatingOCRAPI.put(BACKEND_HEATING_OCR_URL + `/heating_ocr/activity/${activity_id}/transfer?user_id=${user_id}`)
     return response
   }

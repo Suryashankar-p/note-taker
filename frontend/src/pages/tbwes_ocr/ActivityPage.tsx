@@ -10,7 +10,7 @@ import Input from "../../components/Input";
 import Text from "../../components/Text";
 import Button from "../../components/Button";
 import AddIcon from "../../assets/circle_plus.svg";
-import Tranfer from "../../assets/exchange.svg";
+import Transfer from "../../assets/exchange.svg";
 import {
   getBorderColor,
   getInitials,
@@ -26,7 +26,7 @@ import {
   DeleteOCRActivities,
   GetOCRActivities,
   ReadOCRMembers,
-  TranferActivity,
+  TransferActivity,
   UpdateOCRActivitiesDetails,
 } from "../../services/tbwes_ocr.ts";
 import DropDownButton from "../../components/DropDownButton.tsx";
@@ -35,7 +35,7 @@ import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
-import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
+import TransferActivityModal from "../../components/Modals/TransferActivityModal.tsx";
 import { getOCRRole } from "./Member.tsx";
 
 
@@ -66,8 +66,8 @@ const MenuItems = [
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
   {
-    title: "Tranfer",
-    component: <img src={Tranfer} alt="Tranfer" loading="lazy" />,
+    title: "Transfer",
+    component: <img src={Transfer} alt="Transfer" loading="lazy" />,
   },
 ];
 
@@ -77,8 +77,8 @@ const MenuItemsWithoutEdit = [
     component: <img src={Trash} alt="trash" loading="lazy" />,
   },
   {
-    title: "Tranfer",
-    component: <img src={Tranfer} alt="Tranfer" loading="lazy" />,
+    title: "Transfer",
+    component: <img src={Transfer} alt="Transfer" loading="lazy" />,
   },
 ];
 
@@ -111,8 +111,8 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
   const [pollingSkip, setPollingSkip] = useState(pageSize.skip);
 
   let isPolling = false;
-  const tranferModal = useSelector(
-    (state: RootState) => state.modal.tranferModal
+  const transferModal = useSelector(
+    (state: RootState) => state.modal.transferModal
   );
   const confirmationStatus = useSelector(
     (state: RootState) => state.modal.confirmation
@@ -143,26 +143,26 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
     const handleScroll = () => {
       const { current } = activityListRef;
       if (!current) return;
-      
+
       const scrollTop = current.scrollTop;
       const scrollHeight = current.scrollHeight;
       const clientHeight = current.clientHeight;
-      
+
       // Use a threshold instead of exact equality (fixes decimal precision issues)
       const threshold = 10; // pixels from bottom
       const isNearBottom = scrollHeight - scrollTop - clientHeight < threshold;
-      
+
       // Check if user has scrolled near the bottom and if more activities need to be fetched
       if (isNearBottom && !isFetching && activities.length < activityTotal) {
         loadMoreActivities();
       }
     };
-  
+
     const div = activityListRef.current;
     if (div) {
       div.addEventListener('scroll', handleScroll);
     }
-  
+
     return () => {
       if (div) {
         div.removeEventListener('scroll', handleScroll);
@@ -173,9 +173,9 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
   // Load more activities for infinite scroll
   const loadMoreActivities = useCallback(async () => {
     if (isFetching) return; // Prevent multiple simultaneous calls
-    
+
     setIsFetching(true);
-    
+
     try {
       const response = await GetOCRActivities(
         pageSize.skip + pageSize.limit,
@@ -184,7 +184,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
         userStatusMapper(usernameFilter.value),
         statusMapper(statusFilter.value)
       );
-      
+
       if (response.result) {
         const newActivities = response.result;
         if (newActivities && newActivities.length > 0) {
@@ -218,7 +218,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
 
   useEffect(() => {
     getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
-    getAllMembers(0, 100, "");
+    getAllMembers(0, 1000, "");
   }, []);
 
   const getAllMembers = async (
@@ -350,8 +350,8 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
       setCreateModalVisible(true);
     } else if (item === "Delete") {
       dispatch.modal.openConfirmation();
-    } else if (item === "Tranfer") {
-      dispatch.modal.openTranferModal();
+    } else if (item === "Transfer") {
+      dispatch.modal.openTransferModal();
     }
   };
 
@@ -385,9 +385,9 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
       clearTimeout(timeoutId);
     }
     timeoutId = setTimeout(() => {
-      
+
       getAllActivitiesList(pageSize?.skip, pageSize?.limit, searchTerm, userStatusMapper(usernameFilter.value),
-      statusMapper(statusFilter.value));
+        statusMapper(statusFilter.value));
     }, 500);
   };
 
@@ -401,22 +401,22 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
       onSelectActivity(activity);
     } else {
       setPageError(true);
-      dispatch.toast.openToast({  
+      dispatch.toast.openToast({
         status: true,
         message: "Sorry you are not the creator",
       });
     }
   };
 
-  const onTranferSubmit = async (value: any) => {
+  const onTransferSubmit = async (value: any) => {
     try {
-      const response = await TranferActivity(
+      const response = await TransferActivity(
         defaultActivity?.id,
         value?.user_id
       );
       if (response?.id) {
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "");
-        dispatch.modal.closeTranferModal();
+        dispatch.modal.closeTransferModal();
       }
     } catch (err) {
       console.error("Error transferring activity", err);
@@ -437,11 +437,10 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
               Activity
             </Text>
             {activities && (
-              <Text type="small" className="text-faint_text ml-1">{`(${
-                activities?.length > 1
+              <Text type="small" className="text-faint_text ml-1">{`(${activities?.length > 1
                   ? activities?.length + " Results"
                   : activities?.length + " Result"
-              } of ${activityTotal})`}</Text>
+                } of ${activityTotal})`}</Text>
             )}
           </div>
           <div className="flex space-x-6">
@@ -501,82 +500,82 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
           {" "}
           {/* Add margin top here */}
           {activities?.length > 0 ? (
-    activities.map((activity: any) => (
-      <div className="mt-5" key={activity.id}>
-        <div
-          className="border main_card p-4 flex justify-between items-center mb-4 cursor-pointer rounded-lg shadow-lg"
-          onClick={(e: any) =>
-            (e.target.className.includes("main_card") ||
-              e.target.className.includes("title_text")) &&
-            onActivityCardClick(activity)
-          }
-        >
-          <div className="flex items-center">
-            <div
-              title={activity?.user?.name}
-              className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center font-small"
-            >
-              {getInitials(activity?.user?.name)}
-            </div>
-            <div className="flex flex-col ml-4">
-              <Text
-                type="header3"
-                title={activity.title}
-                className="truncate title_text max-w-2xl ellipsis"
-              >
-                {activity?.title}
-              </Text>
-              <Text className="text-[#505F79] max-w-full font-small text-[12px]">
-                Created on:{" "}
-                {new Date(activity.created_on).toLocaleDateString()}
-              </Text>
+            activities.map((activity: any) => (
+              <div className="mt-5" key={activity.id}>
+                <div
+                  className="border main_card p-4 flex justify-between items-center mb-4 cursor-pointer rounded-lg shadow-lg"
+                  onClick={(e: any) =>
+                    (e.target.className.includes("main_card") ||
+                      e.target.className.includes("title_text")) &&
+                    onActivityCardClick(activity)
+                  }
+                >
+                  <div className="flex items-center">
+                    <div
+                      title={activity?.user?.name}
+                      className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center font-small"
+                    >
+                      {getInitials(activity?.user?.name)}
+                    </div>
+                    <div className="flex flex-col ml-4">
+                      <Text
+                        type="header3"
+                        title={activity.title}
+                        className="truncate title_text max-w-2xl ellipsis"
+                      >
+                        {activity?.title}
+                      </Text>
+                      <Text className="text-[#505F79] max-w-full font-small text-[12px]">
+                        Created on:{" "}
+                        {new Date(activity.created_on).toLocaleDateString()}
+                      </Text>
 
+                    </div>
+                  </div>
+                  <div>
+                    {/* Placeholder for additional content, such as updated on */}
+                  </div>
+                  <div className="flex items-center relative">
+                    <Text
+                      type="body"
+                      className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
+                        activity?.status
+                      )} absolute right-24`}
+                    >
+                      {activity?.status && statusMapper(activity.status)}
+                    </Text>
+                    {/* Empty placeholder to maintain space for dropdown menu */}
+                    <div className="right-12">
+                      {ocrMemberDetails &&
+                        (ocrMemberDetails?.role === "OWNER" ||
+                          ocrMemberDetails?.user_id === activity?.user_id) && (
+                          <DropDownMenu
+                            onChange={(item: string) => onChange(item, activity)}
+                            content={
+                              <img
+                                className="w-8 h-8"
+                                src={Menu}
+                                alt="menu"
+                                loading="lazy"
+                              />
+                            }
+                            menuItems={
+                              activity?.status !== "IN_PROGRESS"
+                                ? MenuItemsWithoutEdit
+                                : MenuItems
+                            }
+                          />
+                        )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="flex justify-center item-center">
+              <NoData />
             </div>
-          </div>
-          <div>
-            {/* Placeholder for additional content, such as updated on */}
-          </div>
-          <div className="flex items-center relative">
-            <Text
-              type="body"
-              className={`border rounded-lg w-32 text-center h-12 p-3 text-primary_text ${getBorderColor(
-                activity?.status
-              )} absolute right-24`}
-            >
-              {activity?.status && statusMapper(activity.status)}
-            </Text>
-            {/* Empty placeholder to maintain space for dropdown menu */}
-            <div className="right-12">
-              {ocrMemberDetails &&
-                (ocrMemberDetails?.role === "OWNER" ||
-                  ocrMemberDetails?.user_id === activity?.user_id) && (
-                  <DropDownMenu
-                    onChange={(item: string) => onChange(item, activity)}
-                    content={
-                      <img
-                        className="w-8 h-8"
-                        src={Menu}
-                        alt="menu"
-                        loading="lazy"
-                      />
-                    }
-                    menuItems={
-                      activity?.status !== "IN_PROGRESS"
-                        ? MenuItemsWithoutEdit
-                        : MenuItems
-                    }
-                  />
-                )}
-            </div>
-          </div>
-        </div>
-      </div>
-    ))
-  ) : (
-    <div className="flex justify-center item-center">
-      <NoData />
-    </div>
-  )}
+          )}
 
 
 
@@ -599,10 +598,10 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onSelectActivity }) => {
         onUpdate={onUpdate}
       />
 
-      {tranferModal && (
-        <TranferActivityModal
+      {transferModal && (
+        <TransferActivityModal
           defaultValue={defaultActivity?.user?.name}
-          onSubmit={(value: any) => onTranferSubmit(value)}
+          onSubmit={(value: any) => onTransferSubmit(value)}
           userList={members}
         />
       )}
