@@ -10,7 +10,7 @@ import Input from "../../components/Input.tsx";
 import Text from "../../components/Text.tsx";
 import Button from "../../components/Button.tsx";
 import AddIcon from "../../assets/circle_plus.svg";
-import Tranfer from "../../assets/exchange.svg";
+import Transfer from "../../assets/exchange.svg";
 import {
   getBorderColor,
   getInitials,
@@ -37,7 +37,7 @@ import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
-import TranferActivityModal from "../../components/Modals/TranferActivityModal.tsx";
+import TransferActivityModal from "../../components/Modals/TransferActivityModal.tsx";
 import PageLoading from "../../components/PageLoading.tsx";
 import { getOCRRole } from "./Member.tsx";
 
@@ -98,11 +98,11 @@ const getProcessingLabel = (stage: ProcessingStage): string => {
 const MenuItems = [
   { title: "Edit", component: <img src={Edit} alt="edit" loading="lazy" /> },
   { title: "Delete", component: <img src={Trash} alt="trash" loading="lazy" /> },
-  { title: "Tranfer", component: <img src={Tranfer} alt="Tranfer" loading="lazy" /> },
+  { title: "Transfer", component: <img src={Transfer} alt="Transfer" loading="lazy" /> },
 ];
 const MenuItemsWithoutEdit = [
   { title: "Delete", component: <img src={Trash} alt="trash" loading="lazy" /> },
-  { title: "Tranfer", component: <img src={Tranfer} alt="Tranfer" loading="lazy" /> },
+  { title: "Transfer", component: <img src={Transfer} alt="Transfer" loading="lazy" /> },
 ];
 
 const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity }) => {
@@ -132,7 +132,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   const ocrMemberDetails = member.service === "transmitter_ocr" ? member?.details : {};
   const dispatch = useDispatch<Dispatch>();
   const toastStatus = useSelector((state: RootState) => state.toast);
-  const tranferModal = useSelector((state: RootState) => state.modal.tranferModal);
+  const transferModal = useSelector((state: RootState) => state.modal.transferModal);
   const confirmationStatus = useSelector((state: RootState) => state.modal.confirmation);
 
   const [pageSize, setPageSize] = useState({ skip: 0, limit: 50 });
@@ -300,7 +300,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
       setIsLoading(true);
       await Promise.all([
         getAllActivitiesList(pageSize?.skip, pageSize?.limit, "", undefined, undefined, undefined, false),
-        getAllMembers(0, 100, ""),
+        getAllMembers(0, 1000, ""),
         getMasterActivityTitles()
       ]);
       setIsLoading(false);
@@ -489,7 +489,7 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
     setDefaultActivity(activity);
     if (item === "Edit") setCreateModalVisible(true);
     else if (item === "Delete") dispatch.modal.openConfirmation();
-    else if (item === "Tranfer") dispatch.modal.openTranferModal();
+    else if (item === "Transfer") dispatch.modal.openTransferModal();
   };
 
   const onUpdate = async (title: string, pagesToTrim?: string, masterSheetId?: string) => {
@@ -561,13 +561,13 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
   // ==========================================================================
   // TRANSFER
   // ==========================================================================
-  const onTranferSubmit = async (value: any) => {
+  const onTransferSubmit = async (value: any) => {
     setIsLoading(true);
     try {
       const response = await TransmitterTransferChildActivity(defaultActivity?.id, value?.user_id);
       if (response?.id) {
         getAllActivitiesList(pageSize.skip, pageSize.limit, "");
-        dispatch.modal.closeTranferModal();
+        dispatch.modal.closeTransferModal();
         dispatch.toast.openToast({ status: true, message: "Activity transferred successfully", type: "success" });
       }
     } catch (err) {
@@ -784,10 +784,10 @@ const ChildActivityPage: React.FC<ChildActivityPageProps> = ({ onSelectActivity 
         masterSheets={masterSheetsForModal}
       />
 
-      {tranferModal && (
-        <TranferActivityModal
+      {transferModal && (
+        <TransferActivityModal
           defaultValue={defaultActivity?.user?.name}
-          onSubmit={(value: any) => onTranferSubmit(value)}
+          onSubmit={(value: any) => onTransferSubmit(value)}
           userList={members}
         />
       )}

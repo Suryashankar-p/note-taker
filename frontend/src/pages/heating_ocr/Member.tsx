@@ -46,6 +46,8 @@ const MembersPage: React.FC = () => {
     limit: number,
     search_term?: string
   ) => {
+    if (loading) return;
+    setLoading(true);
     try {
       const response = await ReadOCRMembers(skip, limit, search_term);
       if (response?.result) {
@@ -69,16 +71,15 @@ const MembersPage: React.FC = () => {
         message: "Error fetching data",
         type: "error",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } =
-        scrollContainerRef.current;
-      if (scrollTop + clientHeight >= scrollHeight && !loading && hasMore) {
-        getAllMembers(members.length, 50, searchValue); // Load next set of members
-      }
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollTop + clientHeight >= scrollHeight - 5 && !loading && hasMore) {
+      getAllMembers(members.length, 50, searchValue); // Load next set of members
     }
   };
 

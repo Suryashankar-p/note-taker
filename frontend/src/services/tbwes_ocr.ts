@@ -141,7 +141,7 @@ export const GetBaanData = async (skip: number, limit: number, search_term: stri
   return response
 }
 
-export const TranferActivity = async (activity_id: string, user_id: string) => {
+export const TransferActivity = async (activity_id: string, user_id: string) => {
   const response = await TBWESAPI.post(BACKEND_TBWES_OCR_URL + `/tbwes_ocr/activity/${activity_id}/transfer?user_id=${user_id}`)
   return response
 }
