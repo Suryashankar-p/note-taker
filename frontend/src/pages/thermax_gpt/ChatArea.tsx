@@ -95,7 +95,7 @@ const MemoizedMarkdown = React.memo(({ content }: { content: string }) => {
           return !isInline ? (
             <div className="relative group my-4">
               <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button 
+                <button
                   onClick={() => copy(String(children).replace(/\n$/, ''))}
                   className="p-1.5 bg-gray-800/80 backdrop-blur-sm hover:bg-gray-700 rounded-lg text-gray-300 transition-all border border-gray-700"
                   title="Copy code"
@@ -222,7 +222,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
         ) : (
           <div className="w-[70%] h-64 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 opacity-50" />
-            
+
             <div className="relative">
               {/* Spinning ring */}
               <div className="absolute inset-[-8px] rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
@@ -232,7 +232,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
                 </svg>
               </div>
             </div>
-            
+
             <div className="flex flex-col items-center gap-1 z-10">
               <div className="flex gap-1.5">
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
@@ -336,7 +336,7 @@ const MultipleMediaRenderer: React.FC<MultipleMediaRendererProps> = ({
         // Create a unique index for each media item
         const uniqueIndex = `${messageIndex}-${mediaIndex}`;
         const mediaUrl = mediaUrlMap[uniqueIndex] || mediaUrlMap[messageIndex];
-        
+
         return (
           <div key={mediaIndex} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
             <div className="text-sm font-medium text-gray-600 mb-2">
@@ -348,12 +348,12 @@ const MultipleMediaRenderer: React.FC<MultipleMediaRendererProps> = ({
               {source.media_type === 'chart' && 'Generated Chart'}
               {source.media_type === 'unknown' && 'Generated File'}
             </div>
-            <MediaRenderer 
-              source={source} 
+            <MediaRenderer
+              source={source}
               messageIndex={uniqueIndex}
-              chatId={chatId} 
-              mediaUrl={mediaUrl} 
-              onFetchMedia={onFetchMedia} 
+              chatId={chatId}
+              mediaUrl={mediaUrl}
+              onFetchMedia={onFetchMedia}
             />
           </div>
         );
@@ -805,6 +805,9 @@ const ChatArea: React.FC<Props> = ({
       dispatch.chatContent.addQuestion([fileMessage]);
     });
     dispatch.chatContent.addQuestion([{ human: inputValue }]);
+
+    setInputValue("");
+    setUploadedFiles([]);
 
     const localMessages = [...chatContent, ...localFiles];
 
@@ -1277,24 +1280,24 @@ const ChatArea: React.FC<Props> = ({
                       className="w-full max-w-4xl py-1 px-4 rounded-lg"
                     >
                       {message.ai && <MemoizedMarkdown content={message.ai} />}
-                      
+
                       {message.source && (
                         <div className="mt-4">
                           {message.source.generated_media ? (
-                            <MultipleMediaRenderer 
-                              sources={message.source.generated_media} 
-                              messageIndex={index} 
-                              chatId={chat_id} 
-                              mediaUrlMap={videoUrlMap} 
-                              onFetchMedia={fetchMedia} 
+                            <MultipleMediaRenderer
+                              sources={message.source.generated_media}
+                              messageIndex={index}
+                              chatId={chat_id}
+                              mediaUrlMap={videoUrlMap}
+                              onFetchMedia={fetchMedia}
                             />
                           ) : (
-                            <MediaRenderer 
-                              source={message.source} 
-                              messageIndex={index} 
-                              chatId={chat_id} 
-                              mediaUrl={videoUrlMap[index]} 
-                              onFetchMedia={fetchMedia} 
+                            <MediaRenderer
+                              source={message.source}
+                              messageIndex={index}
+                              chatId={chat_id}
+                              mediaUrl={videoUrlMap[index]}
+                              onFetchMedia={fetchMedia}
                             />
                           )}
                         </div>
@@ -1312,7 +1315,7 @@ const ChatArea: React.FC<Props> = ({
                 {(message?.ai || message?.source) && (
                   <div className="flex items-center gap-3 ml-12 -mt-1">
                     <div className="flex items-center bg-white border border-gray-300 rounded-xl shadow-md px-2 py-1 gap-1 hover:border-gray-400 hover:shadow-lg transition-all duration-300">
-                      <button 
+                      <button
                         onClick={() => copyToClipboard(index, message)}
                         className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-700 transition-colors"
                         title="Copy message"
@@ -1342,7 +1345,7 @@ const ChatArea: React.FC<Props> = ({
                   </div>
                   <div className="w-full max-w-4xl py-1 px-4 rounded-lg">
                     <MemoizedMarkdown content={streamedData} />
-                    
+
                     {streamingStatus && (
                       <div className="flex items-center gap-2 mt-4 px-1 py-2 bg-gray-50/50 rounded-xl w-fit border border-gray-100/50">
                         <div className="flex gap-1.5 px-2">
@@ -1360,20 +1363,20 @@ const ChatArea: React.FC<Props> = ({
                     {streamingSource && (
                       <>
                         {streamingSource?.generated_media ? (
-                          <MultipleMediaRenderer 
-                            sources={streamingSource.generated_media} 
-                            messageIndex={-1} 
-                            chatId={chat_id} 
-                            mediaUrlMap={videoUrlMap} 
-                            onFetchMedia={fetchMedia} 
+                          <MultipleMediaRenderer
+                            sources={streamingSource.generated_media}
+                            messageIndex={-1}
+                            chatId={chat_id}
+                            mediaUrlMap={videoUrlMap}
+                            onFetchMedia={fetchMedia}
                           />
                         ) : (
-                          <MediaRenderer 
-                            source={streamingSource} 
-                            messageIndex={-1} 
-                            chatId={chat_id} 
-                            mediaUrl={videoUrlMap[-1]} 
-                            onFetchMedia={fetchMedia} 
+                          <MediaRenderer
+                            source={streamingSource}
+                            messageIndex={-1}
+                            chatId={chat_id}
+                            mediaUrl={videoUrlMap[-1]}
+                            onFetchMedia={fetchMedia}
                           />
                         )}
                       </>
@@ -1430,178 +1433,178 @@ const ChatArea: React.FC<Props> = ({
           </button>
         )}
         <div className="pointer-events-auto relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-[60rem] min-h-4 mx-auto flex flex-col gap-2 border border-gray-200 rounded-[24px] p-4 bg-white shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_50px_-12px_rgba(0,0,0,0.12)] transition-shadow duration-300">
-            <div className="w-full flex items-center gap-2">
-              <div className="flex flex-col w-full">
-                <div className="flex flex-wrap gap-2 mb-1 relative">
-                  {uploadedFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex min-h-4 items-center max-w-xl gap-1 px-2 py-1 rounded-md text-lg relative"
-                    >
-                      <div className="relative">
-                        {loadingIndex === index && (
-                          <div className="absolute inset-0 flex justify-center items-center">
-                            <svg
-                              className="w-6 h-6 transform -rotate-90"
-                              viewBox="0 0 36 36"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <circle
-                                cx="18"
-                                cy="18"
-                                r="15"
-                                stroke=""
-                                strokeWidth="3"
-                                fill="none"
-                              />
-                              <circle
-                                cx="18"
-                                cy="18"
-                                r="15"
-                                stroke="rgb(177, 174, 174)"
-                                strokeWidth="3"
-                                fill="none"
-                                strokeDasharray="94.24777960769379"
-                                strokeDashoffset={
-                                  progress !== null
-                                    ? 94.24777960769379 * (1 - progress / 100)
-                                    : 94.24777960769379
-                                }
-                                style={{
-                                  transition:
-                                    "stroke-dashoffset 0.1s ease-in-out",
-                                }}
-                              />
-                            </svg>
-                          </div>
-                        )}
-                        {renderFileIcon(file.name)}
-                      </div>
-                      <span
-                        className="w-32 text-sm truncate overflow-hidden whitespace-nowrap"
-                        title={file.name}
-                      >
-                        {file.name}
-                      </span>
-                      {uploadState?.status !== "success" && (
-                        <button
-                          onClick={() => handleRemoveFile(index)}
-                          disabled={loading}
-                          className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <UploadStatusIndicator uploadStatus={status} />
-                </div>
-                <textarea
-                  disabled={loading || disabled}
-                  onKeyDown={onKeyDown}
-                  maxLength={5000}
-                  onChange={(event) => setInputValue(event.target.value)}
-                  value={inputValue}
-                  placeholder="Ask anything ..."
-                  rows={1}
-                  className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"}`}
-                  style={{ lineHeight: "1.9rem" }}
-                />
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-shrink-0">
-                      <div className="relative group cursor-pointer">
-                        <img
-                          src={Attach}
-                          className={`w-8 h-8 ${uploadedFiles.length > 0
-                            ? "cursor-default opacity-50"
-                            : "cursor-pointer"
-                            }`}
-                          alt="Attach file"
-                          loading="lazy"
-                          onClick={handleFileAttachClick}
-                        />
-
-                        <span
-                          className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${uploadedFiles.length === 0
-                            ? "opacity-0 group-hover:opacity-70"
-                            : "hidden"
-                            }`}
-                        >
-                          {renderAttachFile()}
-                        </span>
-                      </div>
-                      <UploadFileModal
-                        isOpen={isModalOpen}
-                        onClose={() => setModalOpen(false)}
-                        onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
-                        aiProvider={aiProvider}
-                        disabled={loading}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const nextThinking = !isThinking;
-                        setIsThinking(nextThinking);
-                        if (nextThinking) {
-                          setAiProvider("Sonnet 4.6");
-                        }
-                      }}
-                      custom_type="secondary"
-                      className={`flex items-center gap-1.5 px-3 py-1.5 transition-all duration-200 rounded-lg ${isThinking
-                        ? "!text-primary"
-                        : "!text-input_text"
-                        }`}
-                      size="custom"
-                      rounded
-                    >
-                      {isThinking ?
-                        <FaLightbulb className="size-4 text-primary" /> :
-                        <LightBulbIcon className="size-4" />
-                      }
-                      <span className="font-medium text-sm">Deep Search</span>
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <DropDownMenu
-                      disabled={isThinking}
-                      content={
-                        <div className={`w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group ${isThinking ? "opacity-50" : ""}`}>
-                          <span className="text-sm font-semibold text-primary">{aiProvider}</span>
-                          <ChevronDownIcon className="w-4 h-4 text-primary" />
+          <div className="w-full flex items-center gap-2">
+            <div className="flex flex-col w-full">
+              <div className="flex flex-wrap gap-2 mb-1 relative">
+                {uploadedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex min-h-4 items-center max-w-xl gap-1 px-2 py-1 rounded-md text-lg relative"
+                  >
+                    <div className="relative">
+                      {loadingIndex === index && (
+                        <div className="absolute inset-0 flex justify-center items-center">
+                          <svg
+                            className="w-6 h-6 transform -rotate-90"
+                            viewBox="0 0 36 36"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15"
+                              stroke=""
+                              strokeWidth="3"
+                              fill="none"
+                            />
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15"
+                              stroke="rgb(177, 174, 174)"
+                              strokeWidth="3"
+                              fill="none"
+                              strokeDasharray="94.24777960769379"
+                              strokeDashoffset={
+                                progress !== null
+                                  ? 94.24777960769379 * (1 - progress / 100)
+                                  : 94.24777960769379
+                              }
+                              style={{
+                                transition:
+                                  "stroke-dashoffset 0.1s ease-in-out",
+                              }}
+                            />
+                          </svg>
                         </div>
-                      }
-                      menuItems={[
-                        { title: "Sonnet 4.6", value: "Sonnet 4.6" },
-                        { title: "GPT 5.4", value: "GPT 5.4" }
-                      ]}
-                      onChange={(val) => {
-                        setAiProvider(val);
-                        if (val === "Sonnet 4.6") {
-                          setIsThinking(true);
-                        } else if (val === "GPT 5.4") {
-                          setIsThinking(false);
-                        }
-                      }}
-                    />
-                    <Button
-                      disabled={loading || disabled}
-                      onClick={handleSend}
-                      custom_type="secondary"
-                      className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
-                      size="very_small"
+                      )}
+                      {renderFileIcon(file.name)}
+                    </div>
+                    <span
+                      className="w-32 text-sm truncate overflow-hidden whitespace-nowrap"
+                      title={file.name}
                     >
-                      <img src={Sent} alt="Send" className="mt-1.5" loading="lazy" />
-                    </Button>
+                      {file.name}
+                    </span>
+                    {uploadState?.status !== "success" && (
+                      <button
+                        onClick={() => handleRemoveFile(index)}
+                        disabled={loading}
+                        className="absolute top-0 right-0 -mr-2 -mt-2 text-red-500 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
+                ))}
+                <UploadStatusIndicator uploadStatus={status} />
+              </div>
+              <textarea
+                disabled={loading || disabled}
+                onKeyDown={onKeyDown}
+                maxLength={5000}
+                onChange={(event) => setInputValue(event.target.value)}
+                value={inputValue}
+                placeholder="Ask anything ..."
+                rows={1}
+                className={`w-full pl-2 max-h-[10rem] min-h-[3rem] resize-none overflow-y-auto p-2 text-md focus:outline-none ${disabled ? "bg-[#0061F3] bg-opacity-10" : "bg-transparent"}`}
+                style={{ lineHeight: "1.9rem" }}
+              />
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-shrink-0">
+                    <div className="relative group cursor-pointer">
+                      <img
+                        src={Attach}
+                        className={`w-8 h-8 ${uploadedFiles.length > 0
+                          ? "cursor-default opacity-50"
+                          : "cursor-pointer"
+                          }`}
+                        alt="Attach file"
+                        loading="lazy"
+                        onClick={handleFileAttachClick}
+                      />
+
+                      <span
+                        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-sm text-white bg-black rounded shadow-md transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-[280px] text-ellipsis overflow-hidden ${uploadedFiles.length === 0
+                          ? "opacity-0 group-hover:opacity-70"
+                          : "hidden"
+                          }`}
+                      >
+                        {renderAttachFile()}
+                      </span>
+                    </div>
+                    <UploadFileModal
+                      isOpen={isModalOpen}
+                      onClose={() => setModalOpen(false)}
+                      onFileUpload={(files) => files.forEach((file) => handleFileChange(file))}
+                      aiProvider={aiProvider}
+                      disabled={loading}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const nextThinking = !isThinking;
+                      setIsThinking(nextThinking);
+                      if (nextThinking) {
+                        setAiProvider("Sonnet 4.6");
+                      }
+                    }}
+                    custom_type="secondary"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 transition-all duration-200 rounded-lg ${isThinking
+                      ? "!text-primary"
+                      : "!text-input_text"
+                      }`}
+                    size="custom"
+                    rounded
+                  >
+                    {isThinking ?
+                      <FaLightbulb className="size-4 text-primary" /> :
+                      <LightBulbIcon className="size-4" />
+                    }
+                    <span className="font-medium text-sm">Deep Search</span>
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <DropDownMenu
+                    disabled={isThinking}
+                    content={
+                      <div className={`w-30 flex justify-between items-center gap-2 px-3 py-2 rounded-full transition bg-primary/10 group ${isThinking ? "opacity-50" : ""}`}>
+                        <span className="text-sm font-semibold text-primary">{aiProvider}</span>
+                        <ChevronDownIcon className="w-4 h-4 text-primary" />
+                      </div>
+                    }
+                    menuItems={[
+                      { title: "Sonnet 4.6", value: "Sonnet 4.6" },
+                      { title: "GPT 5.4", value: "GPT 5.4" }
+                    ]}
+                    onChange={(val) => {
+                      setAiProvider(val);
+                      if (val === "Sonnet 4.6") {
+                        setIsThinking(true);
+                      } else if (val === "GPT 5.4") {
+                        setIsThinking(false);
+                      }
+                    }}
+                  />
+                  <Button
+                    disabled={loading || disabled}
+                    onClick={handleSend}
+                    custom_type="secondary"
+                    className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-[#0061F3] text-white"
+                    size="very_small"
+                  >
+                    <img src={Sent} alt="Send" className="mt-1.5" loading="lazy" />
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
   );
 };
 
