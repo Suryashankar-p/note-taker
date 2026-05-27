@@ -3,9 +3,7 @@ import { fileTypeSelectorDoctorConBot } from "../utils/functions";
 import { DoctorBotAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_DOCTOR_CONBOT_URL =
-  import.meta.env.VITE_BACKEND_DOCTOR_CONBOT_URL ||
-  window.env?.BACKEND_DOCTOR_CONBOT_URL;
+const BACKEND_DOCTOR_CONBOT_URL = import.meta.env.VITE_BACKEND_DOCTOR_CONBOT_URL;
 
 //<====================================Dr. Conbot Auth========================================>
 
@@ -222,6 +220,17 @@ export const DownloadUsageActivity = async (fromDate: string, toDate: string) =>
   }
   const response = await DoctorBotAPI.post(
     BACKEND_DOCTOR_CONBOT_URL + `/doctor_conbot/usage/download`, body, {responseType: "blob"}
+  );
+  return response;
+};
+
+export const ReadActiveUsersTrend = async (
+  year: string | number,
+  month: string | number
+) => {
+  const response = await DoctorBotAPI.get(
+    BACKEND_DOCTOR_CONBOT_URL +
+      `/doctor_conbot/usage/activity/trend?year=${year}&month=${month}`
   );
   return response;
 };

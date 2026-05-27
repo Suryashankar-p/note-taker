@@ -93,11 +93,11 @@ const UserTable: React.FC<Props> = ({
                     {"Role"}
                   </Text>
                 </th>
-                {type === "thermax_gpt" && <th className=" text-start border-b pl-24">
+                {/* {type === "thermax_gpt" && <th className=" text-start border-b pl-24">
                   <Text type="bold-body" className="text-primary_text">
                     {"Services"}
                   </Text>
-                </th>}
+                </th>} */}
                 <th className=" text-start border-b"></th>
               </tr>
             </thead>
@@ -129,7 +129,7 @@ const UserTable: React.FC<Props> = ({
                       {user?.role && getKeyByValue(roleMapping, user?.role)}
                     </Text>
                   </td>
-                  {type === "thermax_gpt" && <td className="lg:max-w-full max-w-[90px] pl-24">
+                  {/* {type === "thermax_gpt" && <td className="lg:max-w-full max-w-[90px] pl-24">
                     <div className="flex flex-wrap gap-2">
                       {user?.thrmx_gpt_user_service_mapping?.map((service: any, index: number) => (
                         <span
@@ -141,7 +141,7 @@ const UserTable: React.FC<Props> = ({
                         </span>
                       ))}
                     </div>
-                  </td>}
+                  </td>} */}
                   {(memberDetails?.role === 'OWNER' ) && (
                     <td className="px-4  text-right">
                       <DropDownMenu

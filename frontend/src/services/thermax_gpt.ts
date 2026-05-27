@@ -1,7 +1,7 @@
 import axios from "axios";
 import { GPTAPI } from "./Axios.ts";
 
-const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL || window.env?.BACKEND_THERMAX_GPT_URL;
+const BACKEND_THERMAX_GPT_URL=import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
 
 interface ChatCreatePayload {
   title: string;
@@ -115,7 +115,7 @@ export const DeleteChatHistory = async (
 export const ReadCostUsage = async (
   year: string | number,
   month: string | number,
-  type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
 ) => {
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL +
@@ -140,7 +140,7 @@ export const UpdateUsageLimit = async (limit: number) => {
 export const ReadActivityUsage = async (
   year: string | number,
   month: string | number,
-  type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
 ) => {
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL +
@@ -154,7 +154,7 @@ export const ReadActivityUsageTopUsers = async (
   month: string | number,
   skip: number = 0,
   limit: number = 6,
-  type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
 ) => {
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL +
@@ -244,11 +244,28 @@ export const getThermaxServices = async () => {
 export const CreateChatHistoryStream = async (
   query: string,
   chat_id: string,
-  files?: File[]
+  files?: File[],
+  model?: string,
+  thinking?: boolean
 ) => {
   const formData = new FormData();
 
   formData.append("human", query);
+
+  if (model) {
+    formData.append("model", model);
+  }
+
+  let actualThinking = thinking;
+  if (model === "Sonnet 4.6") {
+    actualThinking = true;
+  } else if (model === "GPT 5.4") {
+    actualThinking = false;
+  }
+
+  if (actualThinking !== undefined) {
+    formData.append("thinking", actualThinking ? "true" : "false");
+  }
 
   if (files && files.length > 0) {
     files.forEach((file) => {

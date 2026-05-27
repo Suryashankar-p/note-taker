@@ -7,7 +7,6 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VITE_ENABLE_SSO: "${ENABLE_SSO}"
-      VITE_FIRST_USER_EMAIL: "${FIRST_USER_EMAIL}"
       VITE_ADMIN_USER_EMAIL: "${ADMIN_USER_EMAIL}"
       VITE_DOMAIN: "${DOMAIN}"
       VITE_URL_PREFIX: "/thermax"

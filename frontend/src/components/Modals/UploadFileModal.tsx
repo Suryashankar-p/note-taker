@@ -18,15 +18,29 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
   disabled = false,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState<string>("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      const selectedFiles = Array.from(e.target.files);
+      const allowedExtensions = ['.pdf', '.txt','.png', '.json', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
+      const invalidFiles = selectedFiles.filter(file => 
+        !allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+      );
+      
+      if (invalidFiles.length > 0) {
+        setError(`Only .pdf, .txt, .png,.json, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv files are allowed. ${invalidFiles.length} invalid file(s) selected.`);
+        setFiles([]);
+      } else {
+        setError("");
+        setFiles(selectedFiles);
+      }
     }
   };
 
   const handleClose = () => {
     setFiles([]);
+    setError("");
     onClose();
   };
 
@@ -34,6 +48,7 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
     if (files.length > 0) {
       onFileUpload(files);
       setFiles([]);
+      setError("");
       onClose();
     }
   };
@@ -58,6 +73,13 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
           </button>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+            <span className="text-sm font-medium">{error}</span>
+          </div>
+        )}
+
         {/* Custom File Upload Box */}
         <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-red-400 rounded-xl p-6 text-center bg-red-50 hover:bg-red-100 transition-colors duration-200 cursor-pointer">
           <FaCloudUploadAlt className="w-10 h-10 text-red-600 mb-2" />
@@ -76,13 +98,11 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
             </span>
           )}
           <p className="text-xs text-gray-500 mt-2">
-            {aiProvider === "Document Analyzer"
-              ? "Only PDF files allowed. No size limit."
-              : "File size max 10MB."}
+            Supported formats: .pdf, .png, .txt, .json, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv. File size max 100MB.
           </p>
           <input
             type="file"
-            accept={aiProvider === "Document Analyzer" ? ".pdf" : "*"}
+            accept=".pdf,.txt, .png,.json,.docx,.doc,.ppt,.pptx,.xlsx,.xls,.csv"
             onChange={handleFileChange}
             disabled={disabled}
             multiple
@@ -95,9 +115,7 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
           <strong>Note:</strong> Please upload a document that you want answers
           from. This document will be used as a temporary knowledge base and
           will be automatically deleted after{" "}
-          <strong>
-            {aiProvider === "Document Analyzer" ? "48 hours" : "24 hours"}
-          </strong>
+          <strong>48 hours</strong>
           . If you need to access it again later, you will need to reupload the
           file.
         </p>

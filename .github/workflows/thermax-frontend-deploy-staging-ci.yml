@@ -15,7 +15,6 @@ permissions:
 
 env:
   ACR_NAME:  ${{ vars.STAGING_ACR_NAME }}
-  PROD_ACR_NAME: ${{ vars.PROD_ACR_NAME }}
   IMAGE_NAME: thermax_frontend
   RESOURCE_GROUP: ${{ vars.STAGING_RESOURCE_GROUP }}
   CONTAINER_APP_NAME: ${{ vars.STAGING_CONTAINER_APP_NAME }}
@@ -48,7 +47,23 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -f docker/Dockerfile.staging -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
+          docker build -f docker/Dockerfile.staging \
+            --build-arg VITE_ENABLE_SSO="${{ vars.VITE_ENABLE_SSO }}" \
+            --build-arg VITE_ADMIN_USER_EMAIL="${{ secrets.VITE_ADMIN_USER_EMAIL }}" \
+            --build-arg VITE_DOMAIN="${{ vars.VITE_DOMAIN }}" \
+            --build-arg VITE_URL_PREFIX="${{ vars.VITE_URL_PREFIX }}" \
+            --build-arg VITE_BACKEND_SSO_URL="${{ secrets.VITE_BACKEND_SSO_URL }}" \
+            --build-arg VITE_BACKEND_THERMAX_GPT_URL="${{ secrets.VITE_BACKEND_THERMAX_GPT_URL }}" \
+            --build-arg VITE_BACKEND_DOCTOR_CONBOT_URL="${{ secrets.VITE_BACKEND_DOCTOR_CONBOT_URL }}" \
+            --build-arg VITE_BACKEND_SMART_TROUBLESHOOT_URL="${{ secrets.VITE_BACKEND_SMART_TROUBLESHOOT_URL }}" \
+            --build-arg VITE_BACKEND_SALES_URL="${{ secrets.VITE_BACKEND_SALES_URL }}" \
+            --build-arg VITE_BACKEND_TBWES_OCR_URL="${{ secrets.VITE_BACKEND_TBWES_OCR_URL }}" \
+            --build-arg VITE_BACKEND_CYBERBUDDY_URL="${{ secrets.VITE_BACKEND_CYBERBUDDY_URL }}" \
+            --build-arg VITE_BACKEND_HEATING_OCR_URL="${{ secrets.VITE_BACKEND_HEATING_OCR_URL }}" \
+            --build-arg VITE_BACKEND_TRANSMITTER_OCR_URL="${{ secrets.VITE_BACKEND_TRANSMITTER_OCR_URL }}" \
+            --build-arg VITE_BACKEND_DOCUMENT_TRANSLATOR_URL="${{ secrets.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL }}" \
+            --build-arg VITE_BACKEND_EDGE_URL="${{ secrets.VITE_BACKEND_EDGE_URL }}" \
+            -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
 
       - name: Push Docker image to Staging ACR
         run: |
@@ -61,14 +76,6 @@ jobs:
             --resource-group $RESOURCE_GROUP \
             --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG
 
-      - name: Import Image to Prod ACR
-        run: |
-          echo "Importing image to prod ACR..."
-          az acr import \
-            --name $PROD_ACR_NAME \
-            --source "$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG" \
-            --image $IMAGE_NAME:$IMAGE_TAG \
-            --force
 
       - name: Create and Push Git Tag for Staging
         if: success()

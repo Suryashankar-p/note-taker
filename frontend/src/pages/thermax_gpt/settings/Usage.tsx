@@ -24,9 +24,8 @@ const tabs = [
   { key: "activity", label: "Activity" },
 ];
 const modelType = [
-  { value: "Thermax-GPT", name: "Thermax-GPT" },
-  { value: "Deep Search", name: "Deep Search" },
-  { value: "Document Analyser", name: "Document Analyser" },
+  { value: "GPT 5.4", name: "GPT 5.4" },
+  { value: "Sonnet 4.6", name: "Sonnet 4.6" },
   { value: "All", name: "All" },
 ];
 
@@ -35,7 +34,7 @@ type Calender = {
   month: string | number;
 };
 
-type ModelValue = "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All";
+type ModelValue = "All" | "GPT 5.4" | "Sonnet 4.6";
 
 type ModelType = {
   value: ModelValue;
@@ -99,7 +98,7 @@ const Usage = () => {
     month: string | number,
     skip: number,
     limit: number,
-    type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+    type: ModelValue = "All"
   ) => {
     if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
     const topUserResponse = await ReadActivityUsageTopUsers(
@@ -126,7 +125,7 @@ const Usage = () => {
   const getActivityUsage = async (
     year: string | number,
     month: string | number,
-    type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+    type: ModelValue = "All"
   ) => {
     try {
       const activityResponse = await ReadActivityUsage(year, month, type);
@@ -143,10 +142,10 @@ const Usage = () => {
   };
 
   const getUsageLimit = async () => {
-    setLimit(200);
     try {
       const limitResponse = await ReadUsageLimit();
       if (limitResponse?.id) {
+        setLimit(limitResponse?.limit);
       } else {
         setPageError(true);
         //     dispatch.toast.openToast({ message: limitResponse?.detail, status: true })
@@ -206,7 +205,7 @@ const Usage = () => {
   const getCostUsage = async (
     year: string | number,
     month: string | number,
-    type: "Thermax-GPT" | "Deep Search" | "Document Analyser" | "All" = "All"
+    type: ModelValue = "All"
   ) => {
     try {
       const usageResponse = await ReadCostUsage(year, month, type);
@@ -226,7 +225,7 @@ const Usage = () => {
       setCalender({ ...calender, year: data });
       getCostUsage(data, calender.month, modelTypeFilter.value);
       getActivityUsage(data, calender.month, modelTypeFilter.value);
-      getActivityTopUsers(data, calender.month, 0, 4), modelTypeFilter.value;
+      getActivityTopUsers(data, calender.month, 0, 4, modelTypeFilter.value);
     }
   };
 

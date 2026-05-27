@@ -122,9 +122,9 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
   useEffect(() => {
     const checkScreenSize = () => setIsMobile(window.innerWidth < 768);
     checkScreenSize(); // Initial check
-    if (isThermaxPath) {
-      getAllThermaxServices();
-    }
+    // if (isThermaxPath) {
+    //   getAllThermaxServices();
+    // }
     window.addEventListener("resize", checkScreenSize);
     return () => {
       window.removeEventListener("resize", checkScreenSize);
@@ -168,26 +168,45 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
 
   const handleOnSubmit = (data: IFormInput) => {
     const role = data.role as RoleKey;
-    if (
-      isThermaxPath &&
-      (!data?.services_provisioned || data.services_provisioned.length < 1)
-    ) {
-      setError(
-        "services_provisioned",
-        {
-          type: "manual",
-          message: "Please select at least one service",
-        },
-        { shouldFocus: true }
+
+    let servicesToSubmit = selectedServices;
+
+    if (isThermaxPath) {
+      const thermaxGPTService = allThermaxServices.find(
+        (service) =>
+          service.title.replace(/\s/g, "").toLowerCase() === "thermaxgpt"
       );
-      return; // ⛔ stop submission
+
+      if (thermaxGPTService) {
+        servicesToSubmit = [
+          {
+            id: String(thermaxGPTService.id), // ✅ convert to string
+            title: thermaxGPTService.title,
+          },
+        ];
+      } else {
+        // ✅ fallback with string id
+        servicesToSubmit = [
+          {
+            id: "1",
+            title: "ThermaxGPT",
+          },
+        ];
+      }
     }
+
+    // ✅ ensure all ids are strings before API call
+    const formattedServices = servicesToSubmit.map((service) => ({
+      id: String(service.id),
+      title: service.title,
+    }));
+
     const body = {
       name: data.name,
       email: data.email,
       role: roleMappingToUse[role],
       memberId: defaultValue?.id,
-      thrmx_gpt_user_service_mapping: selectedServices,
+      thrmx_gpt_user_service_mapping: formattedServices,
     };
     onSubmit(body);
   };
@@ -340,7 +359,7 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
                       <p className="text-red-500">{errors.email.message}</p>
                     )}
                   </div>
-                  {isThermaxPath && (
+                  {/* {isThermaxPath && (
                     <div className="w-full flex flex-col space-y-2">
                       <label>
                         <Text className="text-primary_text">
@@ -359,7 +378,7 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
                         </p>
                       )}
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <div className="mt-4 flex justify-end gap-2 sm:gap-3">

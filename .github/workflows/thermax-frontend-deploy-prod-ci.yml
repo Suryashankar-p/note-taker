@@ -10,6 +10,7 @@ env:
   IMAGE_NAME: thermax_frontend
   RESOURCE_GROUP: ${{ vars.PROD_RESOURCE_GROUP }}
   CONTAINER_APP_NAME: ${{ vars.PROD_CONTAINER_APP_NAME }}
+  IMAGE_TAG: prod-${{ github.run_number }}
 
 jobs:
   deploy:
@@ -25,20 +26,36 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get Latest Staging Tag
-        id: get_tag
-        run: |
-          git fetch --tags
-          LATEST_TAG=$(git tag -l "staging-*" --sort=-creatordate | head -n 1)
-          echo "Latest staging tag: $LATEST_TAG"
-          echo "::set-output name=TAG::$LATEST_TAG"
-
       - name: Log in to ACR
         run: az acr login --name $ACR_NAME
+
+      - name: Build Docker image
+        run: |
+          docker build -f docker/Dockerfile.prod \
+            --build-arg VITE_ENABLE_SSO="${{ vars.PROD_ENABLE_SSO }}" \
+            --build-arg VITE_ADMIN_USER_EMAIL="${{ secrets.PROD_ADMIN_USER_EMAIL }}" \
+            --build-arg VITE_DOMAIN="${{ vars.PROD_DOMAIN }}" \
+            --build-arg VITE_URL_PREFIX="${{ vars.PROD_URL_PREFIX }}" \
+            --build-arg VITE_BACKEND_SSO_URL="${{ secrets.PROD_BACKEND_SSO_URL }}" \
+            --build-arg VITE_BACKEND_THERMAX_GPT_URL="${{ secrets.PROD_BACKEND_THERMAX_GPT_URL }}" \
+            --build-arg VITE_BACKEND_DOCTOR_CONBOT_URL="${{ secrets.PROD_BACKEND_DOCTOR_CONBOT_URL }}" \
+            --build-arg VITE_BACKEND_SMART_TROUBLESHOOT_URL="${{ secrets.PROD_BACKEND_SMART_TROUBLESHOOT_URL }}" \
+            --build-arg VITE_BACKEND_SALES_URL="${{ secrets.PROD_BACKEND_SALES_URL }}" \
+            --build-arg VITE_BACKEND_TBWES_OCR_URL="${{ secrets.PROD_BACKEND_TBWES_OCR_URL }}" \
+            --build-arg VITE_BACKEND_CYBERBUDDY_URL="${{ secrets.PROD_BACKEND_CYBERBUDDY_URL }}" \
+            --build-arg VITE_BACKEND_HEATING_OCR_URL="${{ secrets.PROD_BACKEND_HEATING_OCR_URL }}" \
+            --build-arg VITE_BACKEND_TRANSMITTER_OCR_URL="${{ secrets.PROD_BACKEND_TRANSMITTER_OCR_URL }}" \
+            --build-arg VITE_BACKEND_DOCUMENT_TRANSLATOR_URL="${{ secrets.PROD_BACKEND_DOCUMENT_TRANSLATOR_URL }}" \
+            --build-arg VITE_BACKEND_EDGE_URL="${{ secrets.PROD_BACKEND_EDGE_URL }}" \
+            -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
+
+      - name: Push Docker image to Prod ACR
+        run: |
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG
 
       - name: Deploy to Azure Container App (Production)
         run: |
           az containerapp update \
             --name $CONTAINER_APP_NAME \
             --resource-group $RESOURCE_GROUP \
-            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ steps.get_tag.outputs.TAG }}
+            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG

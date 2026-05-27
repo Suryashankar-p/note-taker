@@ -3,7 +3,7 @@ import { fileTypeSelctor } from "../utils/functions";
 import { SalesAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_SALES_URL = import.meta.env.VITE_BACKEND_SALES_URL || window.env?.BACKEND_SALES_URL;
+const BACKEND_SALES_URL = import.meta.env.VITE_BACKEND_SALES_URL;
 
 
 //<====================================Sales Auth========================================>
