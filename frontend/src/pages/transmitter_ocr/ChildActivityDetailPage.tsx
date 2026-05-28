@@ -23,6 +23,7 @@ import { Dispatch, RootState } from "../../redux/store.ts";
 import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
 import iButton from "../../assets/info.svg";
 import Tick from "../../assets/tick.svg";
+import GreenTick from "../../assets/green_tick.svg";
 import DropDownButton from "../../components/DropDownButton.tsx";
 import Toast from "../../components/Toast.tsx";
 import { capitalizeWords, statusMapper } from "../../utils/functions.ts";
@@ -669,7 +670,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                           className="absolute right-3 top-1/2 -translate-y-1/2 cursor-help flex items-center justify-center"
                           title={`The value ${item?.value || ""} is what is present in the master sheet`}
                         >
-                          <img src={Tick} alt="Valid" className="w-5 h-5" />
+                          <img src={GreenTick} alt="Valid" className="w-5 h-5" />
                         </div>
                       )}
                     </div>
