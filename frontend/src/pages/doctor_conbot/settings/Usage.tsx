@@ -10,6 +10,7 @@ import {
   ReadUsageLimit,
   UpdateUsageLimit,
   DownloadUsageActivity,
+  ReadActiveUsersTrend,
 } from "../../../services/doctor_conbot";
 import DownloadUsageDetails from "../../../components/Modals/DownloadUsageDetails.tsx";
 import { useDispatch, useSelector } from "react-redux";
@@ -30,10 +31,6 @@ type Calender = {
   year: string | number;
   month: string | number;
 };
-type Page = {
-  skip: number;
-  limit: number;
-};
 
 // Main Usage component
 const Usage = () => {
@@ -50,9 +47,8 @@ const Usage = () => {
   const dispatch = useDispatch<Dispatch>();
   const [topUsers, setTopUsers] = useState<any | null>();
   const [pageError, setPageError] = useState<boolean>(false);
-  const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
   const [totalUsers, setTotalUsers] = useState<number>(0);
-  const loadingRef = useRef(false);
+  const [trendData, setTrendData] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const member = useSelector((state: RootState) => state.memberRole);
   const doctorConBotMemberDetails = member.service === 'doctor_conbot' ? member?.details : {};
@@ -61,8 +57,9 @@ const Usage = () => {
     getCostUsage(calender.year, calender.month);
     getUsageLimit();
     getActivityUsage(calender.year, calender.month);
-    getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);
-  }, []);
+    getActivityTopUsers(calender.year, calender.month, 0, 1000);
+    getActiveUsersTrend(calender.year, calender.month);
+  }, [calender.year, calender.month]);
 
   const getActivityTopUsers = async (
     year: string | number,
@@ -70,24 +67,28 @@ const Usage = () => {
     skip: number,
     limit: number
   ) => {
-   if (totalUsers !== 0 && skip >= totalUsers) return; // prevent unnecessary fetch
-    const topUserResponse = await ReadActivityUsageTopUsers(
-      year,
-      month,
-      skip,
-      limit
-    );
-
-    if (topUserResponse?.result) {
-      setTopUsers((prevData) =>
-        skip === 0
-          ? topUserResponse.result
-          : [...prevData, ...topUserResponse.result]
+    try {
+      const topUserResponse = await ReadActivityUsageTopUsers(
+        year,
+        month,
+        skip,
+        limit
       );
-      setTotalUsers(topUserResponse.total);
-    } else {
-      setPageError(true);
-      setTopUsers(null);
+
+      console.log("Top Users API Response:", topUserResponse);
+
+      if (Array.isArray(topUserResponse?.result)) {
+        setTopUsers(topUserResponse.result);
+        setTotalUsers(topUserResponse.total || 0);
+      } else {
+        setTopUsers([]);
+        setTotalUsers(0);
+      }
+    } catch (err) {
+      console.log("Top Users API Error:", err);
+
+      setTopUsers([]);
+      setTotalUsers(0);
     }
   };
 
@@ -95,12 +96,32 @@ const Usage = () => {
     year: string | number,
     month: string | number
   ) => {
-    const activityResponse = await ReadActivityUsage(year, month);
-    if (activityResponse?.question) {
-      setActivityData(activityResponse);
-    } else {
-      setPageError(true);
+    try {
+      const activityResponse = await ReadActivityUsage(year, month);
+
+      console.log("Activity API Response:", activityResponse);
+
+      if (Array.isArray(activityResponse?.question)) {
+        setActivityData(activityResponse);
+      } else {
+        setActivityData(null);
+      }
+    } catch (err) {
+      console.log("Activity API Error:", err);
+
       setActivityData(null);
+    }
+  };
+
+  const getActiveUsersTrend = async (
+    year: string | number,
+    month: string | number
+  ) => {
+    try {
+      const res = await ReadActiveUsersTrend(year, month);
+      setTrendData(res?.result || res);
+    } catch (err) {
+      console.log("trend err", err);
     }
   };
 
@@ -131,18 +152,7 @@ const Usage = () => {
     }
   };
 
-  const reachedBottom = async () => {
-    if (loadingRef.current) return;
-    if (!topUsers || topUsers.length >= totalUsers) return;
 
-    loadingRef.current = true;
-    const newSkip = topUsers.length;
-    setPage((prev) => ({ ...prev, skip: newSkip }));
-
-    await getActivityTopUsers(calender.year, calender.month, newSkip, page.limit);
-    loadingRef.current = false;
-  };
-  
   const renderContent = () => {
     switch (activeTab) {
       case "cost":
@@ -157,10 +167,13 @@ const Usage = () => {
       case "activity":
         return (
           <Activity
-            activityData={activityData}
+            activityData={{
+              ...activityData,
+              totalActiveUsers: totalUsers,
+            }}
             month={calender.month}
             topUsers={topUsers}
-            reachedBottom={reachedBottom}
+            trendData={trendData}
           />
         );
       default:
@@ -184,20 +197,12 @@ const Usage = () => {
   const onYearChange = (data: string) => {
     if (data !== calender?.year) {
       setCalender({ ...calender, year: data });
-      getCostUsage(data, calender.month);
-      getActivityUsage(data, calender.month);
-      setPage({ limit: 4, skip: 0 });
-      getActivityTopUsers(data, calender.month, 0, 4);
     }
   };
 
   const onMonthChange = (data: string) => {
     if (data !== calender?.month) {
       setCalender({ ...calender, month: data });
-      getCostUsage(calender.year, data);
-      getActivityUsage(calender.year, data);
-      setPage({ limit: 4, skip: 0 });
-      getActivityTopUsers(calender.year, data, 0, 4);
     }
   };
 
@@ -273,9 +278,16 @@ const Usage = () => {
             <MonthButton onSubmit={onMonthChange} month={month} />
           </div>
         </div>
-        <TabPanels className="bg-white h-[22rem] xl:h-[24rem] rounded-lg shadow-lg border border-gray-200">
+        <TabPanels className="bg-white min-h-[24rem] rounded-lg shadow-lg border border-gray-200">
           {tabs.map((tab) => (
-            <TabPanel key={tab.key} className="h-full">
+            <TabPanel
+              key={tab.key}
+              className={
+                tab.key === "activity"
+                  ? "overflow-y-auto max-h-[calc(100vh-12rem)]"
+                  : "h-full"
+              }
+            >
               {renderContent()}
             </TabPanel>
           ))}

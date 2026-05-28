@@ -614,7 +614,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                         />
                       )}
                     </Text>
-                    <div className="w-full">
+                    <div className="w-full relative mt-2">
                       <input
                         type={item?.type === "string" ? "text" : "number"}
                         disabled={
@@ -623,7 +623,7 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                           activityDetails?.status === "SUBMITTED" ||
                           activityDetails?.status === "SUBMITTED_WAITING"
                         }
-                        className={`mt-2 block w-full px-4 py-3 border rounded-md shadow-sm text-lg transition-all ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'} ${activityDetails?.status === "SUBMITTED_SUCCESS" ||
+                        className={`block w-full px-4 py-3 pr-10 border rounded-md shadow-sm text-lg transition-all ${!item?.is_valid ? 'bg-yellow-50' : 'bg-white'} ${activityDetails?.status === "SUBMITTED_SUCCESS" ||
                           activityDetails?.status === "REJECTED" ||
                           activityDetails?.status === "SUBMITTED" ||
                           activityDetails?.status === "SUBMITTED_WAITING"
@@ -664,6 +664,14 @@ const ChildActivityDetailPage: React.FC<ChildActivityDetailPageProps> = ({ onBac
                         }}
                         placeholder={`Enter ${formatFieldTitle(item.title).toLowerCase()}`}
                       />
+                      {item?.is_valid && (
+                        <div
+                          className="absolute right-3 top-1/2 -translate-y-1/2 cursor-help flex items-center justify-center"
+                          title={`The value ${item?.value || ""} is what is present in the master sheet`}
+                        >
+                          <img src={Tick} alt="Valid" className="w-5 h-5" />
+                        </div>
+                      )}
                     </div>
                     {!item?.is_valid && item?.invalid_reason && (
                       <div className="mt-1 text-sm text-yellow-600 flex items-start">
