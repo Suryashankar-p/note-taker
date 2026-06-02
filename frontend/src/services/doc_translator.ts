@@ -3,7 +3,7 @@ import { fileTypeSelctor } from "../utils/functions";
 import { DocumentTranslatorAPI } from "./Axios";
 import axios from "axios";
 
-const BACKEND_DOC_TRANSLATOR_URL =  import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL;
+const BACKEND_DOC_TRANSLATOR_URL =  import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL || window.env?.BACKEND_DOCUMENT_TRANSLATOR_URL;
 
 ////===============================================\\\\\\\\\\\\
 // Translation APIs
@@ -69,9 +69,7 @@ export const ReadMembers = async (
   const response = await DocumentTranslatorAPI.get(
     BACKEND_DOC_TRANSLATOR_URL +
       `/doc_translator/member?skip=${skip}&limit=${limit}${
-        search_term !== "" && search_term !== undefined
-          ? "&search_term=" + search_term
-          : ""
+        search_term ? "&search_term=" + search_term : ""
       }`
   );
   return response;
