@@ -92,10 +92,9 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
     { id: number | null | string; title: string }[]
   >([]);
 
-  // User-selected services (defaultValue)
   const [selectedServices, setSelectedServices] = useState<
     { id: number | null | string; title: string }[]
-  >(type === 'edit' ? defaultValue?.thrmx_gpt_user_service_mapping : []);
+  >(type === 'edit' ? (defaultValue?.thrmx_gpt_user_service_mapping || []) : []);
 
   const {
     register,
@@ -169,7 +168,7 @@ const AddMembersModal: React.FC<Props> = ({ defaultValue, onSubmit }) => {
   const handleOnSubmit = (data: IFormInput) => {
     const role = data.role as RoleKey;
 
-    let servicesToSubmit = selectedServices;
+    let servicesToSubmit = selectedServices || [];
 
     if (isThermaxPath) {
       const thermaxGPTService = allThermaxServices.find(

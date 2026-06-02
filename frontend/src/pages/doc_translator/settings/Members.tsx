@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import Text from "../../../components/Text";
@@ -23,7 +23,7 @@ import { Dispatch, RootState } from "../../../redux/store";
 
 const Members: React.FC = () => {
   const dispatch = useDispatch<Dispatch>();
-
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageError, setPageError] = useState(false);
@@ -57,7 +57,6 @@ const Members: React.FC = () => {
 
   // ===== Fetch members =====
   const fetchMembers = async (search_term = "") => {
-    if (loading) return;
     try {
       setLoading(true);
       const response = await ReadMembers(0, 100, search_term);
@@ -111,9 +110,16 @@ const Members: React.FC = () => {
 
   // ===== Search =====
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchValue(value);
-    fetchMembers(value);
+    const searchTerm = e.target.value;
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setSearchValue(searchTerm);
+      fetchMembers(searchTerm);
+    }, 500);
   };
 
   return (
@@ -156,7 +162,7 @@ const Members: React.FC = () => {
         </div>
       </div>
 
-      <div className="md:mx-16 mx-4 mt-2 overflow-y-auto">
+      <div className="md:mx-16 mx-4 mt-2 max-h-[70vh] overflow-y-auto">
         {data.length > 0 ? (
           <UserTable
             data={data}
