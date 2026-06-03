@@ -60,7 +60,7 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 lg:mt-[5.5vh] mt-[5vh] relative bg-background">
+      <div className="flex flex-1 lg:mt-[5.5vh] mt-[5vh] relative bg-background overflow-y-hidden">
         {/* Sidebar wrapper (gives grey background) */}
         <div className="fixed inset-y-0 left-0 z-40 mt-6 md:w-[15rem] lg:w-[16rem] bg-primary_text md:relative md:block">
           <SettingsSidebar selected={selectedKey} onSelect={onSelect} />
@@ -70,7 +70,7 @@ const Settings: React.FC = () => {
         <div
           className="pl-2 mt-20 xs:mt-16 sm:mt-18 md:mt-8 lg:mt-6 xl:mt-8
                      w-[12rem] sm:w-[24rem] md:w-[30rem] lg:w-[35rem] xl:w-[40rem]
-                     flex-1 bg-background overflow-y-auto relative z-0"
+                     flex-1 bg-background overflow-y-hidden relative z-0"
         >
           {currentElement?.component}
         </div>
