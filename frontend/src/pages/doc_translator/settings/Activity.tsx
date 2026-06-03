@@ -80,7 +80,7 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 			{
 				label: 'Translations',
 				data: counts,
-				backgroundColor: 'rgba(99, 132, 255, 0.5)',
+				backgroundColor: 'rgba(255, 99, 132, 0.5)',
 			},
 		],
 	};
@@ -134,9 +134,9 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 			{
 				label: 'Active users',
 				data: trendCounts,
-				borderColor: '#16a34a',           // green-600
-				backgroundColor: 'rgba(22,163,74,0.10)',
-				pointBackgroundColor: '#16a34a',
+				borderColor: 'rgba(255, 99, 132, 0.7)',
+				backgroundColor: 'rgba(255, 99, 132, 0.10)',
+				pointBackgroundColor: 'rgba(255, 99, 132, 0.7)',
 				pointRadius: 5,
 				pointHoverRadius: 7,
 				borderWidth: 2,
@@ -157,7 +157,7 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 			if (value !== null && value !== undefined) {
 			ctx.save();
 			ctx.font = '600 11px sans-serif';
-			ctx.fillStyle = '#16a34a';
+			ctx.fillStyle = 'rgba(255, 99, 132, 0.7)';
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'bottom';
 			ctx.fillText(value, point.x, point.y - 6);
@@ -170,6 +170,9 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 	const lineOptions = {
 		responsive: true,
 		maintainAspectRatio: false,
+		layout: {
+			padding: { top: 20 },
+		},
 		plugins: {
 			legend: { display: false },
 			title: { display: false },
@@ -264,7 +267,7 @@ export default function Activity({ activityData, month, year, topUsers, trendDat
 								>
 									<div
 										title={`Translations: ${user?.total_translations}`}
-										className="bg-[#b1c1ff] rounded-r-md h-4 transition-all duration-300"
+										className="bg-[rgba(255,99,132,0.5)] rounded-r-md h-4 transition-all duration-300"
 										style={{ width: `${widthPercentage(user)}%` }}
 									/>
 								</div>
