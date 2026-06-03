@@ -149,6 +149,18 @@ export const ReadActivityUsage = async (
   return response;
 };
 
+export const ReadTokenUsage = async (
+  year: string | number,
+  month: string | number,
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
+) => {
+  const response = await GPTAPI.get(
+    BACKEND_THERMAX_GPT_URL +
+      `/thermax_gpt/usage/tokens?year=${year}&month=${month}&type=${type}`
+  );
+  return response;
+};
+
 export const ReadActivityUsageTopUsers = async (
   year: string | number,
   month: string | number,
@@ -159,6 +171,17 @@ export const ReadActivityUsageTopUsers = async (
   const response = await GPTAPI.get(
     BACKEND_THERMAX_GPT_URL +
       `/thermax_gpt/usage/activity/top?skip=${skip}&limit=${limit}&year=${year}&month=${month}&type=${type}`
+  );
+  return response;
+};
+
+export const ReadDistributionUsage = async (
+  year: string | number,
+  month: string | number
+) => {
+  const response = await GPTAPI.get(
+    BACKEND_THERMAX_GPT_URL +
+      `/thermax_gpt/usage/distribution?year=${year}&month=${month}`
   );
   return response;
 };

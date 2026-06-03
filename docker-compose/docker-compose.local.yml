@@ -24,8 +24,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ../frontend/src:/frontend/src
-      - ../frontend/public:/frontend/public
+      - ../frontend/src:/app/src
+      - ../frontend/public:/app/public
     env_file:
       - ../frontend/.env
 
