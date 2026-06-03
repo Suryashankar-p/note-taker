@@ -84,13 +84,23 @@ const Members: React.FC = () => {
   // ===== Modal submit handler =====
   const onSubmit = async (payload: any) => {
     try {
+      let response;
       if (modalType === "edit") {
-        await UpdateMember(payload.role, payload.name, payload.memberId);
+        response = await UpdateMember(payload.role, payload.name, payload.memberId);
       } else if (modalType === "add") {
-        await CreateMember(payload.role, payload.email, payload.name);
+        response = await CreateMember(payload.role, payload.email, payload.name);
       }
-      dispatch.modal.closeAddMember();
-      fetchMembers(searchValue);
+      if (response?.detail) {
+        setPageError(true);
+        dispatch.toast.openToast({
+          status: true,
+          message: response.detail,
+          type: "error",
+        });
+      } else {
+        dispatch.modal.closeAddMember();
+        fetchMembers(searchValue);
+      }
     } catch (err) {
       console.error(err);
       setPageError(true);
@@ -123,7 +133,7 @@ const Members: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full gap-8 overflow-y-hidden">
+    <div className="flex flex-col h-full gap-8">
       {toastStatus.status && pageError && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50">
           <Toast type="error" />
@@ -162,7 +172,7 @@ const Members: React.FC = () => {
         </div>
       </div>
 
-      <div className="md:mx-16 mx-4 mt-2 max-h-[70vh] overflow-y-auto">
+      <div className="md:mx-16 mx-4 mt-2 flex-1 min-h-0 overflow-y-auto">
         {data.length > 0 ? (
           <UserTable
             data={data}
