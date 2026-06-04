@@ -161,6 +161,20 @@ export const ReadTokenUsage = async (
   return response;
 };
 
+export const ReadTokenUsageTopUsers = async (
+  year: string | number,
+  month: string | number,
+  skip: number = 0,
+  limit: number = 6,
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
+) => {
+  const response = await GPTAPI.get(
+    BACKEND_THERMAX_GPT_URL +
+      `/thermax_gpt/usage/tokens/top?skip=${skip}&limit=${limit}&year=${year}&month=${month}&type=${type}`
+  );
+  return response;
+};
+
 export const ReadActivityUsageTopUsers = async (
   year: string | number,
   month: string | number,

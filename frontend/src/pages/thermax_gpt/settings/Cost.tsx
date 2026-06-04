@@ -251,31 +251,6 @@ export default function Cost({ usageData, distributionData, limit, onLimitEdit, 
         </div>
       </div>
 
-      {/* Usage Insights */}
-      <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 rounded-full" style={{ background: THERMAX_RED }} />
-          <p className="text-sm font-bold text-gray-800">Usage Insights</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <InsightItem
-            label="Budget Utilization"
-            value={`${percentage}% consumed`}
-            color={Number(percentage) > 80 ? "text-red-600" : "text-amber-600"}
-          />
-          <InsightItem
-            label="Total Spend"
-            value={`$${totalCost} this month`}
-            color="text-gray-700"
-          />
-          <InsightItem
-            label="Dominant Model"
-            value={distributionData?.[0]?.model || "N/A"}
-            color="text-blue-600"
-          />
-        </div>
-      </div>
-
       {editLimit && (
         <div className="absolute top-0 left-0 w-full h-full z-50">
           <EditLimitModal defaultValue={limit} onSubmit={onLimitEdit} />

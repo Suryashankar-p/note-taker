@@ -9,15 +9,19 @@ import {
   Legend,
 } from "chart.js";
 import { months } from "../../../utils/constants";
+import { getInitials } from "../../../utils/functions";
+import Text from "../../../components/Text";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface Props {
   tokenData: any;
+  tokenTopUsers: any;
   month: any;
+  reachedBottom: () => void;
 }
 
-export default function Tokens({ tokenData, month }: Props) {
+export default function Tokens({ tokenData, tokenTopUsers, month, reachedBottom }: Props) {
   const totalPrompt = tokenData?.total_prompt || 0;
   const totalCompletion = tokenData?.total_completion || 0;
   const totalTokens = totalPrompt + totalCompletion;
@@ -91,6 +95,13 @@ export default function Tokens({ tokenData, month }: Props) {
     },
   };
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollTop + clientHeight + 2 >= scrollHeight) {
+      reachedBottom();
+    }
+  };
+
   return (
     <div className="flex flex-col p-6 gap-6">
 
@@ -147,28 +158,88 @@ export default function Tokens({ tokenData, month }: Props) {
         </div>
       )}
 
-      {/* Chart */}
-      <div className="bg-gray-50 rounded-xl border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-800">Daily Token Usage</p>
-            <p className="text-xs text-gray-400">{months[month - 1]} · Stacked by type</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(59,130,246,0.85)" }} />
-              <span className="text-xs font-medium text-gray-500">Prompt</span>
+      {/* Main Content Area: Chart + Top Users */}
+      <div className="flex flex-col lg:flex-row gap-6 h-full">
+        {/* Chart Column */}
+        <div className="bg-gray-50 rounded-xl border border-gray-100 p-5 flex-1">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Daily Token Usage</p>
+              <p className="text-xs text-gray-400">{months[month - 1]} · Stacked by type</p>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(16,185,129,0.85)" }} />
-              <span className="text-xs font-medium text-gray-500">Completion</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(59,130,246,0.85)" }} />
+                <span className="text-xs font-medium text-gray-500">Prompt</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(16,185,129,0.85)" }} />
+                <span className="text-xs font-medium text-gray-500">Completion</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ height: 340, position: "relative" }}>
+            <Bar data={barData} options={barOptions} />
+          </div>
+          <p className="text-xs text-gray-400 text-center mt-3">Days of {months[month - 1]}</p>
+        </div>
+
+        {/* Top Users Column */}
+        <div 
+          className="bg-white rounded-xl border border-gray-100 p-5 w-full lg:w-80 flex flex-col"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-gray-800">Per User Token Usage</p>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">By Tokens</span>
+          </div>
+          
+          <div 
+            className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+            onScroll={handleScroll}
+          >
+            <div className="flex flex-col gap-3">
+              {tokenTopUsers?.map((user: any, index: number) => (
+                <div key={index} className="group p-3 rounded-xl border border-transparent hover:border-gray-100 hover:bg-gray-50/50 transition-all duration-200">
+                  <div className="flex items-center gap-3 mb-2.5">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold ring-2 ring-white">
+                      {getInitials(user.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate leading-none mb-1">{user.name}</p>
+                      <p className="text-[10px] text-gray-400 truncate tracking-tight">{user.email}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[10px] font-medium text-gray-500">Total Utilization</span>
+                      <span className="text-xs font-bold text-gray-700">{user.total_tokens.toLocaleString()}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden flex gap-0.5">
+                       <div 
+                         className="h-full bg-blue-500/80" 
+                         style={{ width: `${(user.prompt_tokens / (user.total_tokens || 1)) * 100}%` }}
+                         title={`Prompt: ${user.prompt_tokens}`}
+                       />
+                       <div 
+                         className="h-full bg-emerald-500/80" 
+                         style={{ width: `${(user.completion_tokens / (user.total_tokens || 1)) * 100}%` }}
+                         title={`Completion: ${user.completion_tokens}`}
+                       />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {(!tokenTopUsers || tokenTopUsers.length === 0) && (
+                <div className="flex flex-col items-center justify-center py-20 opacity-40">
+                  <div className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 mb-3" />
+                  <p className="text-xs font-medium text-gray-400">No users found</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
-        <div style={{ height: 340, position: "relative" }}>
-          <Bar data={barData} options={barOptions} />
-        </div>
-        <p className="text-xs text-gray-400 text-center mt-3">Days of {months[month - 1]}</p>
       </div>
     </div>
   );
