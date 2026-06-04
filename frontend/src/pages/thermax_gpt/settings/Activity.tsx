@@ -184,7 +184,7 @@ export default function Activity({ activityData, distributionData, month, topUse
             onScroll={handleScroll}
           >
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-gray-800">Top Users</p>
+              <p className="text-sm font-semibold text-gray-800">Per User Questions Asked</p>
               {topUsers?.length > 0 && (
                 <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-medium">
                   {topUsers.length}

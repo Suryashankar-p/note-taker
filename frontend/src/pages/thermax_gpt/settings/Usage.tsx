@@ -9,6 +9,7 @@ import {
   ReadCostUsage,
   ReadDistributionUsage,
   ReadTokenUsage,
+  ReadTokenUsageTopUsers,
   ReadUsageLimit,
   UpdateUsageLimit,
 } from "../../../services/thermax_gpt";
@@ -49,6 +50,7 @@ const Usage = () => {
   const toastStatus = useSelector((state: RootState) => state.toast.status);
   const dispatch = useDispatch<Dispatch>();
   const [topUsers, setTopUsers] = useState<any | null>();
+  const [tokenTopUsers, setTokenTopUsers] = useState<any | null>();
   const [pageError, setPageError] = useState<boolean>(false);
   const [modelTypeFilter, setModelTypeFilter] = useState<ModelType>({ value: "All", name: "All" });
   const [page, setPage] = useState<Page>({ skip: 0, limit: 4 });
@@ -61,18 +63,29 @@ const Usage = () => {
     getActivityUsage(calender.year, calender.month, modelTypeFilter.value);
     getTokenUsage(calender.year, calender.month, modelTypeFilter.value);
     getActivityTopUsers(calender.year, calender.month, page.skip, page.limit);
+    getTokenTopUsers(calender.year, calender.month, page.skip, page.limit);
     getDistributionUsage(calender.year, calender.month);
   }, []);
 
   const reachedBottom = async () => {
     if (loadingRef.current) return;
-    if (!topUsers || topUsers.length >= totalUsers) return;
-    loadingRef.current = true;
-    const newSkip = topUsers.length;
-    setPage((prev) => ({ ...prev, skip: newSkip }));
-    await getActivityTopUsers(calender.year, calender.month, newSkip, page.limit);
-    loadingRef.current = false;
+    if (activeTab === "activity") {
+      if (!topUsers || topUsers.length >= totalUsers) return;
+      loadingRef.current = true;
+      const newSkip = topUsers.length;
+      setPage((prev) => ({ ...prev, skip: newSkip }));
+      await getActivityTopUsers(calender.year, calender.month, newSkip, page.limit);
+      loadingRef.current = false;
+    } else if (activeTab === "tokens") {
+      if (!tokenTopUsers || tokenTopUsers.length >= totalUsers) return;
+      loadingRef.current = true;
+      const newSkip = tokenTopUsers.length;
+      setPage((prev) => ({ ...prev, skip: newSkip }));
+      await getTokenTopUsers(calender.year, calender.month, newSkip, page.limit);
+      loadingRef.current = false;
+    }
   };
+
 
   const getActivityTopUsers = async (year, month, skip, limit, type: ModelValue = "All") => {
     if (totalUsers !== 0 && skip >= totalUsers) return;
@@ -85,6 +98,20 @@ const Usage = () => {
     } else {
       setPageError(true);
       setTopUsers(null);
+    }
+  };
+
+  const getTokenTopUsers = async (year, month, skip, limit, type: ModelValue = "All") => {
+    if (totalUsers !== 0 && skip >= totalUsers) return;
+    const topUserResponse = await ReadTokenUsageTopUsers(year, month, skip, limit, type);
+    if (topUserResponse?.result) {
+      setTokenTopUsers((prevData) =>
+        skip === 0 ? topUserResponse.result : [...prevData, ...topUserResponse.result]
+      );
+      setTotalUsers(topUserResponse.total);
+    } else {
+      setPageError(true);
+      setTokenTopUsers(null);
     }
   };
 
@@ -144,6 +171,7 @@ const Usage = () => {
     getActivityUsage(year, month, modelValue);
     getTokenUsage(year, month, modelValue);
     getActivityTopUsers(year, month, 0, 4, modelValue);
+    getTokenTopUsers(year, month, 0, 4, modelValue);
     getDistributionUsage(year, month);
   };
 
@@ -168,7 +196,14 @@ const Usage = () => {
       case "activity":
         return <Activity activityData={activityData} distributionData={distributionData} month={calender.month} topUsers={topUsers} reachedBottom={reachedBottom} />;
       case "tokens":
-        return <Tokens tokenData={tokenData} month={calender.month} />;
+        return (
+          <Tokens
+            tokenData={tokenData}
+            tokenTopUsers={tokenTopUsers}
+            month={calender.month}
+            reachedBottom={reachedBottom}
+          />
+        );
       default:
         return null;
     }
@@ -202,7 +237,8 @@ const Usage = () => {
               getCostUsage(calender.year, calender.month, value?.value);
               getActivityUsage(calender.year, calender.month, value?.value);
               getTokenUsage(calender.year, calender.month, value?.value);
-              getActivityTopUsers(calender.year, calender.month, page.skip, page.limit, value?.value);
+              getActivityTopUsers(calender.year, calender.month, 0, 4, value?.value);
+              getTokenTopUsers(calender.year, calender.month, 0, 4, value?.value);
               setModelTypeFilter(value);
             }}
           />
