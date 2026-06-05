@@ -67,6 +67,10 @@ const FeedbackReview: React.FC<Props> = ({
   const cyberBuddyMemberDetails = member.service === "cyberbuddy" ? member?.details : {};
 
   const salesMemberDetails = member.service === "sales" ? member?.details : {};
+  // Smart-troubleshooting has no REVIEWER role; only OWNER can approve/reject.
+  // Members are blocked from this modal entirely upstream.
+  const troubleshootingMemberDetails =
+    member.service === "troubleshooting" ? member?.details : {};
   const [submitType, setSubmitType] = useState<string>("");
   const toastStatus = useSelector((state: RootState) => state.toast);
   const dislikeReason = [{ id: 1, name: defaultValue?.dislike_reason }];
@@ -157,6 +161,7 @@ const FeedbackReview: React.FC<Props> = ({
     else if (cyberBuddyMemberDetails?.role === "REVIEWER") {
       if (defaultValue?.status !== "NOT_REVIEWED") return true;
     }
+    else if (troubleshootingMemberDetails?.role === "MEMBER") return true;
   };
 
   const bgFinder = (like: boolean | undefined) => {
@@ -555,7 +560,9 @@ const SourceComponent = () => {
                           >
                             <Text type="body">Cancel</Text>
                           </button>
-                          {salesMemberDetails?.role === "OWNER" || cyberBuddyMemberDetails?.role === "OWNER" ? (
+                          {salesMemberDetails?.role === "OWNER" ||
+                          cyberBuddyMemberDetails?.role === "OWNER" ||
+                          troubleshootingMemberDetails?.role === "OWNER" ? (
                             <div className="flex flex-row gap-4">
                               {defaultValue?.status !== "APPROVED" && (
                                 <button

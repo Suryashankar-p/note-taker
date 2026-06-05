@@ -22,6 +22,7 @@ interface Props {
   onChatDeleteClick: (item: any) => void;
   getChatList: () => void;
   onSideBarclose: () => void;
+  onNewChatClick: () => void;
 }
 
 interface EditType {
@@ -39,7 +40,7 @@ const MenuItems = [
     }
   ]
   
-  const Sidebar: React.FC<Props> = ({ history = [], onChatDeleteClick, getChatList, onSideBarclose }) => {
+  const Sidebar: React.FC<Props> = ({ history = [], onChatDeleteClick, getChatList, onSideBarclose, onNewChatClick }) => {
     const [editChat, setEditChat] = useState<EditType>({ status: false, index: null });
     const [inputValue, setInputValue] = useState<string>('');
     const dispatch = useDispatch<Dispatch>();
@@ -61,10 +62,9 @@ const MenuItems = [
     };
   
     const handleNewChatClick = () => {
-      setSelectedItem(null)
-      navigate(`/ai-studio/troubleshooting`);
-      dispatch.chatContent.clearChat();
+      setSelectedItem(null);
       onSideBarclose();
+      onNewChatClick();
     };
   
     const handleChatClick = async (item: any) => {

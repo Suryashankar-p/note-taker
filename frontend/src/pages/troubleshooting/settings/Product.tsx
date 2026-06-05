@@ -33,6 +33,7 @@ import ConfirmationModal from "../../../components/Modals/ConfirmationModal";
 import Toast from "../../../components/Toast";
 import { getFileType } from "../../../utils/functions.ts";
 import FileViewModal from "../../../components/Modals/FileViewModal.tsx";
+import ProductTree from "./ProductTree.tsx";
 
 const MenuItems = [
   {
@@ -76,6 +77,7 @@ const Products = () => {
   const [fileShow, setFileShow] = useState(false);
   const [fileData, setFileData] = useState();
   const [status, setStatus] = useState("PENDING");
+  const [treeProduct, setTreeProduct] = useState<any>(null);
 
   useEffect(() => {
     getAllProducts(pageSize.skip, pageSize.limit, "");
@@ -445,6 +447,13 @@ const Products = () => {
                     </Text>{" "}
                   </button>
                 )}
+                <button
+                  onClick={() => setTreeProduct(item)}
+                  className="flex border rounded-full my-0 h-10 px-4 py-2 items-center ml-2 shrink-0"
+                  title="Manage problems, causes & solutions"
+                >
+                  <Text className="text-primary_text">Knowledge tree</Text>
+                </button>
                 {TroubleshootingMemberDetails?.role === "OWNER" && (
                   <DropDownMenu
                     onChange={(title: string) => onProductOnChange(item, title)}
@@ -482,6 +491,13 @@ const Products = () => {
         )}
       </div>
       {hasReachedEnd && hasMoreProducts && <p>Loading more...</p>}
+      {treeProduct && (
+        <ProductTree
+          product={treeProduct}
+          isOwner={TroubleshootingMemberDetails?.role === "OWNER"}
+          onClose={() => setTreeProduct(null)}
+        />
+      )}
     </div>
   );
 };
