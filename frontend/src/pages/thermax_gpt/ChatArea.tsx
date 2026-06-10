@@ -166,7 +166,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (media_type !== "excel" && media_type !== "docx" && media_type !== "ppt" && media_type !== "chart" && !mediaUrl) {
+    if (media_type !== "excel" && media_type !== "xlsx" && media_type !== "docx" && media_type !== "ppt" && media_type !== "pptx" && media_type !== "chart" && !mediaUrl) {
       if (link) {
         onFetchMedia(String(messageIndex), media_type, link);
       }
@@ -177,7 +177,18 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
     try {
       if (!chatId) return;
       const url = new URL(fileLink);
-      const filenameParam = url.searchParams.get("filename");
+
+      // Try to extract filename from `rscd` param (Azurite/Azure blob format: "inline; filename=...") or fallback to `filename` param
+      let filenameParam: string | null = null;
+      const rscd = url.searchParams.get("rscd");
+      if (rscd) {
+        const match = rscd.match(/filename=([^;]+)/i);
+        if (match) filenameParam = decodeURIComponent(match[1].trim());
+      }
+      if (!filenameParam) {
+        filenameParam = url.searchParams.get("filename");
+      }
+
       let defaultExtension = ".xlsx";
       let defaultMimeType =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -185,14 +196,16 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
         defaultExtension = ".docx";
         defaultMimeType =
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      } else if (mediaType === "ppt") {
+      } else if (mediaType === "ppt" || mediaType === "pptx") {
         defaultExtension = ".pptx";
         defaultMimeType =
           "application/vnd.openxmlformats-officedocument.presentationml.presentation";
       }
       const fileName =
         filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
-      const response = await ReadFile(Number(chatId), mediaType, fileLink);
+      // Normalise mediaType: backend API expects "ppt" for pptx files
+      const apiMediaType = mediaType === "pptx" ? "ppt" : mediaType;
+      const response = await ReadFile(Number(chatId), apiMediaType, fileLink);
       const mediaBlob = new Blob([response.data], {
         type: response.headers["content-type"] || defaultMimeType,
       });
@@ -267,13 +280,15 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
     );
   }
 
-  if (media_type === "excel" || media_type === "docx" || media_type === "ppt") {
-    const labels = {
+  if (media_type === "excel" || media_type === "xlsx" || media_type === "docx" || media_type === "ppt" || media_type === "pptx") {
+    const labels: Record<string, { text: string; color: string; hover: string }> = {
       excel: { text: "Excel Spreadsheet", color: "bg-green-600", hover: "hover:bg-green-700" },
+      xlsx: { text: "Excel Spreadsheet", color: "bg-green-600", hover: "hover:bg-green-700" },
       docx: { text: "Word Document", color: "bg-blue-600", hover: "hover:bg-blue-700" },
-      ppt: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" }
+      ppt: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" },
+      pptx: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" },
     };
-    const config = labels[media_type as keyof typeof labels] || labels.excel;
+    const config = labels[media_type] || labels.excel;
 
     return (
       <div className="my-4">
@@ -342,9 +357,9 @@ const MultipleMediaRenderer: React.FC<MultipleMediaRendererProps> = ({
             <div className="text-sm font-medium text-gray-600 mb-2">
               {source.media_type === 'image' && 'Generated Image'}
               {source.media_type === 'video' && 'Generated Video'}
-              {source.media_type === 'excel' && 'Excel File'}
+              {(source.media_type === 'excel' || source.media_type === 'xlsx') && 'Excel File'}
               {source.media_type === 'docx' && 'Word Document'}
-              {source.media_type === 'ppt' && 'PowerPoint Presentation'}
+              {(source.media_type === 'ppt' || source.media_type === 'pptx') && 'PowerPoint Presentation'}
               {source.media_type === 'chart' && 'Generated Chart'}
               {source.media_type === 'unknown' && 'Generated File'}
             </div>
