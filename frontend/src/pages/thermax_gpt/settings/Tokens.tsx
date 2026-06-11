@@ -195,6 +195,7 @@ export default function Tokens({ tokenData, tokenTopUsers, month, reachedBottom 
           
           <div 
             className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+            style={{ maxHeight: 240 }}
             onScroll={handleScroll}
           >
             <div className="flex flex-col gap-3">

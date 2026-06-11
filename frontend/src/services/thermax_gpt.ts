@@ -189,6 +189,18 @@ export const ReadActivityUsageTopUsers = async (
   return response;
 };
 
+export const ReadTotalActiveUsers = async (
+  year: string | number,
+  month: string | number,
+  type: "GPT 5.4" | "Sonnet 4.6" | "All" = "All"
+) => {
+  const response = await GPTAPI.get(
+    BACKEND_THERMAX_GPT_URL +
+      `/thermax_gpt/usage/activity/total-users?year=${year}&month=${month}&type=${type}`
+  );
+  return response;
+};
+
 export const ReadDistributionUsage = async (
   year: string | number,
   month: string | number

@@ -27,9 +27,10 @@ interface Props {
   month: any;
   topUsers: any;
   reachedBottom: () => void;
+  totalActiveUsers: number;
 }
 
-export default function Activity({ activityData, distributionData, month, topUsers, reachedBottom }: Props) {
+export default function Activity({ activityData, distributionData, month, topUsers, reachedBottom, totalActiveUsers }: Props) {
   const totalQuestions = activityData?.total || 0;
 
   const barData = {
@@ -133,7 +134,7 @@ export default function Activity({ activityData, distributionData, month, topUse
         </div>
         <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
           <span className="text-xs font-semibold text-emerald-500 uppercase tracking-wider">Active Users</span>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{topUsers?.length || 0}</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{totalActiveUsers}</p>
           <p className="text-xs text-emerald-400 mt-0.5">contributors</p>
         </div>
       </div>
@@ -178,19 +179,21 @@ export default function Activity({ activityData, distributionData, month, topUse
           </div>
 
           {/* Top Users */}
-          <div
-            className="bg-white border border-gray-200 rounded-xl p-5 flex-1 overflow-y-auto"
-            style={{ maxHeight: 320 }}
-            onScroll={handleScroll}
-          >
+          <div className="bg-white border border-gray-200 rounded-xl p-5 flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-semibold text-gray-800">Per User Questions Asked</p>
               {topUsers?.length > 0 && (
                 <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-medium">
-                  {topUsers.length}
+                  {totalActiveUsers}
                 </span>
               )}
             </div>
+
+            <div
+              className="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+              style={{ maxHeight: 130 }}
+              onScroll={handleScroll}
+            >
 
             {topUsers?.length > 0 ? (
               <div className="flex flex-col gap-3">
@@ -204,7 +207,7 @@ export default function Activity({ activityData, distributionData, month, topUse
                           {index + 1}
                         </span>
                         <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                          style={{ background: index === 0 ? THERMAX_RED : index === 1 ? "#3b82f6" : "#6b7280" }}>
+                          style={{ background: THERMAX_RED }}>
                           {user && getInitials(user.name)}
                         </div>
                       </div>
@@ -219,7 +222,7 @@ export default function Activity({ activityData, distributionData, month, topUse
                             className="h-1.5 rounded-full transition-all duration-500"
                             style={{
                               width: `${pct}%`,
-                              background: index === 0 ? THERMAX_RED : index === 1 ? "#3b82f6" : "#9ca3af",
+                              background: THERMAX_RED,
                             }}
                           />
                         </div>
@@ -233,6 +236,7 @@ export default function Activity({ activityData, distributionData, month, topUse
                 No activity to show
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
