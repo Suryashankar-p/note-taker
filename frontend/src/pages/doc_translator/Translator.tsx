@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDispatch, useSelector } from "react-redux";
+import { Dispatch, RootState } from "../../redux/store.ts";
 import Button from "../../components/Button.tsx";
 import SearchDropdown from "../../components/Combobox.tsx";
 import Text from "../../components/Text.tsx";
+import Toast from "../../components/Toast.tsx";
 import Translation from "../../assets/translator.svg";
 import { GetTranslatorResponse, TranslateDocument } from "../../services/doc_translator.ts";
 import { Languages } from "../../utils/constants.ts";
@@ -26,6 +29,8 @@ const Translator = () => {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const queryClient = useQueryClient();
+  const dispatch = useDispatch<Dispatch>();
+  const toast = useSelector((state: RootState) => state.toast);
   const mutation = useMutation({
     mutationKey: ["document_translation"],
     mutationFn: () => TranslateDocument(selectedOutputLanguage?.value, file, selectedInputLanguage?.value),
@@ -41,6 +46,15 @@ const Translator = () => {
     useEffect(() => {
       if (translatorData?.status === "succeeded") {
         setLoading(false);
+      } else if (translatorData?.status === "failed") {
+        setLoading(false);
+        dispatch.toast.openToast({
+          message:
+            translatorData?.result?.error?.error_message ||
+            "Translation failed. Please try again.",
+          status: true,
+          type: "error",
+        });
       }
     }, [translatorData]);
   
@@ -113,6 +127,12 @@ const handleDownload = async () => {
 };
 
   return (
+    <>
+      {toast?.status && toast?.type === "error" && (
+        <div className="fixed top-[4rem] sm:top-[5rem] md:top-[6rem] left-1/2 transform -translate-x-1/2 z-50 space-y-4">
+          <Toast type="error" />
+        </div>
+      )}
     <div className="flex flex-col gap-8 px-2 pt-8 h-screen">
       {/* Top controls: Buttons and Dropdowns arranged in a row */}
       <div className="flex flex-row items-center justify-between">
@@ -263,6 +283,7 @@ const handleDownload = async () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
