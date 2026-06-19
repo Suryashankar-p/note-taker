@@ -7,10 +7,11 @@ import SearchDropdown from "../../components/Combobox.tsx";
 import Text from "../../components/Text.tsx";
 import Toast from "../../components/Toast.tsx";
 import Translation from "../../assets/translator.svg";
-import { GetTranslatorResponse, TranslateDocument } from "../../services/doc_translator.ts";
+import { GetTranslatorFile, GetTranslatorResponse, TranslateDocument } from "../../services/doc_translator.ts";
 import { Languages } from "../../utils/constants.ts";
-import { getFileType, getIframeSrc } from "../../utils/functions.ts";
+import { getFileType } from "../../utils/functions.ts";
 
+const PREVIEWABLE_TYPES = ["PDF", "JPG", "JPEG", "PNG"];
 
 const Translator = () => {
   const [selectedInputLanguage, setSelectedInputLanguage] = useState<
@@ -27,6 +28,8 @@ const Translator = () => {
   const [downloading, setDownloading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [outputPreviewUrl, setOutputPreviewUrl] = useState<string | null>(null);
+  const outputBlobRef = useRef<Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const queryClient = useQueryClient();
   const dispatch = useDispatch<Dispatch>();
@@ -43,9 +46,18 @@ const Translator = () => {
     enabled: loading,
     refetchInterval: loading ? 10000 : false,
   })
+
+  const isPreviewable = PREVIEWABLE_TYPES.includes(getFileType(selectedFileName));
     useEffect(() => {
       if (translatorData?.status === "succeeded") {
         setLoading(false);
+        const taskId = mutation.data?.task_id;
+        if (taskId && PREVIEWABLE_TYPES.includes(getFileType(selectedFileName))) {
+          GetTranslatorFile(taskId, "output").then((blob: Blob) => {
+            outputBlobRef.current = blob;
+            setOutputPreviewUrl(URL.createObjectURL(blob));
+          });
+        }
       } else if (translatorData?.status === "failed") {
         setLoading(false);
         dispatch.toast.openToast({
@@ -57,7 +69,14 @@ const Translator = () => {
         });
       }
     }, [translatorData]);
-  
+
+    // Revoke object URLs on unmount / when a new preview replaces them, to avoid leaking memory.
+    useEffect(() => {
+      return () => {
+        if (outputPreviewUrl) URL.revokeObjectURL(outputPreviewUrl);
+      };
+    }, [outputPreviewUrl]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -90,6 +109,8 @@ const Translator = () => {
       queryClient.clear()
       setSelectedFileName('');
       setFileUrl('');
+      setOutputPreviewUrl(null);
+      outputBlobRef.current = null;
       selectedOutputLanguage({})
     }
     else if (fileInputRef.current) {
@@ -98,32 +119,34 @@ const Translator = () => {
   };
 
 const handleDownload = async () => {
-  if (!translatorData?.result?.output_link) return;
+  const taskId = mutation.data?.task_id;
+  if (!taskId || translatorData?.status !== "succeeded") return;
 
   setDownloading(true);   // start loading
+  try {
+    const blob = outputBlobRef.current || (await GetTranslatorFile(taskId, "output"));
+    outputBlobRef.current = blob;
 
-  const response = await fetch(translatorData.result.output_link);
-  const blob = await response.blob();
+    const parts = selectedFileName.split(".");
+    const extension = parts.pop();
+    const baseName = parts.join(".");
+    const languageName = selectedOutputLanguage?.name.replace(/\s+/g, "-");
 
-  const parts = selectedFileName.split(".");
-  const extension = parts.pop();
-  const baseName = parts.join(".");
-  const languageName = selectedOutputLanguage?.name.replace(/\s+/g, "-");
+    const newFileName = `${baseName}-${languageName}.${extension}`;
 
-  const newFileName = `${baseName}-${languageName}.${extension}`;
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = newFileName;
 
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = newFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  window.URL.revokeObjectURL(url);
-
-  setDownloading(false);  // stop loading
+    window.URL.revokeObjectURL(url);
+  } finally {
+    setDownloading(false);  // stop loading
+  }
 };
 
   return (
@@ -260,26 +283,30 @@ const handleDownload = async () => {
           </Button>
         </div>
 
-        <Button disabled={!translatorData?.result?.output_link} className={`p-2.5 ${!translatorData?.result?.output_link && 'bg-opacity-30'}`} onClick={handleDownload}>
+        <Button disabled={translatorData?.status !== "succeeded"} className={`p-2.5 ${translatorData?.status !== "succeeded" && 'bg-opacity-30'}`} onClick={handleDownload}>
           <Text type="small">{downloading ? "Downloading..." : "Download"}</Text>
         </Button>
       </div>
 
-      {/* Bottom iframes: Side by side with individual scroll */}
+      {/* Bottom panes: Side by side with individual scroll */}
       <div className="flex flex-row gap-4 h-full">
         <div className="flex-[1] h-full border-2 border-gray-300 rounded-md overflow-auto">
-          <iframe
-            className="w-full h-full"
-            title="Viewer 1"
-            src={file && (translatorData?.result?.input_link ? getIframeSrc(translatorData?.result?.input_link, getFileType(selectedFileName)) : fileUrl ? fileUrl : '')}
-          />
+          {file && isPreviewable ? (
+            <iframe className="w-full h-full" title="Viewer 1" src={fileUrl || ''} />
+          ) : file ? (
+            <div className="flex items-center justify-center h-full p-4 text-center">
+              <Text type="small">Preview not available for this file type.</Text>
+            </div>
+          ) : null}
         </div>
         <div className="flex-[1] h-full border-2 border-gray-300 rounded-md overflow-auto">
-          <iframe
-            className="w-full h-full"
-            title="Viewer 2"
-            src={file && (translatorData?.result?.output_link ? getIframeSrc(translatorData?.result?.output_link, getFileType(selectedFileName)) : '')}
-          />
+          {translatorData?.status === "succeeded" && isPreviewable ? (
+            <iframe className="w-full h-full" title="Viewer 2" src={outputPreviewUrl || ''} />
+          ) : translatorData?.status === "succeeded" ? (
+            <div className="flex items-center justify-center h-full p-4 text-center">
+              <Text type="small">Translation ready! Use the Download button above to get your file.</Text>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
