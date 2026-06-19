@@ -10,17 +10,29 @@ import Toast from "../Toast";
 interface IFormInput {
   fileName: string;
   file: any;
+  productId: string;
+}
+
+interface ProductOption {
+  id: number;
+  product_title: string;
 }
 
 interface Props {
   defaultValues: any;
   onSubmit: any;
+  // Present only for KB upload, where a product must be chosen. Other callers
+  // (e.g. product-document upload) omit it and keep the plain file picker.
+  products?: ProductOption[];
 }
 
-const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
+const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products }) => {
   const isOpen = useSelector((state: RootState) => state.modal.isOpen);
   const dispatch = useDispatch<Dispatch>();
   const [fileName, setFileName] = useState<string>("");
+  const [productId, setProductId] = useState<string>("");
+  // Product selection is required only when a product list was supplied.
+  const requireProduct = Array.isArray(products);
   const initialFocusRef = useRef<HTMLButtonElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const toastStatus = useSelector((state: RootState) => state.toast);
@@ -58,9 +70,20 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
     }
   };
 
+  const handleProductChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    setProductId(event.target.value);
+    setValue("productId", event.target.value);
+    clearErrors("productId");
+  };
+
   const onHandle = (data: IFormInput) => {
     if (file) {
       data.file = file;
+    }
+    if (requireProduct) {
+      data.productId = productId;
     }
     onSubmit(data);
   };
@@ -87,6 +110,40 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
               {toastStatus.status && (
                 <div className="fixed top-2 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
                   <Toast type="error" />
+                </div>
+              )}
+
+              {/* Product selection (mandatory, KB upload only) */}
+              {requireProduct && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Product <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    value={productId}
+                    onChange={handleProductChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="" disabled>
+                      Select a product
+                    </option>
+                    {products!.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.product_title}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="hidden"
+                    {...register("productId", {
+                      required: "Please select a product",
+                    })}
+                  />
+                  {errors?.productId && (
+                    <Text type="small" className="text-danger">
+                      {errors?.productId?.message}
+                    </Text>
+                  )}
                 </div>
               )}
 
@@ -136,9 +193,9 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (requireProduct && !productId)}
                   className={`px-4 py-2 rounded-lg text-white font-medium transition ${
-                    loading
+                    loading || (requireProduct && !productId)
                       ? "bg-blue-300 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700"
                   }`}

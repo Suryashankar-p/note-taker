@@ -377,13 +377,13 @@ export const ReadKbDocuments = async (
   return response;
 };
 
-export const CreateKbDocument = async (file: File) => {
+export const CreateKbDocument = async (file: File, product_id: number | string) => {
   const token = localStorage.getItem("access_token");
   const formData = new FormData();
   formData.append("document", file, file.name);
   try {
     const response = await axios.post(
-      `${BACKEND_TROUBLESHOOTING_URL}/troubleshooting/kb_document`,
+      `${BACKEND_TROUBLESHOOTING_URL}/troubleshooting/kb_document?product_id=${product_id}`,
       formData,
       {
         headers: {

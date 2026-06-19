@@ -20,6 +20,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import FileViewModal from "./FileViewModal";
+import KbCitationViewerModal from "./KbCitationViewerModal";
 import { getFileType } from "../../utils/functions";
 import { ReadProductDocumentUrl } from "../../services/sales";
 
@@ -36,6 +37,8 @@ export type DefaultValue = {
   answer?: string;
   dislike_reason?: string;
   source?: [];
+  citations?: any[];
+  web_sources?: any[];
 };
 interface Tag {
   id: number | null | string;
@@ -77,6 +80,11 @@ const FeedbackReview: React.FC<Props> = ({
   const loading = useSelector((state: RootState) => state.loadingState.status);
   const [fileShow, setFileShow] = useState(false);
   const [fileData, setFileData] = useState();
+  const [activeCitation, setActiveCitation] = useState<{
+    documentId: number | null;
+    filename: string;
+    page: number;
+  } | null>(null);
   const {
     register,
     handleSubmit,
@@ -186,22 +194,43 @@ const FeedbackReview: React.FC<Props> = ({
   }
 
 const SourceComponent = () => {
+  const citations = defaultValue?.citations ?? [];
+  const webSources = defaultValue?.web_sources ?? [];
+  if (!citations.length && !webSources.length) return null;
   return (
     <div className="flex flex-col">
       <Text type="body" className="text-primary_text mb-1">
         Source:
       </Text>
       <div className="flex flex-wrap gap-2">
-        {defaultValue?.source?.map((item: any) => (
-          <div
-            key={item.id}
-            className={`${bgFinder(
-              defaultValue?.like
-            )} h-9 px-4 flex items-center rounded-full border border-gray-200 text-primary_text cursor-pointer`}
-            onClick={() => onSourceClick(item)}
+        {citations.map((c: any, ci: number) => (
+          <button
+            key={`cit-${ci}`}
+            type="button"
+            title={c?.snippet || ""}
+            onClick={() =>
+              setActiveCitation({
+                documentId: c?.document_id ?? null,
+                filename: c?.filename,
+                page: c?.page,
+              })
+            }
+            className="text-[12px] px-3 py-1 rounded-full border border-[#0061F3] text-[#0061F3] hover:bg-[#0061F3] hover:text-white transition-colors whitespace-nowrap cursor-pointer"
           >
-            <Text type="small" className="whitespace-nowrap">{item?.name}</Text>
-          </div>
+            {c?.filename} · p.{c?.page}
+          </button>
+        ))}
+        {webSources.map((w: any, wi: number) => (
+          <a
+            key={`web-${wi}`}
+            href={w?.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={w?.snippet || w?.url || ""}
+            className="text-[12px] px-3 py-1 rounded-full border border-gray-300 text-primary_text hover:bg-gray-100 transition-colors whitespace-nowrap"
+          >
+            {w?.url}
+          </a>
         ))}
       </div>
     </div>
@@ -309,6 +338,13 @@ const SourceComponent = () => {
                       onClose={() => setFileShow(false)}
                     />
                   )}
+                  <KbCitationViewerModal
+                    isOpen={activeCitation !== null}
+                    onClose={() => setActiveCitation(null)}
+                    documentId={activeCitation?.documentId ?? null}
+                    filename={activeCitation?.filename ?? ""}
+                    page={activeCitation?.page ?? 1}
+                  />
                   <div className="flex border-b border-gray-200">
                     <button
                       className={`py-2 px-4 text-sm font-medium ${

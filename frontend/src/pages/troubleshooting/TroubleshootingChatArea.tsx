@@ -15,6 +15,7 @@ import {
   CreateChatHistory,
   DeleteChatHistory,
   ReadChatHistories,
+  ReadProducts,
   TroubleshootingChatMode,
   updateChatHistory,
 } from "../../services/troubleshooting.ts";
@@ -97,6 +98,14 @@ const ChatArea: React.FC<Props> = ({
   const mode: TroubleshootingChatMode =
     searchParams.get("mode")?.toUpperCase() === "KB" ? "KB" : "TROUBLESHOOTING";
 
+  // Active product titles, shown as pills on the first turn so the user picks a
+  // product before the normal flow (TROUBLESHOOTING) / KB retrieval (KB) begins.
+  const [productTitles, setProductTitles] = useState<string[]>([]);
+  const productPromptText =
+    mode === "KB"
+      ? "**Which product do you need help with?**"
+      : "**On which product are you facing an issue?**";
+
   // Optimistic per-message like/dislike state. The persisted value lives on
   // the chat history row; this overlay keeps the UI responsive while we wait
   // for the refetch to confirm.
@@ -158,6 +167,18 @@ const ChatArea: React.FC<Props> = ({
     }
     setSearchParams(params, { replace: true });
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const resp = await ReadProducts(0, 100, "");
+        if (resp?.result)
+          setProductTitles(resp.result.map((p: any) => p.product_title));
+      } catch {
+        // Non-fatal: no product pills shown, user can still type.
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (chat_id) {
@@ -270,8 +291,10 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  const handleSend = async () => {
-    if (!inputValue.trim()) return;
+  // Shared send path used by the text input, problem/why pills, and the
+  // first-turn product pills. Creates the chat session on the first message.
+  const submitMessage = async (text: string) => {
+    if (!text.trim()) return;
     // A new chat (no active session) must have an asset number before it can
     // be started. The asset dialog enforces this, but guard here too.
     if (!chat_id && !pendingAssetNumber) {
@@ -283,10 +306,10 @@ const ChatArea: React.FC<Props> = ({
       return;
     }
     setLoading(true);
-    dispatch.chatContent.addQuestion([{ human: inputValue }]);
+    dispatch.chatContent.addQuestion([{ human: text }]);
     try {
       const activeChatId = chat_id ?? (await (async () => {
-        const newSession = await CreateChat(inputValue, pendingAssetNumber || undefined);
+        const newSession = await CreateChat(text, pendingAssetNumber || undefined);
         if (!newSession?.id) {
           dispatch.toast.openToast({ status: true, message: newSession?.detail, type: "error" });
           setLoading(false);
@@ -302,7 +325,7 @@ const ChatArea: React.FC<Props> = ({
 
       if (!activeChatId) return;
 
-      const chatResponse = await CreateChatHistory(inputValue, activeChatId, mode);
+      const chatResponse = await CreateChatHistory(text, activeChatId, mode);
 
       if (chatResponse?.ai) {
         dispatch.chatContent.removeQuestion();
@@ -324,6 +347,18 @@ const ChatArea: React.FC<Props> = ({
       setCopySuccess(false);
       dispatch.toast.openToast({ status: true, message: "Failed", type: "error" });
     }
+  };
+
+  const handleSend = async () => {
+    if (!inputValue.trim()) return;
+    await submitMessage(inputValue);
+  };
+
+  // First-turn product pill: sends the product title (creating the chat if needed).
+  const handleProductPill = async (item: string) => {
+    setVisiblePills(null);
+    setVisiblePillsIndex(null);
+    await submitMessage(item);
   };
 
   const handlePill = async (messageIndex: number, item: string) => {
@@ -637,26 +672,31 @@ const ChatArea: React.FC<Props> = ({
                   className="w-52 min-h-8 rounded-full ml-12 -mt-2 border border-grey"
                 >
                   <div className="flex flex-row gap-2 mx-2 justify-between items-center">
-                    <LikeIcon
-                      disabled={disabled}
-                      selected={
-                        localLikes[message.id] !== undefined
-                          ? localLikes[message.id] === true
-                          : message?.like === true
-                      }
-                      onClick={(e: any) => onLikeClick(e, message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" />
-                    <Dislike
-                      disabled={disabled}
-                      selected={
-                        localLikes[message.id] !== undefined
-                          ? localLikes[message.id] === false
-                          : message?.like === false
-                      }
-                      onClick={(e: any) => onDislikeClick(e, message)}
-                    />
-                    <img src={Divide} alt="divide" loading="lazy" />
+                    {/* Thumbs feedback is KB-mode only; troubleshooting mode has no feedback flow. */}
+                    {message?.mode === "KB" && (
+                      <>
+                        <LikeIcon
+                          disabled={disabled}
+                          selected={
+                            localLikes[message.id] !== undefined
+                              ? localLikes[message.id] === true
+                              : message?.like === true
+                          }
+                          onClick={(e: any) => onLikeClick(e, message)}
+                        />
+                        <img src={Divide} alt="divide" loading="lazy" />
+                        <Dislike
+                          disabled={disabled}
+                          selected={
+                            localLikes[message.id] !== undefined
+                              ? localLikes[message.id] === false
+                              : message?.like === false
+                          }
+                          onClick={(e: any) => onDislikeClick(e, message)}
+                        />
+                        <img src={Divide} alt="divide" loading="lazy" />
+                      </>
+                    )}
                     <CopyIcon
                       disabled={disabled}
                       onClick={() => copyToClipboard(index, message)}
@@ -678,6 +718,27 @@ const ChatArea: React.FC<Props> = ({
               )}
             </div>
           ))
+        ) : !loading && productTitles.length > 0 ? (
+          // First turn: ask the user to pick a product via pills before the
+          // normal flow (TROUBLESHOOTING) / KB retrieval (KB) begins.
+          <div className="flex items-start space-x-2">
+            <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
+              <span className="text-gray-600">AI</span>
+            </div>
+            <div className="inline-block p-2 rounded-lg text-small bg-inherit text-primary_text">
+              <div
+                className="prose text-[14px] font-normal text-primary_text bg-inherit mb-2"
+                dangerouslySetInnerHTML={{
+                  __html: convertMarkdownToHtml(productPromptText),
+                }}
+              />
+              <PillWrapper
+                markdown={productTitles}
+                messageIndex={-1}
+                onPillClick={(_, pill) => handleProductPill(pill)}
+              />
+            </div>
+          </div>
         ) : (
           <EmptyChat />
         )}

@@ -137,3 +137,95 @@
         font-size: 0.9rem;
     }
 }
+
+/* ==========================================================================
+   Troubleshooting tree — Outline view (connector rails + scroll + fade)
+   Prefixed .tt-/.ol- to avoid collisions with the global styles above.
+   ========================================================================== */
+
+.tt-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #d4d6da transparent;
+}
+.tt-scroll::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+.tt-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.tt-scroll::-webkit-scrollbar-thumb {
+    background: #d4d6da;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+.tt-scroll::-webkit-scrollbar-thumb:hover {
+    background: #b9bcc2;
+    background-clip: content-box;
+}
+
+/* ---------- Outline view connector rails ---------- */
+.ol-children {
+    position: relative;
+    margin-left: 15px;
+    padding-left: 20px;
+}
+.ol-node {
+    position: relative;
+}
+
+/* vertical rail segment for each node */
+.ol-node::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 0;
+    height: 100%;
+    width: 1.5px;
+    background: var(--rail, #e3e4e7);
+    transition: background 0.15s ease;
+}
+.ol-node:last-child::before {
+    height: 24px;
+}
+
+/* horizontal elbow into the card */
+.ol-node::after {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 24px;
+    width: 16px;
+    height: 1.5px;
+    background: var(--rail, #e3e4e7);
+    border-bottom-left-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+/* on-path highlight */
+.ol-node.is-onpath::before {
+    background: var(--rail-hot, #c8783a);
+}
+.ol-node.is-onpath::after {
+    background: var(--rail-hot, #c8783a);
+}
+
+.ol-card {
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+/* node entrance */
+@keyframes ttFade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+.tt-fade {
+    animation: ttFade 0.22s ease both;
+}

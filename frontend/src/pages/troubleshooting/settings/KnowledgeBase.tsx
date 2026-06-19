@@ -22,7 +22,13 @@ import {
   DeleteKbDocument,
   PollKbDocumentStatus,
   ReadKbDocuments,
+  ReadProducts,
 } from "../../../services/troubleshooting";
+
+interface ProductOption {
+  id: number;
+  product_title: string;
+}
 
 const MenuItems = [
   {
@@ -55,6 +61,7 @@ const KnowledgeBase = () => {
   const toastStatus = useSelector((state: RootState) => state.toast);
 
   const [documents, setDocuments] = useState<KbDocument[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState({ skip: 0, limit: 20 });
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -67,10 +74,20 @@ const KnowledgeBase = () => {
 
   useEffect(() => {
     getAllDocuments(pageSize.skip, pageSize.limit, "");
+    getProducts();
     return () => {
       pollingIdsRef.current.clear();
     };
   }, []);
+
+  const getProducts = async () => {
+    try {
+      const resp = await ReadProducts(0, 100, "");
+      if (resp?.result) setProducts(resp.result);
+    } catch (err) {
+      // Non-fatal: upload modal will show an empty product list.
+    }
+  };
 
   useEffect(() => {
     documents.forEach((d) => {
@@ -135,7 +152,7 @@ const KnowledgeBase = () => {
     if (!data?.file) return;
     dispatch.loadingState.startLoading();
     try {
-      const response = await CreateKbDocument(data.file);
+      const response = await CreateKbDocument(data.file, data.productId);
       if (response?.id) {
         dispatch.modal.closeModal();
         getAllDocuments(0, pageSize.limit, searchTerm);
@@ -185,7 +202,11 @@ const KnowledgeBase = () => {
         />
       )}
       {fileUpload.status && (
-        <FileEditModal onSubmit={onFileUpload} defaultValues={{}} />
+        <FileEditModal
+          onSubmit={onFileUpload}
+          defaultValues={{}}
+          products={products}
+        />
       )}
       {viewerDoc && (
         <KbCitationViewerModal

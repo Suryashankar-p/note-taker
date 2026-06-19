@@ -39,6 +39,7 @@ interface Analytics {
   from_date: string;
   to_date: string;
   total_chats: number;
+  total_kb_queries: number;
   issues_by_asset: AssetIssue[];
   product_distribution: ProductDist[];
   why_levels: WhyLevel[];
@@ -225,8 +226,9 @@ export default function Analysis() {
       {!loading && hasData && (
         <>
           {/* Stat cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <Stat label="Total sessions" value={data!.total_chats} />
+            <Stat label="KB queries" value={data!.total_kb_queries ?? 0} />
             <Stat label="Assets with issues" value={data!.issues_by_asset.length} />
             <Stat label="Products covered" value={data!.product_distribution.length} />
             <Stat label="Deepest why-level" value={deepestWhy} />
