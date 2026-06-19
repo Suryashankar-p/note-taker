@@ -56,6 +56,7 @@ jobs:
             --build-arg VITE_BACKEND_THERMAX_GPT_URL="${{ secrets.VITE_BACKEND_THERMAX_GPT_URL }}" \
             --build-arg VITE_BACKEND_DOCTOR_CONBOT_URL="${{ secrets.VITE_BACKEND_DOCTOR_CONBOT_URL }}" \
             --build-arg VITE_BACKEND_SMART_TROUBLESHOOT_URL="${{ secrets.VITE_BACKEND_SMART_TROUBLESHOOT_URL }}" \
+            --build-arg VITE_BACKEND_SERVICE_CCTV_ANALYTICS_URL="${{ secrets.VITE_BACKEND_SERVICE_CCTV_ANALYTICS_URL }}" \
             --build-arg VITE_BACKEND_SALES_URL="${{ secrets.VITE_BACKEND_SALES_URL }}" \
             --build-arg VITE_BACKEND_TBWES_OCR_URL="${{ secrets.VITE_BACKEND_TBWES_OCR_URL }}" \
             --build-arg VITE_BACKEND_CYBERBUDDY_URL="${{ secrets.VITE_BACKEND_CYBERBUDDY_URL }}" \
