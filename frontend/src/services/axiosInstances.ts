@@ -11,6 +11,7 @@ const cyberbuddy_BaseURL = import.meta.env.VITE_BACKEND_CYBERBUDDY_URL;
 const heatingOCR_BaseURL = import.meta.env.VITE_BACKEND_HEATING_OCR_URL;
 const doctranslator_BaseURL = import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL;
 const edge_BaseURL = import.meta.env.VITE_BACKEND_EDGE_URL;
+const cctv_BaseURL = import.meta.env.VITE_BACKEND_CCTV_ANALYTICS_URL;
 
 export const axiosSSO: AxiosInstance = axios.create({
   baseURL: sso_BaseURL,
@@ -59,6 +60,11 @@ export const axiosHeatingOCR: AxiosInstance = axios.create({
 
 export const axiosDocumentTranslator: AxiosInstance = axios.create({
   baseURL: doctranslator_BaseURL,
+  timeout: 300000,
+});
+
+export const axiosCCTVService: AxiosInstance = axios.create({
+  baseURL: cctv_BaseURL,
   timeout: 300000,
 });
 
