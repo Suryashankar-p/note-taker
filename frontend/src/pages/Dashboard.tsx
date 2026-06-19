@@ -302,6 +302,12 @@ const Dashboard: React.FC = () => {
       case "Edge Bot":
         getEdgeRole();
         break;
+      case "CCTV Analytics":
+        const cctvUrl = import.meta.env.VITE_BACKEND_CCTV_ANALYTICS_URL || import.meta.env.VITE_BACKEND_SERVICE_CCTV_ANALYTICS_URL;
+        if (cctvUrl && (cctvUrl.startsWith("http://") || cctvUrl.startsWith("https://"))) {
+          window.open(cctvUrl, "_blank", "noopener,noreferrer");
+        }
+        break;
     }
   };
 

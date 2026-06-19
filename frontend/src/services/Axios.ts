@@ -9,6 +9,7 @@ import {
   axiosHeatingOCR,
   axiosTransmitterOCR,
   axiosDocumentTranslator,
+  axiosCCTVService,
   axiosEdge,
 } from "./axiosInstances";
 
@@ -26,6 +27,7 @@ import { setInterceptors } from "./axiosConfig";
   axiosHeatingOCR,
   axiosTransmitterOCR,
   axiosDocumentTranslator,
+  axiosCCTVService,
   axiosEdge,
 ].forEach(setInterceptors);
 
@@ -59,7 +61,7 @@ export const HeatingOCRAPI = createAPI(axiosHeatingOCR);
 export const TransmitterOCRAPI = createAPI(axiosTransmitterOCR);
 export const DocumentTranslatorAPI = createAPI(axiosDocumentTranslator);
 export const EdgeAPI = createAPI(axiosEdge);
-
+export const CCTVServiceAPI = createAPI(axiosCCTVService);
 export async function redirectToLogin(): Promise<void> {
   window.location.href = `/`;
   localStorage.clear();
