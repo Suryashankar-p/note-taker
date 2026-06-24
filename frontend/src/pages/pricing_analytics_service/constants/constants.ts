@@ -1,0 +1,33 @@
+export const breadCrumbs = [
+  {
+    title: "AI Studio",
+    url: "/ai-studio",
+  },
+  {
+    title: "Pricing Analytics Service",
+    url: "/ai-studio/pricing_analytics_service",
+  },
+];
+
+export const workspaces = [
+  {
+    title: "CEO / CFO Briefing",
+    description:
+      "Access high-level executive summaries, market trends correlations, and long term strategic forecasts.",
+    button: "Enter Briefing Suite",
+  },
+  {
+    title: "Pricing Analyst / Council",
+    description:
+      "Deep dive into granular SKU performance, elasticity modeling, and competitive benchmark datasets.",
+    button: "Launch Analytics Studio",
+  },
+];
+
+export const pricingAnalyticsServiceBreadCrumbs = [
+  ...breadCrumbs,
+  {
+    title: "Settings",
+    url: "/ai-studio/pricing_analytics_service/workspace/dashboard",
+  },
+];

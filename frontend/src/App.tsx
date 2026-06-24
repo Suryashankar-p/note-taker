@@ -69,6 +69,18 @@ const CyberBuddySettings = lazy(
 const HeatingOCRMain = lazy(
   () => import("./pages/heating_ocr/OcrMain.tsx")
 );
+const PricingAnalyticsService = lazy(
+  () => import("./pages/pricing_analytics_service/index.tsx")
+);
+const PricingAnalyticsServiceWorkspace = lazy(
+  () => import("./pages/pricing_analytics_service/pages/Workspace.tsx")
+);
+
+const PricingAnalyticsServiceWorkspaceDashboard = lazy(
+  () => import("./pages/pricing_analytics_service/pages/Dashboard.tsx")
+);
+
+
 
 const App = () => (
   <Suspense fallback={<PageLoading />}>
@@ -146,6 +158,18 @@ const App = () => (
       <Route
         path="/ai-studio/heating_ocr"
         element={<ProtectedRoute element={<HeatingOCRMain />} />}
+      />
+      <Route
+        path="/ai-studio/pricing_analytics_service"
+        element={<ProtectedRoute element={<PricingAnalyticsService />} />}
+      />
+      <Route
+        path="/ai-studio/pricing_analytics_service/workspace"
+        element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspace />} />}
+      />
+      <Route
+        path="/ai-studio/pricing_analytics_service/workspace/dashboard"
+        element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspaceDashboard />} />}
       />
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>
