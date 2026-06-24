@@ -75,6 +75,16 @@ const ActivityDetailPage: React.FC = () => {
   const codeValuesMaker = ["TE_INSP_AGEN", "TE_STEELMAK_CD"];
   const codeValuesProcess = ["TE_HEAT_TREAT", "TE_STEELMAK_PRCS", "TE_DEOXID"];
 
+  // Fields that show a "verify before submitting" warning under the input
+  const warningFields = [
+    "TE_TENSILE_STRN_UC",
+    "TE_BEND_TEST",
+    "TE_GAUGE_LNTH",
+    "TE_MI_NO",
+    "TE_YIELD_STRN_UC",
+    "TE_STEELMAK_PRCS",
+  ];
+
   const [makerOptions, setMakerOptions] = useState<any[]>([]);
   const [processOptions, setProcessOptions] = useState<any[]>([]);
   const [makerLoading, setMakerLoading] = useState(false);
@@ -423,6 +433,52 @@ const ActivityDetailPage: React.FC = () => {
             updateDocument(activity?.id, { field: updated });
           }}
           placeholder="Type to search..."
+          disabled={disabled}
+        />
+      );
+    }
+    if (item.title === "TE_TENSILE_STRN_UC") {
+      const unitOptions = [
+        { value: "0", name: "kg/mm²" },
+        { value: "1", name: "N/mm²" },
+        { value: "2", name: "ksi" },
+        { value: "3", name: "psi" },
+      ];
+      return (
+        <SearchDropdown
+          className={inputClassName}
+          listValues={unitOptions}
+          initialValue={unitOptions.find(o => o.value === item.value)}
+          onChange={val => {
+            handleFieldChange(index, val.value);
+            // Dropdown selection is a single action, trigger PATCH immediately
+            const updated = [...fieldData];
+            updated[index] = { ...updated[index], value: val.value };
+            updateDocument(activity?.id, { field: updated });
+          }}
+          placeholder="Select unit..."
+          disabled={disabled}
+        />
+      );
+    }
+    if (item.title === "TE_BEND_TEST") {
+      const bendOptions = [
+        { value: "OK", name: "OK" },
+        { value: "N.A", name: "N.A" },
+      ];
+      return (
+        <SearchDropdown
+          className={inputClassName}
+          listValues={bendOptions}
+          initialValue={bendOptions.find(o => o.value === item.value)}
+          onChange={val => {
+            handleFieldChange(index, val.value);
+            // Dropdown selection is a single action, trigger PATCH immediately
+            const updated = [...fieldData];
+            updated[index] = { ...updated[index], value: val.value };
+            updateDocument(activity?.id, { field: updated });
+          }}
+          placeholder="Select..."
           disabled={disabled}
         />
       );
@@ -823,6 +879,9 @@ const ActivityDetailPage: React.FC = () => {
                     )}
                   </Text>
                   {renderFieldInput(item, index)}
+                  {warningFields.includes(item?.title) && (
+                    <p className="mt-1 text-xs text-yellow-400">⚠ Always verify {item?.title} result before submitting.</p>
+                  )}
                 </div>
               ))}
           </>
