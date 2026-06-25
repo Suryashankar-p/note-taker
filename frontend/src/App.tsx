@@ -82,6 +82,25 @@ const PricingAnalyticsServiceWorkspaceDashboard = lazy(
 const PricingAnalyticsServiceWorkspaceAnalytics = lazy(
   () => import("./pages/pricing_analytics_service/pages/KnowledgeBase.tsx")
 );
+const CeoBriefing = lazy(
+  () => import("./pages/pricing_analytics_service/components/CeoBriefing.tsx")
+);
+const PricingAnalyst = lazy(
+  () => import("./pages/pricing_analytics_service/components/PricingAnalyst.tsx")
+);
+const OverallMargin = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/OverallMargin")
+);
+const Classification = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/Classification")
+);
+const Skycraper = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/Skycraper")
+);
+const DispersionView = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/DispersionView")
+);
+
 
 
 
@@ -176,6 +195,13 @@ const App = () => (
         element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspaceDashboard />} />}
       >
         <Route index element={<PricingAnalyticsServiceWorkspaceAnalytics />} />
+        <Route path="ceo" element={<CeoBriefing />}>
+          <Route path="overall-margin" element={<OverallMargin />} />
+          <Route path="classification" element={<Classification />} />
+          <Route path="skycraper" element={<Skycraper />} />
+          <Route path="dispersion-view" element={<DispersionView />} />
+        </Route>
+        <Route path="analyst" element={<PricingAnalyst />} />
       </Route>
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>

@@ -1,16 +1,12 @@
-import { useLocation } from "react-router-dom";
-import PricingAnalyst from "../components/PricingAnalyst";
-import CeoBriefing from "../components/CeoBriefing";
+import { Navigate } from "react-router-dom";
 
 const KnowledgeBase = () => {
-  const location = useLocation();
-  const role = location.state?.role || "ceo";
+  const role = localStorage.getItem("pricing_analytics_role") || "ceo";
 
-  return (
-    <div className="p-6">
-      {role === "ceo" ? <CeoBriefing /> : <PricingAnalyst />}
-    </div>
-  );
+  if (role === "ceo") {
+    return <Navigate to="ceo/overall-margin" replace />;
+  }
+  return <Navigate to="analyst" replace />;
 };
 
 export default KnowledgeBase;

@@ -81,12 +81,13 @@ const Workspace = () => {
                   <li>◉ Revenue Forecasting</li>
                 </ul>
 
-                <button
-                  onClick={() =>
-                    navigate("dashboard", {
-                      state: { role: index === 0 ? "ceo" : "analyst" },
-                    })
-                  }
+                 <button
+                  onClick={() => {
+                    localStorage.setItem("pricing_analytics_role", index === 0 ? "ceo" : "analyst");
+                    navigate(
+                      index === 0 ? "dashboard/ceo/overall-margin" : "dashboard/analyst"
+                    );
+                  }}
                   className={`
                   mt-6 w-full rounded-lg py-2 text-xs font-medium
 
