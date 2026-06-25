@@ -6,6 +6,7 @@ import {
 } from "../constants/constants";
 import { useNavigate } from "react-router-dom";
 import Header from "../../../components/Header";
+import UploadSidebar from "../components/UploadSidebar";
 
 const Workspace = () => {
   const navigate = useNavigate();
@@ -14,8 +15,10 @@ const Workspace = () => {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header breadCrumbs={pricingAnalyticsServiceBreadCrumbsWorkspace} />
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-[900px]">
+      <div className="flex flex-1 overflow-hidden mt-16">
+        <UploadSidebar />
+        <div className="overflow-y-auto w-full max-h-[calc(100vh-4rem)] bg-slate-50 flex items-center justify-center py-12">
+          <div className="w-[900px]">
           <div className="text-center mb-10">
             <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow">
               <BarChart3 className="text-red-600" size={20} />
@@ -113,6 +116,7 @@ const Workspace = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
