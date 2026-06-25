@@ -72,6 +72,15 @@ const HeatingOCRMain = lazy(
 const PricingAnalyticsService = lazy(
   () => import("./pages/pricing_analytics_service/index.tsx")
 );
+const LoadFiles = lazy(
+  () => import("./pages/pricing_analytics_service/pages/LoadDataFiles")
+);
+const SettingsLayout = lazy(
+  () => import("./pages/pricing_analytics_service/pages/SettingsLayout")
+);
+const MembersTab = lazy(
+  () => import("./pages/pricing_analytics_service/pages/MembersTab")
+);
 const PricingAnalyticsServiceWorkspace = lazy(
   () => import("./pages/pricing_analytics_service/pages/Workspace.tsx")
 );
@@ -183,15 +192,21 @@ const App = () => (
         element={<ProtectedRoute element={<HeatingOCRMain />} />}
       />
       <Route
-        path="/ai-studio/pricing_analytics_service"
+        path="/ai-studio/pas"
         element={<ProtectedRoute element={<PricingAnalyticsService />} />}
       />
       <Route
-        path="/ai-studio/pricing_analytics_service/workspace"
+        path="/ai-studio/pas/settings"
+        element={<ProtectedRoute element={<SettingsLayout />} />}
+      >
+        <Route path="members" element={<MembersTab />} />
+      </Route>
+      <Route
+        path="/ai-studio/pas/workspace"
         element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspace />} />}
       />
       <Route
-        path="/ai-studio/pricing_analytics_service/workspace/dashboard"
+        path="/ai-studio/pas/workspace/dashboard"
         element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspaceDashboard />} />}
       >
         <Route index element={<PricingAnalyticsServiceWorkspaceAnalytics />} />

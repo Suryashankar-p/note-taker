@@ -5,7 +5,7 @@ export const breadCrumbs = [
   },
   {
     title: "Pricing Analytics Service",
-    url: "/ai-studio/pricing_analytics_service",
+    url: "/ai-studio/pas",
   },
 ];
 
@@ -28,6 +28,14 @@ export const pricingAnalyticsServiceBreadCrumbs = [
   ...breadCrumbs,
   {
     title: "Settings",
-    url: "/ai-studio/pricing_analytics_service/workspace/dashboard",
+    url: "/ai-studio/pas/workspace/dashboard",
+  },
+];
+
+export const pricingAnalyticsServicesettingsBreadCrumbs = [
+  ...breadCrumbs,
+  {
+    title: "Settings",
+    url: "/ai-studio/pas/settings/members",
   },
 ];

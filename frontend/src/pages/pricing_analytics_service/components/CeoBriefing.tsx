@@ -4,7 +4,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 const CeoBriefing = () => {
   const navigate = useNavigate();
 
-  const SETTINGS_BASE = "/ai-studio/pricing_analytics_service/workspace/dashboard";
+  const SETTINGS_BASE = "/ai-studio/pas/workspace/dashboard";
 
   const tabItems = [
     { label: "1 - OVERALL MARGIN", path: `${SETTINGS_BASE}/ceo/overall-margin` },
@@ -21,7 +21,7 @@ const CeoBriefing = () => {
           GIA — <span className="text-[#a61c1e]">CEO/CFO briefing</span>
         </h1>
         <button
-          onClick={() => navigate("/ai-studio/pricing_analytics_service/workspace")}
+          onClick={() => navigate("/ai-studio/pas/workspace")}
           className="px-4 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 transition-colors shadow-sm"
         >
           ← Welcome

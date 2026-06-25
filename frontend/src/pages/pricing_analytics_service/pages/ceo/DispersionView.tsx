@@ -31,7 +31,7 @@ const DispersionView = () => {
           </button>
         </div>
         <button
-          onClick={() => navigate("/ai-studio/pricing_analytics_service/workspace")}
+          onClick={() => navigate("/ai-studio/pas/workspace")}
           className="px-5 py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm"
         >
           Back to welcome

@@ -133,13 +133,13 @@ const LoadFiles = () => {
             Upload all six files to continue {allUploaded && "→"}
           </button>
           
-          <div className="mt-2 text-xs font-medium text-gray-500 max-w-lg leading-relaxed">
+          {/* <div className="mt-2 text-xs font-medium text-gray-500 max-w-lg leading-relaxed">
             GIA Enterprise AI requires all data nodes for accurate cross-dimensional analysis.
             <br />
             <a href="#" className="text-[#a61c1e] hover:underline font-semibold mt-1 inline-block">
               Learn more about our data requirements
             </a>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ import { useLocation } from "react-router-dom";
 import SidebarItem from "./SidebarItem";
 
 const SETTINGS_BASE =
-  "/ai-studio/pricing_analytics_service/workspace/dashboard";
+  "/ai-studio/pas/workspace/dashboard";
 
 const sidebarItems = [
   {
