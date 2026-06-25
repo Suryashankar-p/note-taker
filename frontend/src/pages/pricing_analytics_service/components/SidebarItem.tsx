@@ -20,10 +20,10 @@ const SidebarItem = ({
       className={({ isActive: navActive }) => {
         const active = isActive ?? navActive;
 
-        return `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
+        return `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200 ${
           active
-            ? "bg-[#ed3437] text-white font-medium"
-            : "text-white hover:bg-[#525253]"
+            ? "bg-[#a61c1e] text-white font-medium shadow-md"
+            : "text-[#a3a3a6] hover:bg-[#202022] hover:text-white"
         }`;
       }}
     >

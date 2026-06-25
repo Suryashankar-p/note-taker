@@ -30,10 +30,7 @@ const Workspace = () => {
               <div
                 key={item.title}
                 onClick={() => setSelected(index)}
-                className={`
-                cursor-pointer
-                rounded-xl
-                bg-white
+                className={`cursor-pointer rounded-xl bg-white
                 border
                 p-5
                 transition-all
@@ -85,7 +82,11 @@ const Workspace = () => {
                 </ul>
 
                 <button
-                onClick={()=>navigate('dashboard')}
+                  onClick={() =>
+                    navigate("dashboard", {
+                      state: { role: index === 0 ? "ceo" : "analyst" },
+                    })
+                  }
                   className={`
                   mt-6 w-full rounded-lg py-2 text-xs font-medium
 

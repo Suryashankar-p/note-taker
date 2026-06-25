@@ -5,6 +5,7 @@ import {
   DollarSign,
   List,
   X,
+  Lock,
 } from "lucide-react";
 
 import FileUploadCard from "../components/FileUploadCard";
@@ -76,6 +77,8 @@ const LoadFiles = () => {
     );
   };
 
+  const allUploaded = files.every((file) => file.status === "loaded");
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="px-24 py-12">
@@ -101,24 +104,42 @@ const LoadFiles = () => {
           ))}
         </div>
 
-        <div className="mt-10 flex justify-end">
+        <div className="mt-12 flex flex-col items-center justify-center text-center gap-3">
           <button
-          onClick={()=>navigate('workspace')}
-            className="
+            onClick={() => allUploaded && navigate("workspace")}
+            disabled={!allUploaded}
+            className={`
+              flex
+              items-center
+              justify-center
+              gap-2
+              w-[500px]
               rounded-xl 
-              bg-red-600 
-              px-5
-              py-2
+              px-6
+              py-3.5
               text-sm
-              font-medium 
-              text-white
+              font-semibold 
               shadow-sm
-              hover:bg-red-700
-              transition
-            "
+              transition-all
+              duration-200
+              ${
+                allUploaded
+                  ? "bg-[#a61c1e] text-white hover:bg-red-700 cursor-pointer"
+                  : "bg-[#dbdbdb] text-[#7c7c7c] cursor-not-allowed"
+              }
+            `}
           >
-            Upload all six files to continue →
+            {!allUploaded && <Lock size={18} className="text-[#969696]" />}
+            Upload all six files to continue {allUploaded && "→"}
           </button>
+          
+          <div className="mt-2 text-xs font-medium text-gray-500 max-w-lg leading-relaxed">
+            GIA Enterprise AI requires all data nodes for accurate cross-dimensional analysis.
+            <br />
+            <a href="#" className="text-[#a61c1e] hover:underline font-semibold mt-1 inline-block">
+              Learn more about our data requirements
+            </a>
+          </div>
         </div>
       </div>
     </div>

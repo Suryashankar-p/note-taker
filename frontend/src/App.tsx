@@ -79,6 +79,10 @@ const PricingAnalyticsServiceWorkspace = lazy(
 const PricingAnalyticsServiceWorkspaceDashboard = lazy(
   () => import("./pages/pricing_analytics_service/pages/Dashboard.tsx")
 );
+const PricingAnalyticsServiceWorkspaceAnalytics = lazy(
+  () => import("./pages/pricing_analytics_service/pages/KnowledgeBase.tsx")
+);
+
 
 
 
@@ -170,7 +174,9 @@ const App = () => (
       <Route
         path="/ai-studio/pricing_analytics_service/workspace/dashboard"
         element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspaceDashboard />} />}
-      />
+      >
+        <Route index element={<PricingAnalyticsServiceWorkspaceAnalytics />} />
+      </Route>
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>
   </Suspense>
