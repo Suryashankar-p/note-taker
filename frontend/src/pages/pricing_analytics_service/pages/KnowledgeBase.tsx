@@ -1,12 +1,7 @@
 import { Navigate } from "react-router-dom";
 
 const KnowledgeBase = () => {
-  const role = localStorage.getItem("pricing_analytics_role") || "ceo";
-
-  if (role === "ceo") {
-    return <Navigate to="ceo/overall-margin" replace />;
-  }
-  return <Navigate to="analyst" replace />;
+  return <Navigate to="/ai-studio/pas/workspace" replace />;
 };
 
 export default KnowledgeBase;

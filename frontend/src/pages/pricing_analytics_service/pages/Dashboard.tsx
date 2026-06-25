@@ -11,7 +11,7 @@ const Dashboard = () => {
         <SettingsSidebar />
         <div className="overflow-y-auto w-full max-h-[calc(100vh-4rem)]">
           <Outlet />
-        </div>
+        </div>  
       </div>
     </div>
   );

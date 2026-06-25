@@ -24,8 +24,16 @@ export const workspaces = [
   },
 ];
 
-export const pricingAnalyticsServiceBreadCrumbs = [
+export const pricingAnalyticsServiceBreadCrumbsWorkspace = [
   ...breadCrumbs,
+  {
+    title: "Workspace",
+    url: "/ai-studio/pas/workspace",
+  }
+]
+
+export const pricingAnalyticsServiceBreadCrumbs = [
+  ...pricingAnalyticsServiceBreadCrumbsWorkspace,
   {
     title: "Settings",
     url: "/ai-studio/pas/workspace/dashboard",

@@ -1,6 +1,9 @@
 import { BarChart3, BriefcaseBusiness, Check } from "lucide-react";
 import { useState } from "react";
-import { breadCrumbs, workspaces } from "../constants/constants";
+import {
+  pricingAnalyticsServiceBreadCrumbsWorkspace,
+  workspaces,
+} from "../constants/constants";
 import { useNavigate } from "react-router-dom";
 import Header from "../../../components/Header";
 
@@ -10,10 +13,8 @@ const Workspace = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-
-      <Header breadCrumbs={breadCrumbs} />
+      <Header breadCrumbs={pricingAnalyticsServiceBreadCrumbsWorkspace} />
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-
         <div className="w-[900px]">
           <div className="text-center mb-10">
             <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow">
@@ -41,18 +42,19 @@ const Workspace = () => {
                 transition-all
                 duration-300
 
-                ${isSelected
-                      ? `
+                ${
+                  isSelected
+                    ? `
                     border-red-400
                     shadow-xl
                   `
-                      : `
+                    : `
                     border-gray-200
                     hover:-translate-y-1
                     hover:shadow-lg
                     hover:border-red-300
                   `
-                    }
+                }
               `}
                 >
                   <div className="flex justify-between">
@@ -87,18 +89,20 @@ const Workspace = () => {
 
                   <button
                     onClick={() => {
-                      localStorage.setItem("pricing_analytics_role", index === 0 ? "ceo" : "analyst");
                       navigate(
-                        index === 0 ? "dashboard/ceo/overall-margin" : "dashboard/analyst"
+                        index === 0
+                          ? "dashboard/ceo/overall-margin"
+                          : "dashboard/analyst",
                       );
                     }}
                     className={`
                   mt-6 w-full rounded-lg py-2 text-xs font-medium
 
-                  ${isSelected
-                        ? "bg-red-500 text-white"
-                        : "border border-red-300 text-red-600"
-                      }
+                  ${
+                    isSelected
+                      ? "bg-red-500 text-white"
+                      : "border border-red-300 text-red-600"
+                  }
                 `}
                   >
                     {item.button}
@@ -108,7 +112,6 @@ const Workspace = () => {
             })}
           </div>
         </div>
-
       </div>
     </div>
   );
