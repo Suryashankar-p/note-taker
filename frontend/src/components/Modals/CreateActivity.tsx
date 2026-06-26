@@ -34,7 +34,7 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   
-  const templateOptions = ["Plate"];
+  const templateOptions = ["Plate", "Tube", "Pipe", "RoundBar"];
   const numberOptions = [
     { value: 6, label: "AMNS HAZIRA" },
     { value: 7, label: "JSPL ANGUL" },
