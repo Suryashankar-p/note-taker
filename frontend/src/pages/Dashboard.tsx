@@ -308,6 +308,9 @@ const Dashboard: React.FC = () => {
           window.open(cctvUrl, "_blank", "noopener,noreferrer");
         }
         break;
+      case "Pricing Analyser":
+        navigate("/ai-studio/pas")
+
     }
   };
 

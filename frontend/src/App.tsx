@@ -69,6 +69,50 @@ const CyberBuddySettings = lazy(
 const HeatingOCRMain = lazy(
   () => import("./pages/heating_ocr/OcrMain.tsx")
 );
+const PricingAnalyticsService = lazy(
+  () => import("./pages/pricing_analytics_service/index.tsx")
+);
+const LoadFiles = lazy(
+  () => import("./pages/pricing_analytics_service/pages/LoadDataFiles")
+);
+const SettingsLayout = lazy(
+  () => import("./pages/pricing_analytics_service/pages/SettingsLayout")
+);
+const MembersTab = lazy(
+  () => import("./pages/pricing_analytics_service/pages/MembersTab")
+);
+const PricingAnalyticsServiceWorkspace = lazy(
+  () => import("./pages/pricing_analytics_service/pages/Workspace.tsx")
+);
+
+const PricingAnalyticsServiceWorkspaceDashboard = lazy(
+  () => import("./pages/pricing_analytics_service/pages/Dashboard.tsx")
+);
+const PricingAnalyticsServiceWorkspaceAnalytics = lazy(
+  () => import("./pages/pricing_analytics_service/pages/KnowledgeBase.tsx")
+);
+const CeoBriefing = lazy(
+  () => import("./pages/pricing_analytics_service/components/CeoBriefing.tsx")
+);
+const PricingAnalyst = lazy(
+  () => import("./pages/pricing_analytics_service/components/PricingAnalyst.tsx")
+);
+const OverallMargin = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/OverallMargin")
+);
+const Classification = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/Classification")
+);
+const Skycraper = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/Skycraper")
+);
+const DispersionView = lazy(
+  () => import("./pages/pricing_analytics_service/pages/ceo/DispersionView")
+);
+
+
+
+
 
 const App = () => (
   <Suspense fallback={<PageLoading />}>
@@ -147,6 +191,33 @@ const App = () => (
         path="/ai-studio/heating_ocr"
         element={<ProtectedRoute element={<HeatingOCRMain />} />}
       />
+      <Route
+        path="/ai-studio/pas"
+        element={<ProtectedRoute element={<PricingAnalyticsService />} />}
+      />
+      <Route
+        path="/ai-studio/pas/settings"
+        element={<ProtectedRoute element={<SettingsLayout />} />}
+      >
+        <Route path="members" element={<MembersTab />} />
+      </Route>
+      <Route
+        path="/ai-studio/pas/workspace"
+        element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspace />} />}
+      />
+      <Route
+        path="/ai-studio/pas/workspace/dashboard"
+        element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspaceDashboard />} />}
+      >
+        <Route index element={<PricingAnalyticsServiceWorkspaceAnalytics />} />
+        <Route path="ceo" element={<CeoBriefing />}>
+          <Route path="overall-margin" element={<OverallMargin />} />
+          <Route path="classification" element={<Classification />} />
+          <Route path="skycraper" element={<Skycraper />} />
+          <Route path="dispersion-view" element={<DispersionView />} />
+        </Route>
+        <Route path="analyst" element={<PricingAnalyst />} />
+      </Route>
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>
   </Suspense>
