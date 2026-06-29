@@ -9,6 +9,7 @@ import cctv_analytics from '../assets/cctv_analytics.png'
 import heating_ocr from '../assets/heating_ocr.png'
 import cyberbuddy from '../assets/cyberbuddy.png'
 import transmitter_ocr from '../assets/transmitter_ocr.jpg'
+import pricing_analyser from '../assets/pricing_analyser.png'
 
 const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
 
@@ -346,6 +347,8 @@ export const selectImage = (title: string) => {
             return sales;
         case 'CCTV Analytics':
             return cctv_analytics;
+        case 'Pricing Analyser':
+            return pricing_analyser;    
     }
 }
 
