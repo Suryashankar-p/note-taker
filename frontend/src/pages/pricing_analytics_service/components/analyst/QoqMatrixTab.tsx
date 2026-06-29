@@ -15,6 +15,7 @@ interface QoqMatrixTabProps {
   selectedFamily: string | null;
   setSelectedFamily: (family: string | null) => void;
   onNavigateToSku: () => void;
+  onNavigateToTab?: (tabId: string) => void;
 }
 
 const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
@@ -23,6 +24,7 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   selectedFamily,
   setSelectedFamily,
   onNavigateToSku,
+  onNavigateToTab,
 }) => {
   const columns = [
     "Higher — last 3Q (all > PY avg)",
@@ -278,140 +280,159 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       </div>
 
       {/* 2. Product Family Drill-down (populated only when cell is clicked) */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <h3 className="text-sm font-bold tracking-tight text-gray-850 mb-3">
-          Product family drill-down
-        </h3>
-        
-        <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 text-teal-800 p-3 rounded-lg mb-4 text-xs font-semibold">
-          <AlertCircle className="text-teal-600 shrink-0" size={14} />
-          <p>Click a product family to see performance and dispersion. Scroll down and open SKU drill-down for line-level deviations.</p>
-        </div>
+      {selectedQoqCell ? (
+        <>
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold tracking-tight text-gray-850 mb-3">
+              Product family drill-down
+            </h3>
+            
+            <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 text-teal-800 p-3 rounded-lg mb-4 text-xs font-semibold">
+              <AlertCircle className="text-teal-600 shrink-0" size={14} />
+              <p>Click a product family to see performance and dispersion. Scroll down and open SKU drill-down for line-level deviations.</p>
+            </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-gray-150 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
-                <th className="py-2.5 px-4">Product Family</th>
-                <th className="py-2.5 px-4 text-right">Revenue (Q4 FY 26)</th>
-                <th className="py-2.5 px-4 text-right">Actual GM%</th>
-                <th className="py-2.5 px-4 text-right">Target GM%</th>
-                <th className="py-2.5 px-4 text-right">Δ (PP)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 font-semibold text-gray-700">
-              {activeFamiliesList.length > 0 ? (
-                activeFamiliesList.map((fam, idx) => {
-                  const isSelected = selectedFamily === fam.name;
-                  const isPositive = fam.delta.startsWith("+");
-                  return (
-                    <tr
-                      key={idx}
-                      onClick={() => setSelectedFamily(fam.name)}
-                      className={`cursor-pointer hover:bg-slate-50 transition-colors ${
-                        isSelected ? "bg-red-50/20 text-[#a61c1e]" : ""
-                      }`}
-                    >
-                      <td className="py-3 px-4 font-bold text-gray-900">{fam.name}</td>
-                      <td className="py-3 px-4 text-right">{fam.revenue}</td>
-                      <td className="py-3 px-4 text-right">{fam.actual}</td>
-                      <td className="py-3 px-4 text-right">{fam.target}</td>
-                      <td className={`py-3 px-4 text-right font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
-                        {fam.delta}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-150 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
+                    <th className="py-2.5 px-4">Product Family</th>
+                    <th className="py-2.5 px-4 text-right">Revenue (Q4 FY 26)</th>
+                    <th className="py-2.5 px-4 text-right">Actual GM%</th>
+                    <th className="py-2.5 px-4 text-right">Target GM%</th>
+                    <th className="py-2.5 px-4 text-right">Δ (PP)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 font-semibold text-gray-700">
+                  {activeFamiliesList.length > 0 ? (
+                    activeFamiliesList.map((fam, idx) => {
+                      const isSelected = selectedFamily === fam.name;
+                      const isPositive = fam.delta.startsWith("+");
+                      return (
+                        <tr
+                          key={idx}
+                          onClick={() => setSelectedFamily(fam.name)}
+                          className={`cursor-pointer hover:bg-slate-50 transition-colors ${
+                            isSelected ? "bg-red-50/20 text-[#a61c1e]" : ""
+                          }`}
+                        >
+                          <td className="py-3 px-4 font-bold text-gray-900">{fam.name}</td>
+                          <td className="py-3 px-4 text-right">{fam.revenue}</td>
+                          <td className="py-3 px-4 text-right">{fam.actual}</td>
+                          <td className="py-3 px-4 text-right">{fam.target}</td>
+                          <td className={`py-3 px-4 text-right font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
+                            {fam.delta}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-gray-400 font-bold text-xs bg-slate-50/50">
+                        No cell selected in step 3. Click a matrix number above to load product families.
                       </td>
                     </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-gray-400 font-bold text-xs bg-slate-50/50">
-                    No cell selected in step 3. Click a matrix number above to load product families.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 3. Render charts only if a family is selected */}
-      {selectedFamily && (
-        <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in">
-          <div>
-            <h3 className="text-sm font-bold tracking-tight text-gray-800">
-              Revenue and GM % by quarter
-            </h3>
-            <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
-              Select a product family row in the table to update all charts below. (Active: <strong className="text-[#a61c1e]">{selectedFamily}</strong>)
-            </p>
-          </div>
-
-          {/* Render custom SVGs/Charts simulating Quarter values in screenshot */}
-          <div className="h-60 bg-slate-50 rounded-xl border border-gray-150 p-4 flex flex-col justify-between">
-            <span className="text-[10px] text-gray-400 font-extrabold uppercase">Revenue and GM % by quarter for {selectedFamily}</span>
-            <div className="flex items-end justify-between h-40 px-6">
-              {[50, 42, 68, 35, 60, 55, 63, 44, 52].map((height, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2 w-12">
-                  <span className="text-[9px] text-[#a61c1e] font-extrabold">₹{((height * 2.5) / 10).toFixed(1)}L</span>
-                  <div className="w-6 bg-[#a61c1e]/20 hover:bg-[#a61c1e]/40 rounded-t border-t border-[#a61c1e] transition-all" style={{ height: `${height}px` }}></div>
-                  <span className="text-[8px] text-gray-400 font-bold">Q{idx + 1}</span>
-                </div>
-              ))}
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* 4. GM% Dispersion Analysis */}
-          <div className="border-t border-gray-100 pt-6 mt-2">
-            <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-4">
-              GM% dispersion analysis
-            </h4>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between">
-                <span className="text-[10px] text-gray-400 font-bold uppercase mb-4">Normal distribution — GM%</span>
-                <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-semibold border-2 border-dashed border-gray-200 rounded-lg">
-                  [Normal Curve Simulation for {selectedFamily}]
+          {/* 3. Render charts only if a family is selected */}
+          {selectedFamily && (
+            <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in">
+              <div>
+                <h3 className="text-sm font-bold tracking-tight text-gray-800">
+                  Revenue and GM % by quarter
+                </h3>
+                <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
+                  Select a product family row in the table to update all charts below. (Active: <strong className="text-[#a61c1e]">{selectedFamily}</strong>)
+                </p>
+              </div>
+
+              {/* Render custom SVGs/Charts simulating Quarter values in screenshot */}
+              <div className="h-60 bg-slate-50 rounded-xl border border-gray-150 p-4 flex flex-col justify-between">
+                <span className="text-[10px] text-gray-400 font-extrabold uppercase">Revenue and GM % by quarter for {selectedFamily}</span>
+                <div className="flex items-end justify-between h-40 px-6">
+                  {[50, 42, 68, 35, 60, 55, 63, 44, 52].map((height, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-2 w-12">
+                      <span className="text-[9px] text-[#a61c1e] font-extrabold">₹{((height * 2.5) / 10).toFixed(1)}L</span>
+                      <div className="w-6 bg-[#a61c1e]/20 hover:bg-[#a61c1e]/40 rounded-t border-t border-[#a61c1e] transition-all" style={{ height: `${height}px` }}></div>
+                      <span className="text-[8px] text-gray-400 font-bold">Q{idx + 1}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between">
-                <span className="text-[10px] text-gray-400 font-bold uppercase mb-4">GM% distribution trend — quarter on quarter</span>
-                <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-semibold border-2 border-dashed border-gray-200 rounded-lg">
-                  [Quarter Trend Simulation for {selectedFamily}]
+
+              {/* 4. GM% Dispersion Analysis */}
+              <div className="border-t border-gray-100 pt-6 mt-2">
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-4">
+                  GM% dispersion analysis
+                </h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-4">Normal distribution — GM%</span>
+                    <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-semibold border-2 border-dashed border-gray-200 rounded-lg">
+                      [Normal Curve Simulation for {selectedFamily}]
+                    </div>
+                  </div>
+                  <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-4">GM% distribution trend — quarter on quarter</span>
+                    <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-semibold border-2 border-dashed border-gray-200 rounded-lg">
+                      [Quarter Trend Simulation for {selectedFamily}]
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Summary stats */}
-          <div className="grid grid-cols-5 gap-3 text-center border-t border-gray-150 pt-6">
-            <div>
-              <span className="text-[9px] text-gray-400 font-bold uppercase">Mean GM%</span>
-              <span className="text-sm font-extrabold text-gray-900 block mt-1">51.6%</span>
-            </div>
-            <div>
-              <span className="text-[9px] text-gray-400 font-bold uppercase">Std-dev (σ)</span>
-              <span className="text-sm font-extrabold text-gray-900 block mt-1">7.0%</span>
-            </div>
-            <div>
-              <span className="text-[9px] text-gray-400 font-bold uppercase">Median</span>
-              <span className="text-sm font-extrabold text-gray-900 block mt-1">54.6%</span>
-            </div>
-            <div>
-              <span className="text-[9px] text-gray-400 font-bold uppercase">Min GM%</span>
-              <span className="text-sm font-extrabold text-rose-600 block mt-1">39.5%</span>
-            </div>
-            <div>
-              <span className="text-[9px] text-gray-400 font-bold uppercase">Max GM%</span>
-              <span className="text-sm font-extrabold text-emerald-600 block mt-1">70.0%</span>
-            </div>
-          </div>
+              {/* Summary stats */}
+              <div className="grid grid-cols-5 gap-3 text-center border-t border-gray-150 pt-6">
+                <div>
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">Mean GM%</span>
+                  <span className="text-sm font-extrabold text-gray-900 block mt-1">51.6%</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">Std-dev (σ)</span>
+                  <span className="text-sm font-extrabold text-gray-900 block mt-1">7.0%</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">Median</span>
+                  <span className="text-sm font-extrabold text-gray-900 block mt-1">54.6%</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">Min GM%</span>
+                  <span className="text-sm font-extrabold text-rose-600 block mt-1">39.5%</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">Max GM%</span>
+                  <span className="text-sm font-extrabold text-emerald-600 block mt-1">70.0%</span>
+                </div>
+              </div>
 
-          {/* Drill-down button */}
+              {/* Drill-down button */}
+              <button
+                onClick={onNavigateToSku}
+                className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm hover:scale-[1.01]"
+              >
+                SKU deviation drill-down —
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-4">
           <button
-            onClick={onNavigateToSku}
-            className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors"
+            onClick={() => onNavigateToTab?.("skyscraper")}
+            className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
           >
-            SKU deviation drill-down —
-            <ArrowRight size={14} />
+            — Previous
+          </button>
+          <button
+            onClick={() => onNavigateToTab?.("sku-drill-down")}
+            className="px-6 py-2 bg-[#2dd4bf] hover:bg-[#14b8a6] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md active:scale-95"
+          >
+            Next —
           </button>
         </div>
       )}

@@ -15,8 +15,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const SkyscraperTab = () => {
   const [compareVs, setCompareVs] = useState("target");
   const [selectedQuarter, setSelectedQuarter] = useState("Q4 FY 26");
-  const [zoomLevel, setZoomLevel] = useState(100);
-
   // Sample data for 75 product families margin delta vs target
   // Alternating positive deltas and negative deltas
   const chartLabels = Array.from({ length: 45 }, (_, i) => `Family ${i + 1}`);
@@ -133,28 +131,8 @@ const SkyscraperTab = () => {
           </div>
         </div>
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-4 py-3 text-xs border-b border-gray-50 mb-6">
-          <span className="text-gray-500 font-medium">Chart zoom</span>
-          <input
-            type="range"
-            min="50"
-            max="200"
-            value={zoomLevel}
-            onChange={(e) => setZoomLevel(Number(e.target.value))}
-            className="w-40 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#a61c1e]"
-          />
-          <button
-            onClick={() => setZoomLevel(100)}
-            className="text-[10px] font-bold text-gray-500 border border-gray-200 px-2 py-0.5 rounded bg-white hover:bg-gray-50 shadow-sm"
-          >
-            Reset to 100%
-          </button>
-          <span className="text-gray-400 font-semibold">Zoom {zoomLevel}%</span>
-        </div>
-
         {/* Skyscraper Chart Area */}
-        <div className="h-72" style={{ transform: `scaleX(${zoomLevel / 100})`, transformOrigin: "left" }}>
+        <div className="h-72">
           <Bar data={chartData} options={chartOptions} />
         </div>
       </div>

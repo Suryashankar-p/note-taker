@@ -63,6 +63,7 @@ const PricingAnalyst = () => {
             selectedFamily={selectedFamily}
             setSelectedFamily={setSelectedFamily}
             onNavigateToSku={() => setActiveTab("sku-drill-down")}
+            onNavigateToTab={(tabId) => setActiveTab(tabId)}
           />
         )}
         {activeTab === "sku-drill-down" && (

@@ -1,16 +1,71 @@
 import React, { useState } from "react";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const SkyscraperChart = () => {
   const [compareMode, setCompareMode] = useState<"target" | "baseline">("target");
-  const [zoom, setZoom] = useState(100);
 
-  // Generate 75 mock vertical deltas to represent the skyscraper visualization
-  const dataPoints = Array.from({ length: 75 }, (_, i) => {
-    if (i < 21) {
-      return { val: 12 - (i * 0.4) + Math.random() * 0.5, type: "positive" };
-    }
-    return { val: -0.2 - ((i - 21) * 0.4) - Math.random() * 1.5, type: "negative" };
-  });
+  const chartLabels = Array.from({ length: 45 }, (_, i) => `Family ${i + 1}`);
+  const chartDeltas = [
+    12.3, 10.3, 8.0, 5.8, 5.4, 5.2, 4.8, 4.3, 4.3, 3.5, 2.7, 1.8, 1.0, 0.5, 0.2,
+    -0.1, -0.4, -0.9, -1.2, -1.8, -2.1, -2.5, -3.0, -3.2, -3.8, -4.1, -4.5, -5.0,
+    -5.4, -5.8, -6.1, -6.5, -7.0, -7.8, -8.2, -8.9, -9.5, -10.1, -11.0, -11.7,
+    -12.5, -13.2, -15.0, -17.4, -19.1
+  ];
+
+  const chartData = {
+    labels: chartLabels,
+    datasets: [
+      {
+        label: "Margin Delta (pp)",
+        data: chartDeltas,
+        backgroundColor: chartDeltas.map((val) =>
+          val >= 0 ? "rgba(16, 185, 129, 0.75)" : "rgba(225, 29, 72, 0.75)"
+        ),
+        borderRadius: 2,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: "#1e293b",
+        callbacks: {
+          label: (context: any) => `Delta: ${context.parsed.y > 0 ? "+" : ""}${context.parsed.y} pp`,
+        },
+      },
+    },
+    scales: {
+      y: {
+        ticks: {
+          color: "#64748b",
+          callback: (value: any) => `${value > 0 ? "+" : ""}${value} pp`,
+        },
+        grid: {
+          color: "#f1f5f9",
+        },
+      },
+      x: {
+        display: false, // Hide individual family names for clean view
+      },
+    },
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -55,53 +110,9 @@ const SkyscraperChart = () => {
         <span className="text-rose-600 font-bold">54</span> below target (Δ = actual - target, pp).
       </div>
 
-      {/* Zoom Control */}
-      <div className="flex items-center gap-4 mb-6">
-        <span className="text-xs text-gray-400 font-bold">Chart zoom</span>
-        <input
-          type="range"
-          min="50"
-          max="150"
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-          className="w-40 accent-[#a61c1e]"
-        />
-        <button
-          onClick={() => setZoom(100)}
-          className="px-2 py-0.5 border border-gray-300 rounded text-[10px] text-gray-600 hover:bg-gray-50"
-        >
-          Reset to 100%
-        </button>
-        <span className="text-xs font-bold text-gray-700">Zoom {zoom}%</span>
-      </div>
-
-      {/* Skyscraper Bar Visualizer */}
-      <div className="h-64 border border-dashed border-gray-200 rounded-lg p-6 bg-gray-50/20 flex items-center justify-center overflow-x-auto">
-        <div
-          className="flex items-end justify-center gap-[2px] h-full w-full max-w-5xl"
-          style={{ transform: `scale(${zoom / 100})`, transformOrigin: "bottom center", transition: "transform 0.1s" }}
-        >
-          {dataPoints.map((point, idx) => {
-            const heightPct = Math.min(Math.max(Math.abs(point.val) * 6, 4), 100);
-            const isPositive = point.type === "positive";
-
-            return (
-              <div key={idx} className="flex flex-col items-center justify-end h-full w-2">
-                <div
-                  className={`w-full rounded-t-sm transition-all duration-300 ${
-                    isPositive
-                      ? "bg-gradient-to-t from-emerald-400 to-teal-500 shadow-emerald-500/20"
-                      : "bg-gradient-to-b from-rose-400 to-orange-500 shadow-rose-500/20 mt-auto"
-                  }`}
-                  style={{
-                    height: `${heightPct}%`,
-                    transform: isPositive ? "none" : "translateY(50%)",
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
+      {/* Skyscraper Chart Area */}
+      <div className="h-72">
+        <Bar data={chartData} options={chartOptions} />
       </div>
     </div>
   );

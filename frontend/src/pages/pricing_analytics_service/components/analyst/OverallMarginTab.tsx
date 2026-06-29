@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import MarginTrendChart from "./MarginTrendChart";
 import RevenueCogsChart from "./RevenueCogsChart";
 import { Sparkles, ArrowRight, AlertCircle } from "lucide-react";
+import HeatingMarginsGrid from "../../pages/ceo/components/HeatingMarginsGrid";
 
 const OverallMarginTab = () => {
   const [selectedFamily, setSelectedFamily] = useState("All families (109)");
@@ -144,79 +145,7 @@ const OverallMarginTab = () => {
       </div>
 
       {/* 3. Margins QoQ view Heatmap grid */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-          <div>
-            <h3 className="text-sm font-bold tracking-tight text-gray-800">
-              Heating Margins: QoQ view
-            </h3>
-            <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
-              Heating Spares — PMA target vs baseline by product family
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-medium">Window ending</span>
-            <select
-              value={selectedQuarter}
-              onChange={(e) => setSelectedQuarter(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700 outline-none cursor-pointer focus:ring-1 focus:ring-[#a61c1e]"
-            >
-              <option>Q4 FY 26</option>
-              <option>Q3 FY 26</option>
-              <option>Q2 FY 26</option>
-              <option>Q1 FY 26</option>
-            </select>
-          </div>
-        </div>
-
-        {/* 4 Cards representing the matrix */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {["Q1 FY 26", "Q2 FY 26", "Q3 FY 26", "Q4 FY 26"].map((qName) => (
-            <div key={qName} className="border border-gray-150 rounded-xl p-4 bg-slate-50/50 shadow-sm flex flex-col justify-between">
-              <div className="text-center pb-3 border-b border-gray-100">
-                <span className="text-xs font-extrabold text-gray-800 tracking-wide uppercase">{qName}</span>
-                <div className="flex items-center justify-center gap-3 mt-1.5 text-[10px] font-bold">
-                  <span className="text-rose-600">● B: 24/74 (31%)</span>
-                  <span className="text-emerald-600">● A: 37/74 (50%)</span>
-                </div>
-              </div>
-
-              {/* Heat Matrix Layout */}
-              <div className="mt-4">
-                <div className="text-center text-[8px] font-bold uppercase text-gray-400 mb-2">
-                  ▲ Achieved gross margin (vs Baseline)
-                </div>
-                <div className="grid grid-cols-4 gap-1 text-center items-center">
-                  {/* Row headers */}
-                  <span className="text-[7px] font-bold text-gray-400 rotate-270 uppercase text-right leading-tight">Target vs Baseline</span>
-                  <div className="bg-rose-50 border border-rose-100 p-2 rounded text-rose-800 flex flex-col">
-                    <span className="text-xs font-bold">10</span>
-                    <span className="text-[7px] opacity-70">11%</span>
-                  </div>
-                  <div className="bg-amber-50 border border-amber-100 p-2 rounded text-amber-800 flex flex-col">
-                    <span className="text-xs font-bold">13</span>
-                    <span className="text-[7px] opacity-70">15%</span>
-                  </div>
-                  <div className="bg-emerald-50 border border-emerald-100 p-2 rounded text-emerald-800 flex flex-col font-bold">
-                    <span className="text-xs">15</span>
-                    <span className="text-[7px] opacity-70">31%</span>
-                  </div>
-
-                  {/* Header labels */}
-                  <span></span>
-                  <span className="text-[8px] font-bold text-gray-400 uppercase">&lt; 0%</span>
-                  <span className="text-[8px] font-bold text-gray-400 uppercase">0% to 5%</span>
-                  <span className="text-[8px] font-bold text-gray-400 uppercase">&gt; 5%</span>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-gray-100 text-center text-[9px] text-gray-400 font-semibold leading-tight">
-                Cell top-left = # families; bottom-right = % revenue share.
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <HeatingMarginsGrid />
 
       {/* 4. Executive snapshot and insights row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -273,10 +202,6 @@ const OverallMarginTab = () => {
               </li>
             </ul>
           </div>
-          <button className="mt-6 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors">
-            Ask GIA Co-pilot
-            <ArrowRight size={14} />
-          </button>
         </div>
       </div>
 
@@ -287,54 +212,268 @@ const OverallMarginTab = () => {
           Business insights
         </h3>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Mix impact table */}
-          <div className="flex flex-col">
-            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">QoQ GM bridge (Q3 FY26 → Q4 FY26): % GM bridge</h4>
-            <div className="border border-gray-100 rounded-lg overflow-hidden">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[9px] border-b border-gray-100">
-                    <th className="py-2 px-3">Mix Impact Positive (Top 3)</th>
-                    <th className="py-2 px-3 text-right">Impact</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 font-medium">
-                  <tr>
-                    <td className="py-2 px-3 text-gray-700">HE (Coil)</td>
-                    <td className="py-2 px-3 text-right text-emerald-600 font-bold">+1.4 pp</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 text-gray-700">IBH Tube</td>
-                    <td className="py-2 px-3 text-right text-emerald-600 font-bold">+0.8 pp</td>
-                  </tr>
-                </tbody>
-              </table>
+        <div className="flex flex-col gap-8">
+          {/* Section 1: QoQ GM Bridge */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-[#e6f4f1] text-[#0d9488] p-3 rounded-lg text-xs font-bold leading-relaxed border border-[#ccfbf1]">
+              <span className="font-extrabold uppercase">QoQ GM bridge (Q3 FY 26 → Q4 FY 26): % GM bridge</span>
+              {" — "}
+              <span className="text-gray-700 font-medium">GM% +0.3 pp (51.9% → 52.2%). Mix -3.2 pp + margin +3.5 pp = +0.3 pp (check vs ΔGM%).</span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Mix Impact (% GM) */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Mix impact (% GM)</span>
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Positive */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
+                        <tr>
+                          <td className="py-2 px-2">1. HE (Coil)</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+1.4 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. IBH Tube</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.8 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. Burner 4 (VA Fab)</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.6 pp</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Negative */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
+                        <tr>
+                          <td className="py-2 px-2">1. Gas train</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-1.2 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. HE (Bank Tubes)</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.8 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. Furnace</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.6 pp</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Margin Impact (% GM) */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Margin impact (% GM)</span>
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Positive */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
+                        <tr>
+                          <td className="py-2 px-2">1. Fan Spares</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+1.4 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. NA</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.7 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. HEAT EXCHANGER</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.4 pp</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Negative */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
+                        <tr>
+                          <td className="py-2 px-2">1. HE (Coil)</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.6 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. APH</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.3 pp</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. IBH Tube</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.3 pp</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Margin impact table */}
-          <div className="flex flex-col">
-            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Margin impact (% GM)</h4>
-            <div className="border border-gray-100 rounded-lg overflow-hidden">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[9px] border-b border-gray-100">
-                    <th className="py-2 px-3">Margin Impact Positive (Top 3)</th>
-                    <th className="py-2 px-3 text-right">Impact</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 font-medium">
-                  <tr>
-                    <td className="py-2 px-3 text-gray-700">Fan Spares</td>
-                    <td className="py-2 px-3 text-right text-emerald-600 font-bold">+1.4 pp</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 text-gray-700">HEAT EXCHANGER</td>
-                    <td className="py-2 px-3 text-right text-emerald-600 font-bold">+0.4 pp</td>
-                  </tr>
-                </tbody>
-              </table>
+          <hr className="border-gray-100" />
+
+          {/* Section 2: Absolute GM Bridge */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-[#e6f4f1] text-[#0d9488] p-3 rounded-lg text-xs font-bold leading-relaxed border border-[#ccfbf1]">
+              <span className="font-extrabold uppercase">Absolute GM bridge</span>
+              {" — "}
+              <span className="text-gray-700 font-medium">AGM +₹48.6 L (₹10.9 Cr → ₹11.4 Cr). Mix -₹27.4 L + margin +₹76.0 L = +₹48.6 L.</span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Mix Impact (Absolute ₹) */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Mix impact (absolute ₹)</span>
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Positive */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                        <tr>
+                          <td className="py-2 px-2">1. HE (Coil)</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹37.4 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. IBH Tube</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹17.3 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. Burner 4 (VA Fab)</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹13.2 L</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Negative */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                        <tr>
+                          <td className="py-2 px-2">1. Gas train</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹23.8 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. HE (Bank Tubes)</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹16.0 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. Furnace</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹13.1 L</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Margin Impact (Absolute ₹) */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Margin impact (absolute ₹)</span>
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Positive */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                        <tr>
+                          <td className="py-2 px-2">1. Fan Spares</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹29.6 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. NA</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹16.3 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. HEAT EXCHANGER</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹9.7 L</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Negative */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
+                          <th className="py-1.5 px-2">Family</th>
+                          <th className="py-1.5 px-2 text-right">Impact</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                        <tr>
+                          <td className="py-2 px-2">1. HE (Coil)</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹12.7 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">2. APH</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹7.5 L</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-2">3. IBH Tube</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹6.2 L</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
