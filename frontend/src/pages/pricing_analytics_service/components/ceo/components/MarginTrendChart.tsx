@@ -120,17 +120,17 @@ const MarginTrendChart = ({ data: apiData }: MarginTrendChartProps) => {
           <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase">
             Margin trend
           </h3>
-          <div className="flex items-center gap-3 mt-2">
+          {/* <div className="flex items-center gap-3 mt-2">
             <span className="text-[10px] text-gray-400 font-bold uppercase">Product families</span>
             <select className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1 text-xs font-semibold text-[#a61c1e] outline-none cursor-pointer">
               <option>103 of 109 families</option>
             </select>
-          </div>
+          </div> */}
         </div>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-[#a61c1e]"></span>
           <span className="text-xs text-gray-600 font-semibold">103 families margin %</span>
-        </div>
+        </div> */}
       </div>
 
       <div className="h-64">

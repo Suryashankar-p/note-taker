@@ -12,8 +12,6 @@ const OverallMargin = () => {
   const { data: overallData, isLoading: isOverallLoading } = useGetOverallMargin(sessionId);
   const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(sessionId);
 
-  console.log(insightsData, "////////////////")
-
   if (isOverallLoading || isInsightsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">

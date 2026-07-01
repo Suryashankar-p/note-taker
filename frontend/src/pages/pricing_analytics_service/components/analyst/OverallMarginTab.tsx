@@ -50,8 +50,8 @@ const OverallMarginTab = () => {
     return {
       type: item.label,
       data: [
-        { 
-          rev: item.baseline_rev_cr !== null ? item.baseline_rev_cr.toFixed(1) : "-", 
+        {
+          rev: item.baseline_rev_cr !== null ? item.baseline_rev_cr.toFixed(1) : "-",
           gm: item.baseline_gm_pct !== null ? `${item.baseline_gm_pct.toFixed(1)}%` : "-",
           isGreen: false,
           isRed: false,
@@ -59,8 +59,8 @@ const OverallMarginTab = () => {
         ...activeQuarters.map((q) => {
           const qData = item.quarters[q];
           if (!qData || qData.gm_pct === null) {
-            return { 
-              rev: qData && qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-", 
+            return {
+              rev: qData && qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-",
               gm: "-",
               isGreen: false,
               isRed: false,
@@ -115,7 +115,6 @@ const OverallMarginTab = () => {
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
-      {/* 1. QoQ Table Card */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold tracking-tight text-gray-850">
@@ -146,9 +145,8 @@ const OverallMarginTab = () => {
                 {subHeaders.map((sh, i) => (
                   <th
                     key={i}
-                    className={`py-1.5 px-2 text-right ${
-                      i % 2 === 0 ? "border-l border-gray-100" : ""
-                    }`}
+                    className={`py-1.5 px-2 text-right ${i % 2 === 0 ? "border-l border-gray-100" : ""
+                      }`}
                   >
                     {sh}
                   </th>
@@ -163,9 +161,8 @@ const OverallMarginTab = () => {
                     <React.Fragment key={colIdx}>
                       <td className="py-3 px-2 text-right border-l border-gray-100">{col.rev}</td>
                       <td
-                        className={`py-3 px-2 text-right font-bold ${
-                          col.isGreen ? "text-emerald-600" : col.isRed ? "text-rose-600" : "text-gray-700"
-                        }`}
+                        className={`py-3 px-2 text-right font-bold ${col.isGreen ? "text-emerald-600" : col.isRed ? "text-rose-600" : "text-gray-700"
+                          }`}
                       >
                         {col.gm}
                       </td>
@@ -178,7 +175,6 @@ const OverallMarginTab = () => {
         </div>
       </div>
 
-      {/* 2. Charts Section - Row */}
       <div className="bg-slate-100/50 border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
@@ -202,12 +198,9 @@ const OverallMarginTab = () => {
         </div>
       </div>
 
-      {/* 3. Margins QoQ view Heatmap grid */}
       <HeatingMarginsGrid />
 
-      {/* 4. Executive snapshot and insights row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Metric Cards Box */}
         <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-6">
           <div className="flex items-center justify-between pb-3 border-b border-gray-100">
             <h3 className="text-sm font-bold tracking-tight text-gray-800">
@@ -224,9 +217,8 @@ const OverallMarginTab = () => {
                 <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wide leading-tight mb-2">
                   {st.label}
                 </span>
-                <span className={`text-base font-extrabold tracking-tight ${
-                  st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"
-                }`}>
+                <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"
+                  }`}>
                   {st.value}
                 </span>
               </div>
@@ -234,7 +226,6 @@ const OverallMarginTab = () => {
           </div>
         </div>
 
-        {/* Top Insights Box */}
         <div className="bg-[#131517] text-white border border-[#202226] rounded-xl p-6 shadow-sm flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-extrabold tracking-tight text-white mb-4 border-b border-[#202226] pb-3 flex items-center gap-2">
@@ -253,7 +244,6 @@ const OverallMarginTab = () => {
         </div>
       </div>
 
-      {/* 5. Business insights */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-sm font-bold tracking-tight text-gray-800 mb-6 pb-3 border-b border-gray-100 flex items-center gap-2">
           <AlertCircle size={16} className="text-[#a61c1e]" />
@@ -261,7 +251,6 @@ const OverallMarginTab = () => {
         </h3>
 
         <div className="flex flex-col gap-8">
-          {/* Section 1: QoQ GM Bridge */}
           <div className="flex flex-col gap-4">
             <div className="bg-[#e6f4f1] text-[#0d9488] p-3 rounded-lg text-xs font-bold leading-relaxed border border-[#ccfbf1]">
               <span className="font-extrabold uppercase">QoQ GM bridge (Q3 FY 26 → Q4 FY 26): % GM bridge</span>
@@ -270,11 +259,9 @@ const OverallMarginTab = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Mix Impact (% GM) */}
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Mix impact (% GM)</span>
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Positive */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
@@ -301,7 +288,6 @@ const OverallMarginTab = () => {
                     </table>
                   </div>
 
-                  {/* Negative */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
@@ -330,11 +316,9 @@ const OverallMarginTab = () => {
                 </div>
               </div>
 
-              {/* Margin Impact (% GM) */}
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Margin impact (% GM)</span>
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Positive */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
@@ -361,7 +345,6 @@ const OverallMarginTab = () => {
                     </table>
                   </div>
 
-                  {/* Negative */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
@@ -394,7 +377,6 @@ const OverallMarginTab = () => {
 
           <hr className="border-gray-100" />
 
-          {/* Section 2: Absolute GM Bridge */}
           <div className="flex flex-col gap-4">
             <div className="bg-[#e6f4f1] text-[#0d9488] p-3 rounded-lg text-xs font-bold leading-relaxed border border-[#ccfbf1]">
               <span className="font-extrabold uppercase">Absolute GM bridge</span>
@@ -403,11 +385,9 @@ const OverallMarginTab = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Mix Impact (Absolute ₹) */}
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Mix impact (absolute ₹)</span>
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Positive */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
@@ -434,7 +414,6 @@ const OverallMarginTab = () => {
                     </table>
                   </div>
 
-                  {/* Negative */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
@@ -463,11 +442,9 @@ const OverallMarginTab = () => {
                 </div>
               </div>
 
-              {/* Margin Impact (Absolute ₹) */}
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Margin impact (absolute ₹)</span>
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Positive */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
