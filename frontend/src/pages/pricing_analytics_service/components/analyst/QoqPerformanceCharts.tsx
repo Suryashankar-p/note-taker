@@ -1,6 +1,28 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import { Chart, Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
 
 interface QoqPerformanceChartsProps {
   selectedFamily: string;
@@ -39,7 +61,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         label: "Revenue",
         yAxisID: "yRev",
         data: selectedDetails.history.map(h => h.revenue),
-        backgroundColor: "rgba(56, 189, 248, 0.75)",
+        backgroundColor: "rgba(166, 28, 30, 0.25)",
         borderRadius: 4,
         barPercentage: 0.45,
         order: 2,
@@ -49,10 +71,10 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         label: "GM %",
         yAxisID: "yGM",
         data: selectedDetails.history.map(h => h.gm),
-        borderColor: "#38bdf8",
+        borderColor: "#a61c1e",
         borderWidth: 2,
         tension: 0.35,
-        pointBackgroundColor: "#38bdf8",
+        pointBackgroundColor: "#a61c1e",
         pointBorderColor: "#fff",
         pointRadius: 4,
         fill: false,
@@ -144,7 +166,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         type: "bar" as const,
         label: "Frequency",
         data: [1, 2, 8, 30, 48, 12, 3, 0],
-        backgroundColor: "rgba(56, 189, 248, 0.6)",
+        backgroundColor: "rgba(166, 28, 30, 0.3)",
         borderRadius: 2,
         barPercentage: 0.6,
       },
@@ -152,7 +174,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         type: "line" as const,
         label: "Normal curve",
         data: [0.5, 2.5, 12, 35, 45, 22, 5, 0.5],
-        borderColor: "#fbbf24",
+        borderColor: "#a61c1e",
         borderWidth: 2,
         tension: 0.4,
         pointRadius: 0,
@@ -178,10 +200,10 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
       {
         label: "Mean GM%",
         data: [49.2, 40.6, 50.3, 47.7, 51.6, 50.4, 51.7, 51.9, 52.2],
-        borderColor: "#38bdf8",
+        borderColor: "#a61c1e",
         borderWidth: 2,
         tension: 0.35,
-        pointBackgroundColor: "#38bdf8",
+        pointBackgroundColor: "#a61c1e",
         pointRadius: 4,
         fill: false,
       },
@@ -191,7 +213,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         borderColor: "transparent",
         pointRadius: 0,
         fill: "+1",
-        backgroundColor: "rgba(56, 189, 248, 0.12)",
+        backgroundColor: "rgba(166, 28, 30, 0.08)",
       },
       {
         label: "Upper Band",

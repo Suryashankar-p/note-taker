@@ -162,7 +162,13 @@ export const useGetSkyscraper = (sessionId: number) => {
         "/analytics/skyscraper",
         { session_id: sessionId }
       );
-      return response;
+      const transformed: Record<string, any> = {};
+      if (response && response.quarters) {
+        response.quarters.forEach((q: any) => {
+          transformed[q.quarter] = q.bars || [];
+        });
+      }
+      return transformed;
     },
     enabled: !!sessionId,
   });
@@ -176,7 +182,46 @@ export const useGetQoqMatrix = (sessionId: number) => {
         "/analytics/qoq-matrix",
         { session_id: sessionId }
       );
-      return response;
+
+      // Build a flat family-details lookup keyed by lowercase name/nk
+      // and rebuild the matrix cells as simple string[] (display names)
+      // so existing QoqMatrixTab consumption continues to work.
+      const familyDetails: Record<string, any> = {};
+      const quarterMatrices: Record<string, any> = {};
+
+      if (response && response.quarters) {
+        response.quarters.forEach((qEntry: any) => {
+          const qMatrix: Record<string, Record<string, string[]>> = {};
+          Object.entries(qEntry.matrix || {}).forEach(([rowKey, cols]: [string, any]) => {
+            qMatrix[rowKey] = {};
+            Object.entries(cols).forEach(([colKey, families]: [string, any]) => {
+              const names: string[] = [];
+              (families as any[]).forEach((fam: any) => {
+                const displayName = fam.name || fam.display_name || fam.nk;
+                names.push(displayName);
+                const lk = displayName.toLowerCase();
+                if (!familyDetails[lk]) {
+                  familyDetails[lk] = fam;
+                }
+                if (fam.nk) familyDetails[fam.nk.toLowerCase()] = fam;
+              });
+              qMatrix[rowKey][colKey] = names;
+            });
+          });
+          quarterMatrices[qEntry.quarter] = qMatrix;
+        });
+      }
+
+      // Return the latest quarter's matrix (same shape as before) plus
+      // the full familyDetails map for all quarters.
+      const quarters = Object.keys(quarterMatrices);
+      const latestQuarter = quarters[quarters.length - 1] || "";
+      return {
+        matrix: quarterMatrices[latestQuarter] || {},
+        quarterMatrices,
+        familyDetails,
+        quarters,
+      };
     },
     enabled: !!sessionId,
   });

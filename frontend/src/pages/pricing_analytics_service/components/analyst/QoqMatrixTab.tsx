@@ -229,12 +229,21 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     };
   };
 
-  const sortedQuarters = Object.keys(skyscraperQuery.data || {}).sort((a, b) => {
+  const qoqQuarters = (qoqMatrixQuery.data?.quarters || []).slice().sort((a: string, b: string) => {
     const qa = parseQuarter(a);
     const qb = parseQuarter(b);
     if (qa.year !== qb.year) return qa.year - qb.year;
     return qa.quarter - qb.quarter;
   });
+
+  const sortedQuarters = qoqQuarters.length > 0
+    ? qoqQuarters
+    : Object.keys(skyscraperQuery.data || {}).sort((a: string, b: string) => {
+        const qa = parseQuarter(a);
+        const qb = parseQuarter(b);
+        if (qa.year !== qb.year) return qa.year - qb.year;
+        return qa.quarter - qb.quarter;
+      });
 
   useEffect(() => {
     if (sortedQuarters.length > 0 && !selectedQuarter) {
@@ -294,41 +303,48 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     familyLookup.set(fam.family_nk.toLowerCase(), fam);
   });
 
+  // Prefer live API family details from QoQ response, fall back to skyscraper lookup
+  const apiFamilyDetails = qoqMatrixQuery.data?.familyDetails || {};
+
   const getFamilyMockDetails = (name: string) => {
     const key = name.toLowerCase();
     if (clientFamilyMockData[key]) {
       return clientFamilyMockData[key];
     }
-    const stats = familyLookup.get(key);
-    const actualVal = stats?.actual_gm_pct || 50.0;
-    const targetVal = stats?.target_gm_pct || 50.0;
-    const baselineVal = stats?.baseline_gm_pct || 50.0;
+    // Prefer richer data from QoQ API response
+    const apiStats = apiFamilyDetails[key];
+    const skyscraperStats = familyLookup.get(key);
+    const stats = apiStats || skyscraperStats;
+    const actualVal = (stats?.actual_gm_pct !== null && stats?.actual_gm_pct !== undefined) ? stats.actual_gm_pct : 50.0;
+    const targetVal = (stats?.target_gm_pct !== null && stats?.target_gm_pct !== undefined) ? stats.target_gm_pct : 50.0;
+    const baselineVal = stats?.baseline_gm_pct ?? 50.0;
     const gap = actualVal - targetVal;
-    
-    const history = sortedQuarters.map((q) => {
+
+    const history = sortedQuarters.map((q: string) => {
       const familiesInQuarter = skyscraperQuery.data?.[q] || [];
       const fStats = familiesInQuarter.find(
         (f: any) => f.display_name.toLowerCase() === key || f.family_nk.toLowerCase() === key
       );
       return {
         quarter: q,
-        revenue: fStats ? fStats.revenue_inr / 100000 : 10.0,
+        revenue: fStats ? fStats.revenue_inr / 100000 : (stats?.revenue_inr ? stats.revenue_inr / 100000 : 10.0),
         gm: fStats ? fStats.actual_gm_pct : actualVal,
       };
     });
 
-    const validHistory = history.filter(h => h.gm > 0);
-    const actuals = validHistory.map(h => h.gm);
-    const mean = actuals.length > 0 ? actuals.reduce((a, b) => a + b, 0) / actuals.length : actualVal;
+    const validHistory = history.filter((h: any) => h.gm > 0);
+    const actuals = validHistory.map((h: any) => h.gm);
+    const mean = actuals.length > 0 ? actuals.reduce((a: number, b: number) => a + b, 0) / actuals.length : actualVal;
     const min = actuals.length > 0 ? Math.min(...actuals) : actualVal;
     const max = actuals.length > 0 ? Math.max(...actuals) : actualVal;
-    const sorted = [...actuals].sort((a, b) => a - b);
+    const sorted = [...actuals].sort((a: number, b: number) => a - b);
     const median = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : actualVal;
-    const std = actuals.length > 1 ? Math.sqrt(actuals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (actuals.length - 1)) : 0.0;
+    const std = actuals.length > 1 ? Math.sqrt(actuals.reduce((s: number, v: number) => s + Math.pow(v - mean, 2), 0) / (actuals.length - 1)) : 0.0;
 
+    const revenueInr = stats?.revenue_inr || 0;
     return {
       name,
-      revenue: stats ? `₹${(stats.revenue_inr / 100000).toFixed(2)}L` : "₹10.00L",
+      revenue: revenueInr > 0 ? `₹${(revenueInr / 100000).toFixed(2)}L` : "₹0.00L",
       actual: `${actualVal.toFixed(1)}%`,
       target: `${targetVal.toFixed(1)}%`,
       delta: `${gap >= 0 ? "+" : ""}${gap.toFixed(1)}`,
@@ -344,12 +360,15 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     };
   };
 
+  // Use quarter-specific matrix if available, otherwise fall back to latest
+  const activeMatrix = qoqMatrixQuery.data?.quarterMatrices?.[activeQuarter] || qoqMatrixQuery.data?.matrix || {};
+
   rows.forEach((rowName) => {
     matrixData[rowName] = {};
     columns.forEach((colName) => {
       const apiRowKey = apiRows[rowName];
       const apiColKey = apiCols[colName];
-      const familiesArray = qoqMatrixQuery.data?.matrix?.[apiRowKey]?.[apiColKey] || [];
+      const familiesArray = activeMatrix?.[apiRowKey]?.[apiColKey] || [];
 
       const familyData = familiesArray.map((name: string) => {
         return getFamilyMockDetails(name);

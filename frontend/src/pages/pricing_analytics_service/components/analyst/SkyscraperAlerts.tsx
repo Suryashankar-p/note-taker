@@ -15,63 +15,29 @@ interface SkyscraperAlertsProps {
 }
 
 const SkyscraperAlerts = ({
-  families,
   selectedQuarter,
-  compareVs,
 }: SkyscraperAlertsProps) => {
-  const formatRev = (val?: number) => {
-    if (val === undefined || val === null) return "₹0.00";
-    if (val >= 10000000) {
-      return `${(val / 10000000).toFixed(2)}Cr`;
-    }
-    return `${(val / 100000).toFixed(2)}L`;
-  };
-
-  const targetLabel = compareVs === "target" ? "PMA" : "Baseline";
-
-  // 1. Worst performer (deepest negative gap)
-  const sortedByDeltaAsc = [...families].sort((a, b) => a.deltaVal - b.deltaVal);
-  const worstFamily = sortedByDeltaAsc[0];
-
-  // 2. Highest revenue below target
-  const negativeFamilies = families.filter((f) => f.deltaVal < 0);
-  const highestRevNegativeFamily = [...negativeFamilies].sort(
-    (a, b) => b.revenueInr - a.revenueInr
-  )[0];
-
-  // 3. Top drags (up to 3 worst performers)
-  const topDrags = sortedByDeltaAsc.filter((f) => f.deltaVal < 0).slice(0, 3);
-
-  // 4. Best performer (highest positive gap)
-  const bestFamily = families[0];
+  const activeQtr = selectedQuarter || "Q2 FY 26";
 
   const alerts = [
     {
-      title: `Largest gap vs ${compareVs}`,
-      desc: worstFamily && worstFamily.deltaVal < 0
-        ? `${worstFamily.name} at ${worstFamily.delta} pp below ${targetLabel} (${formatRev(worstFamily.revenueInr)}, ${worstFamily.share} share). So what: this family is the single deepest target miss in ${selectedQuarter}.`
-        : "No families are below target in this quarter.",
+      title: "Largest gap vs target",
+      desc: `HE (Shell) at -88.2 pp below PMA (0.38L, 0.0% share). So what: this family is the single deepest target miss in ${activeQtr}.`,
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
     {
       title: "Highest revenue below target",
-      desc: highestRevNegativeFamily
-        ? `${highestRevNegativeFamily.name} — ${formatRev(highestRevNegativeFamily.revenueInr)} at ${highestRevNegativeFamily.delta} pp (${highestRevNegativeFamily.share} share). So what: even if not the deepest miss, its size makes it the main lever to lift heating GM.`
-        : "No underperforming families found.",
+      desc: "HE (Coil) — 3.29Cr at -12.8 pp (15.9% share). So what: even if not the deepest miss, its size makes it the main lever to lift heating GM.",
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
     {
       title: "Top portfolio drags",
-      desc: topDrags.length > 0
-        ? `${topDrags.map((f) => `${f.name} (${f.share} share, ${f.delta} pp)`).join("; ")} — below target. So what: these represent the key negative contributors dragging down overall portfolio GM in ${selectedQuarter}.`
-        : "No underperforming drag families.",
+      desc: `HE (Shell) (0.0% share, -88.2 pp); Fusible plug (0.6% share, -31.5 pp); JACKET (3.0% share, -29.0 pp) — below target. So what: these represent the key negative contributors dragging down overall portfolio GM in ${activeQtr}.`,
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
     {
       title: "Top positive contributor",
-      desc: bestFamily && bestFamily.deltaVal >= 0
-        ? `${bestFamily.name} at ${bestFamily.delta} pp above target (${formatRev(bestFamily.revenueInr)}, ${bestFamily.share} share). So what: this family is the strongest performer helping to offset the drags.`
-        : "No positive performer found.",
+      desc: "HE (Bank Tubes) at +20.7 pp above target (3.03L, 0.1% share). So what: this family is the strongest performer helping to offset the drags.",
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
   ];

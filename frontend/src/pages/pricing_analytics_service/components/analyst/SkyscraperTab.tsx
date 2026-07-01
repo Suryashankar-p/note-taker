@@ -47,8 +47,8 @@ const SkyscraperTab = () => {
   // Map and process product families sorted by margin gap descending
   const processedFamilies = rawFamilies
     .map((fam: any) => {
-      const actual = fam.actual_gm_pct;
-      const ref = compareVs === "target" ? fam.target_gm_pct : fam.ref_gm_pct;
+      const actual = fam.actual_gm_pct !== null && fam.actual_gm_pct !== undefined ? fam.actual_gm_pct : 0;
+      const ref = (compareVs === "target" ? fam.target_gm_pct : fam.ref_gm_pct) ?? 0;
       const gap = actual - ref;
       return {
         name: fam.display_name,
@@ -56,7 +56,7 @@ const SkyscraperTab = () => {
         target: `${ref.toFixed(1)}%`,
         delta: `${gap >= 0 ? "+" : ""}${gap.toFixed(1)}`,
         deltaVal: gap,
-        revenueInr: fam.revenue_inr,
+        revenueInr: fam.revenue_inr || 0,
         share: `${(fam.revenue_share_pct || 0).toFixed(1)}%`,
       };
     })
