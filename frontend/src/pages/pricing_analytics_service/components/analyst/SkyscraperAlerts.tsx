@@ -1,25 +1,77 @@
 import React from "react";
 
-const SkyscraperAlerts = () => {
+interface SkyscraperAlertsProps {
+  families: Array<{
+    name: string;
+    actual: string;
+    target: string;
+    delta: string;
+    deltaVal: number;
+    revenueInr: number;
+    share: string;
+  }>;
+  selectedQuarter: string;
+  compareVs: string;
+}
+
+const SkyscraperAlerts = ({
+  families,
+  selectedQuarter,
+  compareVs,
+}: SkyscraperAlertsProps) => {
+  const formatRev = (val?: number) => {
+    if (val === undefined || val === null) return "₹0.00";
+    if (val >= 10000000) {
+      return `${(val / 10000000).toFixed(2)}Cr`;
+    }
+    return `${(val / 100000).toFixed(2)}L`;
+  };
+
+  const targetLabel = compareVs === "target" ? "PMA" : "Baseline";
+
+  // 1. Worst performer (deepest negative gap)
+  const sortedByDeltaAsc = [...families].sort((a, b) => a.deltaVal - b.deltaVal);
+  const worstFamily = sortedByDeltaAsc[0];
+
+  // 2. Highest revenue below target
+  const negativeFamilies = families.filter((f) => f.deltaVal < 0);
+  const highestRevNegativeFamily = [...negativeFamilies].sort(
+    (a, b) => b.revenueInr - a.revenueInr
+  )[0];
+
+  // 3. Top drags (up to 3 worst performers)
+  const topDrags = sortedByDeltaAsc.filter((f) => f.deltaVal < 0).slice(0, 3);
+
+  // 4. Best performer (highest positive gap)
+  const bestFamily = families[0];
+
   const alerts = [
     {
-      title: "Largest gap vs target",
-      desc: "Fan at -19.1 pp below PMA (₹44.92L, 2.1% of quarter revenue). So what: this family alone is the single biggest target miss in Q4 FY 26.",
+      title: `Largest gap vs ${compareVs}`,
+      desc: worstFamily && worstFamily.deltaVal < 0
+        ? `${worstFamily.name} at ${worstFamily.delta} pp below ${targetLabel} (${formatRev(worstFamily.revenueInr)}, ${worstFamily.share} share). So what: this family is the single deepest target miss in ${selectedQuarter}.`
+        : "No families are below target in this quarter.",
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
     {
       title: "Highest revenue below target",
-      desc: "HE (Coil) — ₹450.84L at -11.7 pp (20.7% share). So what: even if not the deepest miss, its size makes it the main lever to lift heating GM.",
+      desc: highestRevNegativeFamily
+        ? `${highestRevNegativeFamily.name} — ${formatRev(highestRevNegativeFamily.revenueInr)} at ${highestRevNegativeFamily.delta} pp (${highestRevNegativeFamily.share} share). So what: even if not the deepest miss, its size makes it the main lever to lift heating GM.`
+        : "No underperforming families found.",
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
     {
-      title: "Chronic drag",
-      desc: "HE (Coil) (20.7% share, -11.7 pp); Tube (3.9% share, -6.5 pp); pump 1 (3.5% share, -3.2 pp); Burner 1 (4.9% share, -1.8 pp) (+ 1 more) — below target for 3 consecutive quarters.",
+      title: "Top portfolio drags",
+      desc: topDrags.length > 0
+        ? `${topDrags.map((f) => `${f.name} (${f.share} share, ${f.delta} pp)`).join("; ")} — below target. So what: these represent the key negative contributors dragging down overall portfolio GM in ${selectedQuarter}.`
+        : "No underperforming drag families.",
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
     {
-      title: "HE (Coil) — diagnosis",
-      desc: "Standard GM 65.0% (16% of family rev) vs non-standard 49.1%. Non-standard mix is the primary drag — bespoke / non-catalogue volume is running below PMA target.",
+      title: "Top positive contributor",
+      desc: bestFamily && bestFamily.deltaVal >= 0
+        ? `${bestFamily.name} at ${bestFamily.delta} pp above target (${formatRev(bestFamily.revenueInr)}, ${bestFamily.share} share). So what: this family is the strongest performer helping to offset the drags.`
+        : "No positive performer found.",
       borderColor: "border-teal-200 bg-teal-50/50 text-teal-800",
     },
   ];

@@ -153,3 +153,31 @@ export const useGetClassificationMatrix = (sessionId: number) => {
     enabled: !!sessionId,
   });
 };
+
+export const useGetSkyscraper = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["skyscraper", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/skyscraper",
+        { session_id: sessionId }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+  });
+};
+
+export const useGetQoqMatrix = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["qoq-matrix", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/qoq-matrix",
+        { session_id: sessionId }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+  });
+};
