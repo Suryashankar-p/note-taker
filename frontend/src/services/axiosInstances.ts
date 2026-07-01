@@ -12,6 +12,7 @@ const heatingOCR_BaseURL = import.meta.env.VITE_BACKEND_HEATING_OCR_URL;
 const doctranslator_BaseURL = import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL;
 const edge_BaseURL = import.meta.env.VITE_BACKEND_EDGE_URL;
 const cctv_BaseURL = import.meta.env.VITE_BACKEND_CCTV_ANALYTICS_URL;
+const pricingAnalytics_BaseURL = import.meta.env.VITE_BACKEND_PRICING_ANALYTICS_URL;
 
 export const axiosSSO: AxiosInstance = axios.create({
   baseURL: sso_BaseURL,
@@ -70,5 +71,10 @@ export const axiosCCTVService: AxiosInstance = axios.create({
 
 export const axiosEdge: AxiosInstance = axios.create({
   baseURL: edge_BaseURL,
+  timeout: 300000,
+});
+
+export const axiosPricingAnalytics: AxiosInstance = axios.create({
+  baseURL: pricingAnalytics_BaseURL,
   timeout: 300000,
 });

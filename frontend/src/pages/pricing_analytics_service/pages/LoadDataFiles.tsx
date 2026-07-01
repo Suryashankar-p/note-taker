@@ -6,14 +6,39 @@ import {
   List,
   X,
   Lock,
+  Loader2,
 } from "lucide-react";
 
 import FileUploadCard from "../components/FileUploadCard";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  useUploadCogs,
+  useUploadTargets,
+  useUploadBaseline,
+  useUploadNonstdTargets,
+  useUploadPriceList,
+  useUploadCostList,
+  useCreateSession,
+} from "../services/query/file-upload";
+import { useDispatch, useSelector } from "react-redux";
+import { Dispatch, RootState } from "../../../redux/store";
+import Toast from "../../../components/Toast";
 
 const LoadFiles = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<Dispatch>();
+  const toastStatus = useSelector((state: RootState) => state.toast);
+  const [pageError, setPageError] = useState<boolean>(false);
+
+  const { mutate: uploadCogs } = useUploadCogs();
+  const { mutate: uploadTargets } = useUploadTargets();
+  const { mutate: uploadBaseline } = useUploadBaseline();
+  const { mutate: uploadNonstdTargets } = useUploadNonstdTargets();
+  const { mutate: uploadPriceList } = useUploadPriceList();
+  const { mutate: uploadCostList } = useUploadCostList();
+  const { mutate: createSession, isPending: isCreatingSession } = useCreateSession();
+
   const [files, setFiles] = useState([
     {
       title: "COGS Extract",
@@ -21,6 +46,7 @@ const LoadFiles = () => {
       status: "upload",
       fileName: "",
       icon: <FileText className="text-red-600" />,
+      id: null as number | null,
     },
 
     {
@@ -29,6 +55,7 @@ const LoadFiles = () => {
       status: "upload",
       fileName: "",
       icon: <Thermometer className="text-red-600" />,
+      id: null as number | null,
     },
 
     {
@@ -37,6 +64,7 @@ const LoadFiles = () => {
       status: "upload",
       fileName: "",
       icon: <BarChart3 className="text-red-600" />,
+      id: null as number | null,
     },
 
     {
@@ -46,6 +74,7 @@ const LoadFiles = () => {
       status: "upload",
       fileName: "",
       icon: <List className="text-red-600" />,
+      id: null as number | null,
     },
 
     {
@@ -55,6 +84,7 @@ const LoadFiles = () => {
       status: "upload",
       fileName: "",
       icon: <DollarSign className="text-red-600" />,
+      id: null as number | null,
     },
 
     {
@@ -64,23 +94,151 @@ const LoadFiles = () => {
       status: "upload",
       fileName: "",
       icon: <X className="text-red-600" />,
+      id: null as number | null,
     },
   ]);
 
   const handleUpload = (title: string, uploadedFile: File) => {
-    setFiles((prev) =>
-      prev.map((file) =>
-        file.title === title
-          ? { ...file, status: "loaded", fileName: uploadedFile.name }
-          : file,
-      ),
-    );
+    setPageError(false);
+    let uploadMutation: any = null;
+    switch (title) {
+      case "COGS Extract":
+        uploadMutation = uploadCogs;
+        break;
+      case "Heating Targets":
+        uploadMutation = uploadTargets;
+        break;
+      case "Heating Baseline":
+        uploadMutation = uploadBaseline;
+        break;
+      case "Price List":
+        uploadMutation = uploadPriceList;
+        break;
+      case "Cost List":
+        uploadMutation = uploadCostList;
+        break;
+      case "Non-standard Targets":
+        uploadMutation = uploadNonstdTargets;
+        break;
+      default:
+        break;
+    }
+
+    if (uploadMutation) {
+      setFiles((prev) =>
+        prev.map((file) =>
+          file.title === title
+            ? { ...file, status: "loading", fileName: uploadedFile.name, id: null }
+            : file,
+        ),
+      );
+
+      uploadMutation(uploadedFile, {
+        onSuccess: (data: any) => {
+          if (data && data.detail) {
+            console.error(`${title} upload error:`, data.detail);
+            setFiles((prev) =>
+              prev.map((file) =>
+                file.title === title
+                  ? { ...file, status: "upload", fileName: "", id: null }
+                  : file,
+              ),
+            );
+            setPageError(true);
+            dispatch.toast.openToast({
+              status: true,
+              message: data.detail,
+              type: "error",
+            });
+            return;
+          }
+
+          setFiles((prev) =>
+            prev.map((file) =>
+              file.title === title
+                ? {
+                  ...file,
+                  status: "loaded",
+                  fileName: uploadedFile.name,
+                  id: data.id ?? data.file_id ?? (data.result && data.result.id)
+                }
+                : file,
+            ),
+          );
+        },
+        onError: (error: any) => {
+          console.error(`${title} upload failed:`, error);
+          setFiles((prev) =>
+            prev.map((file) =>
+              file.title === title
+                ? { ...file, status: "upload", fileName: "", id: null }
+                : file,
+            ),
+          );
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: error?.response?.data?.detail || "Upload failed",
+            type: "error",
+          });
+        },
+      });
+    }
+  };
+
+  const handleContinue = () => {
+    if (!allUploaded || isCreatingSession) return;
+
+    const cogsFile = files.find((f) => f.title === "COGS Extract");
+    const targetsFile = files.find((f) => f.title === "Heating Targets");
+    const baselineFile = files.find((f) => f.title === "Heating Baseline");
+    const nonstdTargetsFile = files.find((f) => f.title === "Non-standard Targets");
+    const priceListFile = files.find((f) => f.title === "Price List");
+    const costListFile = files.find((f) => f.title === "Cost List");
+
+    const payload = {
+      session_name: "test",
+      cogs_file_id: cogsFile?.id || 0,
+      targets_file_id: targetsFile?.id || 0,
+      baseline_file_id: baselineFile?.id || 0,
+      nonstd_targets_file_id: nonstdTargetsFile?.id || 0,
+      price_list_file_id: priceListFile?.id || 0,
+      cost_list_file_id: costListFile?.id || 0,
+    };
+
+    createSession(payload, {
+      onSuccess: (data: any) => {
+        if (data && data.detail) {
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: data.detail,
+            type: "error",
+          });
+          return;
+        }
+        navigate("workspace", { state: { sessionId: data.id || data.session_id } });
+      },
+      onError: (error: any) => {
+        setPageError(true);
+        dispatch.toast.openToast({
+          status: true,
+          message: error?.response?.data?.detail || "Failed to create session",
+          type: "error",
+        });
+      },
+    });
   };
 
   const allUploaded = files.every((file) => file.status === "loaded");
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {toastStatus.status && pageError && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
+          <Toast type="error" />
+        </div>
+      )}
       <div className="px-24 py-12">
         <h1 className="text-xl font-bold">Load Data Files</h1>
 
@@ -94,7 +252,7 @@ const LoadFiles = () => {
               key={file.title}
               title={file.title}
               description={file.description}
-              status={file.status as "loaded" | "upload"}
+              status={file.status as "loaded" | "upload" | "loading"}
               icon={file.icon}
               onUpload={(uploadedFile: File) =>
                 handleUpload(file.title, uploadedFile)
@@ -106,8 +264,8 @@ const LoadFiles = () => {
 
         <div className="mt-12 flex flex-col items-center justify-center text-center gap-3">
           <button
-            onClick={() => allUploaded && navigate("workspace")}
-            disabled={!allUploaded}
+            onClick={handleContinue}
+            disabled={!allUploaded || isCreatingSession}
             className={`
               flex
               items-center
@@ -122,24 +280,26 @@ const LoadFiles = () => {
               shadow-sm
               transition-all
               duration-200
-              ${
-                allUploaded
-                  ? "bg-[#a61c1e] text-white hover:bg-red-700 cursor-pointer"
-                  : "bg-[#dbdbdb] text-[#7c7c7c] cursor-not-allowed"
+              ${allUploaded && !isCreatingSession
+                ? "bg-[#a61c1e] text-white hover:bg-red-700 cursor-pointer"
+                : "bg-[#dbdbdb] text-[#7c7c7c] cursor-not-allowed"
               }
             `}
           >
-            {!allUploaded && <Lock size={18} className="text-[#969696]" />}
-            Upload all six files to continue {allUploaded && "→"}
+            {isCreatingSession ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Creating Session...
+              </>
+            ) : !allUploaded ? (
+              <>
+                <Lock size={18} className="text-[#969696]" />
+                Upload all six files to continue
+              </>
+            ) : (
+              "Create Session & Continue →"
+            )}
           </button>
-          
-          {/* <div className="mt-2 text-xs font-medium text-gray-500 max-w-lg leading-relaxed">
-            GIA Enterprise AI requires all data nodes for accurate cross-dimensional analysis.
-            <br />
-            <a href="#" className="text-[#a61c1e] hover:underline font-semibold mt-1 inline-block">
-              Learn more about our data requirements
-            </a>
-          </div> */}
         </div>
       </div>
     </div>
