@@ -98,16 +98,16 @@ const PricingAnalyst = lazy(
   () => import("./pages/pricing_analytics_service/components/PricingAnalyst.tsx")
 );
 const OverallMargin = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/OverallMargin")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/OverallMargin.tsx")
 );
 const Classification = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/Classification")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/Classification.tsx")
 );
 const Skycraper = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/Skycraper")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/Skycraper.tsx")
 );
 const DispersionView = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/DispersionView")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/DispersionView.tsx")
 );
 
 

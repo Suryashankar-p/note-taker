@@ -1,7 +1,7 @@
 import React from "react";
-import DispersionBoxes from "./components/DispersionBoxes";
-import DispersionCharts from "./components/DispersionCharts";
-import DispersionMovementExamples from "./components/DispersionMovementExamples";
+import DispersionBoxes from "./DispersionBoxes";
+import DispersionCharts from "./DispersionCharts";
+import DispersionMovementExamples from "./DispersionMovementExamples";
 
 const DispersionView = () => {
   return (

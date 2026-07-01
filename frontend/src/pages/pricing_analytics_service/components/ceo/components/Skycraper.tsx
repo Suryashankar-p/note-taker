@@ -1,7 +1,7 @@
 import React from "react";
-import SkyscraperChart from "./components/SkyscraperChart";
-import SkyscraperInsights from "./components/SkyscraperInsights";
-import SkyscraperProductFamilies from "./components/SkyscraperProductFamilies";
+import SkyscraperChart from "./SkyscraperChart";
+import SkyscraperInsights from "./SkyscraperInsights";
+import SkyscraperProductFamilies from "./SkyscraperProductFamilies";
 
 const Skycraper = () => {
   return (

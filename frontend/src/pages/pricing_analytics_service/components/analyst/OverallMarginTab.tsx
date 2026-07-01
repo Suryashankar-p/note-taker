@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import MarginTrendChart from "./MarginTrendChart";
 import RevenueCogsChart from "./RevenueCogsChart";
 import { Sparkles, ArrowRight, AlertCircle } from "lucide-react";
-import HeatingMarginsGrid from "../../pages/ceo/components/HeatingMarginsGrid";
+import HeatingMarginsGrid from "../ceo/components/HeatingMarginsGrid";
 
 const OverallMarginTab = () => {
   const [selectedFamily, setSelectedFamily] = useState("All families (109)");
@@ -166,9 +166,8 @@ const OverallMarginTab = () => {
                 <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wide leading-tight mb-2">
                   {st.label}
                 </span>
-                <span className={`text-base font-extrabold tracking-tight ${
-                  st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"
-                }`}>
+                <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"
+                  }`}>
                   {st.value}
                 </span>
               </div>

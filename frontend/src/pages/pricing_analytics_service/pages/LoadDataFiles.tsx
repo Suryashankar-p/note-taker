@@ -20,7 +20,7 @@ import {
   useUploadPriceList,
   useUploadCostList,
   useCreateSession,
-} from "../services/query/file-upload";
+} from "../services/query/query";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store";
 import Toast from "../../../components/Toast";
@@ -217,7 +217,11 @@ const LoadFiles = () => {
           });
           return;
         }
-        navigate("workspace", { state: { sessionId: data.id || data.session_id } });
+        const sessionId = data.id || data.session_id;
+        if (sessionId) {
+          localStorage.setItem("pricing_session_id", String(sessionId));
+        }
+        navigate("workspace", { state: { sessionId } });
       },
       onError: (error: any) => {
         setPageError(true);

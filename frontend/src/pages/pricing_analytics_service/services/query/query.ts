@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
 
 export const useUploadCogs = () => {
@@ -109,5 +109,47 @@ export const useCreateSession = () => {
       );
       return response;
     }
+  });
+};
+
+export const useGetOverallMargin = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["overall-margin", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/overall-margin",
+        { session_id: sessionId }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+  });
+};
+
+export const useGetBusinessInsights = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["business-insights", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/business-insights",
+        { session_id: sessionId }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+  });
+};
+
+export const useGetClassificationMatrix = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["classification-matrix", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/classification-matrix",
+        { session_id: sessionId }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
   });
 };

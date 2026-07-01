@@ -23,23 +23,40 @@ ChartJS.register(
   Filler
 );
 
-const MarginTrendChart = () => {
-  const data = {
-    labels: [
-      "Q1 FY 24",
-      "Q1 FY 25",
-      "Q2 FY 25",
-      "Q3 FY 25",
-      "Q4 FY 25",
-      "Q1 FY 26",
-      "Q2 FY 26",
-      "Q3 FY 26",
-      "Q4 FY 26",
-    ],
+interface MarginTrendChartProps {
+  data?: Array<{
+    quarter: string;
+    overall_gm_pct: number | null;
+    standard_gm_pct: number | null;
+    non_standard_gm_pct: number | null;
+  }>;
+}
+
+const MarginTrendChart = ({ data: apiData }: MarginTrendChartProps) => {
+  const sortQuarters = (a: string, b: string) => {
+    const matchA = a.match(/Q(\d) /);
+    const matchB = b.match(/Q(\d) /);
+    const yearA = a.match(/FY (\d+)/);
+    const yearB = b.match(/FY (\d+)/);
+    if (!matchA || !matchB || !yearA || !yearB) return 0;
+    const qA = parseInt(matchA[1]);
+    const yA = parseInt(yearA[1]);
+    const qB = parseInt(matchB[1]);
+    const yB = parseInt(yearB[1]);
+    if (yA !== yB) return yA - yB;
+    return qA - qB;
+  };
+
+  if (!apiData || apiData.length === 0) return null;
+  
+  const sortedApiData = [...apiData].sort((a, b) => sortQuarters(a.quarter, b.quarter));
+
+  const chartData = {
+    labels: sortedApiData.map((item) => item.quarter),
     datasets: [
       {
         label: "103 families margin %",
-        data: [48.9, 49.4, 49.2, 51.0, 47.0, 49.4, 50.9, 51.9, 52.5],
+        data: sortedApiData.map((item) => item.overall_gm_pct ?? 0),
         fill: true,
         borderColor: "#a61c1e",
         backgroundColor: "rgba(166, 28, 30, 0.04)",
@@ -77,8 +94,6 @@ const MarginTrendChart = () => {
     },
     scales: {
       y: {
-        min: 47,
-        max: 53,
         ticks: {
           color: "#64748b",
           callback: (value: any) => `${value}%`,
@@ -119,7 +134,7 @@ const MarginTrendChart = () => {
       </div>
 
       <div className="h-64">
-        <Line data={data} options={options} />
+        <Line data={chartData} options={options} />
       </div>
     </div>
   );
