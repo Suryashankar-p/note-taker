@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import Header from "../../../components/Header";
 import SettingsSidebar from "../components/Sidebar";
 import { pricingAnalyticsServiceBreadCrumbs } from "../constants/constants";
 import CopilotWidget from "../components/CopilotWidget";
 import { Sparkles } from "lucide-react";
+import PageLoading from "../../../components/PageLoading";
 
 const Dashboard = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -15,16 +16,16 @@ const Dashboard = () => {
       <div className="flex flex-1 overflow-hidden mt-16">
         <SettingsSidebar />
         <div className="overflow-y-auto w-full max-h-[calc(100vh-4rem)]">
-          <Outlet />
+          <Suspense fallback={<PageLoading />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
 
-      {/* Floating Chatbot Dialogue */}
       {isChatOpen && (
         <CopilotWidget onClose={() => setIsChatOpen(false)} />
       )}
 
-      {/* Floating Action Trigger Button */}
       {!isChatOpen && (
         <button
           onClick={() => setIsChatOpen(true)}

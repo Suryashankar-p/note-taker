@@ -1,5 +1,6 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import PageLoading from "../../../components/PageLoading";
 
 const CeoBriefing = () => {
   const navigate = useNavigate();
@@ -49,7 +50,9 @@ const CeoBriefing = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">
-        <Outlet />
+        <Suspense fallback={<PageLoading />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );
