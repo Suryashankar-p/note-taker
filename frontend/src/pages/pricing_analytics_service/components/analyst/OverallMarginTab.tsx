@@ -1,76 +1,102 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import MarginTrendChart from "../ceo/components/MarginTrendChart";
 import RevenueVsCogsChart from "../ceo/components/RevenueVsCogsChart";
-import { Sparkles, ArrowRight, AlertCircle } from "lucide-react";
+import { Sparkles, AlertCircle } from "lucide-react";
 import HeatingMarginsGrid from "../ceo/components/HeatingMarginsGrid";
-import { useGetOverallMargin, useGetBusinessInsights, useGetSkyscraper, useGetSnapshotKpis } from "../../services/query/query";
+
+const mockOverallData = {
+  bridge_table: [
+    {
+      segment: "overall",
+      label: "Heating (Overall)",
+      baseline_rev_cr: 17.1,
+      baseline_gm_pct: 49.8,
+      quarters: {
+        "Q3 FY 25": { rev_cr: 18.9, gm_pct: 51.9 },
+        "Q4 FY 25": { rev_cr: 24.1, gm_pct: 47.7 },
+        "Q1 FY 26": { rev_cr: 15.2, gm_pct: 50.4 },
+        "Q2 FY 26": { rev_cr: 20.7, gm_pct: 51.7 },
+        "Q3 FY 26": { rev_cr: 21.0, gm_pct: 51.9 },
+        "Q4 FY 26": { rev_cr: 21.8, gm_pct: 52.2 },
+      },
+    },
+    {
+      segment: "standard",
+      label: "Standard",
+      baseline_rev_cr: 8.1,
+      baseline_gm_pct: 50.6,
+      quarters: {
+        "Q3 FY 25": { rev_cr: 9.3, gm_pct: 52.1 },
+        "Q4 FY 25": { rev_cr: 10.2, gm_pct: 49.6 },
+        "Q1 FY 26": { rev_cr: 8.4, gm_pct: 51.7 },
+        "Q2 FY 26": { rev_cr: 9.3, gm_pct: 52.8 },
+        "Q3 FY 26": { rev_cr: 10.0, gm_pct: 52.8 },
+        "Q4 FY 26": { rev_cr: 9.2, gm_pct: 54.1 },
+      },
+    },
+    {
+      segment: "non_standard",
+      label: "Non-standard",
+      baseline_rev_cr: 9.0,
+      baseline_gm_pct: 49.1,
+      quarters: {
+        "Q3 FY 25": { rev_cr: 9.6, gm_pct: 51.0 },
+        "Q4 FY 25": { rev_cr: 13.9, gm_pct: 47.0 },
+        "Q1 FY 26": { rev_cr: 6.9, gm_pct: 48.8 },
+        "Q2 FY 26": { rev_cr: 11.4, gm_pct: 50.9 },
+        "Q3 FY 26": { rev_cr: 11.0, gm_pct: 51.1 },
+        "Q4 FY 26": { rev_cr: 12.7, gm_pct: 50.9 },
+      },
+    },
+  ],
+  margin_trend: [
+    { quarter: "Q3 FY 25", overall_gm_pct: 51.6, standard_gm_pct: null, non_standard_gm_pct: 51.6 },
+    { quarter: "Q4 FY 25", overall_gm_pct: 48.1, standard_gm_pct: null, non_standard_gm_pct: 48.1 },
+    { quarter: "Q1 FY 26", overall_gm_pct: 50.3, standard_gm_pct: null, non_standard_gm_pct: 50.3 },
+    { quarter: "Q2 FY 26", overall_gm_pct: 51.5, standard_gm_pct: null, non_standard_gm_pct: 51.5 },
+    { quarter: "Q3 FY 26", overall_gm_pct: 51.9, standard_gm_pct: null, non_standard_gm_pct: 51.9 },
+    { quarter: "Q4 FY 26", overall_gm_pct: 52.2, standard_gm_pct: 54.1, non_standard_gm_pct: 50.9 },
+  ],
+  revenue_vs_cogs: [
+    { quarter: "Q3 FY 25", revenue_inr: 189000000, cogs_inr: 91300000 },
+    { quarter: "Q4 FY 25", revenue_inr: 241300000, cogs_inr: 125200000 },
+    { quarter: "Q1 FY 26", revenue_inr: 152500000, cogs_inr: 75700000 },
+    { quarter: "Q2 FY 26", revenue_inr: 207300000, cogs_inr: 100500000 },
+    { quarter: "Q3 FY 26", revenue_inr: 210300000, cogs_inr: 101100000 },
+    { quarter: "Q4 FY 26", revenue_inr: 218300000, cogs_inr: 104200000 },
+  ],
+};
 
 const OverallMarginTab = () => {
-  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data: overallData, isLoading: isOverallLoading } = useGetOverallMargin(sessionId);
-  const { data: skyscraperData, isLoading: isSkyLoading } = useGetSkyscraper(sessionId);
-  const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(sessionId);
-  const { data: snapshotKpis, isLoading: isSnapshotLoading } = useGetSnapshotKpis(sessionId);
-
   const [selectedFamily, setSelectedFamily] = useState("All families (109)");
 
-  const sortQuarters = (a: string, b: string) => {
-    const matchA = a.match(/Q(\d) /);
-    const matchB = b.match(/Q(\d) /);
-    const yearA = a.match(/FY (\d+)/);
-    const yearB = b.match(/FY (\d+)/);
-    if (!matchA || !matchB || !yearA || !yearB) return 0;
-    const qA = parseInt(matchA[1], 10);
-    const yA = parseInt(yearA[1], 10);
-    const qB = parseInt(matchB[1], 10);
-    const yB = parseInt(yearB[1], 10);
-    if (yA !== yB) return yA - yB;
-    return qA - qB;
-  };
-
-  if (isOverallLoading || isSkyLoading || isInsightsLoading || isSnapshotLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-700"></div>
-      </div>
-    );
-  }
-
-  const bridgeTable = overallData?.bridge_table || [];
-  const activeQuarters = bridgeTable.length > 0 ? Object.keys(bridgeTable[0].quarters).sort(sortQuarters) : [];
+  const activeQuarters = ["Q3 FY 25", "Q4 FY 25", "Q1 FY 26", "Q2 FY 26", "Q3 FY 26", "Q4 FY 26"];
+  const latestQuarter = "Q4 FY 26";
 
   const headers = [
     { label: "Baseline\n(Q4 FY24+Q1 FY25)", colSpan: 2 },
-    ...activeQuarters.map((q: string) => ({ label: q, colSpan: 2 })),
+    ...activeQuarters.map((q) => ({ label: q, colSpan: 2 })),
   ];
 
   const subHeaders = Array(headers.length).fill(["Rev Cr", "GM %"]).flat();
 
-  const rows = bridgeTable.map((item: any) => {
+  const rows = mockOverallData.bridge_table.map((item) => {
     const baselineGm = item.baseline_gm_pct;
     return {
       type: item.label,
       data: [
         {
-          rev: item.baseline_rev_cr !== null ? item.baseline_rev_cr.toFixed(1) : "-",
-          gm: item.baseline_gm_pct !== null ? `${item.baseline_gm_pct.toFixed(1)}%` : "-",
+          rev: item.baseline_rev_cr.toFixed(1),
+          gm: `${item.baseline_gm_pct.toFixed(1)}%`,
           isGreen: false,
           isRed: false,
         },
         ...activeQuarters.map((q) => {
-          const qData = item.quarters[q];
-          if (!qData || qData.gm_pct === null) {
-            return {
-              rev: qData && qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-",
-              gm: "-",
-              isGreen: false,
-              isRed: false,
-            };
-          }
+          const qData = item.quarters[q as keyof typeof item.quarters];
           const isGreen = qData.gm_pct > baselineGm;
           const isRed = qData.gm_pct < baselineGm;
           return {
-            rev: qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-",
+            rev: qData.rev_cr.toFixed(1),
             gm: `${qData.gm_pct.toFixed(1)}%`,
             isGreen,
             isRed,
@@ -80,25 +106,21 @@ const OverallMarginTab = () => {
     };
   });
 
-  // Calculate dynamic executive snapshots from snapshot-kpis API
-  const latestQuarter = activeQuarters[activeQuarters.length - 1] || "";
-  const latestSnapshot = (snapshotKpis || []).find((s: any) => s.quarter === latestQuarter);
+  const stats = [
+    { label: "HEATING REVENUE", value: "₹21.8 Cr" },
+    { label: "OVERALL GM%", value: "52.2%" },
+    { label: "Δ VS BASELINE", value: "+2.4%", isPositive: true },
+    { label: "Δ VS HEATING TARGET", value: "-3.1%", isNegative: true },
+    { label: "FAMILIES ABOVE TARGET", value: "21" },
+    { label: "FAMILIES ABOVE BASELINE", value: "52" },
+    { label: "FAMILIES BELOW TARGET", value: "54" },
+  ];
 
-  const stats = latestSnapshot ? [
-    { label: "HEATING REVENUE", value: `₹${(latestSnapshot.revenue_inr / 10000000).toFixed(1)} Cr` },
-    { label: "OVERALL GM%", value: `${latestSnapshot.overall_gm_pct.toFixed(1)}%` },
-    { label: "Δ VS BASELINE", value: `${latestSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${latestSnapshot.delta_vs_baseline_pp.toFixed(1)}%`, isPositive: latestSnapshot.delta_vs_baseline_pp >= 0, isNegative: latestSnapshot.delta_vs_baseline_pp < 0 },
-    { label: "Δ VS HEATING TARGET", value: `${latestSnapshot.delta_vs_target_pp >= 0 ? "+" : ""}${latestSnapshot.delta_vs_target_pp.toFixed(1)}%`, isPositive: latestSnapshot.delta_vs_target_pp >= 0, isNegative: latestSnapshot.delta_vs_target_pp < 0 },
-    { label: "FAMILIES ABOVE TARGET", value: String(latestSnapshot.families_above_target) },
-    { label: "FAMILIES AT TARGET", value: String(latestSnapshot.families_at_target) },
-    { label: "FAMILIES BELOW TARGET", value: String(latestSnapshot.families_below_target) },
-  ] : [];
-
-  const topInsights = insightsData && insightsData.length > 0 ? insightsData : [
+  const topInsights = [
     "Heating GM improved +0.3% vs Q3 FY26 (51.9% → 52.2%) — about -3.2 pp from revenue mix.",
     "Fan Spares added the most to portfolio GM QoQ (+1.4 pp net: 0.0 mix, 1.4 margin).",
     "He (Shell) leads on target beat (+12.3%, 64.3% actual on 0.4% of quarter revenue).",
-    "HE (Coil) gained the most revenue share (+2.5 pp vs Q3 FY26, now 20.7% of heating) at 51.7% GM."
+    "HE (Coil) gained the most revenue share (+2.5 pp vs Q3 FY26, now 20.7% of heating) at 51.7% GM.",
   ];
 
   return (
@@ -116,25 +138,27 @@ const OverallMarginTab = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
-                <th className="py-3 px-4">Segment</th>
+              <tr className="bg-slate-50 text-gray-500 font-extrabold uppercase text-[9px] border-b border-gray-150">
+                <th rowSpan={2} className="py-3 px-4 font-bold text-gray-650 min-w-[140px]">
+                  Segment
+                </th>
                 {headers.map((h, i) => (
                   <th
                     key={i}
                     colSpan={h.colSpan}
-                    className="py-3 px-4 text-center border-l border-gray-100 whitespace-pre-line"
+                    className={`py-2 px-2 text-center whitespace-pre-line font-bold ${
+                      i % 2 === 0 ? "bg-slate-100/40 border-l border-gray-150" : ""
+                    }`}
                   >
                     {h.label}
                   </th>
                 ))}
               </tr>
-              <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase text-[8px] tracking-wider bg-gray-50/30">
-                <th className="py-1.5 px-4"></th>
+              <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-200">
                 {subHeaders.map((sh, i) => (
                   <th
                     key={i}
-                    className={`py-1.5 px-2 text-right ${i % 2 === 0 ? "border-l border-gray-100" : ""
-                      }`}
+                    className={`py-1.5 px-2 text-right ${i % 2 === 0 ? "border-l border-gray-100" : ""}`}
                   >
                     {sh}
                   </th>
@@ -142,15 +166,16 @@ const OverallMarginTab = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium">
-              {rows.map((row: any, rowIdx: number) => (
+              {rows.map((row, rowIdx) => (
                 <tr key={rowIdx} className="hover:bg-slate-50/40">
                   <td className="py-3 px-4 font-bold text-gray-800 bg-gray-50/20">{row.type}</td>
-                  {row.data.map((col: any, colIdx: number) => (
+                  {row.data.map((col, colIdx) => (
                     <React.Fragment key={colIdx}>
                       <td className="py-3 px-2 text-right border-l border-gray-100">{col.rev}</td>
                       <td
-                        className={`py-3 px-2 text-right font-bold ${col.isGreen ? "text-emerald-600" : col.isRed ? "text-rose-600" : "text-gray-700"
-                          }`}
+                        className={`py-3 px-2 text-right font-bold ${
+                          col.isGreen ? "text-emerald-600" : col.isRed ? "text-rose-600" : "text-gray-700"
+                        }`}
                       >
                         {col.gm}
                       </td>
@@ -181,8 +206,8 @@ const OverallMarginTab = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <MarginTrendChart data={overallData?.margin_trend} />
-          <RevenueVsCogsChart data={overallData?.revenue_vs_cogs} />
+          <MarginTrendChart data={mockOverallData.margin_trend} />
+          <RevenueVsCogsChart data={mockOverallData.revenue_vs_cogs} />
         </div>
       </div>
 
@@ -205,8 +230,7 @@ const OverallMarginTab = () => {
                 <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wide leading-tight mb-2">
                   {st.label}
                 </span>
-                <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"
-                  }`}>
+                <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"}`}>
                   {st.value}
                 </span>
               </div>
@@ -218,12 +242,12 @@ const OverallMarginTab = () => {
           <div>
             <h3 className="text-sm font-extrabold tracking-tight text-white mb-4 border-b border-[#202226] pb-3 flex items-center gap-2">
               <Sparkles size={16} className="text-[#a61c1e]" />
-              TOP INSIGHTS — {latestQuarter}
+              Strategic actions
             </h3>
-            <ul className="space-y-4 text-xs font-medium text-gray-300">
-              {topInsights.map((insight: string, idx: number) => (
-                <li key={idx} className="flex gap-2">
-                  <span className="text-[#a61c1e] font-bold">{idx + 1}.</span>
+            <ul className="flex flex-col gap-3.5 text-xs text-gray-300 leading-relaxed font-semibold">
+              {topInsights.map((insight, idx) => (
+                <li key={idx} className="flex gap-2.5 items-start">
+                  <span className="text-[#a61c1e] mt-1 font-bold">▶</span>
                   <span>{insight}</span>
                 </li>
               ))}
@@ -235,7 +259,7 @@ const OverallMarginTab = () => {
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-sm font-bold tracking-tight text-gray-800 mb-6 pb-3 border-b border-gray-100 flex items-center gap-2">
           <AlertCircle size={16} className="text-[#a61c1e]" />
-          Business insights
+          GM% Decomposition Analysis
         </h3>
 
         <div className="flex flex-col gap-8">
@@ -318,16 +342,16 @@ const OverallMarginTab = () => {
                       </thead>
                       <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
                         <tr>
-                          <td className="py-2 px-2">1. Fan Spares</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+1.4 pp</td>
+                          <td className="py-2 px-2">1. Air nozzle</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+1.8 pp</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">2. NA</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.7 pp</td>
+                          <td className="py-2 px-2">2. Spiral</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.9 pp</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">3. HEAT EXCHANGER</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.4 pp</td>
+                          <td className="py-2 px-2">3. level gauge 1</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+0.5 pp</td>
                         </tr>
                       </tbody>
                     </table>
@@ -344,16 +368,16 @@ const OverallMarginTab = () => {
                       </thead>
                       <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
                         <tr>
-                          <td className="py-2 px-2">1. HE (Coil)</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.6 pp</td>
+                          <td className="py-2 px-2">1. burner 3 (va)</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.8 pp</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">2. APH</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.3 pp</td>
+                          <td className="py-2 px-2">2. fusible plug</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.7 pp</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">3. IBH Tube</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.3 pp</td>
+                          <td className="py-2 px-2">3. damper</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-0.4 pp</td>
                         </tr>
                       </tbody>
                     </table>
@@ -369,7 +393,7 @@ const OverallMarginTab = () => {
             <div className="bg-[#e6f4f1] text-[#0d9488] p-3 rounded-lg text-xs font-bold leading-relaxed border border-[#ccfbf1]">
               <span className="font-extrabold uppercase">Absolute GM bridge</span>
               {" — "}
-              <span className="text-gray-700 font-medium">AGM +₹48.6 L (₹10.9 Cr → ₹11.4 Cr). Mix -₹27.4 L + margin +₹76.0 L = +₹48.6 L.</span>
+              <span className="text-gray-700 font-medium">GM change absolute (INR) for Q3 FY26 → Q4 FY26.</span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -382,21 +406,21 @@ const OverallMarginTab = () => {
                       <thead>
                         <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
                           <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
+                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
                         <tr>
                           <td className="py-2 px-2">1. HE (Coil)</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹37.4 L</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹45.6L</td>
                         </tr>
                         <tr>
                           <td className="py-2 px-2">2. IBH Tube</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹17.3 L</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹28.4L</td>
                         </tr>
                         <tr>
                           <td className="py-2 px-2">3. Burner 4 (VA Fab)</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹13.2 L</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹22.1L</td>
                         </tr>
                       </tbody>
                     </table>
@@ -408,21 +432,21 @@ const OverallMarginTab = () => {
                       <thead>
                         <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
                           <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
+                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
                         <tr>
                           <td className="py-2 px-2">1. Gas train</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹23.8 L</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹38.9L</td>
                         </tr>
                         <tr>
                           <td className="py-2 px-2">2. HE (Bank Tubes)</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹16.0 L</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹26.2L</td>
                         </tr>
                         <tr>
                           <td className="py-2 px-2">3. Furnace</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹13.1 L</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹18.4L</td>
                         </tr>
                       </tbody>
                     </table>
@@ -439,48 +463,47 @@ const OverallMarginTab = () => {
                       <thead>
                         <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
                           <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
+                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
                         <tr>
-                          <td className="py-2 px-2">1. Fan Spares</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹29.6 L</td>
+                          <td className="py-2 px-2">1. Air nozzle</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹62.0L</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">2. NA</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹16.3 L</td>
+                          <td className="py-2 px-2">2. Spiral</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹32.5L</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">3. HEAT EXCHANGER</td>
-                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹9.7 L</td>
+                          <td className="py-2 px-2">3. level gauge 1</td>
+                          <td className="py-2 px-2 text-right text-emerald-600 font-bold">+₹15.8L</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Negative */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
                           <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
+                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-755">
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
                         <tr>
-                          <td className="py-2 px-2">1. HE (Coil)</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹12.7 L</td>
+                          <td className="py-2 px-2">1. burner 3 (va)</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹28.4L</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">2. APH</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹7.5 L</td>
+                          <td className="py-2 px-2">2. fusible plug</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹24.0L</td>
                         </tr>
                         <tr>
-                          <td className="py-2 px-2">3. IBH Tube</td>
-                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹6.2 L</td>
+                          <td className="py-2 px-2">3. damper</td>
+                          <td className="py-2 px-2 text-right text-rose-600 font-bold">-₹12.3L</td>
                         </tr>
                       </tbody>
                     </table>

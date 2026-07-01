@@ -4,7 +4,7 @@ import PageLoading from "../../../components/PageLoading";
 
 const PricingAnalyst = () => {
   const navigate = useNavigate();
-  
+
   // Shared state for matrix cell selection and product family drill-down
   const [selectedQoqCell, setSelectedQoqCell] = useState<any | null>(null);
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
@@ -40,10 +40,9 @@ const PricingAnalyst = () => {
             key={tab.path}
             to={tab.path}
             className={({ isActive }) =>
-              `px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider transition-all duration-200 border ${
-                isActive
-                  ? "bg-[#a61c1e]/10 text-[#a61c1e] border-[#a61c1e]"
-                  : "bg-gray-105 text-gray-600 border-gray-200 hover:bg-gray-150"
+              `px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider transition-all duration-200 border ${isActive
+                ? "bg-[#a61c1e]/10 text-[#a61c1e] border-[#a61c1e]"
+                : "bg-gray-105 text-gray-600 border-gray-200 hover:bg-gray-150"
               }`
             }
           >
