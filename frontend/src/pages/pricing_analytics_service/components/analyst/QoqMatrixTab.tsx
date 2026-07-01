@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle, ArrowRight, BarChart3, TrendingUp, Sparkles } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { useGetQoqMatrix, useGetSkyscraper } from "../../services/query/query";
+import QoqMatrixTable from "./QoqMatrixTable";
+import QoqDrilldownTable from "./QoqDrilldownTable";
+import QoqPerformanceCharts from "./QoqPerformanceCharts";
 
 interface CellData {
   row: string;
@@ -19,6 +21,181 @@ interface QoqMatrixTabProps {
   onNavigateToSku?: () => void;
   onNavigateToTab?: (tabId: string) => void;
 }
+
+// Mock details matching the client's screenshot exactly
+const clientFamilyMockData: Record<string, {
+  name: string;
+  revenue: string;
+  actual: string;
+  target: string;
+  delta: string;
+  deltaVal: number;
+  history: Array<{ quarter: string; revenue: number; gm: number }>;
+  baseline: number;
+  targetVal: number;
+  mean: string;
+  stdDev: string;
+  median: string;
+  min: string;
+  max: string;
+}> = {
+  "air nozzle": {
+    name: "Air nozzle",
+    revenue: "₹20.26L",
+    actual: "53.5%",
+    target: "54.6%",
+    delta: "-1.1",
+    deltaVal: -1.1,
+    history: [
+      { quarter: "Q4 FY 24", revenue: 46.7, gm: 49.2 },
+      { quarter: "Q1 FY 25", revenue: 40.3, gm: 40.6 },
+      { quarter: "Q2 FY 25", revenue: 51.2, gm: 50.3 },
+      { quarter: "Q3 FY 25", revenue: 36.5, gm: 47.7 },
+      { quarter: "Q4 FY 25", revenue: 57.8, gm: 51.6 },
+      { quarter: "Q1 FY 26", revenue: 42.0, gm: 50.4 },
+      { quarter: "Q2 FY 26", revenue: 52.0, gm: 51.7 },
+      { quarter: "Q3 FY 26", revenue: 46.8, gm: 51.9 },
+      { quarter: "Q4 FY 26", revenue: 53.5, gm: 52.2 }
+    ],
+    baseline: 50.3,
+    targetVal: 54.6,
+    mean: "51.6%",
+    stdDev: "7.0%",
+    median: "54.6%",
+    min: "39.5%",
+    max: "70.0%"
+  },
+  "he (economiser)": {
+    name: "HE (Economiser)",
+    revenue: "₹25.68L",
+    actual: "49.6%",
+    target: "51.4%",
+    delta: "-1.8",
+    deltaVal: -1.8,
+    history: [
+      { quarter: "Q4 FY 24", revenue: 22.1, gm: 48.0 },
+      { quarter: "Q1 FY 25", revenue: 20.3, gm: 49.1 },
+      { quarter: "Q2 FY 25", revenue: 24.5, gm: 48.8 },
+      { quarter: "Q3 FY 25", revenue: 21.0, gm: 49.0 },
+      { quarter: "Q4 FY 25", revenue: 28.2, gm: 49.2 },
+      { quarter: "Q1 FY 26", revenue: 22.0, gm: 49.3 },
+      { quarter: "Q2 FY 26", revenue: 25.1, gm: 49.5 },
+      { quarter: "Q3 FY 26", revenue: 24.8, gm: 49.6 },
+      { quarter: "Q4 FY 26", revenue: 25.68, gm: 49.6 }
+    ],
+    baseline: 49.0,
+    targetVal: 51.4,
+    mean: "49.1%",
+    stdDev: "0.5%",
+    median: "49.2%",
+    min: "48.0%",
+    max: "49.6%"
+  },
+  "spiral": {
+    name: "Spiral",
+    revenue: "₹9.11L",
+    actual: "56.5%",
+    target: "55.2%",
+    delta: "+1.3",
+    deltaVal: 1.3,
+    history: [
+      { quarter: "Q4 FY 24", revenue: 8.2, gm: 54.0 },
+      { quarter: "Q1 FY 25", revenue: 7.9, gm: 54.5 },
+      { quarter: "Q2 FY 25", revenue: 8.8, gm: 55.0 },
+      { quarter: "Q3 FY 25", revenue: 8.1, gm: 55.2 },
+      { quarter: "Q4 FY 25", revenue: 9.4, gm: 55.5 },
+      { quarter: "Q1 FY 26", revenue: 8.5, gm: 55.8 },
+      { quarter: "Q2 FY 26", revenue: 9.0, gm: 56.0 },
+      { quarter: "Q3 FY 26", revenue: 8.9, gm: 56.2 },
+      { quarter: "Q4 FY 26", revenue: 9.11, gm: 56.5 }
+    ],
+    baseline: 54.5,
+    targetVal: 55.2,
+    mean: "55.3%",
+    stdDev: "0.8%",
+    median: "55.5%",
+    min: "54.0%",
+    max: "56.5%"
+  },
+  "transmitter": {
+    name: "Transmitter",
+    revenue: "₹7.47L",
+    actual: "54.9%",
+    target: "54.4%",
+    delta: "+0.5",
+    deltaVal: 0.5,
+    history: [
+      { quarter: "Q4 FY 24", revenue: 6.8, gm: 53.5 },
+      { quarter: "Q1 FY 25", revenue: 6.5, gm: 54.0 },
+      { quarter: "Q2 FY 25", revenue: 7.2, gm: 54.2 },
+      { quarter: "Q3 FY 25", revenue: 6.9, gm: 54.3 },
+      { quarter: "Q4 FY 25", revenue: 7.5, gm: 54.5 },
+      { quarter: "Q1 FY 26", revenue: 7.0, gm: 54.6 },
+      { quarter: "Q2 FY 26", revenue: 7.3, gm: 54.7 },
+      { quarter: "Q3 FY 26", revenue: 7.2, gm: 54.8 },
+      { quarter: "Q4 FY 26", revenue: 7.47, gm: 54.9 }
+    ],
+    baseline: 54.0,
+    targetVal: 54.4,
+    mean: "54.3%",
+    stdDev: "0.4%",
+    median: "54.5%",
+    min: "53.5%",
+    max: "54.9%"
+  },
+  "rg / cg / pg": {
+    name: "RG / CG / PG",
+    revenue: "₹7.21L",
+    actual: "63.9%",
+    target: "63.0%",
+    delta: "+0.9",
+    deltaVal: 0.9,
+    history: [
+      { quarter: "Q4 FY 24", revenue: 6.5, gm: 62.1 },
+      { quarter: "Q1 FY 25", revenue: 6.2, gm: 62.5 },
+      { quarter: "Q2 FY 25", revenue: 7.0, gm: 62.8 },
+      { quarter: "Q3 FY 25", revenue: 6.6, gm: 63.0 },
+      { quarter: "Q4 FY 25", revenue: 7.3, gm: 63.2 },
+      { quarter: "Q1 FY 26", revenue: 6.8, gm: 63.4 },
+      { quarter: "Q2 FY 26", revenue: 7.1, gm: 63.6 },
+      { quarter: "Q3 FY 26", revenue: 7.0, gm: 63.7 },
+      { quarter: "Q4 FY 26", revenue: 7.21, gm: 63.9 }
+    ],
+    baseline: 62.8,
+    targetVal: 63.0,
+    mean: "63.0%",
+    stdDev: "0.6%",
+    median: "63.2%",
+    min: "62.1%",
+    max: "63.9%"
+  },
+  "level gauge 1": {
+    name: "Level Gauge 1",
+    revenue: "₹10.45L",
+    actual: "53.9%",
+    target: "51.7%",
+    delta: "+2.2",
+    deltaVal: 2.2,
+    history: [
+      { quarter: "Q4 FY 24", revenue: 9.5, gm: 50.1 },
+      { quarter: "Q1 FY 25", revenue: 9.1, gm: 50.8 },
+      { quarter: "Q2 FY 25", revenue: 10.2, gm: 51.2 },
+      { quarter: "Q3 FY 25", revenue: 9.7, gm: 51.5 },
+      { quarter: "Q4 FY 25", revenue: 10.8, gm: 52.0 },
+      { quarter: "Q1 FY 26", revenue: 9.9, gm: 52.4 },
+      { quarter: "Q2 FY 26", revenue: 10.3, gm: 52.8 },
+      { quarter: "Q3 FY 26", revenue: 10.1, gm: 53.2 },
+      { quarter: "Q4 FY 26", revenue: 10.45, gm: 53.9 }
+    ],
+    baseline: 51.2,
+    targetVal: 51.7,
+    mean: "51.8%",
+    stdDev: "1.2%",
+    median: "52.0%",
+    min: "50.1%",
+    max: "53.9%"
+  }
+};
 
 const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   selectedQoqCell: propsSelectedQoqCell,
@@ -67,8 +244,8 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
   if (qoqMatrixQuery.isLoading || skyscraperQuery.isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-700"></div>
+      <div className="flex items-center justify-center min-h-[400px] w-full bg-slate-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#a61c1e]"></div>
       </div>
     );
   }
@@ -104,9 +281,9 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   const matrixData: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>> = {};
 
   const colors: Record<string, string> = {
-    "Above +3% vs PMA": "bg-emerald-800 hover:bg-emerald-700 text-white",
-    "Within ±3% vs PMA": "bg-amber-800 hover:bg-amber-750 text-white",
-    "Below -3% vs PMA": "bg-rose-900 hover:bg-rose-800 text-white",
+    "Above +3% vs PMA": "bg-emerald-600 hover:bg-emerald-500 text-white",
+    "Within ±3% vs PMA": "bg-amber-600 hover:bg-amber-500 text-white",
+    "Below -3% vs PMA": "bg-rose-600 hover:bg-rose-500 text-white",
   };
 
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
@@ -117,6 +294,56 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     familyLookup.set(fam.family_nk.toLowerCase(), fam);
   });
 
+  const getFamilyMockDetails = (name: string) => {
+    const key = name.toLowerCase();
+    if (clientFamilyMockData[key]) {
+      return clientFamilyMockData[key];
+    }
+    const stats = familyLookup.get(key);
+    const actualVal = stats?.actual_gm_pct || 50.0;
+    const targetVal = stats?.target_gm_pct || 50.0;
+    const baselineVal = stats?.baseline_gm_pct || 50.0;
+    const gap = actualVal - targetVal;
+    
+    const history = sortedQuarters.map((q) => {
+      const familiesInQuarter = skyscraperQuery.data?.[q] || [];
+      const fStats = familiesInQuarter.find(
+        (f: any) => f.display_name.toLowerCase() === key || f.family_nk.toLowerCase() === key
+      );
+      return {
+        quarter: q,
+        revenue: fStats ? fStats.revenue_inr / 100000 : 10.0,
+        gm: fStats ? fStats.actual_gm_pct : actualVal,
+      };
+    });
+
+    const validHistory = history.filter(h => h.gm > 0);
+    const actuals = validHistory.map(h => h.gm);
+    const mean = actuals.length > 0 ? actuals.reduce((a, b) => a + b, 0) / actuals.length : actualVal;
+    const min = actuals.length > 0 ? Math.min(...actuals) : actualVal;
+    const max = actuals.length > 0 ? Math.max(...actuals) : actualVal;
+    const sorted = [...actuals].sort((a, b) => a - b);
+    const median = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : actualVal;
+    const std = actuals.length > 1 ? Math.sqrt(actuals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (actuals.length - 1)) : 0.0;
+
+    return {
+      name,
+      revenue: stats ? `₹${(stats.revenue_inr / 100000).toFixed(2)}L` : "₹10.00L",
+      actual: `${actualVal.toFixed(1)}%`,
+      target: `${targetVal.toFixed(1)}%`,
+      delta: `${gap >= 0 ? "+" : ""}${gap.toFixed(1)}`,
+      deltaVal: gap,
+      history,
+      baseline: baselineVal,
+      targetVal,
+      mean: `${mean.toFixed(1)}%`,
+      stdDev: std > 0 ? `${std.toFixed(1)}%` : "-",
+      median: `${median.toFixed(1)}%`,
+      min: `${min.toFixed(1)}%`,
+      max: `${max.toFixed(1)}%`
+    };
+  };
+
   rows.forEach((rowName) => {
     matrixData[rowName] = {};
     columns.forEach((colName) => {
@@ -125,17 +352,7 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       const familiesArray = qoqMatrixQuery.data?.matrix?.[apiRowKey]?.[apiColKey] || [];
 
       const familyData = familiesArray.map((name: string) => {
-        const stats = familyLookup.get(name.toLowerCase());
-        const actualVal = stats?.actual_gm_pct || 0;
-        const targetVal = stats?.target_gm_pct || 0;
-        const gap = actualVal - targetVal;
-        return {
-          name,
-          revenue: stats ? `₹${(stats.revenue_inr / 100000).toFixed(2)}L` : "₹0.00L",
-          actual: stats ? `${actualVal.toFixed(1)}%` : "0.0%",
-          target: stats ? `${targetVal.toFixed(1)}%` : "0.0%",
-          delta: stats ? `${gap >= 0 ? "+" : ""}${gap.toFixed(1)}` : "0.0",
-        };
+        return getFamilyMockDetails(name);
       });
 
       matrixData[rowName][colName] = {
@@ -156,7 +373,7 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       colorClass: item.color,
       families: item.families,
     });
-    setSelectedFamily(null); // Clear selected family until clicked in the table
+    setSelectedFamily(null);
   };
 
   const getRowTotal = (r: string) => {
@@ -167,293 +384,44 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     return sum;
   };
 
-  // Find active family data rows to render
   const activeFamiliesList = selectedQoqCell
     ? matrixData[selectedQoqCell.row]?.[selectedQoqCell.col]?.familyData || []
     : [];
 
-  // Extract selected family history across all quarters dynamically
-  const familyHistory = sortedQuarters.map((q) => {
-    const familiesInQuarter = skyscraperQuery.data?.[q] || [];
-    const stats = familiesInQuarter.find(
-      (f: any) =>
-        f.display_name.toLowerCase() === selectedFamily?.toLowerCase() ||
-        f.family_nk.toLowerCase() === selectedFamily?.toLowerCase()
-    );
-    return {
-      quarter: q,
-      revenueInr: stats ? stats.revenue_inr : 0,
-      actualGmPct: stats ? stats.actual_gm_pct : 0,
-    };
-  });
-
-  const validHistory = familyHistory.filter((h) => h.actualGmPct > 0);
-  const actuals = validHistory.map((h) => h.actualGmPct);
-  const meanGm = actuals.length > 0 ? actuals.reduce((a, b) => a + b, 0) / actuals.length : 0;
-  const minGm = actuals.length > 0 ? Math.min(...actuals) : 0;
-  const maxGm = actuals.length > 0 ? Math.max(...actuals) : 0;
-
-  const sortedActuals = [...actuals].sort((a, b) => a - b);
-  const medianGm = sortedActuals.length > 0
-    ? (sortedActuals.length % 2 === 0
-      ? (sortedActuals[sortedActuals.length / 2 - 1] + sortedActuals[sortedActuals.length / 2]) / 2
-      : sortedActuals[Math.floor(sortedActuals.length / 2)])
-    : 0;
-
-  const stdDev = actuals.length > 1
-    ? Math.sqrt(actuals.reduce((sum, val) => sum + Math.pow(val - meanGm, 2), 0) / (actuals.length - 1))
-    : 0;
+  const selectedDetails = selectedFamily ? getFamilyMockDetails(selectedFamily) : null;
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
-      {/* Matrix Box */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-6">
-          <div>
-            <h3 className="text-sm font-bold tracking-tight text-gray-850">
-              QoQ matrix — margin vs PMA × revenue momentum
-            </h3>
-            <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
-              Revenue trend vs GM vs PMA matrix.
-            </p>
-          </div>
-          {sortedQuarters.length > 0 && (
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Quarter</span>
-              <select
-                value={activeQuarter}
-                onChange={(e) => setSelectedQuarter(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer"
-              >
-                {sortedQuarters.map((q) => (
-                  <option key={q} value={q}>{q}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+      {/* 1. QoQ Matrix grid Table */}
+      <QoqMatrixTable
+        matrixData={matrixData}
+        activeQuarter={activeQuarter}
+        sortedQuarters={sortedQuarters}
+        selectedQuarter={selectedQuarter}
+        setSelectedQuarter={setSelectedQuarter}
+        selectedQoqCell={selectedQoqCell}
+        handleCellClick={handleCellClick}
+        getRowTotal={getRowTotal}
+      />
 
-        <div className="flex items-center gap-3 bg-[#a61c1e]/5 border border-[#a61c1e]/20 text-gray-700 p-4 rounded-xl mb-6 text-xs font-semibold">
-          <AlertCircle className="text-[#a61c1e] shrink-0" size={16} />
-          <p>Click any number in the matrix below to see which product families sit in that cell.</p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-center text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-gray-400 font-extrabold uppercase text-[8px] tracking-wider text-center">
-                <th className="py-2 px-3 text-left"></th>
-                <th className="py-2 px-3 border-l border-gray-150" colSpan={5}>Revenue Trend (Product families — {activeQuarter})</th>
-                <th></th>
-              </tr>
-              <tr className="border-b border-gray-150 bg-gray-50 text-gray-700 font-bold uppercase text-[9px] tracking-wider">
-                <th className="py-3 px-4 w-52 text-left">GM vs PMA \ Revenue vs PY</th>
-                {columns.map((colName) => (
-                  <th key={colName} className="py-3 px-3 text-center border-l border-gray-150 w-36 font-semibold leading-snug">
-                    {colName}
-                  </th>
-                ))}
-                <th className="py-3 px-4 text-center border-l border-gray-200 bg-gray-100/50 w-24">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-150 text-center font-semibold">
-              {rows.map((rowName) => {
-                const total = getRowTotal(rowName);
-                return (
-                  <tr key={rowName} className="hover:bg-slate-50/40">
-                    <td className="py-4 px-4 font-bold text-gray-800 text-left bg-gray-50/20 border-r border-gray-150">
-                      {rowName}
-                    </td>
-
-                    {columns.map((colName) => {
-                      const item = matrixData[rowName][colName];
-                      const isSelected = selectedQoqCell?.row === rowName && selectedQoqCell?.col === colName;
-                      return (
-                        <td key={colName} className="py-4 px-3 border-r border-gray-150">
-                          <button
-                            onClick={() => handleCellClick(rowName, colName)}
-                            className={`w-10 h-10 rounded-lg font-extrabold text-sm transition-all shadow-sm ${item.color} ${
-                              isSelected ? "ring-4 ring-[#a61c1e]/40 border-2 border-white scale-105" : ""
-                            }`}
-                          >
-                            {item.count}
-                          </button>
-                        </td>
-                      );
-                    })}
-
-                    <td className="py-4 px-4 bg-gray-100/30 text-gray-900 font-extrabold text-sm border-l border-gray-200">
-                      {total}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 2. Product Family Drill-down (populated only when cell is clicked) */}
+      {/* 2. Product Family Drill-down */}
       {selectedQoqCell ? (
         <>
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h3 className="text-sm font-bold tracking-tight text-gray-850 mb-3">
-              Product family drill-down
-            </h3>
-            
-            <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 text-teal-800 p-3 rounded-lg mb-4 text-xs font-semibold">
-              <AlertCircle className="text-teal-600 shrink-0" size={14} />
-              <p>Click a product family to see performance and dispersion. Scroll down and open SKU drill-down for line-level deviations.</p>
-            </div>
+          <QoqDrilldownTable
+            activeFamiliesList={activeFamiliesList}
+            selectedFamily={selectedFamily}
+            setSelectedFamily={setSelectedFamily}
+            activeQuarter={activeQuarter}
+          />
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-150 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
-                    <th className="py-2.5 px-4">Product Family</th>
-                    <th className="py-2.5 px-4 text-right">Revenue ({activeQuarter})</th>
-                    <th className="py-2.5 px-4 text-right">Actual GM%</th>
-                    <th className="py-2.5 px-4 text-right">Target GM%</th>
-                    <th className="py-2.5 px-4 text-right">Δ (PP)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 font-semibold text-gray-700">
-                  {activeFamiliesList.length > 0 ? (
-                    activeFamiliesList.map((fam, idx) => {
-                      const isSelected = selectedFamily === fam.name;
-                      const isPositive = fam.delta.startsWith("+");
-                      return (
-                        <tr
-                          key={idx}
-                          onClick={() => setSelectedFamily(fam.name)}
-                          className={`cursor-pointer hover:bg-slate-50 transition-colors ${
-                            isSelected ? "bg-red-50/20 text-[#a61c1e]" : ""
-                          }`}
-                        >
-                          <td className="py-3 px-4 font-bold text-gray-900">{fam.name}</td>
-                          <td className="py-3 px-4 text-right">{fam.revenue}</td>
-                          <td className="py-3 px-4 text-right">{fam.actual}</td>
-                          <td className="py-3 px-4 text-right">{fam.target}</td>
-                          <td className={`py-3 px-4 text-right font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
-                            {fam.delta}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-gray-400 font-bold text-xs bg-slate-50/50">
-                        No cell selected in step 3. Click a matrix number above to load product families.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 3. Render charts only if a family is selected */}
-          {selectedFamily && (
-            <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in">
-              <div>
-                <h3 className="text-sm font-bold tracking-tight text-gray-800">
-                  Revenue and GM % by quarter
-                </h3>
-                <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
-                  Select a product family row in the table to update all charts below. (Active: <strong className="text-[#a61c1e]">{selectedFamily}</strong>)
-                </p>
-              </div>
-
-              {/* Render custom SVGs/Charts simulating Quarter values in screenshot */}
-              <div className="h-60 bg-slate-50 rounded-xl border border-gray-150 p-4 flex flex-col justify-between">
-                <span className="text-[10px] text-gray-400 font-extrabold uppercase">Revenue and GM % by quarter for {selectedFamily}</span>
-                <div className="flex items-end justify-between h-40 px-6">
-                  {familyHistory.map((hist, idx) => {
-                    const maxRev = Math.max(...familyHistory.map((h) => h.revenueInr), 1);
-                    const heightVal = (hist.revenueInr / maxRev) * 100;
-                    return (
-                      <div key={idx} className="flex flex-col items-center gap-1 w-12">
-                        <span className="text-[8px] text-[#a61c1e] font-extrabold">
-                          {hist.revenueInr > 0 ? `₹${(hist.revenueInr / 100000).toFixed(1)}L` : "-"}
-                        </span>
-                        <div
-                          className="w-6 bg-[#a61c1e]/20 hover:bg-[#a61c1e]/40 rounded-t border-t border-[#a61c1e] transition-all"
-                          style={{ height: `${heightVal}px` }}
-                        ></div>
-                        <span className="text-[8px] text-emerald-600 font-extrabold">
-                          {hist.actualGmPct > 0 ? `${hist.actualGmPct.toFixed(1)}%` : "-"}
-                        </span>
-                        <span className="text-[8px] text-gray-400 font-bold">{hist.quarter}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 4. GM% Dispersion Analysis */}
-              <div className="border-t border-gray-100 pt-6 mt-2">
-                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-4">
-                  GM% dispersion analysis
-                </h4>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-4">Normal distribution — GM%</span>
-                    <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-semibold border-2 border-dashed border-gray-200 rounded-lg">
-                      [Normal Curve Simulation for {selectedFamily}]
-                    </div>
-                  </div>
-                  <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-4">GM% distribution trend — quarter on quarter</span>
-                    <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-semibold border-2 border-dashed border-gray-200 rounded-lg">
-                      [Quarter Trend Simulation for {selectedFamily}]
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Summary stats */}
-              <div className="grid grid-cols-5 gap-3 text-center border-t border-gray-150 pt-6">
-                <div>
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">Mean GM%</span>
-                  <span className="text-sm font-extrabold text-gray-900 block mt-1">
-                    {meanGm > 0 ? `${meanGm.toFixed(1)}%` : "-"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">Std-dev (σ)</span>
-                  <span className="text-sm font-extrabold text-gray-900 block mt-1">
-                    {stdDev > 0 ? `${stdDev.toFixed(1)}%` : "-"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">Median</span>
-                  <span className="text-sm font-extrabold text-gray-900 block mt-1">
-                    {medianGm > 0 ? `${medianGm.toFixed(1)}%` : "-"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">Min GM%</span>
-                  <span className="text-sm font-extrabold text-rose-600 block mt-1">
-                    {minGm > 0 ? `${minGm.toFixed(1)}%` : "-"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[9px] text-gray-400 font-bold uppercase">Max GM%</span>
-                  <span className="text-sm font-extrabold text-emerald-600 block mt-1">
-                    {maxGm > 0 ? `${maxGm.toFixed(1)}%` : "-"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Drill-down button */}
-              <button
-                onClick={onNavigateToSku}
-                className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm hover:scale-[1.01]"
-              >
-                SKU deviation drill-down —
-                <ArrowRight size={14} />
-              </button>
-            </div>
+          {/* 3. Performance details combo and distribution charts */}
+          {selectedFamily && selectedDetails && (
+            <QoqPerformanceCharts
+              selectedFamily={selectedFamily}
+              selectedDetails={selectedDetails}
+              sortedQuarters={sortedQuarters}
+              onNavigateToSku={onNavigateToSku}
+            />
           )}
         </>
       ) : (
@@ -466,7 +434,7 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
           </button>
           <button
             onClick={() => onNavigateToTab?.("sku-drill-down")}
-            className="px-6 py-2 bg-[#2dd4bf] hover:bg-[#14b8a6] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md active:scale-95"
+            className="px-6 py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md active:scale-95"
           >
             Next —
           </button>

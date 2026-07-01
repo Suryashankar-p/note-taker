@@ -1,22 +1,116 @@
-import React, { useState } from "react";
-import MarginTrendChart from "./MarginTrendChart";
-import RevenueCogsChart from "./RevenueCogsChart";
+import React, { useState, useEffect } from "react";
+import MarginTrendChart from "../ceo/components/MarginTrendChart";
+import RevenueVsCogsChart from "../ceo/components/RevenueVsCogsChart";
 import { Sparkles, ArrowRight, AlertCircle } from "lucide-react";
 import HeatingMarginsGrid from "../ceo/components/HeatingMarginsGrid";
+import { useGetOverallMargin, useGetBusinessInsights, useGetSkyscraper } from "../../services/query/query";
 
 const OverallMarginTab = () => {
-  const [selectedFamily, setSelectedFamily] = useState("All families (109)");
-  const [selectedQuarter, setSelectedQuarter] = useState("Q4 FY 26");
+  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
+  const { data: overallData, isLoading: isOverallLoading } = useGetOverallMargin(sessionId);
+  const { data: skyscraperData, isLoading: isSkyLoading } = useGetSkyscraper(sessionId);
+  const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(sessionId);
 
-  // Executive snapshot metrics
+  const [selectedFamily, setSelectedFamily] = useState("All families (109)");
+
+  const sortQuarters = (a: string, b: string) => {
+    const matchA = a.match(/Q(\d) /);
+    const matchB = b.match(/Q(\d) /);
+    const yearA = a.match(/FY (\d+)/);
+    const yearB = b.match(/FY (\d+)/);
+    if (!matchA || !matchB || !yearA || !yearB) return 0;
+    const qA = parseInt(matchA[1], 10);
+    const yA = parseInt(yearA[1], 10);
+    const qB = parseInt(matchB[1], 10);
+    const yB = parseInt(yearB[1], 10);
+    if (yA !== yB) return yA - yB;
+    return qA - qB;
+  };
+
+  if (isOverallLoading || isSkyLoading || isInsightsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-700"></div>
+      </div>
+    );
+  }
+
+  const bridgeTable = overallData?.bridge_table || [];
+  const activeQuarters = bridgeTable.length > 0 ? Object.keys(bridgeTable[0].quarters).sort(sortQuarters) : [];
+
+  const headers = [
+    { label: "Baseline\n(Q4 FY24+Q1 FY25)", colSpan: 2 },
+    ...activeQuarters.map((q: string) => ({ label: q, colSpan: 2 })),
+  ];
+
+  const subHeaders = Array(headers.length).fill(["Rev Cr", "GM %"]).flat();
+
+  const rows = bridgeTable.map((item: any) => {
+    const baselineGm = item.baseline_gm_pct;
+    return {
+      type: item.label,
+      data: [
+        { 
+          rev: item.baseline_rev_cr !== null ? item.baseline_rev_cr.toFixed(1) : "-", 
+          gm: item.baseline_gm_pct !== null ? `${item.baseline_gm_pct.toFixed(1)}%` : "-",
+          isGreen: false,
+          isRed: false,
+        },
+        ...activeQuarters.map((q) => {
+          const qData = item.quarters[q];
+          if (!qData || qData.gm_pct === null) {
+            return { 
+              rev: qData && qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-", 
+              gm: "-",
+              isGreen: false,
+              isRed: false,
+            };
+          }
+          const isGreen = qData.gm_pct > baselineGm;
+          const isRed = qData.gm_pct < baselineGm;
+          return {
+            rev: qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-",
+            gm: `${qData.gm_pct.toFixed(1)}%`,
+            isGreen,
+            isRed,
+          };
+        }),
+      ],
+    };
+  });
+
+  // Calculate dynamic executive snapshots
+  const heatingOverall = bridgeTable.find((row: any) => row.label === "Heating (Overall)");
+  const latestQuarter = activeQuarters[activeQuarters.length - 1] || "";
+
+  const latestRevenue = heatingOverall && latestQuarter ? heatingOverall.quarters[latestQuarter]?.rev_cr || 0 : 0;
+  const latestGm = heatingOverall && latestQuarter ? heatingOverall.quarters[latestQuarter]?.gm_pct || 0 : 0;
+  const baselineGmOverall = heatingOverall ? heatingOverall.baseline_gm_pct || 0 : 0;
+
+  const deltaVsBaseline = latestGm - baselineGmOverall;
+  const heatingTarget = 55.3;
+  const deltaVsTarget = latestGm - heatingTarget;
+
+  const rawFamilies = skyscraperData?.[latestQuarter] || [];
+  const familiesAboveTarget = rawFamilies.filter((fam: any) => fam.actual_gm_pct >= fam.target_gm_pct).length;
+  const familiesBelowTarget = rawFamilies.filter((fam: any) => fam.actual_gm_pct < fam.target_gm_pct).length;
+  const familiesAboveBaseline = rawFamilies.filter((fam: any) => fam.actual_gm_pct >= fam.baseline_gm_pct).length;
+
   const stats = [
-    { label: "HEATING REVENUE", value: "₹21.8 Cr", change: "" },
-    { label: "OVERALL GM%", value: "52.2%", change: "" },
-    { label: "Δ VS BASELINE", value: "+2.4%", change: "", isPositive: true },
-    { label: "Δ VS HEATING TARGET (55.3%)", value: "-3.1%", change: "", isNegative: true },
-    { label: "FAMILIES ABOVE TARGET", value: "21", change: "" },
-    { label: "FAMILIES ABOVE BASELINE", value: "52", change: "" },
-    { label: "FAMILIES BELOW TARGET", value: "54", change: "" },
+    { label: "HEATING REVENUE", value: `₹${latestRevenue.toFixed(1)} Cr` },
+    { label: "OVERALL GM%", value: `${latestGm.toFixed(1)}%` },
+    { label: "Δ VS BASELINE", value: `${deltaVsBaseline >= 0 ? "+" : ""}${deltaVsBaseline.toFixed(1)}%`, isPositive: deltaVsBaseline >= 0, isNegative: deltaVsBaseline < 0 },
+    { label: `Δ VS HEATING TARGET (${heatingTarget.toFixed(1)}%)`, value: `${deltaVsTarget >= 0 ? "+" : ""}${deltaVsTarget.toFixed(1)}%`, isPositive: deltaVsTarget >= 0, isNegative: deltaVsTarget < 0 },
+    { label: "FAMILIES ABOVE TARGET", value: String(familiesAboveTarget) },
+    { label: "FAMILIES ABOVE BASELINE", value: String(familiesAboveBaseline) },
+    { label: "FAMILIES BELOW TARGET", value: String(familiesBelowTarget) },
+  ];
+
+  const topInsights = insightsData && insightsData.length > 0 ? insightsData : [
+    "Heating GM improved +0.3% vs Q3 FY26 (51.9% → 52.2%) — about -3.2 pp from revenue mix.",
+    "Fan Spares added the most to portfolio GM QoQ (+1.4 pp net: 0.0 mix, 1.4 margin).",
+    "He (Shell) leads on target beat (+12.3%, 64.3% actual on 0.4% of quarter revenue).",
+    "HE (Coil) gained the most revenue share (+2.5 pp vs Q3 FY26, now 20.7% of heating) at 51.7% GM."
   ];
 
   return (
@@ -35,86 +129,50 @@ const OverallMarginTab = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/70 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
+              <tr className="border-b border-gray-100 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
                 <th className="py-3 px-4">Segment</th>
-                <th className="py-3 px-4 text-center border-l border-gray-100" colSpan={2}>Baseline (Q4 FY24+Q1 FY25)</th>
-                <th className="py-3 px-4 text-center border-l border-gray-100" colSpan={2}>Q3 FY 25</th>
-                <th className="py-3 px-4 text-center border-l border-gray-100" colSpan={2}>Q4 FY 25</th>
-                <th className="py-3 px-4 text-center border-l border-gray-100" colSpan={2}>Q1 FY 26</th>
-                <th className="py-3 px-4 text-center border-l border-gray-100" colSpan={2}>Q2 FY 26</th>
-                <th className="py-3 px-4 text-center border-l border-gray-100" colSpan={2}>Q3 FY 26</th>
-                <th className="py-3 px-4 text-center border-l border-gray-100" colSpan={2}>Q4 FY 26</th>
+                {headers.map((h, i) => (
+                  <th
+                    key={i}
+                    colSpan={h.colSpan}
+                    className="py-3 px-4 text-center border-l border-gray-100 whitespace-pre-line"
+                  >
+                    {h.label}
+                  </th>
+                ))}
               </tr>
               <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase text-[8px] tracking-wider bg-gray-50/30">
                 <th className="py-1.5 px-4"></th>
-                <th className="py-1.5 px-2 text-right border-l border-gray-100">Rev Cr</th>
-                <th className="py-1.5 px-2 text-right">GM %</th>
-                <th className="py-1.5 px-2 text-right border-l border-gray-100">Rev Cr</th>
-                <th className="py-1.5 px-2 text-right">GM %</th>
-                <th className="py-1.5 px-2 text-right border-l border-gray-100">Rev Cr</th>
-                <th className="py-1.5 px-2 text-right">GM %</th>
-                <th className="py-1.5 px-2 text-right border-l border-gray-100">Rev Cr</th>
-                <th className="py-1.5 px-2 text-right">GM %</th>
-                <th className="py-1.5 px-2 text-right border-l border-gray-100">Rev Cr</th>
-                <th className="py-1.5 px-2 text-right">GM %</th>
-                <th className="py-1.5 px-2 text-right border-l border-gray-100">Rev Cr</th>
-                <th className="py-1.5 px-2 text-right">GM %</th>
-                <th className="py-1.5 px-2 text-right border-l border-gray-100">Rev Cr</th>
-                <th className="py-1.5 px-2 text-right">GM %</th>
+                {subHeaders.map((sh, i) => (
+                  <th
+                    key={i}
+                    className={`py-1.5 px-2 text-right ${
+                      i % 2 === 0 ? "border-l border-gray-100" : ""
+                    }`}
+                  >
+                    {sh}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium">
-              <tr>
-                <td className="py-3 px-4 font-bold text-gray-900 bg-gray-50/20">Heating (Overall)</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">17.1</td>
-                <td className="py-3 px-2 text-right text-gray-700">49.8%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">18.9</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">51.9%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">24.1</td>
-                <td className="py-3 px-2 text-right text-rose-600 font-bold">47.7%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">15.2</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">50.4%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">20.7</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">51.7%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">21.0</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">51.9%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">21.8</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">52.2%</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 text-gray-600 pl-6">Standard</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">8.1</td>
-                <td className="py-3 px-2 text-right text-gray-600">50.8%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">9.3</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">52.1%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">10.2</td>
-                <td className="py-3 px-2 text-right text-rose-600 font-bold">49.8%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">8.4</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">51.7%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">9.3</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">52.8%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">10.0</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">52.8%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">9.2</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">54.1%</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 text-gray-600 pl-6">Non-standard</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">9.0</td>
-                <td className="py-3 px-2 text-right text-gray-600">49.1%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">9.6</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">51.0%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">13.9</td>
-                <td className="py-3 px-2 text-right text-rose-600 font-bold">47.0%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">8.9</td>
-                <td className="py-3 px-2 text-right text-rose-600 font-bold">48.8%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">11.4</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">50.9%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">11.0</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">51.1%</td>
-                <td className="py-3 px-2 text-right border-l border-gray-100">12.7</td>
-                <td className="py-3 px-2 text-right text-emerald-600 font-bold">50.5%</td>
-              </tr>
+              {rows.map((row: any, rowIdx: number) => (
+                <tr key={rowIdx} className="hover:bg-slate-50/40">
+                  <td className="py-3 px-4 font-bold text-gray-800 bg-gray-50/20">{row.type}</td>
+                  {row.data.map((col: any, colIdx: number) => (
+                    <React.Fragment key={colIdx}>
+                      <td className="py-3 px-2 text-right border-l border-gray-100">{col.rev}</td>
+                      <td
+                        className={`py-3 px-2 text-right font-bold ${
+                          col.isGreen ? "text-emerald-600" : col.isRed ? "text-rose-600" : "text-gray-700"
+                        }`}
+                      >
+                        {col.gm}
+                      </td>
+                    </React.Fragment>
+                  ))}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -139,8 +197,8 @@ const OverallMarginTab = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <MarginTrendChart selectedFamily={selectedFamily} />
-          <RevenueCogsChart />
+          <MarginTrendChart data={overallData?.margin_trend} />
+          <RevenueVsCogsChart data={overallData?.revenue_vs_cogs} />
         </div>
       </div>
 
@@ -156,7 +214,7 @@ const OverallMarginTab = () => {
               Executive snapshot
             </h3>
             <span className="text-xs font-bold text-[#a61c1e] bg-red-50 border border-red-100 px-2 py-0.5 rounded">
-              Q4 FY 26
+              {latestQuarter}
             </span>
           </div>
 
@@ -166,8 +224,9 @@ const OverallMarginTab = () => {
                 <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wide leading-tight mb-2">
                   {st.label}
                 </span>
-                <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"
-                  }`}>
+                <span className={`text-base font-extrabold tracking-tight ${
+                  st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"
+                }`}>
                   {st.value}
                 </span>
               </div>
@@ -180,25 +239,15 @@ const OverallMarginTab = () => {
           <div>
             <h3 className="text-sm font-extrabold tracking-tight text-white mb-4 border-b border-[#202226] pb-3 flex items-center gap-2">
               <Sparkles size={16} className="text-[#a61c1e]" />
-              TOP INSIGHTS — Q4 FY 26
+              TOP INSIGHTS — {latestQuarter}
             </h3>
             <ul className="space-y-4 text-xs font-medium text-gray-300">
-              <li className="flex gap-2">
-                <span className="text-[#a61c1e] font-bold">1.</span>
-                <span>Heating GM improved <strong>+0.3% vs Q3 FY26</strong> (51.9% → 52.2%) — about -3.2 pp from revenue mix.</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-[#a61c1e] font-bold">2.</span>
-                <span>Fan Spares added the most to portfolio GM QoQ (<strong>+1.4 pp net</strong>: 0.0 mix, 1.4 margin).</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-[#a61c1e] font-bold">3.</span>
-                <span>He (Shell) leads on target beat (+12.3%, 64.3% actual on 0.4% of quarter revenue).</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-[#a61c1e] font-bold">4.</span>
-                <span>HE (Coil) gained the most revenue share (+2.5 pp vs Q3 FY26, now 20.7% of heating) at 51.7% GM.</span>
-              </li>
+              {topInsights.map((insight: string, idx: number) => (
+                <li key={idx} className="flex gap-2">
+                  <span className="text-[#a61c1e] font-bold">{idx + 1}.</span>
+                  <span>{insight}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
