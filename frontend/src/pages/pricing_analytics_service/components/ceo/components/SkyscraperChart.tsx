@@ -76,8 +76,8 @@ const SkyscraperChart = () => {
             <button
               onClick={() => setCompareMode("target")}
               className={`px-3 py-1 rounded text-xs font-bold transition-all border ${compareMode === "target"
-                  ? "bg-[#a61c1e] text-white border-[#a61c1e]"
-                  : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                ? "bg-[#a61c1e] text-white border-[#a61c1e]"
+                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
                 }`}
             >
               Target (PMA)
@@ -85,8 +85,8 @@ const SkyscraperChart = () => {
             <button
               onClick={() => setCompareMode("baseline")}
               className={`px-3 py-1 rounded text-xs font-bold transition-all border ${compareMode === "baseline"
-                  ? "bg-[#a61c1e] text-white border-[#a61c1e]"
-                  : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                ? "bg-[#a61c1e] text-white border-[#a61c1e]"
+                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
                 }`}
             >
               Baseline (file)
