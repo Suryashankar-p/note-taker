@@ -109,6 +109,18 @@ const Skycraper = lazy(
 const DispersionView = lazy(
   () => import("./pages/pricing_analytics_service/components/ceo/components/DispersionView.tsx")
 );
+const OverallMarginTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/OverallMarginTab.tsx")
+);
+const SkyscraperTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/SkyscraperTab.tsx")
+);
+const QoqMatrixTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/QoqMatrixTab.tsx")
+);
+const SkuDrillDownTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/SkuDrillDownTab.tsx")
+);
 
 
 
@@ -216,7 +228,12 @@ const App = () => (
           <Route path="skycraper" element={<Skycraper />} />
           <Route path="dispersion-view" element={<DispersionView />} />
         </Route>
-        <Route path="analyst" element={<PricingAnalyst />} />
+        <Route path="analyst" element={<PricingAnalyst />}>
+          <Route path="overall-margin" element={<OverallMarginTab />} />
+          <Route path="skyscraper" element={<SkyscraperTab />} />
+          <Route path="qoq-matrix" element={<QoqMatrixTab />} />
+          <Route path="sku-drill-down" element={<SkuDrillDownTab />} />
+        </Route>
       </Route>
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>

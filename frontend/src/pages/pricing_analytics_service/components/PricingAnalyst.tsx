@@ -1,23 +1,21 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import OverallMarginTab from "./analyst/OverallMarginTab";
-import SkyscraperTab from "./analyst/SkyscraperTab";
-import QoqMatrixTab from "./analyst/QoqMatrixTab";
-import SkuDrillDownTab from "./analyst/SkuDrillDownTab";
+import React, { useState, Suspense } from "react";
+import { useNavigate, NavLink, Outlet } from "react-router-dom";
+import PageLoading from "../../../components/PageLoading";
 
 const PricingAnalyst = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overall-margin");
   
   // Shared state for matrix cell selection and product family drill-down
   const [selectedQoqCell, setSelectedQoqCell] = useState<any | null>(null);
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
 
+  const SETTINGS_BASE = "/ai-studio/pas/workspace/dashboard";
+
   const tabItems = [
-    { id: "overall-margin", label: "1 - OVERALL MARGIN" },
-    { id: "skyscraper", label: "2 - SKYSCRAPER" },
-    { id: "qoq-matrix", label: "3 - QOQ MATRIX" },
-    { id: "sku-drill-down", label: "4 - SKU DRILL-DOWN" },
+    { label: "1 - OVERALL MARGIN", path: `${SETTINGS_BASE}/analyst/overall-margin` },
+    { label: "2 - SKYSCRAPER", path: `${SETTINGS_BASE}/analyst/skyscraper` },
+    { label: "3 - QOQ MATRIX", path: `${SETTINGS_BASE}/analyst/qoq-matrix` },
+    { label: "4 - SKU DRILL-DOWN", path: `${SETTINGS_BASE}/analyst/sku-drill-down` },
   ];
 
   return (
@@ -38,37 +36,38 @@ const PricingAnalyst = () => {
       {/* Tabs Sub-Header Bar */}
       <div className="px-8 py-3 bg-white flex gap-3 border-b border-gray-200">
         {tabItems.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider transition-all duration-200 border ${
-              activeTab === tab.id
-                ? "bg-[#a61c1e]/10 text-[#a61c1e] border-[#a61c1e]"
-                : "bg-gray-105 text-gray-600 border-gray-200 hover:bg-gray-150"
-            }`}
+          <NavLink
+            key={tab.path}
+            to={tab.path}
+            className={({ isActive }) =>
+              `px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider transition-all duration-200 border ${
+                isActive
+                  ? "bg-[#a61c1e]/10 text-[#a61c1e] border-[#a61c1e]"
+                  : "bg-gray-105 text-gray-600 border-gray-200 hover:bg-gray-150"
+              }`
+            }
           >
             {tab.label}
-          </button>
+          </NavLink>
         ))}
       </div>
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto max-w-[1600px] mx-auto w-full">
-        {activeTab === "overall-margin" && <OverallMarginTab />}
-        {activeTab === "skyscraper" && <SkyscraperTab />}
-        {activeTab === "qoq-matrix" && (
-          <QoqMatrixTab
-            selectedQoqCell={selectedQoqCell}
-            setSelectedQoqCell={setSelectedQoqCell}
-            selectedFamily={selectedFamily}
-            setSelectedFamily={setSelectedFamily}
-            onNavigateToSku={() => setActiveTab("sku-drill-down")}
-            onNavigateToTab={(tabId) => setActiveTab(tabId)}
+        <Suspense fallback={<PageLoading />}>
+          <Outlet
+            context={{
+              selectedQoqCell,
+              setSelectedQoqCell,
+              selectedFamily,
+              setSelectedFamily,
+              onNavigateToSku: () =>
+                navigate(`${SETTINGS_BASE}/analyst/sku-drill-down`),
+              onNavigateToTab: (tabId: string) =>
+                navigate(`${SETTINGS_BASE}/analyst/${tabId}`),
+            }}
           />
-        )}
-        {activeTab === "sku-drill-down" && (
-          <SkuDrillDownTab selectedFamily={selectedFamily} />
-        )}
+        </Suspense>
       </main>
     </div>
   );

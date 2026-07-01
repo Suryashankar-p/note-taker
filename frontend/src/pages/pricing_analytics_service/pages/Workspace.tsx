@@ -95,7 +95,7 @@ const Workspace = () => {
                       navigate(
                         index === 0
                           ? "dashboard/ceo/overall-margin"
-                          : "dashboard/analyst",
+                          : "dashboard/analyst/overall-margin",
                       );
                     }}
                     className={`

@@ -1,5 +1,6 @@
 import React from "react";
 import { AlertCircle, ArrowRight, BarChart3, TrendingUp, Sparkles } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
 
 interface CellData {
   row: string;
@@ -10,22 +11,30 @@ interface CellData {
 }
 
 interface QoqMatrixTabProps {
-  selectedQoqCell: CellData | null;
-  setSelectedQoqCell: (cell: CellData | null) => void;
-  selectedFamily: string | null;
-  setSelectedFamily: (family: string | null) => void;
-  onNavigateToSku: () => void;
+  selectedQoqCell?: CellData | null;
+  setSelectedQoqCell?: (cell: CellData | null) => void;
+  selectedFamily?: string | null;
+  setSelectedFamily?: (family: string | null) => void;
+  onNavigateToSku?: () => void;
   onNavigateToTab?: (tabId: string) => void;
 }
 
 const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
-  selectedQoqCell,
-  setSelectedQoqCell,
-  selectedFamily,
-  setSelectedFamily,
-  onNavigateToSku,
-  onNavigateToTab,
+  selectedQoqCell: propsSelectedQoqCell,
+  setSelectedQoqCell: propsSetSelectedQoqCell,
+  selectedFamily: propsSelectedFamily,
+  setSelectedFamily: propsSetSelectedFamily,
+  onNavigateToSku: propsOnNavigateToSku,
+  onNavigateToTab: propsOnNavigateToTab,
 }) => {
+  const context = useOutletContext<any>() || {};
+
+  const selectedQoqCell = propsSelectedQoqCell !== undefined ? propsSelectedQoqCell : context.selectedQoqCell;
+  const setSelectedQoqCell = propsSetSelectedQoqCell || context.setSelectedQoqCell;
+  const selectedFamily = propsSelectedFamily !== undefined ? propsSelectedFamily : context.selectedFamily;
+  const setSelectedFamily = propsSetSelectedFamily || context.setSelectedFamily;
+  const onNavigateToSku = propsOnNavigateToSku || context.onNavigateToSku;
+  const onNavigateToTab = propsOnNavigateToTab || context.onNavigateToTab;
   const columns = [
     "Higher — last 3Q (all > PY avg)",
     "Higher — last 2Q (last 2 > PY avg)",
