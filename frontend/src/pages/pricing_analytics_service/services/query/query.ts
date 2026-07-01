@@ -181,3 +181,17 @@ export const useGetQoqMatrix = (sessionId: number) => {
     enabled: !!sessionId,
   });
 };
+
+export const useGetSnapshotKpis = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["snapshot-kpis", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/snapshot-kpis",
+        { session_id: sessionId }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+  });
+};

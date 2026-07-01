@@ -21,7 +21,7 @@ const Classification = () => {
       <ClassificationGrid data={data?.matrix} />
 
       {/* 2. Insights */}
-      <ClassificationInsights />
+      <ClassificationInsights data={data?.insights} />
     </div>
   );
 };

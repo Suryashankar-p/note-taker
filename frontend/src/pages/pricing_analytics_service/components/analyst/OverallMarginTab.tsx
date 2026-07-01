@@ -3,13 +3,14 @@ import MarginTrendChart from "../ceo/components/MarginTrendChart";
 import RevenueVsCogsChart from "../ceo/components/RevenueVsCogsChart";
 import { Sparkles, ArrowRight, AlertCircle } from "lucide-react";
 import HeatingMarginsGrid from "../ceo/components/HeatingMarginsGrid";
-import { useGetOverallMargin, useGetBusinessInsights, useGetSkyscraper } from "../../services/query/query";
+import { useGetOverallMargin, useGetBusinessInsights, useGetSkyscraper, useGetSnapshotKpis } from "../../services/query/query";
 
 const OverallMarginTab = () => {
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
   const { data: overallData, isLoading: isOverallLoading } = useGetOverallMargin(sessionId);
   const { data: skyscraperData, isLoading: isSkyLoading } = useGetSkyscraper(sessionId);
   const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(sessionId);
+  const { data: snapshotKpis, isLoading: isSnapshotLoading } = useGetSnapshotKpis(sessionId);
 
   const [selectedFamily, setSelectedFamily] = useState("All families (109)");
 
@@ -27,7 +28,7 @@ const OverallMarginTab = () => {
     return qA - qB;
   };
 
-  if (isOverallLoading || isSkyLoading || isInsightsLoading) {
+  if (isOverallLoading || isSkyLoading || isInsightsLoading || isSnapshotLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-700"></div>
@@ -79,32 +80,19 @@ const OverallMarginTab = () => {
     };
   });
 
-  // Calculate dynamic executive snapshots
-  const heatingOverall = bridgeTable.find((row: any) => row.label === "Heating (Overall)");
+  // Calculate dynamic executive snapshots from snapshot-kpis API
   const latestQuarter = activeQuarters[activeQuarters.length - 1] || "";
+  const latestSnapshot = (snapshotKpis || []).find((s: any) => s.quarter === latestQuarter);
 
-  const latestRevenue = heatingOverall && latestQuarter ? heatingOverall.quarters[latestQuarter]?.rev_cr || 0 : 0;
-  const latestGm = heatingOverall && latestQuarter ? heatingOverall.quarters[latestQuarter]?.gm_pct || 0 : 0;
-  const baselineGmOverall = heatingOverall ? heatingOverall.baseline_gm_pct || 0 : 0;
-
-  const deltaVsBaseline = latestGm - baselineGmOverall;
-  const heatingTarget = 55.3;
-  const deltaVsTarget = latestGm - heatingTarget;
-
-  const rawFamilies = skyscraperData?.[latestQuarter] || [];
-  const familiesAboveTarget = rawFamilies.filter((fam: any) => fam.actual_gm_pct >= fam.target_gm_pct).length;
-  const familiesBelowTarget = rawFamilies.filter((fam: any) => fam.actual_gm_pct < fam.target_gm_pct).length;
-  const familiesAboveBaseline = rawFamilies.filter((fam: any) => fam.actual_gm_pct >= fam.baseline_gm_pct).length;
-
-  const stats = [
-    { label: "HEATING REVENUE", value: `₹${latestRevenue.toFixed(1)} Cr` },
-    { label: "OVERALL GM%", value: `${latestGm.toFixed(1)}%` },
-    { label: "Δ VS BASELINE", value: `${deltaVsBaseline >= 0 ? "+" : ""}${deltaVsBaseline.toFixed(1)}%`, isPositive: deltaVsBaseline >= 0, isNegative: deltaVsBaseline < 0 },
-    { label: `Δ VS HEATING TARGET (${heatingTarget.toFixed(1)}%)`, value: `${deltaVsTarget >= 0 ? "+" : ""}${deltaVsTarget.toFixed(1)}%`, isPositive: deltaVsTarget >= 0, isNegative: deltaVsTarget < 0 },
-    { label: "FAMILIES ABOVE TARGET", value: String(familiesAboveTarget) },
-    { label: "FAMILIES ABOVE BASELINE", value: String(familiesAboveBaseline) },
-    { label: "FAMILIES BELOW TARGET", value: String(familiesBelowTarget) },
-  ];
+  const stats = latestSnapshot ? [
+    { label: "HEATING REVENUE", value: `₹${(latestSnapshot.revenue_inr / 10000000).toFixed(1)} Cr` },
+    { label: "OVERALL GM%", value: `${latestSnapshot.overall_gm_pct.toFixed(1)}%` },
+    { label: "Δ VS BASELINE", value: `${latestSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${latestSnapshot.delta_vs_baseline_pp.toFixed(1)}%`, isPositive: latestSnapshot.delta_vs_baseline_pp >= 0, isNegative: latestSnapshot.delta_vs_baseline_pp < 0 },
+    { label: "Δ VS HEATING TARGET", value: `${latestSnapshot.delta_vs_target_pp >= 0 ? "+" : ""}${latestSnapshot.delta_vs_target_pp.toFixed(1)}%`, isPositive: latestSnapshot.delta_vs_target_pp >= 0, isNegative: latestSnapshot.delta_vs_target_pp < 0 },
+    { label: "FAMILIES ABOVE TARGET", value: String(latestSnapshot.families_above_target) },
+    { label: "FAMILIES AT TARGET", value: String(latestSnapshot.families_at_target) },
+    { label: "FAMILIES BELOW TARGET", value: String(latestSnapshot.families_below_target) },
+  ] : [];
 
   const topInsights = insightsData && insightsData.length > 0 ? insightsData : [
     "Heating GM improved +0.3% vs Q3 FY26 (51.9% → 52.2%) — about -3.2 pp from revenue mix.",
