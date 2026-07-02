@@ -1,6 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
 
+export const GetMemberPricingAnalyticsRole = async () => {
+  const response = await PricingAnalyticsAPI.get(
+    "/member/me"
+  );
+  return response;
+};
+
 export const useUploadCogs = () => {
   return useMutation({
     mutationKey: ["upload-cogs"],

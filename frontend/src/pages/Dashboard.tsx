@@ -27,6 +27,7 @@ import { GetHeatingOCRRole } from "../services/heating_ocr.ts";
 import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
 import { GetTranslatorRole } from "../services/doc_translator.ts";
 import { GetMemberEdgeRole } from "../services/edge.ts";
+import { GetMemberPricingAnalyticsRole } from "../pages/pricing_analytics_service/services/query/query.ts";
 
 const DOMAIN = import.meta.env.VITE_DOMAIN;
 
@@ -270,6 +271,21 @@ const Dashboard: React.FC = () => {
     }
   };
 
+    const getPricingAnalyticsRole = async () => {
+    try {
+      const response = await GetMemberPricingAnalyticsRole();
+      if (response?.role) {
+        navigate("./pas");
+      } else {
+        setPageError(true);
+        if (response?.detail)
+          dispatch.toast.openToast({ status: true, message: response?.detail });
+      }
+    } catch (err) {
+      navigate("/");
+    }
+  };
+
   const openService = (title: string) => {
     switch (title) {
       case "Sales Enablement Tool":
@@ -309,7 +325,8 @@ const Dashboard: React.FC = () => {
         }
         break;
       case "Pricing Analyser":
-        navigate("/ai-studio/pas")
+        getPricingAnalyticsRole();
+        break;
 
     }
   };
