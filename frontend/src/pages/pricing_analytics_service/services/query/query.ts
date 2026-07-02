@@ -240,3 +240,20 @@ export const useGetSnapshotKpis = (sessionId: number) => {
     enabled: !!sessionId,
   });
 };
+
+export const useSendLLMChat = () => {
+  return useMutation({
+    mutationKey: ["send-llm-chat"],
+    mutationFn: async (payload: {
+      query: string;
+      mode: string;
+      session_id: number;
+    }) => {
+      const response = await PricingAnalyticsAPI.post(
+        "/llm/chat",
+        payload
+      );
+      return response;
+    }
+  });
+};

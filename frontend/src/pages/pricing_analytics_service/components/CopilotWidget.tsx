@@ -9,48 +9,80 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import { useSendLLMChat } from "../services/query/query";
 
 interface CopilotWidgetProps {
   onClose: () => void;
 }
 
+interface MessageItem {
+  id: number;
+  sender: string;
+  content: string;
+  title?: string;
+  fix?: string;
+}
+
 const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<MessageItem[]>([
     {
       id: 1,
       sender: "system",
       content: "Welcome to GIA co-pilot, how can I help you today?",
     },
-    {
-      id: 2,
-      sender: "user",
-      content: "How many product families have net reduction in dispersion? Show full table.",
-    },
-    {
-      id: 3,
-      sender: "error",
-      title: "Could not reach the model.",
-      content: "Local LLM proxy is offline at http://127.0.0.1:3847. Start gia-llm-proxy.cmd and keep the window open. (Failed to fetch)",
-      fix: "Fix: Double-click gia-llm-proxy.cmd in the project folder, leave that window open, then send your message again.",
-    },
   ]);
 
   const [inputVal, setInputVal] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const chatMutation = useSendLLMChat();
 
-  const handleSend = () => {
-    if (!inputVal.trim()) return;
+  const handleSend = async () => {
+    if (!inputVal.trim() || isLoading) return;
+    const userQuery = inputVal.trim();
+    setInputVal("");
+    setIsLoading(true);
+
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), sender: "user", content: inputVal },
-      {
-        id: Date.now() + 1,
-        sender: "error",
-        title: "Could not reach the model.",
-        content: "Local LLM proxy is offline at http://127.0.0.1:3847. Start gia-llm-proxy.cmd and keep the window open. (Failed to fetch)",
-        fix: "Fix: Double-click gia-llm-proxy.cmd in the project folder, leave that window open, then send your message again.",
-      },
+      { id: Date.now(), sender: "user", content: userQuery },
     ]);
-    setInputVal("");
+
+    try {
+      const data = await chatMutation.mutateAsync({
+        query: userQuery,
+        mode: "ceo_cfo",
+        session_id: 16,
+      });
+
+      let replyText = "";
+      if (typeof data === "string") {
+        replyText = data;
+      } else if (data && typeof data === "object") {
+        replyText = data.scribeSummary || data.response || data.content || data.message || JSON.stringify(data);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), sender: "system", content: replyText },
+      ]);
+    } catch (error: any) {
+      console.error("Error communicating with chat API:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          sender: "error",
+          title: "Could not reach the model.",
+          content: error?.response?.data?.detail || error?.message || "Could not reach the LLM API.",
+          fix: "Fix: Check if the backend chat server is running and accessible.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -62,6 +94,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
           <span className="text-sm font-bold tracking-tight">GIA LLM Co-pilot</span>
         </div>
         <div className="flex items-center gap-3 text-gray-400">
+          {/* Comment out other head icons except close
           <button className="hover:text-white transition-colors">
             <Maximize2 size={13} />
           </button>
@@ -74,24 +107,102 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
           <button className="hover:text-white transition-colors">
             <RotateCcw size={13} />
           </button>
+          */}
           <button onClick={onClose} className="hover:text-white transition-colors pl-1">
             <X size={15} />
           </button>
         </div>
       </div>
 
-      {/* 2. Subheader key warning */}
+      {/* 2. Subheader key warning (Commented out) */}
+      {/*
       <div className="bg-[#2a1b1b] text-rose-350 text-[10px] py-1.5 px-4 text-left border-b border-[#3b1d1d] font-semibold tracking-wide">
         API key expired — paste a new JWT in Settings → Save
       </div>
+      */}
 
       {/* 3. Messages Window */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-[#0d0e0f]">
         {messages.map((msg) => {
           if (msg.sender === "system") {
+            const scribeSummary = msg.content;
             return (
               <div key={msg.id} className="max-w-[85%] bg-[#1c1f22] border border-[#2d3135] text-gray-200 text-xs py-3 px-4 rounded-xl leading-relaxed">
-                {msg.content}
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  components={{
+                    img: ({ node, ...props }) => (
+                      <img {...props} className="h-auto max-w-full rounded-md" />
+                    ),
+ 
+                    p: ({ node, ...props }) => (
+                      <p
+                        className="my-2 text-sm leading-relaxed text-gray-200"
+                        {...props}
+                      />
+                    ),
+ 
+                    ol: ({ node, ...props }) => (
+                      <ol
+                        className="my-2 list-decimal space-y-1 pl-5 text-sm text-gray-200"
+                        {...props}
+                      />
+                    ),
+ 
+                    ul: ({ node, ...props }) => (
+                      <ul
+                        className="my-2 list-disc space-y-1 pl-5 text-sm text-gray-200"
+                        {...props}
+                      />
+                    ),
+ 
+                    li: ({ node, ...props }) => (
+                      <li className="text-sm text-gray-200" {...props} />
+                    ),
+ 
+                    a: ({ node, ...props }) => (
+                      <a
+                        href={props.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 underline hover:text-blue-350"
+                      >
+                        {props.children}
+                      </a>
+                    ),
+ 
+                    h1: ({ node, ...props }) => (
+                      <h1 className="my-3 text-xl font-semibold text-white" {...props} />
+                    ),
+                    h2: ({ node, ...props }) => (
+                      <h2 className="my-2 text-lg font-semibold text-white" {...props} />
+                    ),
+                    h3: ({ node, ...props }) => (
+                      <h3 className="my-2 text-base font-semibold text-white" {...props} />
+                    ),
+ 
+                    code: ({ node, className, children, ...props }: any) => {
+                      const match = /language-(\w+)/.exec(className || "");
+                      const isInline = !className || !match;
+                      return isInline ? (
+                        <code
+                          className="rounded bg-gray-800 px-1 py-0.5 text-sm text-pink-400"
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      ) : (
+                        <pre className="whitespace-pre-wrap break-words rounded-md bg-[#131517] p-2 text-sm text-gray-200 border border-[#202226]">
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        </pre>
+                      );
+                    },
+                  }}
+                >
+                  {scribeSummary}
+                </ReactMarkdown>
               </div>
             );
           } else if (msg.sender === "user") {
@@ -113,6 +224,13 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
           }
           return null;
         })}
+        {isLoading && (
+          <div className="max-w-[80px] bg-[#1c1f22] border border-[#2d3135] text-gray-400 text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 self-start">
+            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        )}
       </div>
 
       {/* 4. Footer Input Bar */}
