@@ -1,56 +1,83 @@
 import React from "react";
 
-const OverallQoQTable = () => {
+interface OverallQoQTableProps {
+  data?: Array<{
+    segment: string;
+    label: string;
+    baseline_rev_cr: number;
+    baseline_gm_pct: number;
+    quarters: Record<string, { rev_cr: number; gm_pct: number | null }>;
+  }>;
+}
+
+const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
+  const sortQuarters = (a: string, b: string) => {
+    const matchA = a.match(/Q(\d) /);
+    const matchB = b.match(/Q(\d) /);
+    const yearA = a.match(/FY (\d+)/);
+    const yearB = b.match(/FY (\d+)/);
+    if (!matchA || !matchB || !yearA || !yearB) return 0;
+    const qA = parseInt(matchA[1]);
+    const yA = parseInt(yearA[1]);
+    const qB = parseInt(matchB[1]);
+    const yB = parseInt(yearB[1]);
+    if (yA !== yB) return yA - yB;
+    return qA - qB;
+  };
+
+  if (!data || data.length === 0) return null;
+  
+  // Dynamic quarters extraction sorted chronologically
+  const activeQuarters = Object.keys(data[0].quarters).sort(sortQuarters);
+
   const headers = [
     { label: "Baseline\n(Q4 FY24 + Q1 FY25)", colSpan: 2 },
-    { label: "Q2 FY25", colSpan: 2 },
-    { label: "Q4 FY25", colSpan: 2 },
-    { label: "Q1 FY26", colSpan: 2 },
-    { label: "Q2 FY26", colSpan: 2 },
-    { label: "Q3 FY26", colSpan: 2 },
-    { label: "Q4 FY26", colSpan: 2 },
+    ...activeQuarters.map((q) => ({ label: q, colSpan: 2 })),
   ];
 
-  const subHeaders = Array(7).fill(["Revenue\n(INR Cr)", "Achieved\nGM%"]).flat();
+  const subHeaders = Array(headers.length).fill(["Revenue\n(INR Cr)", "Achieved\nGM%"]).flat();
 
-  const rows = [
-    {
-      type: "Overall",
+  const rows: Array<{
+    type: string;
+    data: Array<{
+      rev: string;
+      gm: string;
+      isGreen?: boolean;
+      isRed?: boolean;
+    }>;
+  }> = data.map((item) => {
+    const baselineGm = item.baseline_gm_pct;
+    return {
+      type: item.label,
       data: [
-        { rev: "17.1", gm: "49.1%" },
-        { rev: "18.9", gm: "51.9%", isGreen: true },
-        { rev: "24.1", gm: "47.7%", isRed: true },
-        { rev: "16.2", gm: "50.4%", isGreen: true },
-        { rev: "20.7", gm: "51.7%", isGreen: true },
-        { rev: "21.0", gm: "51.8%", isGreen: true },
-        { rev: "21.8", gm: "52.2%", isGreen: true },
+        { 
+          rev: item.baseline_rev_cr !== null ? item.baseline_rev_cr.toFixed(1) : "-", 
+          gm: item.baseline_gm_pct !== null ? `${item.baseline_gm_pct.toFixed(1)}%` : "-",
+          isGreen: false,
+          isRed: false,
+        },
+        ...activeQuarters.map((q) => {
+          const qData = item.quarters[q];
+          if (!qData || qData.gm_pct === null) {
+            return { 
+              rev: qData && qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-", 
+              gm: "-",
+              isGreen: false,
+              isRed: false,
+            };
+          }
+          const isGreen = qData.gm_pct > baselineGm;
+          const isRed = qData.gm_pct < baselineGm;
+          return {
+            rev: qData.rev_cr !== null ? qData.rev_cr.toFixed(1) : "-",
+            gm: `${qData.gm_pct.toFixed(1)}%`,
+            isGreen,
+            isRed,
+          };
+        }),
       ],
-    },
-    {
-      type: "Standard",
-      data: [
-        { rev: "8.1", gm: "50.0%" },
-        { rev: "9.3", gm: "52.1%", isGreen: true },
-        { rev: "10.2", gm: "49.6%", isRed: true },
-        { rev: "9.4", gm: "51.7%", isGreen: true },
-        { rev: "9.3", gm: "52.8%", isGreen: true },
-        { rev: "10.0", gm: "50.9%", isGreen: true },
-        { rev: "10.0", gm: "52.8%", isGreen: true },
-      ],
-    },
-    {
-      type: "Non-standard",
-      data: [
-        { rev: "9.0", gm: "49.1%" },
-        { rev: "9.6", gm: "51.0%", isGreen: true },
-        { rev: "13.9", gm: "47.0%", isRed: true },
-        { rev: "6.8", gm: "48.2%", isRed: true },
-        { rev: "11.4", gm: "50.9%", isGreen: true },
-        { rev: "11.0", gm: "51.1%", isGreen: true },
-        { rev: "11.8", gm: "51.1%", isGreen: true },
-      ],
-    },
-  ];
+    };
+  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
@@ -61,7 +88,6 @@ const OverallQoQTable = () => {
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            {/* Main Header Quarters */}
             <tr className="border-b border-gray-250 bg-gray-50">
               <th className="p-3 font-bold text-gray-600 border-r border-gray-200" rowSpan={2}>
                 Heating
@@ -77,7 +103,6 @@ const OverallQoQTable = () => {
               ))}
             </tr>
 
-            {/* Sub-headers (Revenue & GM%) */}
             <tr className="border-b border-gray-250 bg-gray-50/50">
               {subHeaders.map((sh, i) => (
                 <th

@@ -23,6 +23,7 @@ services:
         VITE_BACKEND_TRANSMITTER_OCR_URL: "http://transmitter-ocr-service:3009"
         VITE_BACKEND_DOCUMENT_TRANSLATOR_URL: "http://sales-service:3005/api"
         VITE_BACKEND_CCTV_ANALYTICS_URL: "https://sitesafety.azcinp.thermaxglobal.com/super-admin/dashboard"
+        VITE_BACKEND_PRICING_ANALYTICS_URL: "http://pricing-analytics-service:3010/api"
     environment:
       VITE_ENABLE_SSO: "true"
       VITE_ADMIN_USER_EMAIL: "admin@example.com"

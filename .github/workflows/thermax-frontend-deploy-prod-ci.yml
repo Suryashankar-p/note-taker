@@ -48,6 +48,7 @@ jobs:
             --build-arg VITE_BACKEND_TRANSMITTER_OCR_URL="${{ secrets.PROD_BACKEND_TRANSMITTER_OCR_URL }}" \
             --build-arg VITE_BACKEND_DOCUMENT_TRANSLATOR_URL="${{ secrets.PROD_BACKEND_DOCUMENT_TRANSLATOR_URL }}" \
             --build-arg VITE_BACKEND_EDGE_URL="${{ secrets.PROD_BACKEND_EDGE_URL }}" \
+            --build-arg VITE_BACKEND_PRICING_ANALYTICS_URL="${{ secrets.PROD_BACKEND_PRICING_ANALYTICS_URL }}" \
             -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
 
       - name: Push Docker image to Prod ACR

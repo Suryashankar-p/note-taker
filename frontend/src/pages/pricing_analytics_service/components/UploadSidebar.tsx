@@ -18,7 +18,6 @@ const UploadSidebar = () => {
     "
     >
       <div className="flex flex-col">
-        {/* Header */}
         <div className="mb-6 px-1">
           <h2 className="text-lg font-bold tracking-tight text-white">
             Pricing <span className="text-[#a61c1e]">Analytics</span>
@@ -28,7 +27,6 @@ const UploadSidebar = () => {
           </p>
         </div>
 
-        {/* Divider */}
         <hr className="border-t border-[#202226] mb-5" />
       </div>
       <nav className="flex flex-col">

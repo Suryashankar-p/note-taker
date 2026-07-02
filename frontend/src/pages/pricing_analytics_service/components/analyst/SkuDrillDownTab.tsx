@@ -1,6 +1,8 @@
 import React from "react";
 import { AlertCircle } from "lucide-react";
 
+import { useOutletContext } from "react-router-dom";
+
 interface SKUItem {
   sku: string;
   orderNo: string;
@@ -28,10 +30,12 @@ interface NonStdSKUItem {
 }
 
 interface SkuDrillDownTabProps {
-  selectedFamily: string | null;
+  selectedFamily?: string | null;
 }
 
-const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({ selectedFamily }) => {
+const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({ selectedFamily: propsSelectedFamily }) => {
+  const context = useOutletContext<any>() || {};
+  const selectedFamily = propsSelectedFamily !== undefined ? propsSelectedFamily : context.selectedFamily;
   // Mock Standard SKUs data
   const standardSkusList: SKUItem[] = [
     { sku: "Air nozzle", orderNo: "36075197", itemCode: "PF0010022", desc: "AIR NOZZLE - CAST - CR-25, 10-178-00 Mix MTED, 11 HOLES x DIA 2.5", channel: "Direct", listPrice: "1620.00", actualPrice: "1360.00", priceDeviation: "-260.00", listCost: "1050.00", actualCost: "1001.33", costDeviation: "-48.67" },

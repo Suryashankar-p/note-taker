@@ -1,10 +1,10 @@
 import React, { useRef, type ReactNode } from "react";
-import { Upload, CheckCircle } from "lucide-react";
+import { Upload, CheckCircle, Loader2 } from "lucide-react";
 
 type FileUploadCardProps = {
   title: string;
   description: string;
-  status: "loaded" | "upload";
+  status: "loaded" | "upload" | "loading";
   icon: ReactNode;
   onUpload?: (file: File) => void;
   fileName?: string;
@@ -50,6 +50,11 @@ const FileUploadCard = ({
           <div className="flex items-center gap-2 rounded-full border border-green-300 bg-green-50 px-3 py-1.5 text-xs text-green-700">
             <CheckCircle size={15} />
             LOADED
+          </div>
+        ) : status === "loading" ? (
+          <div className="flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-700">
+            <Loader2 size={15} className="animate-spin" />
+            UPLOADING
           </div>
         ) : (
           <>

@@ -11,6 +11,7 @@ import {
   axiosDocumentTranslator,
   axiosCCTVService,
   axiosEdge,
+  axiosPricingAnalytics,
 } from "./axiosInstances";
 
 import { setInterceptors } from "./axiosConfig";
@@ -29,6 +30,7 @@ import { setInterceptors } from "./axiosConfig";
   axiosDocumentTranslator,
   axiosCCTVService,
   axiosEdge,
+  axiosPricingAnalytics
 ].forEach(setInterceptors);
 
 // Reusable wrapper for standard HTTP methods
@@ -66,3 +68,4 @@ export async function redirectToLogin(): Promise<void> {
   window.location.href = `/`;
   localStorage.clear();
 }
+export const PricingAnalyticsAPI = createAPI(axiosPricingAnalytics);

@@ -98,16 +98,28 @@ const PricingAnalyst = lazy(
   () => import("./pages/pricing_analytics_service/components/PricingAnalyst.tsx")
 );
 const OverallMargin = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/OverallMargin")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/OverallMargin.tsx")
 );
 const Classification = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/Classification")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/Classification.tsx")
 );
 const Skycraper = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/Skycraper")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/Skycraper.tsx")
 );
 const DispersionView = lazy(
-  () => import("./pages/pricing_analytics_service/pages/ceo/DispersionView")
+  () => import("./pages/pricing_analytics_service/components/ceo/components/DispersionView.tsx")
+);
+const OverallMarginTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/OverallMarginTab.tsx")
+);
+const SkyscraperTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/SkyscraperTab.tsx")
+);
+const QoqMatrixTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/QoqMatrixTab.tsx")
+);
+const SkuDrillDownTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/SkuDrillDownTab.tsx")
 );
 
 
@@ -216,7 +228,12 @@ const App = () => (
           <Route path="skycraper" element={<Skycraper />} />
           <Route path="dispersion-view" element={<DispersionView />} />
         </Route>
-        <Route path="analyst" element={<PricingAnalyst />} />
+        <Route path="analyst" element={<PricingAnalyst />}>
+          <Route path="overall-margin" element={<OverallMarginTab />} />
+          <Route path="skyscraper" element={<SkyscraperTab />} />
+          <Route path="qoq-matrix" element={<QoqMatrixTab />} />
+          <Route path="sku-drill-down" element={<SkuDrillDownTab />} />
+        </Route>
       </Route>
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>

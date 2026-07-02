@@ -19,7 +19,7 @@ const SettingsSidebar = () => {
   const isCeo = pathname.includes("/ceo");
   const dashboardPath = isCeo
     ? `${SETTINGS_BASE}/ceo/overall-margin`
-    : `${SETTINGS_BASE}/analyst`;
+    : `${SETTINGS_BASE}/analyst/overall-margin`;
 
   const sidebarItems = [
     {
