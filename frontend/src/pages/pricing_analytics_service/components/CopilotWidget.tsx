@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Maximize2,
   ArrowUpRight,
   Settings,
   RotateCcw,
   X,
-  Camera,
+  Paperclip,
   Send,
   Sparkles,
 } from "lucide-react";
@@ -38,6 +38,25 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
   const [inputVal, setInputVal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const chatMutation = useSendLLMChat();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSend = async () => {
     if (!inputVal.trim() || isLoading) return;
@@ -45,10 +64,15 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
     setInputVal("");
     setIsLoading(true);
 
+    const attachmentPrefix = selectedFile ? `[Attached: ${selectedFile.name}] ` : "";
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), sender: "user", content: userQuery },
+      { id: Date.now(), sender: "user", content: `${attachmentPrefix}${userQuery}` },
     ]);
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
 
     try {
       const data = await chatMutation.mutateAsync({
@@ -90,7 +114,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
       {/* 1. Header Bar */}
       <div className="flex items-center justify-between px-4 py-3.5 bg-[#1a1c1e] border-b border-[#202226]">
         <div className="flex items-center gap-2">
-          <Sparkles className="text-violet-400" size={16} />
+          <Sparkles className="text-[#ED3438]" size={16} />
           <span className="text-sm font-bold tracking-tight">GIA LLM Co-pilot</span>
         </div>
         <div className="flex items-center gap-3 text-gray-400">
@@ -186,7 +210,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
                       const isInline = !className || !match;
                       return isInline ? (
                         <code
-                          className="rounded bg-gray-800 px-1 py-0.5 text-sm text-pink-400"
+                          className="rounded bg-gray-800 px-1 py-0.5 text-sm text-[#ED3438]"
                           {...props}
                         >
                           {children}
@@ -207,7 +231,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
             );
           } else if (msg.sender === "user") {
             return (
-              <div key={msg.id} className="max-w-[85%] bg-[#2d283e] border border-[#3e3952] text-gray-150 text-xs py-3 px-4 rounded-xl leading-relaxed self-end">
+              <div key={msg.id} className="max-w-[85%] bg-[#ED3438]/15 border border-[#ED3438]/35 text-gray-150 text-xs py-3 px-4 rounded-xl leading-relaxed self-end">
                 {msg.content}
               </div>
             );
@@ -234,25 +258,48 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
       </div>
 
       {/* 4. Footer Input Bar */}
-      <div className="p-3 bg-[#131517] border-t border-[#202226] flex items-center gap-2">
-        <button className="p-2.5 bg-[#1c1f22] hover:bg-[#252a2d] border border-[#2d3135] rounded-lg text-gray-400 hover:text-white transition-colors">
-          <Camera size={15} />
-        </button>
-        <div className="flex-1 relative flex items-center">
+      <div className="p-3 bg-[#131517] border-t border-[#202226] flex flex-col gap-2">
+        {selectedFile && (
+          <div className="flex items-center justify-between bg-[#1c1f22] border border-[#2d3135] px-3 py-1.5 rounded-lg text-xs text-gray-300">
+            <div className="flex items-center gap-2 truncate">
+              <Paperclip size={12} className="text-[#ED3438] shrink-0" />
+              <span className="truncate">{selectedFile.name}</span>
+              <span className="text-[10px] text-gray-500 shrink-0">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+            </div>
+            <button onClick={handleRemoveFile} className="text-gray-400 hover:text-white transition-colors pl-2 shrink-0">
+              <X size={12} />
+            </button>
+          </div>
+        )}
+        <div className="flex items-center gap-2 w-full">
           <input
-            type="text"
-            placeholder="Ask or paste an image (Ctrl+V)..."
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            className="w-full bg-[#1c1f22] border border-[#2d3135] rounded-lg pl-3 pr-12 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-[#a61c1e] font-medium"
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
           />
           <button
-            onClick={handleSend}
-            className="absolute right-1.5 p-1.5 bg-violet-500 hover:bg-violet-650 text-white rounded-md transition-colors"
+            onClick={handleAttachmentClick}
+            className="p-2.5 bg-[#1c1f22] hover:bg-[#252a2d] border border-[#2d3135] rounded-lg text-gray-400 hover:text-white transition-colors shrink-0"
           >
-            <Send size={12} />
+            <Paperclip size={15} />
           </button>
+          <div className="flex-1 relative flex items-center">
+            <input
+              type="text"
+              placeholder="Ask or paste an image (Ctrl+V)..."
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              className="w-full bg-[#1c1f22] border border-[#2d3135] rounded-lg pl-3 pr-12 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-[#ED3438] font-medium"
+            />
+            <button
+              onClick={handleSend}
+              className="absolute right-1.5 p-1.5 bg-[#ED3438] hover:bg-red-700 text-white rounded-md transition-colors"
+            >
+              <Send size={12} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
