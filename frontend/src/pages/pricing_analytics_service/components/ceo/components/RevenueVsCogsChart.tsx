@@ -19,29 +19,45 @@ ChartJS.register(
   Legend
 );
 
-const RevenueVsCogsChart = () => {
-  const data = {
-    labels: [
-      "Q1 FY 24",
-      "Q1 FY 25",
-      "Q2 FY 25",
-      "Q3 FY 25",
-      "Q4 FY 25",
-      "Q1 FY 26",
-      "Q2 FY 26",
-      "Q3 FY 26",
-      "Q4 FY 26",
-    ],
+interface RevenueVsCogsChartProps {
+  data?: Array<{
+    quarter: string;
+    revenue_inr: number;
+    cogs_inr: number;
+  }>;
+}
+
+const RevenueVsCogsChart = ({ data: apiData }: RevenueVsCogsChartProps) => {
+  const sortQuarters = (a: string, b: string) => {
+    const matchA = a.match(/Q(\d) /);
+    const matchB = b.match(/Q(\d) /);
+    const yearA = a.match(/FY (\d+)/);
+    const yearB = b.match(/FY (\d+)/);
+    if (!matchA || !matchB || !yearA || !yearB) return 0;
+    const qA = parseInt(matchA[1]);
+    const yA = parseInt(yearA[1]);
+    const qB = parseInt(matchB[1]);
+    const yB = parseInt(yearB[1]);
+    if (yA !== yB) return yA - yB;
+    return qA - qB;
+  };
+
+  if (!apiData || apiData.length === 0) return null;
+  
+  const sortedApiData = [...apiData].sort((a, b) => sortQuarters(a.quarter, b.quarter));
+
+  const chartData = {
+    labels: sortedApiData.map((item) => item.quarter),
     datasets: [
       {
         label: "Revenue",
-        data: [18.5, 17.2, 18.9, 19.5, 24.1, 16.2, 20.7, 21.0, 21.8],
+        data: sortedApiData.map((item) => item.revenue_inr / 10000000),
         backgroundColor: "#b91c1c", // Red-orange
         borderRadius: 4,
       },
       {
         label: "COGS",
-        data: [9.3, 8.8, 9.1, 9.6, 12.6, 8.2, 10.0, 10.1, 10.4],
+        data: sortedApiData.map((item) => item.cogs_inr / 10000000),
         backgroundColor: "#ea580c", // Orange
         borderRadius: 4,
       },
@@ -105,7 +121,7 @@ const RevenueVsCogsChart = () => {
       </div>
 
       <div className="h-64">
-        <Bar data={data} options={options} />
+        <Bar data={chartData} options={options} />
       </div>
     </div>
   );

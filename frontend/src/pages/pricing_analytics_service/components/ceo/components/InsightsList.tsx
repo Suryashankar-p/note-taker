@@ -1,41 +1,21 @@
 import React from "react";
-
-const InsightsList = () => {
-  const topInsights = [
-    {
-      num: 1,
-      text: "Heating GM improved +0.3% vs Q3 FY 26 (51.9% → 52.2%) — about -3.2 pp from revenue mix and +3.5 pp from margin rate. Large-share families below PMA: HE (Coil) (20.7% share, -11.7%); Valve 1 (0.9% share, -0.1%).",
-    },
-    {
-      num: 2,
-      text: "Fan Spares added the most to portfolio GM QoQ (+1.4 pp net: 0.0 mix, 1.4 margin) — now 2.7% of Q4 FY 26 revenue.",
-    },
-    {
-      num: 3,
-      text: "He (Shell) leads on target beat (+12.3%, 64.3% actual on 0.4% of quarter revenue).",
-    },
-    {
-      num: 4,
-      text: "HE (Coil) gained the most revenue share (+2.5 pp vs Q3 FY 26, now 20.7% of heating) at 51.7% GM.",
-    },
-    {
-      num: 5,
-      text: "Revenue mix is 42% standard / 58% non-standard; standard runs 3.3 pp higher GM — where share moves next quarter will steer the headline number.",
-    },
-  ];
+type Props = {
+  data: string[]
+}
+const InsightsList = ({ data }: Props) => {
+  console.log(data)
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Insights */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase mb-4">
           Top Insights — Q4 FY 26
         </h3>
         <div className="flex flex-col gap-3">
-          {topInsights.map((item) => (
-            <div key={item.num} className="flex gap-3 text-xs leading-relaxed text-gray-600">
-              <span className="text-[#a61c1e] font-bold">{item.num}.</span>
-              <p>{item.text}</p>
+          {data?.map((item, index) => (
+            <div key={index} className="flex gap-3 text-xs leading-relaxed text-gray-600">
+              <span className="text-[#a61c1e] font-bold">{index + 1}.</span>
+              <p>{item}</p>
             </div>
           ))}
         </div>
