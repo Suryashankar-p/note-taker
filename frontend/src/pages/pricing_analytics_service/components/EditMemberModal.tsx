@@ -119,9 +119,9 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200"
+                  className="flex h-20 w-20 items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <img src={CloseIcon} alt="close" className="w-5 h-5 text-gray-500" />
+                  <img src={CloseIcon} alt="close" className="w-16 h-16 text-gray-500" />
                 </button>
               </div>
 

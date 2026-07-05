@@ -13,6 +13,7 @@ import EditMemberIcon from "../../../assets/edit.svg";
 import DeleteMemberIcon from "../../../assets/delete.svg";
 import AddMemberModal from "../components/AddNewMemberModal";
 import EditMemberModal from "../components/EditMemberModal";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { useGetMembersList, useDeleteMember } from "../services/query/query";
 import { useInfiniteScroll } from "../../../services/hooks/useInfiniteScroll";
 
@@ -20,11 +21,16 @@ const MembersSection = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<{
     id: string;
     name: string;
     email: string;
     role: string;
+  } | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<{
+    id: string;
+    name: string;
   } | null>(null);
 
   const { mutate: deleteMember } = useDeleteMember();
@@ -55,14 +61,26 @@ const MembersSection = () => {
     setEditOpen(true);
   };
 
-  const handleDelete = (memberId: string) => {
-    if (window.confirm("Are you sure you want to delete this member?")) {
-      deleteMember(memberId, {
+  const handleDelete = (member: {
+    id: string;
+    name: string;
+  }) => {
+    setMemberToDelete(member);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (memberToDelete) {
+      deleteMember(memberToDelete.id, {
         onSuccess: () => {
           console.log("Member deleted successfully");
+          setDeleteOpen(false);
+          setMemberToDelete(null);
         },
         onError: (err) => {
           console.log("Error deleting member:", err);
+          setDeleteOpen(false);
+          setMemberToDelete(null);
         },
       });
     }
@@ -169,7 +187,7 @@ const MembersSection = () => {
                                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150 ${
                                   focus ? "bg-red-600 text-white" : "text-gray-700 hover:bg-gray-50"
                                 }`}
-                                onClick={() => handleDelete(member.id)}
+                                onClick={() => handleDelete({ id: member.id, name: member.name })}
                               >
                                 <img src={DeleteMemberIcon} alt="delete" className={`h-5 w-5 ${focus ? 'text-white' : 'text-gray-500'}`} />
                                 <span className="text-sm font-medium">
@@ -199,7 +217,7 @@ const MembersSection = () => {
             )}
           </tbody>
         </table>
-        <div
+        {/* <div
           ref={loadMoreRef}
           className="h-12 flex justify-center items-center"
         >
@@ -212,7 +230,7 @@ const MembersSection = () => {
               <span className="text-sm font-medium">Loading more members...</span>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
 
       <AddMemberModal open={open} onClose={() => setOpen(false)} />
@@ -223,6 +241,15 @@ const MembersSection = () => {
           setSelectedMember(null);
         }}
         member={selectedMember}
+      />
+      <DeleteConfirmationModal
+        open={deleteOpen}
+        onClose={() => {
+          setDeleteOpen(false);
+          setMemberToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        memberName={memberToDelete?.name}
       />
     </div>
   );
