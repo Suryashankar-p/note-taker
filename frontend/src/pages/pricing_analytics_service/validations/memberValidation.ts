@@ -1,0 +1,11 @@
+import { z } from "zod";
+
+export const memberSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+
+  role: z.string().min(1, "Role is required"),
+});
+
+export type MemberFormData = z.infer<typeof memberSchema>;
