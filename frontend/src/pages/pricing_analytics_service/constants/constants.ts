@@ -47,3 +47,8 @@ export const pricingAnalyticsServicesettingsBreadCrumbs = [
     url: "/ai-studio/pas/settings/members",
   },
 ];
+
+export const roles = [
+  { id: 1, name: "Member", value: "MEMBER" },
+  { id: 2, name: "Owner", value: "OWNER" },
+];
