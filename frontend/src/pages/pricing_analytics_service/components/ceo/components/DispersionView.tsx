@@ -20,6 +20,12 @@ const DispersionView = () => {
     }
   }, [sortedQuarters, selectedQuarter]);
 
+  useEffect(() => {
+    if (data?.families && data.families.length > 0 && !selectedFamily) {
+      setSelectedFamily(data.families[0].nk);
+    }
+  }, [data?.families, selectedFamily]);
+
   const isInitialLoading = isLoading && !data;
 
   if (isInitialLoading) {

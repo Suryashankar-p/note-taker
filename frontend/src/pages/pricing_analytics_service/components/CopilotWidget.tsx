@@ -80,11 +80,19 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
     const mode = currentPath.includes("/analyst") ? "pricing_analyst" : "ceo_cfo";
     const sessionId = Number(localStorage.getItem("pricing_session_id")) || 16;
 
+    const chatHistory = messages
+      .filter((msg) => msg.sender === "user" || msg.sender === "system")
+      .map((msg) => ({
+        role: (msg.sender === "user" ? "user" : "assistant") as "user" | "assistant",
+        content: msg.content,
+      }));
+
     try {
       const data = await chatMutation.mutateAsync({
         query: userQuery,
         mode: mode,
         session_id: sessionId,
+        history: chatHistory,
       });
 
       let replyText = "";

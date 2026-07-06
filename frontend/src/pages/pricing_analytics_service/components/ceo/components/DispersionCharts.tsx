@@ -68,29 +68,34 @@ const DispersionCharts = ({
 
   const hasData = familyDispersion && familyDispersion.family_nk !== "null";
 
-  const curvesList = Array.isArray(familyDispersion?.density_curves)
-    ? familyDispersion.density_curves
-    : [];
-
   const dispersionCurveData = {
-    datasets: curvesList.map((curve: any) => {
-      let color = "#94a3b8";
-      if (curve.name.toLowerCase().includes("current")) {
-        color = "#a61c1e";
-      } else if (curve.name.toLowerCase().includes("prior")) {
-        color = "#0ea5e9";
-      }
+    datasets: familyDispersion?.density_curves && !Array.isArray(familyDispersion.density_curves)
+      ? Object.entries(familyDispersion.density_curves).map(([key, pointsArray]: [string, any]) => {
+          let color = "#94a3b8";
+          if (key.toLowerCase().includes("current")) {
+            color = "#a61c1e";
+          } else if (key.toLowerCase().includes("prior")) {
+            color = "#0ea5e9";
+          }
 
-      return {
-        label: curve.name,
-        data: (curve.points || []).map((p: any) => ({ x: p.x, y: p.y })),
-        borderColor: color,
-        borderWidth: 2,
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-      };
-    }),
+          const nameMap: Record<string, string> = {
+            baseline: "Baseline",
+            prior_quarter: "Prior Quarter",
+            current_quarter: "Current Quarter"
+          };
+          const label = nameMap[key] || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+          return {
+            label,
+            data: pointsArray,
+            borderColor: color,
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+          };
+        })
+      : [],
   };
 
   const trendRows = familyDispersion?.trend || [];

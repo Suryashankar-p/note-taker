@@ -213,6 +213,7 @@ export const useSendLLMChat = () => {
       query: string;
       mode: string;
       session_id: number;
+      history?: Array<{ role: "user" | "assistant"; content: string }>;
     }) => {
       const response = await PricingAnalyticsAPI.post(
         "/llm/chat",
