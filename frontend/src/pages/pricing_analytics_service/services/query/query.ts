@@ -170,6 +170,14 @@ export const useGetSkyscraper = (sessionId: number) => {
         { session_id: sessionId }
       );
       const transformed: Record<string, any> = {};
+      
+      Object.defineProperty(transformed, "byQuarter", {
+        value: {} as Record<string, any>,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      });
+
       if (response && response.quarters) {
         response.quarters.forEach((q: any) => {
           const targetBars = q.vs_target?.bars || [];
@@ -182,13 +190,29 @@ export const useGetSkyscraper = (sessionId: number) => {
             }
           });
 
-          transformed[q.quarter] = targetBars.map((tBar: any) => {
+          const mergedBars = targetBars.map((tBar: any) => {
             const nk = tBar.family_nk?.toLowerCase();
             return {
               ...tBar,
               ref_gm_pct: nk ? baselineRefMap.get(nk) ?? tBar.ref_gm_pct : tBar.ref_gm_pct,
             };
           });
+
+          transformed[q.quarter] = mergedBars;
+
+          transformed.byQuarter[q.quarter] = {
+            bars: mergedBars,
+            insights: q.insights || [],
+            vs_target: {
+              above_target: q.vs_target?.above_target ?? 0,
+              below_target: q.vs_target?.below_target ?? 0,
+              at_target: q.vs_target?.at_target ?? 0,
+            },
+            vs_baseline: {
+              above_baseline: q.vs_baseline?.above_baseline ?? 0,
+              below_baseline: q.vs_baseline?.below_baseline ?? 0,
+            }
+          };
         });
       }
       return transformed;

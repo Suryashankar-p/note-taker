@@ -77,6 +77,7 @@ const SkyscraperTab = () => {
         families={processedFamilies}
         selectedQuarter={activeQuarter}
         compareVs={compareVs}
+        insights={data?.byQuarter?.[activeQuarter]?.insights}
       />
 
       <SkyscraperTable families={processedFamilies} selectedQuarter={activeQuarter} />
