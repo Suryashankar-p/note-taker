@@ -13,6 +13,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { useSendLLMChat } from "../services/query/query";
+import { useLocation } from "react-router-dom";
 
 interface CopilotWidgetProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ interface MessageItem {
 }
 
 const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
+  const location = useLocation();
   const [messages, setMessages] = useState<MessageItem[]>([
     {
       id: 1,
@@ -74,11 +76,15 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
       fileInputRef.current.value = "";
     }
 
+    const currentPath = location.pathname;
+    const mode = currentPath.includes("/analyst") ? "pricing_analyst" : "ceo_cfo";
+    const sessionId = Number(localStorage.getItem("pricing_session_id")) || 16;
+
     try {
       const data = await chatMutation.mutateAsync({
         query: userQuery,
-        mode: "ceo_cfo",
-        session_id: 16,
+        mode: mode,
+        session_id: sessionId,
       });
 
       let replyText = "";
