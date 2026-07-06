@@ -72,12 +72,22 @@ export const ReadChatHistories = async (
 export const CreateChatHistory = async (
   query: string,
   chat_id: string,
-  files?: File[]
+  files?: File[],
+  mode?: string,
+  file_id?: string
 ) => {
   const formData = new FormData();
   const token = localStorage.getItem("access_token");
 
   formData.append("human", query);
+
+  if (mode) {
+    formData.append("mode", mode);
+  }
+
+  if (file_id) {
+    formData.append("file_id", file_id);
+  }
 
   if (files && files.length > 0) {
     files.forEach((file) => {
@@ -295,7 +305,9 @@ export const CreateChatHistoryStream = async (
   chat_id: string,
   files?: File[],
   model?: string,
-  thinking?: boolean
+  thinking?: boolean,
+  mode?: string,
+  file_id?: string
 ) => {
   const formData = new FormData();
 
@@ -314,6 +326,14 @@ export const CreateChatHistoryStream = async (
 
   if (actualThinking !== undefined) {
     formData.append("thinking", actualThinking ? "true" : "false");
+  }
+
+  if (mode) {
+    formData.append("mode", mode);
+  }
+
+  if (file_id) {
+    formData.append("file_id", file_id);
   }
 
   if (files && files.length > 0) {
@@ -376,6 +396,54 @@ export const ReadFile = async (
     {
       responseType: "blob",
     }
+  );
+
+  return response;
+};
+
+export const GetStreamChatHistory = async (
+  chat_id: string,
+  chat_history_id: string,
+  thinking: boolean = false,
+  is_file: boolean = false
+) => {
+  const response = await GPTAPI.get(
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history/stream?chat_history_id=${chat_history_id}&thinking=${thinking}&is_file=${is_file}`
+  );
+  return response;
+};
+
+export const CreateQueryModeChatHistory = async (
+  query: string,
+  chat_id: string,
+  file_id: string,
+  model?: string,
+  thinking?: boolean
+) => {
+  const formData = new FormData();
+
+  formData.append("human", query);
+  formData.append("mode", "query");
+  formData.append("file_id", file_id);
+
+  if (model) {
+    formData.append("model", model);
+  }
+
+  let actualThinking = thinking;
+  if (model === "Sonnet 4.6") {
+    actualThinking = true;
+  } else if (model === "GPT 5.4") {
+    actualThinking = false;
+  }
+
+  if (actualThinking !== undefined) {
+    formData.append("thinking", actualThinking ? "true" : "false");
+  }
+
+  const response = await GPTAPI.post(
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/chat/${chat_id}/chat_history/`,
+    formData
   );
 
   return response;

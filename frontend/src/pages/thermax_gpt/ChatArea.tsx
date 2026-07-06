@@ -445,6 +445,7 @@ const ChatArea: React.FC<Props> = ({
 
   const [aiProvider, setAiProvider] = useState("GPT 5.4");
   const [isThinking, setIsThinking] = useState(false);
+  const [queryFileId, setQueryFileId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (currentChatType === "Sonnet 4.6") {
@@ -738,6 +739,105 @@ const ChatArea: React.FC<Props> = ({
       eventSourceRef.current = null;
     };
   };
+
+  const startPolling = (
+    statusUrl: string, 
+    fileId: string, 
+    isNewChat: boolean, 
+    newChatId?: string,
+    pendingQuery?: string,
+    localMessagesToPass?: any[],
+    effectiveThinkingToPass?: boolean
+  ) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const backendBase = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL as string;
+        let finalUrl = statusUrl;
+        if (!statusUrl.startsWith('http')) {
+           const urlObj = new URL(backendBase);
+           finalUrl = `${urlObj.origin}${statusUrl.startsWith('/') ? '' : '/'}${statusUrl}`;
+        }
+        const token = localStorage.getItem('access_token');
+        const statusResponse = await fetch(finalUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        });
+        const statusData = await statusResponse.json();
+        console.log("Current ingestion status:", statusData.status);
+        if (statusData.status === "completed") {
+          clearInterval(pollInterval);
+          console.log("File ingested successfully! Summary:", statusData.summary);
+          setQueryFileId(fileId);
+          dispatch.toast.openToast({
+            status: true,
+            message: "File ingested successfully! You can now ask questions.",
+            type: "success",
+          });
+          setPageError(false);
+          
+          if (pendingQuery) {
+            setStreamingStatus("thinking");
+            try {
+              const streamResponse = await CreateChatHistoryStream(
+                pendingQuery,
+                newChatId || chat_id || "",
+                [],
+                aiProvider,
+                effectiveThinkingToPass || false,
+                "query",
+                fileId
+              );
+              const streamId = streamResponse?.id || streamResponse?.chat_history_id;
+              if (streamId) {
+                startStreaming(newChatId || chat_id || "", streamId, localMessagesToPass || [], isNewChat, effectiveThinkingToPass, false);
+              } else {
+                setLoading(false);
+                dispatch.toast.openToast({
+                  status: true,
+                  message: streamResponse?.detail || "Failed to create chat history",
+                  type: "error",
+                });
+                if (isNewChat && newChatId) {
+                  navigate(`/ai-studio/thermax_gpt?chat_id=${newChatId}`);
+                  onNewChatAdditionRef.current();
+                } else {
+                  await getPageChat();
+                }
+              }
+            } catch (error) {
+              setLoading(false);
+              setPageError(true);
+            }
+          } else {
+            setLoading(false);
+            if (isNewChat && newChatId) {
+              navigate(`/ai-studio/thermax_gpt?chat_id=${newChatId}`);
+              onNewChatAdditionRef.current();
+            } else {
+              await getPageChat();
+            }
+          }
+        } else if (statusData.status === "failed") {
+          clearInterval(pollInterval);
+          console.error("Ingestion failed:", statusData.message);
+          setLoading(false);
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: "Ingestion failed: " + (statusData.message || "Unknown error"),
+            type: "error",
+          });
+        }
+      } catch (error) {
+        console.error("Error checking status:", error);
+        clearInterval(pollInterval);
+        setLoading(false);
+        setPageError(true);
+      }
+    }, 3000);
+  };
+
   // Handle successful stream completion
   const handleStreamEnd = async (
     data: any,
@@ -826,6 +926,19 @@ const ChatArea: React.FC<Props> = ({
 
     const localMessages = [...chatContent, ...localFiles];
 
+    let mode: string | undefined = undefined;
+    let fileIdToSend: string | undefined = undefined;
+
+    if (localFiles?.length > 0) {
+      const isLargeFile = localFiles.some((f) => f.file_size > 10 * 1024 * 1024);
+      if (isLargeFile) {
+        mode = "ingest";
+      }
+    } else if (queryFileId) {
+      mode = "query";
+      fileIdToSend = queryFileId;
+    }
+
     try {
       if (chat_id) {
         let chatResponse;
@@ -838,10 +951,21 @@ const ChatArea: React.FC<Props> = ({
             chat_id,
             uploadedFiles,
             aiProvider,
-            effectiveThinking
+            effectiveThinking,
+            mode,
+            fileIdToSend
           );
-          if (streamResponse?.id) {
-            startStreaming(chat_id, streamResponse.id, localMessages, false, effectiveThinking, isFile);
+          if (streamResponse?.status_url) {
+            dispatch.toast.openToast({
+              status: true,
+              message: "File is processing in the background...",
+              type: "success",
+            });
+            startPolling(streamResponse.status_url, streamResponse.file_id, false, undefined, inputValue, localMessages, effectiveThinking);
+            return;
+          } else if (streamResponse?.id || streamResponse?.chat_history_id) {
+            const streamId = streamResponse.id || streamResponse.chat_history_id;
+            startStreaming(chat_id, streamId, localMessages, false, effectiveThinking, isFile);
             return; // Exit early for streaming
           } else {
             dispatch.toast.openToast({
@@ -910,13 +1034,24 @@ const ChatArea: React.FC<Props> = ({
                 newSessionResponse.id,
                 uploadedFiles,
                 aiProvider,
-                effectiveThinking
+                effectiveThinking,
+                mode,
+                fileIdToSend
               );
 
-              if (streamResponse?.id) {
+              if (streamResponse?.status_url) {
+                dispatch.toast.openToast({
+                  status: true,
+                  message: "File is processing in the background...",
+                  type: "success",
+                });
+                startPolling(streamResponse.status_url, streamResponse.file_id, true, newSessionResponse.id, inputValue, localMessages, effectiveThinking);
+                return;
+              } else if (streamResponse?.id || streamResponse?.chat_history_id) {
+                const streamId = streamResponse.id || streamResponse.chat_history_id;
                 startStreaming(
                   newSessionResponse.id,
-                  streamResponse.id,
+                  streamId,
                   localFiles,
                   true,
                   effectiveThinking,
