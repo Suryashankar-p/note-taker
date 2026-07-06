@@ -1,6 +1,12 @@
 import React from "react";
 
-const DispersionMovementExamples = () => {
+interface DispersionMovementExamplesProps {
+  setSelectedFamily: (val: string | null) => void;
+}
+
+const DispersionMovementExamples = ({
+  setSelectedFamily,
+}: DispersionMovementExamplesProps) => {
   const examples = [
     {
       category: "GM gone up, Dispersion came down",
@@ -15,6 +21,13 @@ const DispersionMovementExamples = () => {
       items: ["Pressure switch (Commodity)", "Ignition transformer (Commodity)"],
     },
   ];
+
+  const handleFamilyClick = (itemText: string) => {
+    const bracketIdx = itemText.indexOf("(");
+    const displayName = bracketIdx !== -1 ? itemText.substring(0, bracketIdx).trim() : itemText.trim();
+    const nk = displayName.toLowerCase();
+    setSelectedFamily(nk);
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -39,7 +52,11 @@ const DispersionMovementExamples = () => {
               <td className="p-3">
                 <div className="flex flex-wrap gap-2">
                   {ex.items.map((item, itemIdx) => (
-                    <span key={itemIdx} className="bg-gray-100 hover:bg-gray-200 border border-gray-250 px-2.5 py-1 rounded-md text-[11px] font-medium text-gray-700 cursor-pointer transition-colors shadow-xs">
+                    <span
+                      key={itemIdx}
+                      onClick={() => handleFamilyClick(item)}
+                      className="bg-gray-100 hover:bg-gray-200 border border-gray-250 px-2.5 py-1 rounded-md text-[11px] font-medium text-gray-700 cursor-pointer transition-colors shadow-xs"
+                    >
                       {item}
                     </span>
                   ))}

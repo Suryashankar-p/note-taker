@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
 
 export const GetMemberPricingAnalyticsRole = async () => {
@@ -302,5 +302,23 @@ export const useSendLLMChat = () => {
       );
       return response;
     }
+  });
+};
+
+export const useGetDispersion = (sessionId: number, familyNk: string | null) => {
+  return useQuery({
+    queryKey: ["dispersion", sessionId, familyNk],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/dispersion",
+        {
+          session_id: sessionId,
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+        }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+    placeholderData: keepPreviousData,
   });
 };
