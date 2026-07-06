@@ -230,43 +230,67 @@ export const useGetQoqMatrix = (sessionId: number) => {
         { session_id: sessionId }
       );
 
-      // Build a flat family-details lookup keyed by lowercase name/nk
+      // Build a flat family-details lookup keyed by lowercase name/nk,
+      // a familyHistory map keyed by [family_key][quarter],
       // and rebuild the matrix cells as simple string[] (display names)
       // so existing QoqMatrixTab consumption continues to work.
       const familyDetails: Record<string, any> = {};
       const quarterMatrices: Record<string, any> = {};
+      const familyHistory: Record<string, Record<string, any>> = {};
 
       if (response && response.quarters) {
         response.quarters.forEach((qEntry: any) => {
+          const quarter: string = qEntry.quarter;
           const qMatrix: Record<string, Record<string, string[]>> = {};
+
           Object.entries(qEntry.matrix || {}).forEach(([rowKey, cols]: [string, any]) => {
             qMatrix[rowKey] = {};
-            Object.entries(cols).forEach(([colKey, families]: [string, any]) => {
+            Object.entries(cols).forEach(([colKey, cellData]: [string, any]) => {
+              // API returns { count, total_rev, families: [...] } per cell
+              const familiesArr: any[] = Array.isArray(cellData)
+                ? cellData
+                : (cellData?.families ?? []);
+
               const names: string[] = [];
-              (families as any[]).forEach((fam: any) => {
+              familiesArr.forEach((fam: any) => {
                 const displayName = fam.name || fam.display_name || fam.nk;
                 names.push(displayName);
+
                 const lk = displayName.toLowerCase();
-                if (!familyDetails[lk]) {
-                  familyDetails[lk] = fam;
-                }
+                // Keep most-recent-quarter stats in familyDetails
+                familyDetails[lk] = fam;
                 if (fam.nk) familyDetails[fam.nk.toLowerCase()] = fam;
+
+                // Index per-quarter stats for O(1) history lookup
+                if (!familyHistory[lk]) familyHistory[lk] = {};
+                familyHistory[lk][quarter] = fam;
+                if (fam.nk) {
+                  const nkLk = fam.nk.toLowerCase();
+                  if (!familyHistory[nkLk]) familyHistory[nkLk] = {};
+                  familyHistory[nkLk][quarter] = fam;
+                }
               });
               qMatrix[rowKey][colKey] = names;
             });
           });
-          quarterMatrices[qEntry.quarter] = qMatrix;
+          quarterMatrices[quarter] = qMatrix;
         });
       }
 
-      // Return the latest quarter's matrix (same shape as before) plus
-      // the full familyDetails map for all quarters.
-      const quarters = Object.keys(quarterMatrices);
+      const quarters = Object.keys(quarterMatrices).sort((a, b) => {
+        const parseQ = (s: string) => {
+          const m = s.match(/Q(\d)\s+FY\s+(\d+)/);
+          return m ? parseInt(m[2]) * 10 + parseInt(m[1]) : 0;
+        };
+        return parseQ(a) - parseQ(b);
+      });
       const latestQuarter = quarters[quarters.length - 1] || "";
+
       return {
         matrix: quarterMatrices[latestQuarter] || {},
         quarterMatrices,
         familyDetails,
+        familyHistory,
         quarters,
       };
     },
@@ -320,5 +344,77 @@ export const useGetDispersion = (sessionId: number, familyNk: string | null) => 
     },
     enabled: !!sessionId,
     placeholderData: keepPreviousData,
+  });
+};
+
+export interface SkuStandardRow {
+  product_family: string;
+  order_no: string;
+  item_code: string;
+  description: string;
+  list_price?: number;
+  actual_price?: number;
+  price_deviation?: number;
+  list_cost?: number;
+  actual_cost?: number;
+  cost_deviation?: number;
+  [key: string]: unknown;
+}
+
+export interface SkuNonStdRow {
+  product_family: string;
+  order_no: string;
+  item_code: string;
+  description: string;
+  actual_nonstd_margin: number;
+  target_nonstd_margin: number;
+  deviation_pp: number;
+  overall_actual: number;
+  overall_target: number;
+  notional_loss: number;
+  revenue_inr: number;
+}
+
+export interface SkuQuarterData {
+  quarter: string;
+  standard_rows: SkuStandardRow[];
+  nonstd_rows: SkuNonStdRow[];
+}
+
+export const useGetSkuDeviation = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["sku-deviation", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/sku-deviation",
+        { session_id: sessionId }
+      );
+
+      const quarterMap: Record<string, SkuQuarterData> = {};
+      const sortedQuarters: string[] = [];
+
+      if (response && response.quarters) {
+        const parseQ = (s: string) => {
+          const m = s.match(/Q(\d)\s+FY\s+(\d+)/);
+          return m ? parseInt(m[2]) * 10 + parseInt(m[1]) : 0;
+        };
+
+        (response.quarters as SkuQuarterData[])
+          .slice()
+          .sort((a, b) => parseQ(a.quarter) - parseQ(b.quarter))
+          .forEach((qEntry) => {
+            quarterMap[qEntry.quarter] = {
+              quarter: qEntry.quarter,
+              standard_rows: qEntry.standard_rows || [],
+              nonstd_rows: qEntry.nonstd_rows || [],
+            };
+            sortedQuarters.push(qEntry.quarter);
+          });
+      }
+
+      const latestQuarter = sortedQuarters[sortedQuarters.length - 1] || "";
+      return { quarterMap, sortedQuarters, latestQuarter };
+    },
+    enabled: !!sessionId,
   });
 };
