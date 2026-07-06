@@ -172,7 +172,23 @@ export const useGetSkyscraper = (sessionId: number) => {
       const transformed: Record<string, any> = {};
       if (response && response.quarters) {
         response.quarters.forEach((q: any) => {
-          transformed[q.quarter] = q.bars || [];
+          const targetBars = q.vs_target?.bars || [];
+          const baselineBars = q.vs_baseline?.bars || [];
+          
+          const baselineRefMap = new Map<string, number>();
+          baselineBars.forEach((b: any) => {
+            if (b.family_nk) {
+              baselineRefMap.set(b.family_nk.toLowerCase(), b.ref_gm_pct ?? 0);
+            }
+          });
+
+          transformed[q.quarter] = targetBars.map((tBar: any) => {
+            const nk = tBar.family_nk?.toLowerCase();
+            return {
+              ...tBar,
+              ref_gm_pct: nk ? baselineRefMap.get(nk) ?? tBar.ref_gm_pct : tBar.ref_gm_pct,
+            };
+          });
         });
       }
       return transformed;
