@@ -23,9 +23,10 @@ const DispersionMovementExamples = ({
   ];
 
   const handleFamilyClick = (itemText: string) => {
-    const bracketIdx = itemText.indexOf("(");
-    const displayName = bracketIdx !== -1 ? itemText.substring(0, bracketIdx).trim() : itemText.trim();
-    const nk = displayName.toLowerCase();
+    const cleanName = itemText
+      .replace(/\s*\((Value-added|Commodity|Unclassified)\)$/i, "")
+      .trim();
+    const nk = cleanName.toLowerCase();
     setSelectedFamily(nk);
   };
 
