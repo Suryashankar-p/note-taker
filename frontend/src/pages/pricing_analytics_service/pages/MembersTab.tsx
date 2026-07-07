@@ -16,6 +16,10 @@ import EditMemberModal from "../components/EditMemberModal";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { useGetMembersList, useDeleteMember } from "../services/query/query";
 import { useInfiniteScroll } from "../../../services/hooks/useInfiniteScroll";
+import MoreIcon from "../../../assets/more.svg";
+import Toast from "../../../components/Toast";
+import { useDispatch, useSelector } from "react-redux";
+import { Dispatch, RootState } from "../../../redux/store";
 
 const MembersSection = () => {
   const [search, setSearch] = useState("");
@@ -33,7 +37,9 @@ const MembersSection = () => {
     name: string;
   } | null>(null);
 
-  const { mutate: deleteMember } = useDeleteMember();
+  const { mutate: deleteMember, isPending: isDeleting } = useDeleteMember();
+  const dispatch = useDispatch<Dispatch>();
+  const toastStatus = useSelector((state: RootState) => state.toast);
 
   const payload = {
     limit: 10,
@@ -77,8 +83,9 @@ const MembersSection = () => {
           setDeleteOpen(false);
           setMemberToDelete(null);
         },
-        onError: (err) => {
-          console.log("Error deleting member:", err);
+        onError: (err: any) => {
+          const message = err?.response?.data?.detail || err?.message || "Failed to delete member. Please try again.";
+          dispatch.toast.openToast({ status: true, message, type: "error" });
           setDeleteOpen(false);
           setMemberToDelete(null);
         },
@@ -158,7 +165,7 @@ const MembersSection = () => {
                         className="relative inline-block text-left"
                       >
                         <MenuButton className="rounded-lg p-2 hover:bg-gray-100 transition-colors duration-150">
-                          <img src={EditIcon} alt="edit" className="w-4 h-4 text-gray-500 hover:text-[#e03639] transition-colors duration-150" />
+                          <img src={MoreIcon} alt="more" className="w-4 h-4 text-gray-500 hover:text-[#e03639] transition-colors duration-150" />
                         </MenuButton>
 
                         <MenuItems
@@ -250,7 +257,15 @@ const MembersSection = () => {
         }}
         onConfirm={confirmDelete}
         memberName={memberToDelete?.name}
+        loading={isDeleting}
       />
+
+      {toastStatus?.status && toastStatus?.type === "error" && (
+        <Toast type="error" />
+      )}
+      {toastStatus?.status && toastStatus?.type === "success" && (
+        <Toast type="success" />
+      )}
     </div>
   );
 };

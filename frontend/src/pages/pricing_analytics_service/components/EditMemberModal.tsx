@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import {
   Dialog,
   DialogPanel,
@@ -18,6 +19,7 @@ import {
   memberSchema,
 } from "../validations/memberValidation";
 import { useUpdateMember } from "../services/query/query";
+import { Dispatch } from "../../../redux/store";
 
 type Props = {
   open: boolean;
@@ -35,7 +37,8 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
     (typeof roles)[number] | null
   >(null);
 
-  const { mutate } = useUpdateMember();
+  const { mutate, isPending } = useUpdateMember();
+  const dispatch = useDispatch<Dispatch>();
 
   const {
     register,
@@ -78,8 +81,9 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
           onClose();
           reset();
         },
-        onError: (err) => {
-          console.log(err);
+        onError: (err: any) => {
+          const message = err?.message || err?.response?.data?.detail || "Failed to update member. Please try again.";
+          dispatch.toast.openToast({ status: true, message, type: "error" });
         },
       }
     );
@@ -87,7 +91,7 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
 
   return (
     <Transition appear show={open} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={isPending ? () => {} : onClose}>
         <TransitionChild
           as={Fragment}
           enter="ease-out duration-300"
@@ -97,10 +101,10 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40" />
+          <div className="fixed inset-0 bg-[#0061F3]/10" />
         </TransitionChild>
 
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="fixed inset-0 overflow-y-auto flex items-center justify-center p-4">
           <TransitionChild
             as={Fragment}
             enter="ease-out duration-300"
@@ -110,20 +114,21 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl border border-gray-100">
-              <div className="mb-6 flex items-center justify-between">
-                <DialogTitle className="text-2xl font-bold text-[#0D1431]">
-                  Edit Member
-                </DialogTitle>
-
+            <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <DialogTitle
+                as="h3"
+                className="text-[20px] relative text-black font-semibold flex justify-between leading-6 text-gray-900 mb-5"
+              >
+                <span>Edit Member</span>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex h-20 w-20 items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200"
+                  disabled={isPending}
+                  className="absolute -right-2 -top-2 flex items-center justify-center p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <img src={CloseIcon} alt="close" className="w-16 h-16 text-gray-500" />
+                  <img src={CloseIcon} alt="close" className="w-4 h-4" />
                 </button>
-              </div>
+              </DialogTitle>
 
               <form
                 onSubmit={handleSubmit(onSubmit)}
@@ -138,8 +143,9 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
                     <input
                       type="text"
                       placeholder="Enter full name"
+                      disabled={isPending}
                       {...register("name")}
-                      className="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm outline-none transition-all duration-200 focus:border-[#e03639] focus:ring-2 focus:ring-[#e03639]/10 placeholder-gray-400"
+                      className="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm outline-none transition-all duration-200 focus:border-[#0061F3] focus:ring-2 focus:ring-[#0061F3]/10 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     {errors.name && (
                       <p className="mt-1.5 text-sm text-[#e03639] font-medium">
@@ -153,9 +159,9 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
                       Role<span className="text-[#e03639]"> *</span>
                     </label>
 
-                    <Listbox value={selectedRole} onChange={handleRoleChange}>
+                    <Listbox value={selectedRole} onChange={handleRoleChange} disabled={isPending}>
                       <div className="relative">
-                        <Listbox.Button className="flex h-11 w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 text-sm focus:border-[#e03639] focus:ring-2 focus:ring-[#e03639]/10 focus:outline-none transition-all duration-200">
+                        <Listbox.Button className="flex h-11 w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 text-sm focus:border-[#0061F3] focus:ring-2 focus:ring-[#0061F3]/10 focus:outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                           <span className={selectedRole ? "text-gray-900" : "text-gray-400"}>{selectedRole?.name || "Select role"}</span>
 
                           <img src={DropDownIcon} alt="dropdown" className="h-4 w-4 text-gray-500" />
@@ -169,7 +175,7 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
                               className={({ active, selected }) =>
                                 `cursor-pointer px-4 py-2.5 text-sm rounded-md transition-all duration-150 ${
                                   active
-                                    ? "bg-[#e03639] text-white"
+                                    ? "bg-[#0061F3] text-white"
                                     : "text-gray-700 hover:bg-gray-50"
                                 } ${selected ? "font-semibold" : ""}`
                               }
@@ -205,20 +211,32 @@ const EditMemberModal = ({ open, onClose, member }: Props) => {
                   </p>
                 </div>
 
-                <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <div className="mt-6 flex justify-end gap-3">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                    disabled={isPending}
+                    className="inline-flex justify-center rounded-md border border-gray-300 bg-white text-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                   >
                     Cancel
                   </button>
 
                   <button
                     type="submit"
-                    className="rounded-lg bg-[#e03639] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#c92e32] active:bg-[#b0282c] transition-all duration-200 shadow-sm hover:shadow-md"
+                    disabled={isPending}
+                    className="inline-flex justify-center items-center gap-2 rounded-md border border-transparent bg-[#0061F3] px-4 py-2 text-sm font-medium text-white hover:bg-[#004fd1] active:bg-[#003faa] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                   >
-                    Save Changes
+                    {isPending ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
                   </button>
                 </div>
               </form>

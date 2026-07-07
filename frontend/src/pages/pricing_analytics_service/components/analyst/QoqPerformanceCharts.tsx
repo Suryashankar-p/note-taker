@@ -158,7 +158,9 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
     }
   };
 
+
   // Normal distribution curve mockup data
+  /*
   const normalChartData = {
     labels: ["10.0%", "20.0%", "30.0%", "40.0%", "50.0%", "60.0%", "70.0%", "80.0%"],
     datasets: [
@@ -234,6 +236,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
       x: { ticks: { color: "#64748b" }, grid: { display: false } }
     }
   };
+  */
 
   return (
     <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in">
@@ -246,7 +249,6 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         </p>
       </div>
 
-      {/* Combo Chart area */}
       <div className="h-72 bg-slate-50 rounded-xl border border-gray-150 p-5">
         <span className="text-[10px] text-gray-400 font-extrabold uppercase mb-2 block">
           Revenue and GM % by quarter for {selectedFamily}
@@ -256,13 +258,14 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         </div>
       </div>
 
-      {/* 4. GM% Dispersion Analysis */}
+
+      {/* 4. GM% Dispersion Analysis
       <div className="border-t border-gray-150 pt-6 mt-2">
         <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-4">
           GM% dispersion analysis
         </h4>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Normal distribution Chart */}
+          {/* Normal distribution Chart * /}
           <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50">
             <span className="text-[10px] text-gray-400 font-bold uppercase mb-4 block">Normal distribution — GM%</span>
             <div className="h-52">
@@ -270,7 +273,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
             </div>
           </div>
 
-          {/* Confidence Interval Trend Chart */}
+          {/* Confidence Interval Trend Chart * /}
           <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50">
             <span className="text-[10px] text-gray-400 font-bold uppercase mb-4 block">GM% distribution trend — quarter on quarter</span>
             <div className="h-52">
@@ -279,8 +282,9 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
           </div>
         </div>
       </div>
+      */}
 
-      {/* Summary stats */}
+      {/* Summary stats
       <div className="grid grid-cols-5 gap-3 text-center border-t border-gray-150 pt-6">
         <div>
           <span className="text-[9px] text-gray-400 font-bold uppercase">Mean GM%</span>
@@ -303,6 +307,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
           <span className="text-sm font-extrabold text-emerald-600 block mt-1">{selectedDetails.max}</span>
         </div>
       </div>
+      */}
 
       <button
         onClick={onNavigateToSku}

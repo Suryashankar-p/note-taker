@@ -39,13 +39,13 @@ const OverallMarginTab = () => {
       {/* 2. Charts section */}
       <div className="bg-slate-100/50 border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
         <div className="flex items-center justify-between px-2">
-          <CustomSelect
+          {/* <CustomSelect
             options={["All families (109)", "Spares & Fans", "Burners", "Boilers"]}
             value={selectedFamily}
             onChange={setSelectedFamily}
             labelPrefix="Product families: "
             className="text-[#a61c1e] hover:text-[#a61c1e]"
-          />
+          /> */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

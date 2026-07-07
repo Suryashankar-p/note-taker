@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
+import { useMutation, useQuery, useInfiniteQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
 import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData } from "./utils";
 
@@ -73,31 +73,52 @@ export const useGetMembersList = (payload: { limit: number; search_term: string 
 };
 
 export const useCreateMember = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["create-member"],
     mutationFn: async (data: { name: string; email: string; role: string }) => {
       const response = await CreateMember(data.role, data.email, data.name);
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
       return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members-list"] });
     },
   });
 };
 
 export const useUpdateMember = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["update-member"],
     mutationFn: async (data: { member_id: string; name: string; role: string }) => {
       const response = await UpdateMember(data.role, data.name, data.member_id);
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
       return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members-list"] });
     },
   });
 };
 
 export const useDeleteMember = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["delete-member"],
     mutationFn: async (member_id: string) => {
       const response = await DeleteMember(member_id);
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
       return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members-list"] });
     },
   });
 };
