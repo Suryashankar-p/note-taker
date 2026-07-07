@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -23,37 +23,90 @@ ChartJS.register(
   Filler
 );
 
-const DispersionCharts = () => {
+interface DispersionChartsProps {
+  familyDispersion?: {
+    density_curves: Array<{
+      name: string;
+      points: Array<{ x: number; y: number }>;
+    }> | Record<string, any> | null;
+    trend: Array<{
+      quarter: string;
+      mean_gm_pct: number | null;
+      std_dev: number | null;
+      upper_band: number | null;
+      lower_band: number | null;
+    }>;
+    family_nk: string;
+  } | null;
+  families: Array<{
+    nk: string;
+    display: string;
+    classification: string | null;
+  }>;
+  selectedFamily: string | null;
+  setSelectedFamily: (val: string | null) => void;
+  isFetching?: boolean;
+}
+
+const DispersionCharts = ({
+  familyDispersion,
+  families,
+  selectedFamily,
+  setSelectedFamily,
+  isFetching,
+}: DispersionChartsProps) => {
+  const [selectedClassification, setSelectedClassification] = useState<string>("All");
+
+  const classifications = ["All", ...Array.from(new Set(families.map((f) => f.classification).filter(Boolean)))];
+
+  const filteredFamilies = families.filter((f) => {
+    if (selectedClassification === "All") return true;
+    return f.classification === selectedClassification;
+  });
+
+  const selectedFamilyName = families.find((f) => f.nk === selectedFamily)?.display || "No Family Selected";
+
+  const hasData = familyDispersion && familyDispersion.family_nk !== "null";
+
   const dispersionCurveData = {
-    labels: Array.from({ length: 40 }, (_, i) => `${i * 2.5}%`),
-    datasets: [
-      {
-        label: "Baseline",
-        data: Array.from({ length: 40 }, (_, i) => Math.exp(-Math.pow(i - 20, 2) / 45) * 80),
-        borderColor: "#94a3b8",
-        borderWidth: 2,
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-      },
-      {
-        label: "Current Quarter",
-        data: Array.from({ length: 40 }, (_, i) => Math.exp(-Math.pow(i - 23, 2) / 30) * 95),
-        borderColor: "#a61c1e",
-        borderWidth: 2,
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-      },
-    ],
+    datasets: familyDispersion?.density_curves && !Array.isArray(familyDispersion.density_curves)
+      ? Object.entries(familyDispersion.density_curves).map(([key, pointsArray]: [string, any]) => {
+          let color = "#94a3b8";
+          if (key.toLowerCase().includes("current")) {
+            color = "#a61c1e";
+          } else if (key.toLowerCase().includes("prior")) {
+            color = "#0ea5e9";
+          }
+
+          const nameMap: Record<string, string> = {
+            baseline: "Baseline",
+            prior_quarter: "Prior Quarter",
+            current_quarter: "Current Quarter"
+          };
+          const label = nameMap[key] || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+          return {
+            label,
+            data: pointsArray,
+            borderColor: color,
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+          };
+        })
+      : [],
   };
 
+  const trendRows = familyDispersion?.trend || [];
+  const validTrendRows = trendRows.filter((r) => r.mean_gm_pct !== null && r.mean_gm_pct !== undefined);
+
   const trendData = {
-    labels: ["Q1 FY 24", "Q2 FY 24", "Q3 FY 24", "Q4 FY 24", "Q1 FY 25", "Q2 FY 25", "Q3 FY 25", "Q4 FY 25"],
+    labels: validTrendRows.map((r) => r.quarter),
     datasets: [
       {
         label: "Mean GM%",
-        data: [50, 48, 52, 51, 53, 50, 52, 55],
+        data: validTrendRows.map((r) => r.mean_gm_pct),
         borderColor: "#0ea5e9",
         borderWidth: 2.5,
         fill: false,
@@ -62,7 +115,7 @@ const DispersionCharts = () => {
       },
       {
         label: "Confidence Band",
-        data: [55, 53, 57, 56, 58, 55, 57, 60],
+        data: validTrendRows.map((r) => r.upper_band),
         borderColor: "rgba(14, 165, 233, 0.05)",
         backgroundColor: "rgba(14, 165, 233, 0.05)",
         fill: "+1",
@@ -71,7 +124,7 @@ const DispersionCharts = () => {
       },
       {
         label: "Lower Band",
-        data: [45, 43, 47, 46, 48, 45, 47, 50],
+        data: validTrendRows.map((r) => r.lower_band),
         borderColor: "rgba(14, 165, 233, 0.05)",
         fill: false,
         tension: 0.3,
@@ -80,7 +133,33 @@ const DispersionCharts = () => {
     ],
   };
 
-  const chartOptions = {
+  const curveChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top" as const,
+        labels: {
+          boxWidth: 10,
+          font: { size: 9 }
+        }
+      },
+    },
+    scales: {
+      y: {
+        grid: { color: "#e2e8f0" },
+        ticks: { color: "#64748b" },
+      },
+      x: {
+        type: "linear" as const,
+        grid: { display: false },
+        ticks: { color: "#64748b" },
+      },
+    },
+  };
+
+  const trendChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -101,20 +180,38 @@ const DispersionCharts = () => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm relative">
+      {isFetching && (
+        <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all rounded-xl">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-b border-gray-150 pb-4">
-        <h3 className="text-base font-bold text-gray-900">Family-level GM% dispersion — Air nozzle</h3>
+        <h3 className="text-base font-bold text-gray-900">Family-level GM% dispersion — {selectedFamilyName}</h3>
         <div className="flex gap-4">
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Classification</span>
-            <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer">
-              <option>All</option>
+            <select
+              value={selectedClassification}
+              onChange={(e) => setSelectedClassification(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer select-none"
+            >
+              {classifications.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           </div>
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Product Family</span>
-            <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer">
-              <option>Air nozzle</option>
+            <select
+              value={selectedFamily || "null"}
+              onChange={(e) => setSelectedFamily(e.target.value === "null" ? null : e.target.value)}
+              className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer select-none"
+            >
+              <option value="null">-- Select Family --</option>
+              {filteredFamilies.map((f) => (
+                <option key={f.nk} value={f.nk}>{f.display}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -124,15 +221,27 @@ const DispersionCharts = () => {
         <div>
           <h4 className="text-xs font-bold text-gray-700 mb-2">Dispersion curve of gross margins</h4>
           <p className="text-[10px] text-gray-400 mb-4">Baseline vs last vs current quarter - normalized frequency</p>
-          <div className="h-56">
-            <Line data={dispersionCurveData} options={chartOptions} />
+          <div className="h-56 relative">
+            {hasData ? (
+              <Line data={dispersionCurveData} options={curveChartOptions} />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-lg text-center text-xs text-gray-405 p-6">
+                Select a product family above to view gross margin dispersion curves.
+              </div>
+            )}
           </div>
         </div>
         <div>
           <h4 className="text-xs font-bold text-gray-700 mb-2">GM% distribution trend — quarter on quarter</h4>
           <p className="text-[10px] text-gray-400 mb-4">Mean GM% with ±1σ confidence band</p>
-          <div className="h-56">
-            <Line data={trendData} options={chartOptions} />
+          <div className="h-56 relative">
+            {hasData && validTrendRows.length > 0 ? (
+              <Line data={trendData} options={trendChartOptions} />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 rounded-lg text-center text-xs text-gray-405 p-6">
+                Select a product family above to view gross margin distribution trends.
+              </div>
+            )}
           </div>
         </div>
       </div>

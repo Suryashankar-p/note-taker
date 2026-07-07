@@ -1,5 +1,8 @@
-import { useMutation, useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
+import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData } from "./utils";
+
+export * from "./types";
 
 export const GetMemberPricingAnalyticsRole = async () => {
   const response = await PricingAnalyticsAPI.get(
@@ -261,13 +264,7 @@ export const useGetSkyscraper = (sessionId: number) => {
         "/analytics/skyscraper",
         { session_id: sessionId }
       );
-      const transformed: Record<string, any> = {};
-      if (response && response.quarters) {
-        response.quarters.forEach((q: any) => {
-          transformed[q.quarter] = q.bars || [];
-        });
-      }
-      return transformed;
+      return transformSkyscraperData(response);
     },
     enabled: !!sessionId,
   });
@@ -344,6 +341,7 @@ export const useSendLLMChat = () => {
       query: string;
       mode: string;
       session_id: number;
+      history?: Array<{ role: "user" | "assistant"; content: string }>;
     }) => {
       const response = await PricingAnalyticsAPI.post(
         "/llm/chat",
@@ -351,5 +349,37 @@ export const useSendLLMChat = () => {
       );
       return response;
     }
+  });
+};
+
+export const useGetDispersion = (sessionId: number, familyNk: string | null) => {
+  return useQuery({
+    queryKey: ["dispersion", sessionId, familyNk],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/dispersion",
+        {
+          session_id: sessionId,
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+        }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useGetSkuDeviation = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["sku-deviation", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/sku-deviation",
+        { session_id: sessionId }
+      );
+      return transformSkuDeviationData(response);
+    },
+    enabled: !!sessionId,
   });
 };

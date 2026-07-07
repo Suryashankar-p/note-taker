@@ -28,7 +28,7 @@ const OverallMargin = () => {
 
       <RevenueVsCogsChart data={overallData?.revenue_vs_cogs} />
 
-      <HeatingMarginsGrid />
+      <HeatingMarginsGrid data={overallData?.pma_baseline_matrices} />
 
       <ExecutiveSnapshot />
 

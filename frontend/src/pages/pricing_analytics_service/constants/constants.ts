@@ -35,8 +35,8 @@ export const pricingAnalyticsServiceBreadCrumbsWorkspace = [
 export const pricingAnalyticsServiceBreadCrumbs = [
   ...pricingAnalyticsServiceBreadCrumbsWorkspace,
   {
-    title: "Settings",
-    url: "/ai-studio/pas/workspace/dashboard",
+    title: "Dashboard",
+    url: "/ai-studio/pas/workspace",
   },
 ];
 

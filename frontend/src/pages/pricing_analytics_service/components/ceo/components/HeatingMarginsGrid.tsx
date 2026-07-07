@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 interface HeatmapData {
   quarter: string;
@@ -6,107 +6,113 @@ interface HeatmapData {
   grid: { val: string; pct: string; intensity: "none" | "low" | "mid" | "high"; type: "green" | "red" | "neutral" }[][];
 }
 
-const HeatingMarginsGrid = () => {
-  const quartersData: HeatmapData[] = [
-    {
-      quarter: "Q1 FY 26",
-      stats: [
-        { text: "● R: 24/70 (31%)", color: "text-rose-600" },
-        { text: "● A: 38/70 (48%)", color: "text-emerald-600" },
-      ],
-      grid: [
-        [
-          { val: "10", pct: "11%", intensity: "mid", type: "red" },
-          { val: "13", pct: "15%", intensity: "low", type: "neutral" },
-          { val: "15", pct: "21%", intensity: "high", type: "green" },
-        ],
-        [
-          { val: "14", pct: "11%", intensity: "low", type: "neutral" },
-          { val: "10", pct: "15%", intensity: "mid", type: "green" },
-          { val: "3", pct: "2%", intensity: "mid", type: "neutral" },
-        ],
-        [
-          { val: "7", pct: "12%", intensity: "mid", type: "green" },
-          { val: "0", pct: "0%", intensity: "none", type: "neutral" },
-          { val: "2", pct: "2%", intensity: "mid", type: "green" },
-        ],
-      ],
-    },
-    {
-      quarter: "Q2 FY 26",
-      stats: [
-        { text: "● R: 24/70 (31%)", color: "text-rose-600" },
-        { text: "● A: 38/70 (48%)", color: "text-emerald-600" },
-      ],
-      grid: [
-        [
-          { val: "10", pct: "20%", intensity: "high", type: "red" },
-          { val: "15", pct: "25%", intensity: "mid", type: "green" },
-          { val: "12", pct: "9%", intensity: "low", type: "green" },
-        ],
-        [
-          { val: "14", pct: "20%", intensity: "low", type: "neutral" },
-          { val: "10", pct: "11%", intensity: "mid", type: "green" },
-          { val: "4", pct: "6%", intensity: "low", type: "neutral" },
-        ],
-        [
-          { val: "7", pct: "12%", intensity: "mid", type: "green" },
-          { val: "0", pct: "0%", intensity: "none", type: "neutral" },
-          { val: "2", pct: "2%", intensity: "mid", type: "green" },
-        ],
-      ],
-    },
-    {
-      quarter: "Q3 FY 26",
-      stats: [
-        { text: "● R: 23/70 (31%)", color: "text-rose-600" },
-        { text: "● A: 40/70 (52%)", color: "text-emerald-600" },
-      ],
-      grid: [
-        [
-          { val: "11", pct: "11%", intensity: "low", type: "neutral" },
-          { val: "13", pct: "27%", intensity: "mid", type: "green" },
-          { val: "14", pct: "14%", intensity: "high", type: "green" },
-        ],
-        [
-          { val: "8", pct: "27%", intensity: "mid", type: "green" },
-          { val: "12", pct: "12%", intensity: "low", type: "green" },
-          { val: "4", pct: "4%", intensity: "low", type: "neutral" },
-        ],
-        [
-          { val: "8", pct: "4%", intensity: "low", type: "neutral" },
-          { val: "2", pct: "9%", intensity: "low", type: "green" },
-          { val: "0", pct: "0%", intensity: "none", type: "neutral" },
-        ],
-      ],
-    },
-    {
-      quarter: "Q4 FY 26",
-      stats: [
-        { text: "● R: 18/70 (25%)", color: "text-rose-600" },
-        { text: "● A: 48/70 (68%)", color: "text-emerald-600" },
-      ],
-      grid: [
-        [
-          { val: "5", pct: "5%", intensity: "low", type: "red" },
-          { val: "10", pct: "25%", intensity: "mid", type: "green" },
-          { val: "23", pct: "38%", intensity: "high", type: "green" },
-        ],
-        [
-          { val: "11", pct: "11%", intensity: "mid", type: "green" },
-          { val: "12", pct: "22%", intensity: "high", type: "green" },
-          { val: "4", pct: "4%", intensity: "low", type: "green" },
-        ],
-        [
-          { val: "8", pct: "8%", intensity: "mid", type: "green" },
-          { val: "3", pct: "9%", intensity: "mid", type: "green" },
-          { val: "0", pct: "0%", intensity: "none", type: "neutral" },
-        ],
-      ],
-    },
-  ];
+type Props = {
+  data?: any[];
+};
 
-  const getCellBg = (cell: typeof quartersData[0]["grid"][0][0]) => {
+const HeatingMarginsGrid = ({ data }: Props) => {
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+
+  const sortQuarters = (a: string, b: string) => {
+    const matchA = a.match(/Q(\d) /);
+    const matchB = b.match(/Q(\d) /);
+    const yearA = a.match(/FY (\d+)/);
+    const yearB = b.match(/FY (\d+)/);
+    if (!matchA || !matchB || !yearA || !yearB) return 0;
+    const qA = parseInt(matchA[1], 10);
+    const yA = parseInt(yearA[1], 10);
+    const qB = parseInt(matchB[1], 10);
+    const yB = parseInt(yearB[1], 10);
+    if (yA !== yB) return yA - yB;
+    return qA - qB;
+  };
+
+  const getGridColsClass = (numItems: number) => {
+    if (numItems === 1) return "grid-cols-1 max-w-sm mx-auto";
+    if (numItems === 2) return "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto";
+    if (numItems === 3) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto";
+    return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+  };
+
+  const sortedQuarters = (data || [])
+    .map((m: any) => m.quarter)
+    .sort(sortQuarters);
+
+  useEffect(() => {
+    if (sortedQuarters.length > 0 && !selectedQuarter) {
+      setSelectedQuarter(sortedQuarters[sortedQuarters.length - 1]);
+    }
+  }, [sortedQuarters, selectedQuarter]);
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
+      </div>
+    );
+  }
+
+  const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
+  const selectedIdx = sortedQuarters.indexOf(activeQuarter);
+  
+  // Take last 4 quarters ending at selected index
+  const displayedQuartersList = sortedQuarters.slice(
+    Math.max(0, selectedIdx - 3),
+    selectedIdx + 1
+  );
+
+  const quartersData: HeatmapData[] = displayedQuartersList.map((qtr) => {
+    const matrix = data.find((m: any) => m.quarter === qtr);
+    if (!matrix) {
+      return { quarter: qtr, stats: [], grid: [] };
+    }
+
+    const totalRev = matrix.total_rev;
+    const totalFamilies = matrix.total_families;
+
+    const stats = [
+      {
+        text: `● R: ${matrix.group_b.count}/${totalFamilies} (${matrix.group_b.rev_pct}%)`,
+        color: "text-rose-600"
+      },
+      {
+        text: `● A: ${matrix.group_a.count}/${totalFamilies} (${matrix.group_a.rev_pct}%)`,
+        color: "text-emerald-600"
+      }
+    ];
+
+    const grid = matrix.cells.map((row: any[], y: number) =>
+      row.map((cell: any, x: number) => {
+        const val = String(cell.count);
+        const share = totalRev > 0 ? (cell.rev / totalRev) * 100 : 0;
+        const pct = `${Math.round(share)}%`;
+
+        let type: "green" | "red" | "neutral" = "neutral";
+        if (cell.count > 0) {
+          if (x === 0 && (y === 0 || y === 1)) {
+            type = "red";
+          } else if (y === 0 && x === 1) {
+            type = "neutral";
+          } else {
+            type = "green";
+          }
+        }
+
+        let intensity: "none" | "low" | "mid" | "high" = "none";
+        if (cell.count > 0) {
+          if (share >= 15) intensity = "high";
+          else if (share >= 5) intensity = "mid";
+          else intensity = "low";
+        }
+
+        return { val, pct, intensity, type };
+      })
+    );
+
+    return { quarter: qtr, stats, grid };
+  });
+
+  const getCellBg = (cell: HeatmapData["grid"][0][0]) => {
     if (cell.type === "red") {
       if (cell.intensity === "high") return "bg-red-200 border-red-300 text-red-900";
       if (cell.intensity === "mid") return "bg-red-100 border-red-200 text-red-800";
@@ -131,15 +137,23 @@ const HeatingMarginsGrid = () => {
             Heating Spares — PMA target vs baseline by product family
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Window</span>
-          <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer">
-            <option>Q4 FY 26</option>
-          </select>
-        </div>
+        {sortedQuarters.length > 0 && (
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Window</span>
+            <select
+              value={activeQuarter}
+              onChange={(e) => setSelectedQuarter(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer"
+            >
+              {sortedQuarters.map((q: string) => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className={`grid gap-6 ${getGridColsClass(quartersData.length)}`}>
         {quartersData.map((q, idx) => (
           <div key={idx} className="bg-white border border-gray-200 p-4 rounded-xl flex flex-col items-center shadow-xs">
             {/* Quarter Header */}
@@ -152,42 +166,44 @@ const HeatingMarginsGrid = () => {
               ))}
             </div>
 
-            {/* Custom 3x3 Heatmap Grid */}
-            <div className="relative w-full aspect-square max-w-[220px]">
+            {/* Custom Heatmap Grid with Inline Y-Axis Label */}
+            <div className="flex items-center gap-2 w-full max-w-[240px]">
               {/* Y Axis Label (Left) */}
-              <div className="absolute left-[-24px] top-1/2 -translate-y-1/2 -rotate-90 text-[8px] font-bold text-gray-400 tracking-wider uppercase whitespace-nowrap">
+              <div className="text-[8px] font-bold text-gray-400 tracking-wider uppercase whitespace-nowrap [writing-mode:vertical-lr] rotate-180 select-none">
                 Target vs Baseline
               </div>
 
-              {/* Grid Wrapper */}
-              <div className="grid grid-cols-3 grid-rows-3 gap-1.5 w-full h-full border border-dashed border-gray-300 p-1.5 rounded-lg bg-gray-50/30">
-                {q.grid.map((row, rowIdx) =>
-                  row.map((cell, cellIdx) => (
-                    <div
-                      key={`${rowIdx}-${cellIdx}`}
-                      className={`flex flex-col items-center justify-center border border-dashed rounded p-1 leading-none ${getCellBg(
-                        cell
-                      )}`}
-                    >
-                      <span className="text-sm font-bold">{cell.val}</span>
-                      {cell.val !== "0" && (
-                        <span className="text-[9px] font-semibold opacity-85 mt-1">{cell.pct}</span>
-                      )}
-                    </div>
-                  ))
-                )}
+              <div className="flex flex-col items-center gap-2 w-full">
+                {/* Grid Wrapper */}
+                <div className="grid grid-cols-3 grid-rows-3 gap-1.5 aspect-square w-full border border-dashed border-gray-300 p-1.5 rounded-lg bg-gray-50/30">
+                  {q.grid.map((row, rowIdx) =>
+                    row.map((cell, cellIdx) => (
+                      <div
+                        key={`${rowIdx}-${cellIdx}`}
+                        className={`flex flex-col items-center justify-center border border-dashed rounded p-1 leading-none ${getCellBg(
+                          cell
+                        )}`}
+                      >
+                        <span className="text-sm font-bold">{cell.val}</span>
+                        {cell.val !== "0" && (
+                          <span className="text-[9px] font-semibold opacity-85 mt-1">{cell.pct}</span>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* X Axis Label */}
+                <span className="text-[8px] font-bold text-gray-400 tracking-wider uppercase mt-1">
+                  Baseline / Target
+                </span>
               </div>
             </div>
-
-            {/* X Axis Label */}
-            <span className="text-[8px] font-bold text-gray-400 tracking-wider uppercase mt-3">
-              Baseline / Target
-            </span>
           </div>
         ))}
       </div>
       <p className="text-[10px] text-gray-400 mt-4 text-center leading-normal">
-        Showing 4 quarters ending Q4 FY 26. Cell top-left = # families; bottom-right = % revenue share. Baseline from Heating_baseline.csv; PMA target from Heating_Targets.csv.
+        Showing up to 4 quarters ending {activeQuarter}. Cell top-left = # families; bottom-right = % revenue share. Baseline from Heating_baseline.csv; PMA target from Heating_Targets.csv.
       </p>
     </div>
   );

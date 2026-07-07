@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
-import { useGetQoqMatrix, useGetSkyscraper } from "../../services/query/query";
+import { useGetQoqMatrix } from "../../services/query/query";
 import QoqMatrixTable from "./QoqMatrixTable";
 import QoqDrilldownTable from "./QoqDrilldownTable";
 import QoqPerformanceCharts from "./QoqPerformanceCharts";
@@ -197,6 +198,41 @@ const clientFamilyMockData: Record<string, {
   }
 };
 
+// Static metadata — defined outside the component to avoid recreation on every render
+const columns = [
+  "Higher — last 3Q (all > PY avg)",
+  "Higher — last 2Q (last 2 > PY avg)",
+  "Lower — last 2Q (last 2 < PY avg)",
+  "Lower — last 3Q (all 3 < PY avg)",
+  "Fluctuating / other (mixed)",
+];
+
+const rows = [
+  "Above +3% vs PMA",
+  "Within ±3% vs PMA",
+  "Below -3% vs PMA",
+];
+
+const apiRows: Record<string, string> = {
+  "Above +3% vs PMA": "Above target (> +3pp)",
+  "Within ±3% vs PMA": "Within target (±3pp)",
+  "Below -3% vs PMA": "Below target (< -3pp)",
+};
+
+const apiCols: Record<string, string> = {
+  "Higher — last 3Q (all > PY avg)": "Rising 3Q",
+  "Higher — last 2Q (last 2 > PY avg)":  "Rising 2Q",
+  "Lower — last 2Q (last 2 < PY avg)": "Falling 2Q",
+  "Lower — last 3Q (all 3 < PY avg)": "Falling 3Q",
+  "Fluctuating / other (mixed)": "Fluctuating",
+};
+
+const colors: Record<string, string> = {
+  "Above +3% vs PMA": "bg-emerald-600 hover:bg-emerald-500 text-white",
+  "Within ±3% vs PMA": "bg-amber-600 hover:bg-amber-500 text-white",
+  "Below -3% vs PMA": "bg-rose-600 hover:bg-rose-500 text-white",
+};
+
 const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   selectedQoqCell: propsSelectedQoqCell,
   setSelectedQoqCell: propsSetSelectedQoqCell,
@@ -216,34 +252,11 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
   const qoqMatrixQuery = useGetQoqMatrix(sessionId);
-  const skyscraperQuery = useGetSkyscraper(sessionId);
 
   const [selectedQuarter, setSelectedQuarter] = useState<string>("");
 
-  const parseQuarter = (qStr: string) => {
-    const match = qStr.match(/Q(\d)\s+FY\s+(\d+)/);
-    if (!match) return { year: 0, quarter: 0 };
-    return {
-      quarter: parseInt(match[1], 10),
-      year: parseInt(match[2], 10),
-    };
-  };
-
-  const qoqQuarters = (qoqMatrixQuery.data?.quarters || []).slice().sort((a: string, b: string) => {
-    const qa = parseQuarter(a);
-    const qb = parseQuarter(b);
-    if (qa.year !== qb.year) return qa.year - qb.year;
-    return qa.quarter - qb.quarter;
-  });
-
-  const sortedQuarters = qoqQuarters.length > 0
-    ? qoqQuarters
-    : Object.keys(skyscraperQuery.data || {}).sort((a: string, b: string) => {
-        const qa = parseQuarter(a);
-        const qb = parseQuarter(b);
-        if (qa.year !== qb.year) return qa.year - qb.year;
-        return qa.quarter - qb.quarter;
-      });
+  // Quarters are already sorted chronologically by the query hook
+  const sortedQuarters: string[] = qoqMatrixQuery.data?.quarters || [];
 
   useEffect(() => {
     if (sortedQuarters.length > 0 && !selectedQuarter) {
@@ -251,80 +264,31 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     }
   }, [sortedQuarters, selectedQuarter]);
 
-  if (qoqMatrixQuery.isLoading || skyscraperQuery.isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full bg-slate-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#a61c1e]"></div>
-      </div>
-    );
-  }
-
-  const columns = [
-    "Higher — last 3Q (all > PY avg)",
-    "Higher — last 2Q (last 2 > PY avg)",
-    "Lower — last 2Q (last 2 < PY avg)",
-    "Lower — last 3Q (all 3 < PY avg)",
-    "Fluctuating / other (mixed)",
-  ];
-
-  const rows = [
-    "Above +3% vs PMA",
-    "Within ±3% vs PMA",
-    "Below -3% vs PMA",
-  ];
-
-  const apiRows: Record<string, string> = {
-    "Above +3% vs PMA": "Above target (> +3pp)",
-    "Within ±3% vs PMA": "Within target (±3pp)",
-    "Below -3% vs PMA": "Below target (< -3pp)",
-  };
-
-  const apiCols: Record<string, string> = {
-    "Higher — last 3Q (all > PY avg)": "Rising 3Q",
-    "Higher — last 2Q (last 2 > PY avg)": "Rising 2Q",
-    "Lower — last 2Q (last 2 < PY avg)": "Falling 2Q",
-    "Lower — last 3Q (all 3 < PY avg)": "Falling 3Q",
-    "Fluctuating / other (mixed)": "Fluctuating",
-  };
-
-  const matrixData: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>> = {};
-
-  const colors: Record<string, string> = {
-    "Above +3% vs PMA": "bg-emerald-600 hover:bg-emerald-500 text-white",
-    "Within ±3% vs PMA": "bg-amber-600 hover:bg-amber-500 text-white",
-    "Below -3% vs PMA": "bg-rose-600 hover:bg-rose-500 text-white",
-  };
-
+  // Derive active quarter — computed before any early return so it's stable for hooks below
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
-  const rawFamilies = skyscraperQuery.data?.[activeQuarter] || [];
-  const familyLookup = new Map<string, any>();
-  rawFamilies.forEach((fam: any) => {
-    familyLookup.set(fam.display_name.toLowerCase(), fam);
-    familyLookup.set(fam.family_nk.toLowerCase(), fam);
-  });
 
-  // Prefer live API family details from QoQ response, fall back to skyscraper lookup
+  // O(1) family detail lookups — pre-built by useGetQoqMatrix from all quarters
   const apiFamilyDetails = qoqMatrixQuery.data?.familyDetails || {};
+  const familyHistory = qoqMatrixQuery.data?.familyHistory || {};
 
-  const getFamilyMockDetails = (name: string) => {
+  // ── ALL hooks must be declared before any conditional return ──────────────
+
+  const getFamilyMockDetails = useCallback((name: string) => {
     const key = name.toLowerCase();
     if (clientFamilyMockData[key]) {
       return clientFamilyMockData[key];
     }
-    // Prefer richer data from QoQ API response
-    const apiStats = apiFamilyDetails[key];
-    const skyscraperStats = familyLookup.get(key);
-    const stats = apiStats || skyscraperStats;
+
+    const stats = apiFamilyDetails[key];
+    const nkKey = stats?.nk ? stats.nk.toLowerCase() : key;
     const actualVal = (stats?.actual_gm_pct !== null && stats?.actual_gm_pct !== undefined) ? stats.actual_gm_pct : 50.0;
     const targetVal = (stats?.target_gm_pct !== null && stats?.target_gm_pct !== undefined) ? stats.target_gm_pct : 50.0;
     const baselineVal = stats?.baseline_gm_pct ?? 50.0;
     const gap = actualVal - targetVal;
 
+    // O(1) per-quarter lookup using the pre-indexed familyHistory map
     const history = sortedQuarters.map((q: string) => {
-      const familiesInQuarter = skyscraperQuery.data?.[q] || [];
-      const fStats = familiesInQuarter.find(
-        (f: any) => f.display_name.toLowerCase() === key || f.family_nk.toLowerCase() === key
-      );
+      const fStats = familyHistory[key]?.[q] ?? familyHistory[nkKey]?.[q];
       return {
         quarter: q,
         revenue: fStats ? fStats.revenue_inr / 100000 : (stats?.revenue_inr ? stats.revenue_inr / 100000 : 10.0),
@@ -332,13 +296,13 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       };
     });
 
-    const validHistory = history.filter((h: any) => h.gm > 0);
-    const actuals = validHistory.map((h: any) => h.gm);
+    const validHistory = history.filter((h: { quarter: string; revenue: number; gm: number }) => h.gm > 0);
+    const actuals = validHistory.map((h: { quarter: string; revenue: number; gm: number }) => h.gm);
     const mean = actuals.length > 0 ? actuals.reduce((a: number, b: number) => a + b, 0) / actuals.length : actualVal;
     const min = actuals.length > 0 ? Math.min(...actuals) : actualVal;
     const max = actuals.length > 0 ? Math.max(...actuals) : actualVal;
-    const sorted = [...actuals].sort((a: number, b: number) => a - b);
-    const median = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : actualVal;
+    const sortedAct = [...actuals].sort((a: number, b: number) => a - b);
+    const median = sortedAct.length > 0 ? sortedAct[Math.floor(sortedAct.length / 2)] : actualVal;
     const std = actuals.length > 1 ? Math.sqrt(actuals.reduce((s: number, v: number) => s + Math.pow(v - mean, 2), 0) / (actuals.length - 1)) : 0.0;
 
     const revenueInr = stats?.revenue_inr || 0;
@@ -356,34 +320,32 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       stdDev: std > 0 ? `${std.toFixed(1)}%` : "-",
       median: `${median.toFixed(1)}%`,
       min: `${min.toFixed(1)}%`,
-      max: `${max.toFixed(1)}%`
+      max: `${max.toFixed(1)}%`,
     };
-  };
+  }, [apiFamilyDetails, familyHistory, sortedQuarters]);
 
-  // Use quarter-specific matrix if available, otherwise fall back to latest
-  const activeMatrix = qoqMatrixQuery.data?.quarterMatrices?.[activeQuarter] || qoqMatrixQuery.data?.matrix || {};
+  // Memoize matrix cell build — only re-runs when the active quarter's data or
+  // the getFamilyMockDetails callback changes
+  const matrixData = useMemo(() => {
+    const activeMatrix = qoqMatrixQuery.data?.quarterMatrices?.[activeQuarter] || qoqMatrixQuery.data?.matrix || {};
+    const data: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>> = {};
 
-  rows.forEach((rowName) => {
-    matrixData[rowName] = {};
-    columns.forEach((colName) => {
-      const apiRowKey = apiRows[rowName];
-      const apiColKey = apiCols[colName];
-      const familiesArray = activeMatrix?.[apiRowKey]?.[apiColKey] || [];
-
-      const familyData = familiesArray.map((name: string) => {
-        return getFamilyMockDetails(name);
+    rows.forEach((rowName) => {
+      data[rowName] = {};
+      columns.forEach((colName) => {
+        const familiesArray: string[] = activeMatrix?.[apiRows[rowName]]?.[apiCols[colName]] || [];
+        data[rowName][colName] = {
+          count: familiesArray.length,
+          color: colors[rowName],
+          families: familiesArray,
+          familyData: familiesArray.map(getFamilyMockDetails),
+        };
       });
-
-      matrixData[rowName][colName] = {
-        count: familiesArray.length,
-        color: colors[rowName],
-        families: familiesArray,
-        familyData,
-      };
     });
-  });
+    return data;
+  }, [activeQuarter, qoqMatrixQuery.data, getFamilyMockDetails]);
 
-  const handleCellClick = (r: string, c: string) => {
+  const handleCellClick = useCallback((r: string, c: string) => {
     const item = matrixData[r][c];
     setSelectedQoqCell({
       row: r,
@@ -393,21 +355,26 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       families: item.families,
     });
     setSelectedFamily(null);
-  };
+  }, [matrixData, setSelectedQoqCell, setSelectedFamily]);
 
-  const getRowTotal = (r: string) => {
-    let sum = 0;
-    columns.forEach((c) => {
-      sum += matrixData[r][c].count;
-    });
-    return sum;
-  };
+  const getRowTotal = useCallback((r: string) => {
+    return columns.reduce((sum, c) => sum + (matrixData[r]?.[c]?.count || 0), 0);
+  }, [matrixData]);
 
   const activeFamiliesList = selectedQoqCell
     ? matrixData[selectedQoqCell.row]?.[selectedQoqCell.col]?.familyData || []
     : [];
 
   const selectedDetails = selectedFamily ? getFamilyMockDetails(selectedFamily) : null;
+
+  // ── Early return AFTER all hooks ─────────────────────────────────────────
+  if (qoqMatrixQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] w-full bg-slate-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#a61c1e]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
@@ -423,7 +390,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
         getRowTotal={getRowTotal}
       />
 
-      {/* 2. Product Family Drill-down */}
       {selectedQoqCell ? (
         <>
           <QoqDrilldownTable
@@ -433,7 +399,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
             activeQuarter={activeQuarter}
           />
 
-          {/* 3. Performance details combo and distribution charts */}
           {selectedFamily && selectedDetails && (
             <QoqPerformanceCharts
               selectedFamily={selectedFamily}

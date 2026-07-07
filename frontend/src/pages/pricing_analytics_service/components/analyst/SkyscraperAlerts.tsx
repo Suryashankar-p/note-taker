@@ -12,12 +12,45 @@ interface SkyscraperAlertsProps {
   }>;
   selectedQuarter: string;
   compareVs: string;
+  insights?: string[];
 }
 
 const SkyscraperAlerts = ({
   selectedQuarter,
+  insights = [],
 }: SkyscraperAlertsProps) => {
   const activeQtr = selectedQuarter || "Q2 FY 26";
+
+  if (insights && insights.length > 0) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {insights.slice(0, 4).map((text, idx) => {
+          const colonIndex = text.indexOf(":");
+          const title = colonIndex !== -1 ? text.substring(0, colonIndex) : "Insight";
+          const desc = colonIndex !== -1 ? text.substring(colonIndex + 1).trim() : text;
+
+          let borderColor = "border-slate-200 bg-slate-50/50 text-slate-800";
+          if (text.includes("below target") || text.includes("-")) {
+            borderColor = "border-rose-200 bg-rose-50/55 text-rose-900";
+          } else if (text.includes("above target") || text.includes("+")) {
+            borderColor = "border-emerald-200 bg-emerald-50/55 text-emerald-950";
+          }
+
+          return (
+            <div
+              key={idx}
+              className={`border rounded-xl p-5 shadow-xs ${borderColor}`}
+            >
+              <h4 className="text-xs font-extrabold uppercase tracking-wider mb-2">
+                {title}
+              </h4>
+              <p className="text-[11px] leading-relaxed opacity-90">{desc}</p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   const alerts = [
     {

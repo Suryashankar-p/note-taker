@@ -20,12 +20,12 @@ const ExecutiveSnapshot = () => {
     return qA - qB;
   };
 
-  const quarters = (snapshotKpis || [])
+  const quarters = (snapshotKpis?.quarters || [])
     .map((item: any) => item.quarter)
     .sort(sortQuarters);
 
   const activeQuarter = selectedQuarter || quarters[quarters.length - 1] || "";
-  const activeData = (snapshotKpis || []).find((item: any) => item.quarter === activeQuarter);
+  const activeData = (snapshotKpis?.quarters || []).find((item: any) => item.quarter === activeQuarter);
 
   useEffect(() => {
     if (quarters.length > 0 && !selectedQuarter) {
