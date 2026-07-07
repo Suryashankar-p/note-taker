@@ -1,4 +1,5 @@
 import React from "react";
+import CustomSelect from "../../CustomSelect";
 
 interface FamilyItem {
   family_nk: string;
@@ -130,12 +131,13 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-bold text-gray-900">Classification × Freq to buy</h2>
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md">
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Quarter</span>
-          <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer">
-            <option>{insights?.curr_qtr || "Q4 FY 26"}</option>
-          </select>
-        </div>
+        <CustomSelect
+          options={[insights?.curr_qtr || "Q4 FY 26"]}
+          value={insights?.curr_qtr || "Q4 FY 26"}
+          onChange={() => {}}
+          labelPrefix="Quarter: "
+          alignRight
+        />
       </div>
 
       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 mb-6">

@@ -3,7 +3,7 @@ import { Upload, CheckCircle, Loader2 } from "lucide-react";
 
 type FileUploadCardProps = {
   title: string;
-  description: string;
+  // description: string;
   status: "loaded" | "upload" | "loading";
   icon: ReactNode;
   onUpload?: (file: File) => void;
@@ -12,7 +12,7 @@ type FileUploadCardProps = {
 
 const FileUploadCard = ({
   title,
-  description,
+  // description,
   status,
   icon,
   onUpload,
@@ -36,9 +36,9 @@ const FileUploadCard = ({
           <div className="max-w-[180px]">
             <h3 className="font-semibold text-sm text-gray-900">{title}</h3>
             <div>
-              <p className="text-xs text-gray-500 break-words line-clamp-3">
+              {/* <p className="text-xs text-gray-500 break-words line-clamp-3">
                 {description}
-              </p>
+              </p> */}
             </div>
             {fileName && (
               <p className="mt-1 text-xs text-blue-600">📄 {fileName}</p>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Maximize2,
   ArrowUpRight,
@@ -42,6 +42,11 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
   const chatMutation = useSendLLMChat();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   const handleAttachmentClick = () => {
     fileInputRef.current?.click();
@@ -269,6 +274,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
             <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* 4. Footer Input Bar */}
