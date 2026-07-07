@@ -1,4 +1,4 @@
-import { useMutation, useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useMutation, useQuery, useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
 import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData } from "./utils";
 
@@ -10,6 +10,98 @@ export const GetMemberPricingAnalyticsRole = async () => {
   );
   return response;
 };
+
+// MEMBER
+
+export const ReadMembers = async (
+  skip: number = 0,
+  limit: number = 100,
+  search_term?: string
+) => {
+  const response = await PricingAnalyticsAPI.get(
+    `/member?skip=${skip}&limit=${limit}${
+      search_term !== "" ? "&search_term=" + search_term : ""
+    }`
+  );
+  return response;
+};
+
+export const CreateMember = async (
+  role: string,
+  email: string,
+  name: string
+) => {
+  const response = await PricingAnalyticsAPI.post(
+    `/member?role=${role}&email=${email}&name=${name}`
+  );
+  return response;
+};
+
+export const UpdateMember = async (
+  role: string,
+  name: string,
+  member_id: string
+) => {
+  const response = await PricingAnalyticsAPI.patch(
+    `/member/${member_id}?name=${name}&role=${role}`
+  );
+  return response;
+};
+
+export const DeleteMember = async (member_id: string) => {
+  const response = await PricingAnalyticsAPI.delete(
+    `/member/${member_id}`
+  );
+  return response;
+};
+
+export const useGetMembersList = (payload: { limit: number; search_term: string }) => {
+  return useInfiniteQuery({
+    queryKey: ["members-list", payload],
+    queryFn: async ({ pageParam = 0 }) => {
+      const response = await ReadMembers(pageParam, payload.limit, payload.search_term);
+      return response;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage && lastPage.result && lastPage.result.length < payload.limit) {
+        return undefined;
+      }
+      return allPages.length * payload.limit;
+    },
+  });
+};
+
+export const useCreateMember = () => {
+  return useMutation({
+    mutationKey: ["create-member"],
+    mutationFn: async (data: { name: string; email: string; role: string }) => {
+      const response = await CreateMember(data.role, data.email, data.name);
+      return response;
+    },
+  });
+};
+
+export const useUpdateMember = () => {
+  return useMutation({
+    mutationKey: ["update-member"],
+    mutationFn: async (data: { member_id: string; name: string; role: string }) => {
+      const response = await UpdateMember(data.role, data.name, data.member_id);
+      return response;
+    },
+  });
+};
+
+export const useDeleteMember = () => {
+  return useMutation({
+    mutationKey: ["delete-member"],
+    mutationFn: async (member_id: string) => {
+      const response = await DeleteMember(member_id);
+      return response;
+    },
+  });
+};
+
 
 export const useUploadCogs = () => {
   return useMutation({
@@ -186,7 +278,43 @@ export const useGetQoqMatrix = (sessionId: number) => {
         "/analytics/qoq-matrix",
         { session_id: sessionId }
       );
-      return transformQoqMatrixData(response);
+
+      const familyDetails: Record<string, any> = {};
+      const quarterMatrices: Record<string, any> = {};
+
+      if (response && response.quarters) {
+        response.quarters.forEach((qEntry: any) => {
+          const qMatrix: Record<string, Record<string, string[]>> = {};
+          Object.entries(qEntry.matrix || {}).forEach(([rowKey, cols]: [string, any]) => {
+            qMatrix[rowKey] = {};
+            Object.entries(cols).forEach(([colKey, families]: [string, any]) => {
+              const names: string[] = [];
+              (families as any[]).forEach((fam: any) => {
+                const displayName = fam.name || fam.display_name || fam.nk;
+                names.push(displayName);
+                const lk = displayName.toLowerCase();
+                if (!familyDetails[lk]) {
+                  familyDetails[lk] = fam;
+                }
+                if (fam.nk) familyDetails[fam.nk.toLowerCase()] = fam;
+              });
+              qMatrix[rowKey][colKey] = names;
+            });
+          });
+          quarterMatrices[qEntry.quarter] = qMatrix;
+        });
+      }
+
+      // Return the latest quarter's matrix (same shape as before) plus
+      // the full familyDetails map for all quarters.
+      const quarters = Object.keys(quarterMatrices);
+      const latestQuarter = quarters[quarters.length - 1] || "";
+      return {
+        matrix: quarterMatrices[latestQuarter] || {},
+        quarterMatrices,
+        familyDetails,
+        quarters,
+      };
     },
     enabled: !!sessionId,
   });
