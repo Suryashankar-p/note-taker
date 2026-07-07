@@ -1,5 +1,6 @@
 import React from "react";
 import { Bar } from "react-chartjs-2";
+import CustomSelect from "../../CustomSelect";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -117,18 +118,13 @@ const SkyscraperChart = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md self-start md:self-auto">
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Quarter</span>
-          <select
-            value={selectedQuarter}
-            onChange={(e) => setSelectedQuarter(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer"
-          >
-            {quarters.map((q) => (
-              <option key={q} value={q}>{q}</option>
-            ))}
-          </select>
-        </div>
+        <CustomSelect
+          options={quarters}
+          value={selectedQuarter}
+          onChange={setSelectedQuarter}
+          labelPrefix="Quarter: "
+          alignRight
+        />
       </div>
 
       <div className="text-xs text-gray-500 font-semibold mb-6">

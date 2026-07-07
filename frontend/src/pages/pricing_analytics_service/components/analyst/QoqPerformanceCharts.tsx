@@ -304,12 +304,11 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         </div>
       </div>
 
-      {/* Drill-down button */}
       <button
         onClick={onNavigateToSku}
         className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm hover:scale-[1.01]"
       >
-        SKU deviation drill-down —
+        SKU deviation drill-down 
         <ArrowRight size={14} />
       </button>
     </div>
