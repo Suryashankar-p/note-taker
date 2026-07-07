@@ -55,10 +55,11 @@ const DispersionView = () => {
         isFetching={isFetching && !isInitialLoading}
       />
 
-      {/* 3. Examples Table */}
+      {/* 3. Examples Table
       <DispersionMovementExamples
         setSelectedFamily={setSelectedFamily}
       />
+      */}
     </div>
   );
 };

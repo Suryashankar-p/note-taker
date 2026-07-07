@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useGetSnapshotKpis } from "../../../services/query/query";
+import CustomSelect from "../../CustomSelect";
 
 const ExecutiveSnapshot = () => {
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
@@ -65,18 +66,13 @@ const ExecutiveSnapshot = () => {
           Executive Snapshot
         </h3>
         {quarters.length > 0 && (
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-250 px-3 py-1 rounded-md">
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Quarter</span>
-            <select
-              value={activeQuarter}
-              onChange={(e) => setSelectedQuarter(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer"
-            >
-              {quarters.map((q: string) => (
-                <option key={q} value={q}>{q}</option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            options={quarters}
+            value={activeQuarter}
+            onChange={setSelectedQuarter}
+            labelPrefix="Quarter: "
+            alignRight
+          />
         )}
       </div>
 

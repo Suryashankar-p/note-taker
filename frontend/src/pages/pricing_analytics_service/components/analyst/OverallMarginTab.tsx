@@ -5,6 +5,7 @@ import HeatingMarginsGrid from "../ceo/components/HeatingMarginsGrid";
 import OverallQoQTable from "../ceo/components/OverallQoQTable";
 import AnalystSnapshotCards from "./AnalystSnapshotCards";
 import GMDecompositionAnalysis from "./GMDecompositionAnalysis";
+import CustomSelect from "../CustomSelect";
 import {
   useGetOverallMargin,
   useGetBusinessInsights,
@@ -38,19 +39,13 @@ const OverallMarginTab = () => {
       {/* 2. Charts section */}
       <div className="bg-slate-100/50 border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
         <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Product families</span>
-            <select
-              value={selectedFamily}
-              onChange={(e) => setSelectedFamily(e.target.value)}
-              className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-[#a61c1e] focus:outline-none focus:ring-1 focus:ring-[#a61c1e] cursor-pointer shadow-sm select-none"
-            >
-              <option>All families (109)</option>
-              <option>Spares & Fans</option>
-              <option>Burners</option>
-              <option>Boilers</option>
-            </select>
-          </div>
+          {/* <CustomSelect
+            options={["All families (109)", "Spares & Fans", "Burners", "Boilers"]}
+            value={selectedFamily}
+            onChange={setSelectedFamily}
+            labelPrefix="Product families: "
+            className="text-[#a61c1e] hover:text-[#a61c1e]"
+          /> */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

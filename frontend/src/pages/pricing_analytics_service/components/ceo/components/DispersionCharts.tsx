@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Line } from "react-chartjs-2";
+import CustomSelect from "../../CustomSelect";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -57,14 +58,23 @@ const DispersionCharts = ({
 }: DispersionChartsProps) => {
   const [selectedClassification, setSelectedClassification] = useState<string>("All");
 
-  const classifications = ["All", ...Array.from(new Set(families.map((f) => f.classification).filter(Boolean)))];
+  const classifications = ["All", ...Array.from(new Set(families.map((f) => f.classification).filter(Boolean)))]
+    .filter((c) => {
+      const trimmed = c.trim().toLowerCase();
+      return trimmed !== "" && trimmed !== "0" && trimmed !== "o" && trimmed !== "#n/a" && trimmed !== "n/a";
+    });
 
   const filteredFamilies = families.filter((f) => {
     if (selectedClassification === "All") return true;
     return f.classification === selectedClassification;
   });
 
-  const selectedFamilyName = families.find((f) => f.nk === selectedFamily)?.display || "No Family Selected";
+  const rawFamilyName = families.find((f) => f.nk === selectedFamily)?.display || "No Family Selected";
+  const selectedFamilyName = rawFamilyName
+    .replace(/\s*\(\s*(o|n\/a)\s*\)/gi, "")
+    .replace(/\b(o|n\/a)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
   const hasData = familyDispersion && familyDispersion.family_nk !== "null";
 
@@ -186,34 +196,34 @@ const DispersionCharts = ({
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
         </div>
       )}
+
+
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-b border-gray-150 pb-4">
         <h3 className="text-base font-bold text-gray-900">Family-level GM% dispersion — {selectedFamilyName}</h3>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Classification</span>
-            <select
-              value={selectedClassification}
-              onChange={(e) => setSelectedClassification(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer select-none"
-            >
-              {classifications.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1 rounded-md">
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Product Family</span>
-            <select
-              value={selectedFamily || "null"}
-              onChange={(e) => setSelectedFamily(e.target.value === "null" ? null : e.target.value)}
-              className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer select-none"
-            >
-              <option value="null">-- Select Family --</option>
-              {filteredFamilies.map((f) => (
-                <option key={f.nk} value={f.nk}>{f.display}</option>
-              ))}
-            </select>
-          </div>
+        <div className="flex gap-3">
+          <CustomSelect
+            options={classifications}
+            value={selectedClassification}
+            onChange={setSelectedClassification}
+            labelPrefix="Classification: "
+          />
+          <CustomSelect
+            options={[
+              { value: "null", label: "-- Select Family --" },
+              ...filteredFamilies.map((f) => ({
+                value: f.nk,
+                label: f.display
+                  .replace(/\s*\(\s*(o|n\/a)\s*\)/gi, "")
+                  .replace(/\b(o|n\/a)\b/gi, "")
+                  .replace(/\s+/g, " ")
+                  .trim(),
+              }))
+            ]}
+            value={selectedFamily || "null"}
+            onChange={(val) => setSelectedFamily(val === "null" ? null : val)}
+            labelPrefix="Product Family: "
+            alignRight
+          />
         </div>
       </div>
 
