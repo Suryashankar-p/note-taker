@@ -367,30 +367,26 @@ const Knowledge = () => {
   };
 
   const onFileClick = async (file: any) => {
-    try {
-      const linkResp = await ReadProductDocumentUrl(
-        file.product_id,
-        file.id
-      );        
-      if (linkResp?.link) {
-        let fileInfo: any = {
-          name: file.filename,
-          type: getFileType(file?.filename),
-          url: linkResp?.link,
+    setFileShow(true)
+    dispatch.loadingState.startLoading();
+    const response = await ReadProductDocumentUrl(file)
+    if (response) {
+      const blobUrl = URL.createObjectURL(response.data);
+      let fileInfo: any = {
+        name: file.filename,
+        type: getFileType(file?.filename),
+        url: blobUrl,
         };
         setFileData(fileInfo);
-        setFileShow(true);
-      } else {
-        dispatch.toast.openToast({
-          status: true,
-          message: "File not found",
-          type: "error",
-        });
-      }
-    } catch (err) {
-      console.log("err", err);
+    } else {
+      dispatch.toast.openToast({
+        status: true,
+        message: "File not found",
+        type: "error",
+      });
     }
   };
+
 
   return (
     <div className="flex h-screen w-full flex-col gap-8  overflow-y-hidden">

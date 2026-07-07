@@ -160,8 +160,19 @@ export const DeleteProductDocument = async (product_id: string | number, product
   return response
 }
 
-export const ReadProductDocumentUrl = async (product_id: string | number, product_document_id: string | number) => {
-  const response = await EdgeAPI.get(BACKEND_EDGE_URL + `/edgeagent-playground/product/${product_id}/document/${product_document_id}/link`)
+export const ReadProductDocumentUrl = async (file: any) => {
+  const token = localStorage.getItem("access_token");
+
+  const response = await axios.get(
+    BACKEND_EDGE_URL +`/edgeagent-playground/product/${file.product_id}/document/${file.id}/link`,
+    {
+      responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  console.log("api", response)
   return response
 }
 
