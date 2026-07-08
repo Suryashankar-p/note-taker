@@ -51,6 +51,7 @@ import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUpl
 import { iconMapping } from "../../utils/constants.ts";
 import { FaLightbulb } from "react-icons/fa6";
 import { useLargeFileStore, useLargeFileStoreHydrated, IngestedFile } from "../../stores/largeFileStore";
+import { isLargeDocument } from "../../utils/fileParser";
 
 const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
 interface MediaRendererProps {
@@ -994,7 +995,13 @@ const ChatArea: React.FC<Props> = ({
     let fileIdToSend: string | undefined = undefined;
 
     if (localFiles?.length > 0) {
-      const isLargeFile = localFiles.some((f) => f.file_size > 10 * 1024 * 1024);
+      let isLargeFile = false;
+      for (const f of localFiles) {
+        if (f.file && await isLargeDocument(f.file, 10)) {
+          isLargeFile = true;
+          break;
+        }
+      }
       if (isLargeFile) {
         mode = "ingest";
       } else {

@@ -18,16 +18,17 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
   disabled = false,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string>("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      const allowedExtensions = ['.pdf', '.txt','.png', '.json', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
-      const invalidFiles = selectedFiles.filter(file => 
+      const allowedExtensions = ['.pdf', '.txt', '.png', '.json', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
+      const invalidFiles = selectedFiles.filter(file =>
         !allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
       );
-      
+
       if (invalidFiles.length > 0) {
         setError(`Only .pdf, .txt, .png,.json, .docx, .doc, .ppt, .pptx, .xlsx, .xls, .csv files are allowed. ${invalidFiles.length} invalid file(s) selected.`);
         setFiles([]);
@@ -40,7 +41,6 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
 
   const handleClose = () => {
     setFiles([]);
-    setError("");
     onClose();
   };
 
@@ -48,8 +48,34 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
     if (files.length > 0) {
       onFileUpload(files);
       setFiles([]);
-      setError("");
       onClose();
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFiles(Array.from(e.dataTransfer.files));
     }
   };
 
@@ -73,15 +99,16 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
           </button>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-            <span className="text-sm font-medium">{error}</span>
-          </div>
-        )}
-
         {/* Custom File Upload Box */}
-        <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-red-400 rounded-xl p-6 text-center bg-red-50 hover:bg-red-100 transition-colors duration-200 cursor-pointer">
+        <label onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+
+          className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 cursor-pointer ${isDragging
+            ? "border-blue-500 bg-blue-50"
+            : "border-red-400 bg-red-50 hover:bg-red-100"
+            }`}>
           <FaCloudUploadAlt className="w-10 h-10 text-red-600 mb-2" />
           {files.length > 0 ? (
             <div className="flex flex-col items-center">
@@ -108,6 +135,7 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
             multiple
             className="hidden"
           />
+          {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
         </label>
 
         {/* Static Note */}
@@ -115,7 +143,9 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
           <strong>Note:</strong> Please upload a document that you want answers
           from. This document will be used as a temporary knowledge base and
           will be automatically deleted after{" "}
-          <strong>48 hours</strong>
+          <strong>
+            {aiProvider === "Document Analyzer" ? "48 hours" : "24 hours"}
+          </strong>
           . If you need to access it again later, you will need to reupload the
           file.
         </p>
@@ -131,16 +161,15 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
           <button
             onClick={handleUpload}
             disabled={files.length === 0 || disabled}
-            className={`px-4 py-2 rounded-lg text-white font-medium transition ${
-              files.length === 0 || disabled
-                ? "bg-blue-300 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className={`px-4 py-2 rounded-lg text-white font-medium transition ${files.length === 0 || disabled
+              ? "bg-blue-300 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+              }`}
           >
             Upload
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
