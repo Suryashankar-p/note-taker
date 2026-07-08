@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Maximize2,
   ArrowUpRight,
@@ -13,6 +13,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { useSendLLMChat } from "../services/query/query";
+import { useLocation } from "react-router-dom";
 
 interface CopilotWidgetProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ interface MessageItem {
 }
 
 const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
+  const location = useLocation();
   const [messages, setMessages] = useState<MessageItem[]>([
     {
       id: 1,
@@ -40,6 +42,11 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
   const chatMutation = useSendLLMChat();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   const handleAttachmentClick = () => {
     fileInputRef.current?.click();
@@ -74,11 +81,23 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
       fileInputRef.current.value = "";
     }
 
+    const currentPath = location.pathname;
+    const mode = currentPath.includes("/analyst") ? "pricing_analyst" : "ceo_cfo";
+    const sessionId = Number(localStorage.getItem("pricing_session_id")) || 16;
+
+    const chatHistory = messages
+      .filter((msg) => msg.sender === "user" || msg.sender === "system")
+      .map((msg) => ({
+        role: (msg.sender === "user" ? "user" : "assistant") as "user" | "assistant",
+        content: msg.content,
+      }));
+
     try {
       const data = await chatMutation.mutateAsync({
         query: userQuery,
-        mode: "ceo_cfo",
-        session_id: 16,
+        mode: mode,
+        session_id: sessionId,
+        history: chatHistory,
       });
 
       let replyText = "";
@@ -255,6 +274,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
             <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* 4. Footer Input Bar */}

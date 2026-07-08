@@ -1,5 +1,8 @@
-import { useMutation, useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useInfiniteQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
+import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData } from "./utils";
+
+export * from "./types";
 
 export const GetMemberPricingAnalyticsRole = async () => {
   const response = await PricingAnalyticsAPI.get(
@@ -70,31 +73,52 @@ export const useGetMembersList = (payload: { limit: number; search_term: string 
 };
 
 export const useCreateMember = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["create-member"],
     mutationFn: async (data: { name: string; email: string; role: string }) => {
       const response = await CreateMember(data.role, data.email, data.name);
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
       return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members-list"] });
     },
   });
 };
 
 export const useUpdateMember = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["update-member"],
     mutationFn: async (data: { member_id: string; name: string; role: string }) => {
       const response = await UpdateMember(data.role, data.name, data.member_id);
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
       return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members-list"] });
     },
   });
 };
 
 export const useDeleteMember = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["delete-member"],
     mutationFn: async (member_id: string) => {
       const response = await DeleteMember(member_id);
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
       return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members-list"] });
     },
   });
 };
@@ -261,13 +285,7 @@ export const useGetSkyscraper = (sessionId: number) => {
         "/analytics/skyscraper",
         { session_id: sessionId }
       );
-      const transformed: Record<string, any> = {};
-      if (response && response.quarters) {
-        response.quarters.forEach((q: any) => {
-          transformed[q.quarter] = q.bars || [];
-        });
-      }
-      return transformed;
+      return transformSkyscraperData(response);
     },
     enabled: !!sessionId,
   });
@@ -281,43 +299,7 @@ export const useGetQoqMatrix = (sessionId: number) => {
         "/analytics/qoq-matrix",
         { session_id: sessionId }
       );
-
-      const familyDetails: Record<string, any> = {};
-      const quarterMatrices: Record<string, any> = {};
-
-      if (response && response.quarters) {
-        response.quarters.forEach((qEntry: any) => {
-          const qMatrix: Record<string, Record<string, string[]>> = {};
-          Object.entries(qEntry.matrix || {}).forEach(([rowKey, cols]: [string, any]) => {
-            qMatrix[rowKey] = {};
-            Object.entries(cols).forEach(([colKey, families]: [string, any]) => {
-              const names: string[] = [];
-              (families as any[]).forEach((fam: any) => {
-                const displayName = fam.name || fam.display_name || fam.nk;
-                names.push(displayName);
-                const lk = displayName.toLowerCase();
-                if (!familyDetails[lk]) {
-                  familyDetails[lk] = fam;
-                }
-                if (fam.nk) familyDetails[fam.nk.toLowerCase()] = fam;
-              });
-              qMatrix[rowKey][colKey] = names;
-            });
-          });
-          quarterMatrices[qEntry.quarter] = qMatrix;
-        });
-      }
-
-      // Return the latest quarter's matrix (same shape as before) plus
-      // the full familyDetails map for all quarters.
-      const quarters = Object.keys(quarterMatrices);
-      const latestQuarter = quarters[quarters.length - 1] || "";
-      return {
-        matrix: quarterMatrices[latestQuarter] || {},
-        quarterMatrices,
-        familyDetails,
-        quarters,
-      };
+      return transformQoqMatrixData(response);
     },
     enabled: !!sessionId,
   });
@@ -344,6 +326,7 @@ export const useSendLLMChat = () => {
       query: string;
       mode: string;
       session_id: number;
+      history?: Array<{ role: "user" | "assistant"; content: string }>;
     }) => {
       const response = await PricingAnalyticsAPI.post(
         "/llm/chat",
@@ -351,5 +334,37 @@ export const useSendLLMChat = () => {
       );
       return response;
     }
+  });
+};
+
+export const useGetDispersion = (sessionId: number, familyNk: string | null) => {
+  return useQuery({
+    queryKey: ["dispersion", sessionId, familyNk],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/dispersion",
+        {
+          session_id: sessionId,
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+        }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useGetSkuDeviation = (sessionId: number) => {
+  return useQuery({
+    queryKey: ["sku-deviation", sessionId],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/sku-deviation",
+        { session_id: sessionId }
+      );
+      return transformSkuDeviationData(response);
+    },
+    enabled: !!sessionId,
   });
 };

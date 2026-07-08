@@ -1,0 +1,101 @@
+import React from "react";
+import { Sparkles } from "lucide-react";
+
+interface AnalystSnapshotCardsProps {
+  snapshotKpis?: {
+    quarters: Array<{
+      quarter: string;
+      revenue_inr: number;
+      overall_gm_pct: number;
+      delta_vs_baseline_pp: number;
+      delta_vs_target_pp: number;
+      families_above_target: number;
+      families_below_target: number;
+      families_at_target: number;
+    }>;
+  };
+  insights: string[];
+}
+
+const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsProps) => {
+  const sortQuarters = (a: string, b: string) => {
+    const matchA = a.match(/Q(\d) /);
+    const matchB = b.match(/Q(\d) /);
+    const yearA = a.match(/FY (\d+)/);
+    const yearB = b.match(/FY (\d+)/);
+    if (!matchA || !matchB || !yearA || !yearB) return 0;
+    const qA = parseInt(matchA[1], 10);
+    const yA = parseInt(yearA[1], 10);
+    const qB = parseInt(matchB[1], 10);
+    const yB = parseInt(yearB[1], 10);
+    if (yA !== yB) return yA - yB;
+    return qA - qB;
+  };
+
+  const quarters = (snapshotKpis?.quarters || [])
+    .map((item: any) => item.quarter)
+    .sort(sortQuarters);
+
+  const latestQuarter = quarters[quarters.length - 1] || "";
+  const activeSnapshot = (snapshotKpis?.quarters || []).find((item: any) => item.quarter === latestQuarter);
+
+  const stats = activeSnapshot ? [
+    { label: "HEATING REVENUE", value: `₹${(activeSnapshot.revenue_inr / 10000000).toFixed(1)} Cr` },
+    { label: "OVERALL GM%", value: `${activeSnapshot.overall_gm_pct.toFixed(1)}%` },
+    { label: "Δ VS BASELINE", value: `${activeSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_baseline_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_baseline_pp >= 0, isNegative: activeSnapshot.delta_vs_baseline_pp < 0 },
+    { label: "Δ VS HEATING TARGET", value: `${activeSnapshot.delta_vs_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_target_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_target_pp >= 0, isNegative: activeSnapshot.delta_vs_target_pp < 0 },
+    { label: "FAMILIES ABOVE TARGET", value: String(activeSnapshot.families_above_target) },
+    { label: "FAMILIES BELOW TARGET", value: String(activeSnapshot.families_below_target) },
+    { label: "FAMILIES AT TARGET", value: String(activeSnapshot.families_at_target) },
+  ] : [];
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-6">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <h3 className="text-sm font-bold tracking-tight text-gray-800">
+            Executive snapshot
+          </h3>
+          <span className="text-xs font-bold text-[#a61c1e] bg-red-50 border border-red-100 px-2 py-0.5 rounded">
+            {latestQuarter}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {stats.map((st) => (
+            <div key={st.label} className="border border-gray-100 rounded-xl p-4 bg-slate-50/50 shadow-sm flex flex-col justify-between">
+              <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wide leading-tight mb-2">
+                {st.label}
+              </span>
+              <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"}`}>
+                {st.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-[#131517] text-white border border-[#202226] rounded-xl p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <h3 className="text-sm font-extrabold tracking-tight text-white mb-4 border-b border-[#202226] pb-3 flex items-center gap-2">
+            <Sparkles size={16} className="text-[#a61c1e]" />
+            Strategic actions
+          </h3>
+          <ul className="flex flex-col gap-3.5 text-xs text-gray-300 leading-relaxed font-semibold">
+            {insights.map((insight, idx) => (
+              <li key={idx} className="flex gap-2.5 items-start">
+                <span className="text-[#a61c1e] mt-1 font-bold">▶</span>
+                <span>{insight}</span>
+              </li>
+            ))}
+            {insights.length === 0 && (
+              <li className="text-gray-400 italic font-medium">No actions available.</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AnalystSnapshotCards;

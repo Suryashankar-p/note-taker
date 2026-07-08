@@ -1,4 +1,5 @@
 import React from "react";
+import CustomSelect from "../../CustomSelect";
 
 interface FamilyItem {
   family_nk: string;
@@ -16,11 +17,19 @@ interface CellData {
 }
 
 interface ClassificationGridProps {
-  data?: Record<string, Record<string, CellData>>;
+  data?: {
+    matrix: Record<string, Record<string, CellData>>;
+    insights?: {
+      curr_qtr: string;
+      prev_qtr: string;
+    } | null;
+  };
 }
 
 const ClassificationGrid = ({ data }: ClassificationGridProps) => {
-  if (!data) return null;
+  const matrix = data?.matrix;
+  const insights = data?.insights;
+  if (!matrix) return null;
 
   const rowNames = ["Proprietary", "Value-added", "Commodity"];
   const colNames = ["Low", "Medium", "High"];
@@ -28,7 +37,7 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
   // Compute 3x3 Grid Data
   const gridData = rowNames.map((row) => {
     const cols = colNames.map((col) => {
-      const cell = data[row]?.[col];
+      const cell = matrix[row]?.[col];
       if (!cell) {
         return { red: 0, green: 0, margin: "-", isGreen: false, isRed: false, rev: "₹0.00 (0.0%)" };
       }
@@ -90,7 +99,7 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
 
   rowNames.forEach((row) => {
     colNames.forEach((col) => {
-      const cell = data[row]?.[col];
+      const cell = matrix[row]?.[col];
       if (cell) {
         cell.families.forEach((fam) => {
           const rev = fam.revenue_inr || 0;
@@ -122,17 +131,18 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-bold text-gray-900">Classification × Freq to buy</h2>
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md">
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Quarter</span>
-          <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer">
-            <option>Q4 FY 26</option>
-          </select>
-        </div>
+        <CustomSelect
+          options={[insights?.curr_qtr || "Q4 FY 26"]}
+          value={insights?.curr_qtr || "Q4 FY 26"}
+          onChange={() => {}}
+          labelPrefix="Quarter: "
+          alignRight
+        />
       </div>
 
       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 mb-6">
         <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-          Classification = Freq to buy • Q4 FY 26
+          Classification = Freq to buy • {insights?.curr_qtr || "Q4 FY 26"}
         </div>
         <div className="text-xl font-extrabold text-gray-900 mt-1">
           Heating overall GM: <span className="text-[#a61c1e]">{pooledActualGm.toFixed(2)}%</span>
@@ -158,7 +168,11 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
                   <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold">{col.green}</span>
                 </div>
                 <div className={`text-center font-bold py-1 px-1.5 rounded text-[10px] ${
-                  col.isGreen ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"
+                  col.isGreen
+                    ? "bg-emerald-50 text-emerald-800"
+                    : col.isRed
+                    ? "bg-rose-50 text-rose-800"
+                    : "bg-gray-50 text-gray-400"
                 }`}>
                   {col.margin}
                 </div>

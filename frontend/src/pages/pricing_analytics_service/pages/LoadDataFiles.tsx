@@ -42,7 +42,7 @@ const LoadFiles = () => {
   const [files, setFiles] = useState([
     {
       title: "COGS Extract",
-      description: "COGS FY 26 FY 25 FY 24_v1.csv",
+      // description: "COGS FY 26 FY 25 FY 24_v1.csv",
       status: "upload",
       fileName: "",
       icon: <FileText className="text-red-600" />,
@@ -51,7 +51,7 @@ const LoadFiles = () => {
 
     {
       title: "Heating Targets",
-      description: "Target/Heating_Targets.csv",
+      // description: "Target/Heating_Targets.csv",
       status: "upload",
       fileName: "",
       icon: <Thermometer className="text-red-600" />,
@@ -60,7 +60,7 @@ const LoadFiles = () => {
 
     {
       title: "Heating Baseline",
-      description: "Baseline/Heating_baseline.csv",
+      // description: "Baseline/Heating_baseline.csv",
       status: "upload",
       fileName: "",
       icon: <BarChart3 className="text-red-600" />,
@@ -69,8 +69,8 @@ const LoadFiles = () => {
 
     {
       title: "Price List",
-      description:
-        "Quarterly standard price list CSV (e.g. Q3FY26 in filename). Upload one file per quarter you need.",
+      // description:
+      //   "Quarterly standard price list CSV (e.g. Q3FY26 in filename). Upload one file per quarter you need.",
       status: "upload",
       fileName: "",
       icon: <List className="text-red-600" />,
@@ -79,8 +79,8 @@ const LoadFiles = () => {
 
     {
       title: "Cost List",
-      description:
-        "Quarterly standard cost list CSV. Upload one file per quarter you need.",
+      // description:
+      //   "Quarterly standard cost list CSV. Upload one file per quarter you need.",
       status: "upload",
       fileName: "",
       icon: <DollarSign className="text-red-600" />,
@@ -89,8 +89,8 @@ const LoadFiles = () => {
 
     {
       title: "Non-standard Targets",
-      description:
-        "Target/Heating_Non-Standard_Targets.csv — column J new margins_vJan26",
+      // description:
+      //   "Target/Heating_Non-Standard_Targets.csv — column J new margins_vJan26",
       status: "upload",
       fileName: "",
       icon: <X className="text-red-600" />,
@@ -255,7 +255,7 @@ const LoadFiles = () => {
             <FileUploadCard
               key={file.title}
               title={file.title}
-              description={file.description}
+              // description={file.description}
               status={file.status as "loaded" | "upload" | "loading"}
               icon={file.icon}
               onUpload={(uploadedFile: File) =>

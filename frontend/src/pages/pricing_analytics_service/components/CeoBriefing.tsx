@@ -21,12 +21,12 @@ const CeoBriefing = () => {
         <h1 className="text-xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
           GIA — <span className="text-[#a61c1e]">CEO/CFO briefing</span>
         </h1>
-        <button
+        {/* <button
           onClick={() => navigate("/ai-studio/pas/workspace")}
           className="px-4 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 transition-colors shadow-sm"
         >
           ← Welcome
-        </button>
+        </button> */}
       </header>
 
       {/* Tabs Sub-Header Bar */}

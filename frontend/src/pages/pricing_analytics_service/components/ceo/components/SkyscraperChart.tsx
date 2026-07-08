@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { Bar } from "react-chartjs-2";
+import CustomSelect from "../../CustomSelect";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,16 +13,39 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const SkyscraperChart = () => {
-  const [compareMode, setCompareMode] = useState<"target" | "baseline">("target");
+interface SkyscraperChartProps {
+  families: Array<{
+    name: string;
+    actual: number;
+    target: number;
+    delta: number;
+    revenueInr: number;
+    share: number;
+    classification: string;
+  }>;
+  compareMode: "target" | "baseline";
+  setCompareMode: (val: "target" | "baseline") => void;
+  selectedQuarter: string;
+  setSelectedQuarter: (val: string) => void;
+  quarters: string[];
+  meta: {
+    insights: string[];
+    vs_target: { above_target: number; below_target: number; at_target: number };
+    vs_baseline: { above_baseline: number; below_baseline: number };
+  };
+}
 
-  const chartLabels = Array.from({ length: 45 }, (_, i) => `Family ${i + 1}`);
-  const chartDeltas = [
-    12.3, 10.3, 8.0, 5.8, 5.4, 5.2, 4.8, 4.3, 4.3, 3.5, 2.7, 1.8, 1.0, 0.5, 0.2,
-    -0.1, -0.4, -0.9, -1.2, -1.8, -2.1, -2.5, -3.0, -3.2, -3.8, -4.1, -4.5, -5.0,
-    -5.4, -5.8, -6.1, -6.5, -7.0, -7.8, -8.2, -8.9, -9.5, -10.1, -11.0, -11.7,
-    -12.5, -13.2, -15.0, -17.4, -19.1
-  ];
+const SkyscraperChart = ({
+  families,
+  compareMode,
+  setCompareMode,
+  selectedQuarter,
+  setSelectedQuarter,
+  quarters,
+  meta,
+}: SkyscraperChartProps) => {
+  const chartLabels = families.map((f) => f.name);
+  const chartDeltas = families.map((f) => f.delta);
 
   const chartData = {
     labels: chartLabels,
@@ -47,7 +71,7 @@ const SkyscraperChart = () => {
       tooltip: {
         backgroundColor: "#1e293b",
         callbacks: {
-          label: (context: any) => `Delta: ${context.parsed.y > 0 ? "+" : ""}${context.parsed.y} pp`,
+          label: (context: any) => `Delta: ${context.parsed.y > 0 ? "+" : ""}${context.parsed.y.toFixed(1)} pp`,
         },
       },
     },
@@ -94,18 +118,29 @@ const SkyscraperChart = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md self-start md:self-auto">
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Quarter</span>
-          <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer">
-            <option>Q4 FY 26</option>
-          </select>
-        </div>
+        <CustomSelect
+          options={quarters}
+          value={selectedQuarter}
+          onChange={setSelectedQuarter}
+          labelPrefix="Quarter: "
+          alignRight
+        />
       </div>
 
       <div className="text-xs text-gray-500 font-semibold mb-6">
-        <span className="text-gray-950 font-bold">75</span> families -{" "}
-        <span className="text-emerald-600 font-bold">21</span> above target -{" "}
-        <span className="text-rose-600 font-bold">54</span> below target (Δ = actual - target, pp).
+        <span className="text-gray-950 font-bold">{families.length}</span> families -{" "}
+        {compareMode === "target" ? (
+          <>
+            <span className="text-emerald-600 font-bold">{meta.vs_target.above_target}</span> above target -{" "}
+            <span className="text-rose-600 font-bold">{meta.vs_target.below_target}</span> below target
+          </>
+        ) : (
+          <>
+            <span className="text-emerald-600 font-bold">{meta.vs_baseline.above_baseline}</span> above baseline -{" "}
+            <span className="text-rose-600 font-bold">{meta.vs_baseline.below_baseline}</span> below baseline
+          </>
+        )}{" "}
+        (Δ = actual - {compareMode}, pp).
       </div>
 
       {/* Skyscraper Chart Area */}
