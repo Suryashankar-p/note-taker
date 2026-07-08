@@ -50,6 +50,7 @@ import { UploadFileModal } from "../../components/Modals/UploadFileModal.tsx";
 import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus.ts";
 import { iconMapping } from "../../utils/constants.ts";
 import { FaLightbulb } from "react-icons/fa6";
+import { useLargeFileStore, useLargeFileStoreHydrated, IngestedFile } from "../../stores/largeFileStore";
 
 const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
 interface MediaRendererProps {
@@ -443,9 +444,20 @@ const ChatArea: React.FC<Props> = ({
   const { upload, uploadState, fileId, status, statusState, isDone } =
     useDocumentUploadWithStatus();
 
+  const [queryFileId, setQueryFileId] = useState<string | undefined>(undefined);
+
+  const {
+    ingestedFiles,
+
+    addIngestedFile,
+    mergeIngestedFiles,
+    setChatId,
+    resetStore,
+  } = useLargeFileStore();
+  const hasHydrated = useLargeFileStoreHydrated();
+
   const [aiProvider, setAiProvider] = useState("GPT 5.4");
   const [isThinking, setIsThinking] = useState(false);
-  const [queryFileId, setQueryFileId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (currentChatType === "Sonnet 4.6") {
@@ -459,10 +471,20 @@ const ChatArea: React.FC<Props> = ({
   }, [currentChatType]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
+    if (chat_id) {
+      setChatId(chat_id);
+    } else {
+      resetStore();
+    }
+  }, [chat_id, setChatId, resetStore, hasHydrated]);
+
+  useEffect(() => {
     onNewChatAdditionRef.current = onNewChatAddition;
   }, [onNewChatAddition]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (chat_id) {
       getPageChat();
     } else {
@@ -471,7 +493,7 @@ const ChatArea: React.FC<Props> = ({
       setAiProvider("GPT 5.4");
       setIsThinking(false);
     }
-  }, [chat_id]);
+  }, [chat_id, hasHydrated]);
 
   // Clear media cache when chat_id changes (navigating between chats)
   useEffect(() => {
@@ -577,6 +599,25 @@ const ChatArea: React.FC<Props> = ({
         await dispatch.chatContent.clearChat();
         setCurrentChatType(response.result[response.result.length - 1]?.type);
         const documentLastIndexMap = new Map<string, number>();
+
+        const newIngestedFiles: IngestedFile[] = [];
+        response.result.forEach((chat: any) => {
+          if (chat.ingest_file_id) {
+            if (!newIngestedFiles.find((f) => f.fileId === chat.ingest_file_id)) {
+              newIngestedFiles.push({
+                fileId: chat.ingest_file_id,
+                fileName: chat.file_name || `File`,
+                ingestedAt: chat.created_on || new Date().toISOString(),
+                fileSize: chat.file_size || 0,
+              });
+            }
+          }
+        });
+        newIngestedFiles.sort(
+          (a, b) =>
+            new Date(b.ingestedAt).getTime() - new Date(a.ingestedAt).getTime()
+        );
+        mergeIngestedFiles(newIngestedFiles);
 
         response.result.forEach((chat: any, index: number) => {
           const doc = chat.document;
@@ -747,7 +788,9 @@ const ChatArea: React.FC<Props> = ({
     newChatId?: string,
     pendingQuery?: string,
     localMessagesToPass?: any[],
-    effectiveThinkingToPass?: boolean
+    effectiveThinkingToPass?: boolean,
+    fileName?: string,
+    fileSize?: number
   ) => {
     const pollInterval = setInterval(async () => {
       try {
@@ -769,6 +812,12 @@ const ChatArea: React.FC<Props> = ({
           clearInterval(pollInterval);
           console.log("File ingested successfully! Summary:", statusData.summary);
           setQueryFileId(fileId);
+          addIngestedFile({
+            fileId: fileId,
+            fileName: fileName || statusData.filename || 'Ingested File',
+            ingestedAt: new Date().toISOString(),
+            fileSize: fileSize || 0,
+          });
           dispatch.toast.openToast({
             status: true,
             message: "File ingested successfully! You can now ask questions.",
@@ -828,6 +877,21 @@ const ChatArea: React.FC<Props> = ({
             message: "Ingestion failed: " + (statusData.message || "Unknown error"),
             type: "error",
           });
+        } else if (statusData.status === "not_found" || statusResponse.status === 404) {
+          clearInterval(pollInterval);
+          setLoading(false);
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: "Session expired or file not found.",
+            type: "error",
+          });
+          if (isNewChat && newChatId) {
+            navigate(`/ai-studio/thermax_gpt?chat_id=${newChatId}`);
+            onNewChatAdditionRef.current();
+          } else {
+            await getPageChat();
+          }
         }
       } catch (error) {
         console.error("Error checking status:", error);
@@ -903,7 +967,7 @@ const ChatArea: React.FC<Props> = ({
     if (!inputValue.trim() || !aiProvider) return;
     setLoading(true);
     setStreamingStatus("thinking");
-    const isFile = uploadedFiles?.length > 0;
+
 
     const localFiles =
       uploadedFiles?.map((file) => ({
@@ -933,10 +997,12 @@ const ChatArea: React.FC<Props> = ({
       const isLargeFile = localFiles.some((f) => f.file_size > 10 * 1024 * 1024);
       if (isLargeFile) {
         mode = "ingest";
+      } else {
+        mode = "chat";
       }
-    } else if (queryFileId) {
+    } else if (ingestedFiles.length > 0) {
       mode = "query";
-      fileIdToSend = queryFileId;
+      fileIdToSend = ingestedFiles[0].fileId;
     }
 
     try {
@@ -961,11 +1027,21 @@ const ChatArea: React.FC<Props> = ({
               message: "File is processing in the background...",
               type: "success",
             });
-            startPolling(streamResponse.status_url, streamResponse.file_id, false, undefined, inputValue, localMessages, effectiveThinking);
+            startPolling(
+              streamResponse.status_url, 
+              streamResponse.file_id, 
+              false, 
+              undefined, 
+              inputValue, 
+              localMessages, 
+              effectiveThinking,
+              localFiles[0]?.file_name,
+              localFiles[0]?.file_size
+            );
             return;
           } else if (streamResponse?.id || streamResponse?.chat_history_id) {
             const streamId = streamResponse.id || streamResponse.chat_history_id;
-            startStreaming(chat_id, streamId, localMessages, false, effectiveThinking, isFile);
+            startStreaming(chat_id, streamId, localMessages, false, effectiveThinking, mode === "query");
             return; // Exit early for streaming
           } else {
             dispatch.toast.openToast({
@@ -1045,7 +1121,17 @@ const ChatArea: React.FC<Props> = ({
                   message: "File is processing in the background...",
                   type: "success",
                 });
-                startPolling(streamResponse.status_url, streamResponse.file_id, true, newSessionResponse.id, inputValue, localMessages, effectiveThinking);
+                startPolling(
+                  streamResponse.status_url, 
+                  streamResponse.file_id, 
+                  true, 
+                  newSessionResponse.id, 
+                  inputValue, 
+                  localMessages, 
+                  effectiveThinking,
+                  localFiles[0]?.file_name,
+                  localFiles[0]?.file_size
+                );
                 return;
               } else if (streamResponse?.id || streamResponse?.chat_history_id) {
                 const streamId = streamResponse.id || streamResponse.chat_history_id;
@@ -1055,7 +1141,7 @@ const ChatArea: React.FC<Props> = ({
                   localFiles,
                   true,
                   effectiveThinking,
-                  isFile
+                  mode === "query"
                 );
                 return; // Exit early for streaming
               } else {
@@ -1718,6 +1804,7 @@ const ChatArea: React.FC<Props> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
+
                   <DropDownMenu
                     disabled={isThinking}
                     content={
