@@ -51,7 +51,7 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
       setValue("fileName", truncatedFileName);
     }
   };
-  
+
   const handleChooseFileClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -101,7 +101,7 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
                   </span>
                 )}
                 <p className="text-xs text-gray-500 mt-2">
-                  File size max 10MB.
+                  File size max 1GB.
                 </p>
                 <input
                   type="file"
@@ -137,11 +137,10 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit }) => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`px-4 py-2 rounded-lg text-white font-medium transition ${
-                    loading
+                  className={`px-4 py-2 rounded-lg text-white font-medium transition ${loading
                       ? "bg-blue-300 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+                    }`}
                 >
                   {loading ? (
                     <div className="flex items-center">
