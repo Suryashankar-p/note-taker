@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import FileUploadCard from "../components/FileUploadCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useUploadCogs,
@@ -30,6 +30,12 @@ const LoadFiles = () => {
   const dispatch = useDispatch<Dispatch>();
   const toastStatus = useSelector((state: RootState) => state.toast);
   const [pageError, setPageError] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [sessionName, setSessionName] = useState<string>("");
+
+  useEffect(() => {
+    localStorage.removeItem("pricing_session_id");
+  }, []);
 
   const { mutate: uploadCogs } = useUploadCogs();
   const { mutate: uploadTargets } = useUploadTargets();
@@ -188,6 +194,12 @@ const LoadFiles = () => {
 
   const handleContinue = () => {
     if (!allUploaded || isCreatingSession) return;
+    setSessionName("");
+    setIsCreateModalOpen(true);
+  };
+
+  const submitCreateSession = () => {
+    if (!allUploaded || isCreatingSession) return;
 
     const cogsFile = files.find((f) => f.title === "COGS Extract");
     const targetsFile = files.find((f) => f.title === "Heating Targets");
@@ -197,7 +209,7 @@ const LoadFiles = () => {
     const costListFile = files.find((f) => f.title === "Cost List");
 
     const payload = {
-      session_name: "test",
+      session_name: sessionName.trim() || `Session - ${new Date().toLocaleDateString()}`,
       cogs_file_id: cogsFile?.id || 0,
       targets_file_id: targetsFile?.id || 0,
       baseline_file_id: baselineFile?.id || 0,
@@ -221,6 +233,7 @@ const LoadFiles = () => {
         if (sessionId) {
           localStorage.setItem("pricing_session_id", String(sessionId));
         }
+        setIsCreateModalOpen(false);
         navigate("workspace", { state: { sessionId } });
       },
       onError: (error: any) => {
@@ -306,6 +319,61 @@ const LoadFiles = () => {
           </button>
         </div>
       </div>
+
+      {/* Create Session Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
+          <div className="bg-white border border-slate-100 rounded-2xl p-6 w-[400px] max-w-full text-slate-800 shadow-xl text-left">
+            <h3 className="text-lg font-bold mb-4 text-slate-800">Create Session</h3>
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                Session Name
+              </label>
+              <input
+                type="text"
+                placeholder={`e.g. Session - ${new Date().toLocaleDateString()}`}
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                disabled={isCreatingSession}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#a61c1e]/20 focus:border-[#a61c1e] disabled:opacity-50"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    submitCreateSession();
+                  } else if (e.key === "Escape") {
+                    if (!isCreatingSession) setIsCreateModalOpen(false);
+                  }
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                }}
+                disabled={isCreatingSession}
+                className="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitCreateSession}
+                disabled={isCreatingSession}
+                className="flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-[#a61c1e] text-white hover:bg-red-700 transition-colors disabled:opacity-50 min-w-[70px]"
+              >
+                {isCreatingSession ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin text-white" />
+                    Creating...
+                  </>
+                ) : (
+                  "Submit"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

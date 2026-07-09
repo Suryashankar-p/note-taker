@@ -275,7 +275,7 @@ const Dashboard: React.FC = () => {
     try {
       const response = await GetMemberPricingAnalyticsRole();
       if (response?.role) {
-        navigate("./pas");
+        navigate("./pricing-analytics");
       } else {
         setPageError(true);
         if (response?.detail)

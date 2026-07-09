@@ -235,6 +235,47 @@ export const useCreateSession = () => {
   });
 };
 
+export const useGetSessions = () => {
+  return useQuery({
+    queryKey: ["sessions"],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.get("/sessions/");
+      return response;
+    },
+  });
+};
+
+export const useDeleteSession = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["delete-session"],
+    mutationFn: async (sessionId: number) => {
+      const response = await PricingAnalyticsAPI.delete(`/sessions/${sessionId}`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    },
+  });
+};
+
+export const useUpdateSession = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["update-session"],
+    mutationFn: async (data: { sessionId: number; session_name: string }) => {
+      const response = await PricingAnalyticsAPI.patch(`/sessions/${data.sessionId}`, {
+        session_name: data.session_name,
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    },
+  });
+};
+
+
 export const useGetOverallMargin = (sessionId: number) => {
   return useQuery({
     queryKey: ["overall-margin", sessionId],

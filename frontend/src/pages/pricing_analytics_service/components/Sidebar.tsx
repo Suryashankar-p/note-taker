@@ -9,7 +9,7 @@ import {
 import { useLocation } from "react-router-dom";
 import SidebarItem from "./SidebarItem";
 
-const SETTINGS_BASE = "/ai-studio/pas/workspace/dashboard";
+const SETTINGS_BASE = "/ai-studio/pricing-analytics/workspace/dashboard";
 
 
 const SettingsSidebar = () => {

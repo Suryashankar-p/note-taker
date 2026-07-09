@@ -9,7 +9,7 @@ const PricingAnalyst = () => {
   const [selectedQoqCell, setSelectedQoqCell] = useState<any | null>(null);
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
 
-  const SETTINGS_BASE = "/ai-studio/pas/workspace/dashboard";
+  const SETTINGS_BASE = "/ai-studio/pricing-analytics/workspace/dashboard";
 
   const tabItems = [
     { label: "1 - OVERALL MARGIN", path: `${SETTINGS_BASE}/analyst/overall-margin` },
@@ -26,7 +26,7 @@ const PricingAnalyst = () => {
           GIA — <span className="text-[#a61c1e]">Pricing Analyst / Pricing Council</span>
         </h1>
         {/* <button
-          onClick={() => navigate("/ai-studio/pas/workspace")}
+          onClick={() => navigate("/ai-studio/pricing-analytics/workspace")}
           className="px-4 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 transition-colors shadow-sm"
         >
           ← Welcome
