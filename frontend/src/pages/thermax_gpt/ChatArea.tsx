@@ -783,9 +783,9 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const startPolling = (
-    statusUrl: string, 
-    fileId: string, 
-    isNewChat: boolean, 
+    statusUrl: string,
+    fileId: string,
+    isNewChat: boolean,
     newChatId?: string,
     pendingQuery?: string,
     localMessagesToPass?: any[],
@@ -798,8 +798,8 @@ const ChatArea: React.FC<Props> = ({
         const backendBase = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL as string;
         let finalUrl = statusUrl;
         if (!statusUrl.startsWith('http')) {
-           const urlObj = new URL(backendBase);
-           finalUrl = `${urlObj.origin}${statusUrl.startsWith('/') ? '' : '/'}${statusUrl}`;
+          const urlObj = new URL(backendBase);
+          finalUrl = `${urlObj.origin}${statusUrl.startsWith('/') ? '' : '/'}${statusUrl}`;
         }
         const token = localStorage.getItem('access_token');
         const statusResponse = await fetch(finalUrl, {
@@ -825,7 +825,7 @@ const ChatArea: React.FC<Props> = ({
             type: "success",
           });
           setPageError(false);
-          
+
           if (pendingQuery) {
             setStreamingStatus("thinking");
             try {
@@ -1035,12 +1035,12 @@ const ChatArea: React.FC<Props> = ({
               type: "success",
             });
             startPolling(
-              streamResponse.status_url, 
-              streamResponse.file_id, 
-              false, 
-              undefined, 
-              inputValue, 
-              localMessages, 
+              streamResponse.status_url,
+              streamResponse.file_id,
+              false,
+              undefined,
+              inputValue,
+              localMessages,
               effectiveThinking,
               localFiles[0]?.file_name,
               localFiles[0]?.file_size
@@ -1129,12 +1129,12 @@ const ChatArea: React.FC<Props> = ({
                   type: "success",
                 });
                 startPolling(
-                  streamResponse.status_url, 
-                  streamResponse.file_id, 
-                  true, 
-                  newSessionResponse.id, 
-                  inputValue, 
-                  localMessages, 
+                  streamResponse.status_url,
+                  streamResponse.file_id,
+                  true,
+                  newSessionResponse.id,
+                  inputValue,
+                  localMessages,
                   effectiveThinking,
                   localFiles[0]?.file_name,
                   localFiles[0]?.file_size
@@ -1368,7 +1368,7 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const renderAttachFile = () => {
-    return "Attach File (Up to 100MB)";
+    return "Attach File (Up to 1 GB)";
   };
 
   const getStreamingStatusText = (status: string | null) => {

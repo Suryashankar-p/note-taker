@@ -26,10 +26,8 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({
       const selectedFiles = Array.from(e.target.files);
       const allowedExtensions = ['.pdf', '.txt', '.png', '.json', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
       const invalidFiles = selectedFiles.filter(file =>
-      const allowedExtensions = ['.pdf', '.txt', '.png', '.json', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls', '.csv'];
-        const invalidFiles = selectedFiles.filter(file =>
-          !allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
-        );
+        !allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+      );
 
 
         if (invalidFiles.length > 0) {
