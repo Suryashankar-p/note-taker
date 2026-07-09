@@ -204,21 +204,21 @@ const App = () => (
         element={<ProtectedRoute element={<HeatingOCRMain />} />}
       />
       <Route
-        path="/ai-studio/pas"
+        path="/ai-studio/pricing-analytics"
         element={<ProtectedRoute element={<PricingAnalyticsService />} />}
       />
       <Route
-        path="/ai-studio/pas/settings"
+        path="/ai-studio/pricing-analytics/settings"
         element={<ProtectedRoute element={<SettingsLayout />} />}
       >
         <Route path="members" element={<MembersTab />} />
       </Route>
       <Route
-        path="/ai-studio/pas/workspace"
+        path="/ai-studio/pricing-analytics/workspace"
         element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspace />} />}
       />
       <Route
-        path="/ai-studio/pas/workspace/dashboard"
+        path="/ai-studio/pricing-analytics/workspace/dashboard"
         element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspaceDashboard />} />}
       >
         <Route index element={<PricingAnalyticsServiceWorkspaceAnalytics />} />

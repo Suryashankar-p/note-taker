@@ -7,7 +7,7 @@ const BriefingSettingsSidebar = () => {
   const { pathname } = useLocation();
   const normalizedPath = pathname.replace(/\/+$/, "");
 
-  const baseUploadPath = "/ai-studio/pas";
+  const baseUploadPath = "/ai-studio/pricing-analytics";
 
   const sidebarItems = [
     {

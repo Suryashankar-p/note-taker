@@ -5,7 +5,6 @@ import {
   Settings,
   RotateCcw,
   X,
-  Paperclip,
   Send,
   Sparkles,
 } from "lucide-react";
@@ -33,37 +32,18 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
     {
       id: 1,
       sender: "system",
-      content: "Welcome to GIA co-pilot, how can I help you today?",
+      content: "Welcome to GIA Co-pilot, how can I help you today?",
     },
   ]);
 
   const [inputVal, setInputVal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const chatMutation = useSendLLMChat();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
-
-  const handleAttachmentClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
 
   const handleSend = async () => {
     if (!inputVal.trim() || isLoading) return;
@@ -71,15 +51,10 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
     setInputVal("");
     setIsLoading(true);
 
-    const attachmentPrefix = selectedFile ? `[Attached: ${selectedFile.name}] ` : "";
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), sender: "user", content: `${attachmentPrefix}${userQuery}` },
+      { id: Date.now(), sender: "user", content: userQuery },
     ]);
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
 
     const currentPath = location.pathname;
     const mode = currentPath.includes("/analyst") ? "pricing_analyst" : "ceo_cfo";
@@ -129,7 +104,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed bottom-2 right-6 w-[420px] h-[550px] bg-[#131517] text-white rounded-xl shadow-2xl border border-[#202226] flex flex-col overflow-hidden z-50 animate-fade-in font-sans">
+    <div className="fixed bottom-8 right-6 w-[420px] h-[550px] bg-[#131517] text-white rounded-xl shadow-2xl border border-[#202226] flex flex-col overflow-hidden z-50 animate-fade-in font-sans">
       {/* 1. Header Bar */}
       <div className="flex items-center justify-between px-4 py-3.5 bg-[#1a1c1e] border-b border-[#202226]">
         <div className="flex items-center gap-2">
@@ -278,48 +253,22 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
       </div>
 
       {/* 4. Footer Input Bar */}
-      <div className="p-3 bg-[#131517] border-t border-[#202226] flex flex-col gap-2">
-        {selectedFile && (
-          <div className="flex items-center justify-between bg-[#1c1f22] border border-[#2d3135] px-3 py-1.5 rounded-lg text-xs text-gray-300">
-            <div className="flex items-center gap-2 truncate">
-              <Paperclip size={12} className="text-[#ED3438] shrink-0" />
-              <span className="truncate">{selectedFile.name}</span>
-              <span className="text-[10px] text-gray-500 shrink-0">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
-            </div>
-            <button onClick={handleRemoveFile} className="text-gray-400 hover:text-white transition-colors pl-2 shrink-0">
-              <X size={12} />
-            </button>
-          </div>
-        )}
-        <div className="flex items-center gap-2 w-full">
+      <div className="p-3 bg-[#131517] border-t border-[#202226] flex items-center gap-2">
+        <div className="flex-1 relative flex items-center">
           <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
+            type="text"
+            placeholder="Ask a question..."
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            className="w-full bg-[#1c1f22] border border-[#2d3135] rounded-lg pl-3 pr-12 py-2.5 text-xs text-white placeholder-gray-500 outline-none focus:border-[#ED3438] font-medium"
           />
           <button
-            onClick={handleAttachmentClick}
-            className="p-2.5 bg-[#1c1f22] hover:bg-[#252a2d] border border-[#2d3135] rounded-lg text-gray-400 hover:text-white transition-colors shrink-0"
+            onClick={handleSend}
+            className="absolute right-1.5 p-1.5 bg-[#ED3438] hover:bg-red-700 text-white rounded-md transition-colors"
           >
-            <Paperclip size={15} />
+            <Send size={12} />
           </button>
-          <div className="flex-1 relative flex items-center">
-            <input
-              type="text"
-              placeholder="Ask or paste an image (Ctrl+V)..."
-              value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              className="w-full bg-[#1c1f22] border border-[#2d3135] rounded-lg pl-3 pr-12 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-[#ED3438] font-medium"
-            />
-            <button
-              onClick={handleSend}
-              className="absolute right-1.5 p-1.5 bg-[#ED3438] hover:bg-red-700 text-white rounded-md transition-colors"
-            >
-              <Send size={12} />
-            </button>
-          </div>
         </div>
       </div>
     </div>
