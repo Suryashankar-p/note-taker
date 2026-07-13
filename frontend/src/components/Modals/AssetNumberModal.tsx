@@ -1,15 +1,29 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Text from "../Text";
 import Close from "../../assets/close.svg";
+import SearchDropdown from "../Combobox.tsx";
+import { SearchAssets } from "../../services/troubleshooting";
+
+export interface SelectedAsset {
+  sf_asset_id: string;
+  asset_name: string;
+  account_name?: string | null;
+}
 
 interface Props {
   show: boolean;
-  onSubmit: (assetNumber: string) => void;
+  onSubmit: (asset: SelectedAsset) => void;
   onClose: () => void;
   // When true the dialog cannot be dismissed (no Cancel/X/Esc/backdrop close).
-  // Used to enforce the rule that a new chat must have an asset number.
+  // Used to enforce the rule that a new chat must have an asset.
   mandatory?: boolean;
 }
+
+type Option = {
+  name: string;
+  subname?: string | null;
+  asset: SelectedAsset;
+};
 
 const AssetNumberModal: React.FC<Props> = ({
   show,
@@ -17,32 +31,70 @@ const AssetNumberModal: React.FC<Props> = ({
   onClose,
   mandatory = false,
 }) => {
-  const [assetNumber, setAssetNumber] = useState("");
+  const [selectedAsset, setSelectedAsset] = useState<SelectedAsset | null>(null);
+  const [nameOptions, setNameOptions] = useState<Option[]>([]);
+  const [idOptions, setIdOptions] = useState<Option[]>([]);
   const [error, setError] = useState("");
 
+  let debounceId: ReturnType<typeof setTimeout> | null = null;
+
+  const runSearch = async (term: string) => {
+    try {
+      const resp: any = await SearchAssets(term);
+      const rows = resp?.result ?? [];
+      const options: Option[] = rows.map((r: any) => ({
+        name: r.asset_name,
+        subname: r.account_name,
+        asset: {
+          sf_asset_id: r.sf_asset_id,
+          asset_name: r.asset_name,
+          account_name: r.account_name,
+        },
+      }));
+      setNameOptions(options);
+      setIdOptions(
+        options.map((o) => ({
+          name: o.asset.sf_asset_id,
+          subname: o.asset.account_name,
+          asset: o.asset,
+        }))
+      );
+    } catch {
+      setNameOptions([]);
+      setIdOptions([]);
+    }
+  };
+
+  const onQueryChange = (query: string) => {
+    if (debounceId) clearTimeout(debounceId);
+    debounceId = setTimeout(() => runSearch(query), 400);
+  };
+
   const closeModal = () => {
-    setAssetNumber("");
+    setSelectedAsset(null);
     setError("");
     onClose();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assetNumber.trim()) {
-      setError("Asset Number is required");
+    if (!selectedAsset) {
+      setError("Please select an asset");
       return;
     }
-    onSubmit(assetNumber.trim());
-    setAssetNumber("");
+    onSubmit(selectedAsset);
+    setSelectedAsset(null);
     setError("");
   };
 
-  // Reset fields whenever the dialog is hidden.
+  // Reset fields and preload options whenever the dialog opens.
   useEffect(() => {
-    if (!show) {
-      setAssetNumber("");
+    if (show) {
+      setSelectedAsset(null);
       setError("");
+      runSearch("");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
   // Allow Escape to close only when dismissible.
@@ -57,6 +109,13 @@ const AssetNumberModal: React.FC<Props> = ({
   }, [show, mandatory]);
 
   if (!show) return null;
+
+  const selectedNameOption: Option | undefined = selectedAsset
+    ? { name: selectedAsset.asset_name, subname: selectedAsset.account_name, asset: selectedAsset }
+    : undefined;
+  const selectedIdOption: Option | undefined = selectedAsset
+    ? { name: selectedAsset.sf_asset_id, subname: selectedAsset.account_name, asset: selectedAsset }
+    : undefined;
 
   return (
     // Overlay sits ABOVE the chat area (z-0) so the message box stays blocked,
@@ -82,19 +141,34 @@ const AssetNumberModal: React.FC<Props> = ({
         <form onSubmit={handleSubmit}>
           <div className="mb-4 mt-5">
             <label className="block text-sm font-medium text-gray-700">
-              Asset Number *
+              Asset Name *
             </label>
-            <input
-              autoFocus
-              type="text"
-              value={assetNumber}
-              onChange={(e) => {
-                setAssetNumber(e.target.value);
+            <SearchDropdown
+              className="mt-1"
+              placeholder="Search by asset name"
+              listValues={nameOptions}
+              initialValue={selectedNameOption}
+              onQueryChange={onQueryChange}
+              onChange={(option: Option) => {
+                setSelectedAsset(option.asset);
                 if (error) setError("");
               }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-              placeholder="Enter the Asset Number"
-              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Asset ID *
+            </label>
+            <SearchDropdown
+              className="mt-1"
+              placeholder="Search by asset ID"
+              listValues={idOptions}
+              initialValue={selectedIdOption}
+              onQueryChange={onQueryChange}
+              onChange={(option: Option) => {
+                setSelectedAsset(option.asset);
+                if (error) setError("");
+              }}
             />
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
           </div>
