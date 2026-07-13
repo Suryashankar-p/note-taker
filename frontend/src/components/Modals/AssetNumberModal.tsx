@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Text from "../Text";
 import Close from "../../assets/close.svg";
 import SearchDropdown from "../Combobox.tsx";
@@ -36,7 +36,7 @@ const AssetNumberModal: React.FC<Props> = ({
   const [idOptions, setIdOptions] = useState<Option[]>([]);
   const [error, setError] = useState("");
 
-  let debounceId: ReturnType<typeof setTimeout> | null = null;
+  const debounceIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const runSearch = async (term: string) => {
     try {
@@ -66,8 +66,8 @@ const AssetNumberModal: React.FC<Props> = ({
   };
 
   const onQueryChange = (query: string) => {
-    if (debounceId) clearTimeout(debounceId);
-    debounceId = setTimeout(() => runSearch(query), 400);
+    if (debounceIdRef.current) clearTimeout(debounceIdRef.current);
+    debounceIdRef.current = setTimeout(() => runSearch(query), 400);
   };
 
   const closeModal = () => {
