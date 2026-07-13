@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Sparkles } from "lucide-react";
+import CustomSelect from "../CustomSelect";
 
 interface AnalystSnapshotCardsProps {
   snapshotKpis?: {
@@ -8,10 +9,10 @@ interface AnalystSnapshotCardsProps {
       revenue_inr: number;
       overall_gm_pct: number;
       delta_vs_baseline_pp: number;
-      delta_vs_target_pp: number;
+      delta_vs_heating_target_pp: number;
       families_above_target: number;
       families_below_target: number;
-      families_at_target: number;
+      families_above_baseline: number;
     }>;
   };
   insights: string[];
@@ -32,21 +33,29 @@ const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsPr
     return qA - qB;
   };
 
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+
   const quarters = (snapshotKpis?.quarters || [])
     .map((item: any) => item.quarter)
     .sort(sortQuarters);
 
-  const latestQuarter = quarters[quarters.length - 1] || "";
-  const activeSnapshot = (snapshotKpis?.quarters || []).find((item: any) => item.quarter === latestQuarter);
+  const activeQuarter = selectedQuarter || quarters[quarters.length - 1] || "";
+  const activeSnapshot = (snapshotKpis?.quarters || []).find((item: any) => item.quarter === activeQuarter);
+
+  useEffect(() => {
+    if (quarters.length > 0 && !selectedQuarter) {
+      setSelectedQuarter(quarters[quarters.length - 1]);
+    }
+  }, [quarters, selectedQuarter]);
 
   const stats = activeSnapshot ? [
     { label: "HEATING REVENUE", value: `₹${(activeSnapshot.revenue_inr / 10000000).toFixed(1)} Cr` },
     { label: "OVERALL GM%", value: `${activeSnapshot.overall_gm_pct.toFixed(1)}%` },
     { label: "Δ VS BASELINE", value: `${activeSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_baseline_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_baseline_pp >= 0, isNegative: activeSnapshot.delta_vs_baseline_pp < 0 },
-    { label: "Δ VS HEATING TARGET", value: `${activeSnapshot.delta_vs_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_target_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_target_pp >= 0, isNegative: activeSnapshot.delta_vs_target_pp < 0 },
+    { label: "Δ VS HEATING TARGET", value: `${activeSnapshot.delta_vs_heating_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_heating_target_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_heating_target_pp >= 0, isNegative: activeSnapshot.delta_vs_heating_target_pp < 0 },
     { label: "FAMILIES ABOVE TARGET", value: String(activeSnapshot.families_above_target) },
     { label: "FAMILIES BELOW TARGET", value: String(activeSnapshot.families_below_target) },
-    { label: "FAMILIES AT TARGET", value: String(activeSnapshot.families_at_target) },
+    { label: "FAMILIES ABOVE BASELINE", value: String(activeSnapshot.families_above_baseline) },
   ] : [];
 
   return (
@@ -56,9 +65,15 @@ const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsPr
           <h3 className="text-sm font-bold tracking-tight text-gray-800">
             Executive snapshot
           </h3>
-          <span className="text-xs font-bold text-[#a61c1e] bg-red-50 border border-red-100 px-2 py-0.5 rounded">
-            {latestQuarter}
-          </span>
+          {quarters.length > 0 && (
+            <CustomSelect
+              options={quarters}
+              value={activeQuarter}
+              onChange={setSelectedQuarter}
+              labelPrefix="Quarter: "
+              alignRight
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
