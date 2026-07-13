@@ -4,7 +4,7 @@ import PageLoading from "../../../components/PageLoading";
 
 const CeoBriefing = () => {
   const navigate = useNavigate();
-
+  
   const SETTINGS_BASE = "/ai-studio/pricing-analytics/workspace/dashboard";
 
   const tabItems = [
@@ -16,20 +16,12 @@ const CeoBriefing = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans flex flex-col">
-      {/* Top Header Row */}
       <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-200 shadow-sm">
         <h1 className="text-xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
           GIA — <span className="text-[#a61c1e]">CEO/CFO briefing</span>
         </h1>
-        {/* <button
-          onClick={() => navigate("/ai-studio/pricing-analytics/workspace")}
-          className="px-4 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 transition-colors shadow-sm"
-        >
-          ← Welcome
-        </button> */}
       </header>
 
-      {/* Tabs Sub-Header Bar */}
       <div className="px-8 py-3 bg-white flex gap-3 border-b border-gray-200">
         {tabItems.map((tab) => (
           <NavLink
@@ -48,7 +40,6 @@ const CeoBriefing = () => {
         ))}
       </div>
 
-      {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">
         <Suspense fallback={<PageLoading />}>
           <Outlet />

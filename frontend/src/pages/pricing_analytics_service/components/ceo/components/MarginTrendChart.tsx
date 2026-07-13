@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -11,6 +11,7 @@ import {
   Legend,
   Filler,
 } from "chart.js";
+import CustomSelect from "../../CustomSelect";
 
 ChartJS.register(
   CategoryScale,
@@ -23,16 +24,48 @@ ChartJS.register(
   Filler
 );
 
+type MarginDataPoint = {
+  quarter: string;
+  overall_gm_pct: number | null;
+  standard_gm_pct: number | null;
+  non_standard_gm_pct: number | null;
+};
+
 interface MarginTrendChartProps {
-  data?: Array<{
-    quarter: string;
-    overall_gm_pct: number | null;
-    standard_gm_pct: number | null;
-    non_standard_gm_pct: number | null;
-  }>;
+  data?: Record<string, MarginDataPoint[]> | MarginDataPoint[];
 }
 
-const MarginTrendChart = ({ data: apiData }: MarginTrendChartProps) => {
+const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
+  const [selectedFamily, setSelectedFamily] = useState<string>("");
+
+  const normalizedData = React.useMemo(() => {
+    if (!data) return {};
+    if (Array.isArray(data)) return { "All Families": data };
+    
+    if (typeof data === "object") {
+      const validData: Record<string, MarginDataPoint[]> = {};
+      for (const key in data) {
+        if (Array.isArray((data as any)[key])) {
+          validData[key] = (data as any)[key];
+        }
+      }
+      return validData;
+    }
+    return {};
+  }, [data]);
+
+  const families = Object.keys(normalizedData);
+
+  useEffect(() => {
+    if (families.length > 0 && !selectedFamily) {
+      if (families.includes("All Families")) {
+        setSelectedFamily("All Families");
+      } else {
+        setSelectedFamily(families[0]);
+      }
+    }
+  }, [normalizedData, selectedFamily]);
+
   const sortQuarters = (a: string, b: string) => {
     const matchA = a.match(/Q(\d) /);
     const matchB = b.match(/Q(\d) /);
@@ -47,16 +80,20 @@ const MarginTrendChart = ({ data: apiData }: MarginTrendChartProps) => {
     return qA - qB;
   };
 
-  if (!apiData || apiData.length === 0) return null;
+  if (families.length === 0) return null;
   
-  const sortedApiData = [...apiData].sort((a, b) => sortQuarters(a.quarter, b.quarter));
+  const activeFamily = selectedFamily && families.includes(selectedFamily) ? selectedFamily : families[0];
+  const apiData = normalizedData[activeFamily] || [];
+
+  const sortedApiData = [...apiData].sort((a, b) => sortQuarters(a?.quarter || "", b?.quarter || ""));
 
   const chartData = {
     labels: sortedApiData.map((item) => item.quarter),
     datasets: [
       {
-        label: "103 families margin %",
-        data: sortedApiData.map((item) => item.overall_gm_pct ?? 0),
+        label: `${activeFamily} margin %`,
+        data: sortedApiData.map((item) => item.overall_gm_pct),
+        spanGaps: true,
         fill: true,
         borderColor: "#a61c1e",
         backgroundColor: "rgba(166, 28, 30, 0.04)",
@@ -88,7 +125,22 @@ const MarginTrendChart = ({ data: apiData }: MarginTrendChartProps) => {
         cornerRadius: 6,
         displayColors: false,
         callbacks: {
-          label: (context: any) => `Margin: ${context.parsed.y}%`,
+          label: (context: any) => {
+            const dataPoint = sortedApiData[context.dataIndex];
+            if (!dataPoint) return `Overall Margin: ${context.parsed.y?.toFixed(1)}%`;
+            
+            const lines = [`Overall Margin: ${context.parsed.y?.toFixed(1)}%`];
+            
+            if (dataPoint.standard_gm_pct !== null && dataPoint.standard_gm_pct !== undefined) {
+              lines.push(`Standard Margin: ${dataPoint.standard_gm_pct.toFixed(1)}%`);
+            }
+            
+            if (dataPoint.non_standard_gm_pct !== null && dataPoint.non_standard_gm_pct !== undefined) {
+              lines.push(`Non-Standard Margin: ${dataPoint.non_standard_gm_pct.toFixed(1)}%`);
+            }
+            
+            return lines;
+          },
         },
       },
     },
@@ -120,17 +172,19 @@ const MarginTrendChart = ({ data: apiData }: MarginTrendChartProps) => {
           <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase">
             Margin trend
           </h3>
-          {/* <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-3 mt-2">
             <span className="text-[10px] text-gray-400 font-bold uppercase">Product families</span>
-            <select className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1 text-xs font-semibold text-[#a61c1e] outline-none cursor-pointer">
-              <option>103 of 109 families</option>
-            </select>
-          </div> */}
+            <CustomSelect
+              options={families}
+              value={activeFamily}
+              onChange={setSelectedFamily}
+            />
+          </div>
         </div>
-        {/* <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-[#a61c1e]"></span>
-          <span className="text-xs text-gray-600 font-semibold">103 families margin %</span>
-        </div> */}
+          <span className="text-xs text-gray-600 font-semibold">{activeFamily} margin %</span>
+        </div>
       </div>
 
       <div className="h-64">

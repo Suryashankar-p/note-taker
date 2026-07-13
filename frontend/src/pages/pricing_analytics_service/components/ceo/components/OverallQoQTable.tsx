@@ -27,8 +27,7 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
 
   if (!data || data.length === 0) return null;
   
-  // Dynamic quarters extraction sorted chronologically
-  const activeQuarters = Object.keys(data[0].quarters).sort(sortQuarters);
+  const activeQuarters = Object.keys(data[0].quarters).sort(sortQuarters).reverse();
 
   const headers = [
     { label: "Baseline\n(Q4 FY24 + Q1 FY25)", colSpan: 2 },
