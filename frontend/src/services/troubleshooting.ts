@@ -377,10 +377,10 @@ export const ReadKbDocuments = async (
   return response;
 };
 
-export const CreateKbDocument = async (file: File, product_id: number | string) => {
+export const CreateKbDocument = async (files: File[], product_id: number | string) => {
   const token = localStorage.getItem("access_token");
   const formData = new FormData();
-  formData.append("document", file, file.name);
+  files.forEach((file) => formData.append("documents", file, file.name));
   try {
     const response = await axios.post(
       `${BACKEND_TROUBLESHOOTING_URL}/troubleshooting/kb_document?product_id=${product_id}`,
@@ -397,7 +397,7 @@ export const CreateKbDocument = async (file: File, product_id: number | string) 
     if (error?.response?.status === 415)
       (store.dispatch as Dispatch).toast.openToast({
         status: true,
-        message: "Unsupported extension. Only .pdf is allowed for Knowledge Base.",
+        message: "Unsupported extension. Only .pdf and .docx are allowed for Knowledge Base.",
       });
     throw error;
   }
