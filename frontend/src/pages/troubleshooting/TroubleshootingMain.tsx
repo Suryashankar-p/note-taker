@@ -9,7 +9,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import useApiCheck from "../../hooks/useApiCheck";
 import Toast from "../../components/Toast";
 import PageLoading from "../../components/PageLoading";
-import AssetNumberModal from "../../components/Modals/AssetNumberModal.tsx";
+import AssetNumberModal, { SelectedAsset } from "../../components/Modals/AssetNumberModal.tsx";
 
 const breadCrumbs = [
   {
@@ -34,17 +34,17 @@ const TroubleshootingMain = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [assetModalOpen, setAssetModalOpen] = useState<boolean>(false);
-  const [pendingAssetNumber, setPendingAssetNumber] = useState<string | null>(null);
+  const [pendingAsset, setPendingAsset] = useState<SelectedAsset | null>(null);
 
   const openNewChatFlow = () => {
     dispatch.chatContent.clearChat();
-    setPendingAssetNumber(null);
+    setPendingAsset(null);
     navigate(`/ai-studio/troubleshooting`);
     setAssetModalOpen(true);
   };
 
-  const onAssetSubmit = (assetNumber: string) => {
-    setPendingAssetNumber(assetNumber);
+  const onAssetSubmit = (asset: SelectedAsset) => {
+    setPendingAsset(asset);
     setAssetModalOpen(false);
   };
 
@@ -61,7 +61,7 @@ const TroubleshootingMain = () => {
   //    prevents the dialog from lingering (with a Cancel button) over them.
   useEffect(() => {
     if (!chat_id) {
-      setPendingAssetNumber(null);
+      setPendingAsset(null);
       setAssetModalOpen(true);
     } else {
       setAssetModalOpen(false);
@@ -155,8 +155,8 @@ const TroubleshootingMain = () => {
           <ChatArea
             onNewChatAddition={getChatLists}
             disabled={relatedExpanded}
-            pendingAssetNumber={pendingAssetNumber}
-            clearPendingAssetNumber={() => setPendingAssetNumber(null)}
+            pendingAsset={pendingAsset}
+            clearPendingAsset={() => setPendingAsset(null)}
           />
         </div>
       </div>
