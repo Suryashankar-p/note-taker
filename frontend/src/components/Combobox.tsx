@@ -12,26 +12,32 @@ interface Props {
   disabled?: boolean;
   initialValue?: any;
   listValues?: any;
+  onQueryChange?: (query: string) => void;
 }
 
-const SearchDropdown: React.FC<Props> = ({onChange, className, placeholder, disabled, initialValue, error, listValues}) =>  {
-  
+const SearchDropdown: React.FC<Props> = ({onChange, className, placeholder, disabled, initialValue, error, listValues, onQueryChange}) =>  {
+
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(initialValue)
 
 useEffect(() => {
   if (initialValue) {
     setSelected(initialValue);
-  } 
+  }
 }, [initialValue])
 
 
+  // When onQueryChange is provided, the caller owns filtering (e.g. a
+  // server-side search) — listValues is trusted as-is instead of being
+  // re-filtered against the locally-typed query.
   const filteredPeople =
-    query === ''
+    onQueryChange
       ? listValues
-      : listValues.filter((item: any) => {
-          return item.name.toLowerCase().includes(query.toLowerCase())
-        })
+      : query === ''
+        ? listValues
+        : listValues.filter((item: any) => {
+            return item.name.toLowerCase().includes(query.toLowerCase())
+          })
 
   return (
     <div className={`mx-auto h-full ${className}`}>
@@ -43,7 +49,10 @@ useEffect(() => {
             'focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-white/25'
           )}
             displayValue={(item: any) => item?.name}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              onQueryChange?.(event.target.value);
+            }}
             placeholder={placeholder}
           />
           <ComboboxButton className="group absolute inset-y-0 right-0 px-2.5">
@@ -59,9 +68,9 @@ useEffect(() => {
             'transition duration-100 ease-in data-[leave]:data-[closed]:opacity-0 '
           )}
         >
-          {filteredPeople.map((item: any) => (
+          {filteredPeople.map((item: any, index: number) => (
             <ComboboxOption
-              key={item?.name}
+              key={`${item?.name}-${index}`}
               value={item}
               className="group flex cursor-default text-primary_text items-center gap-2 rounded-lg py-1.5 px-3 select-none data-[focus]:bg-blue-100"
             >
