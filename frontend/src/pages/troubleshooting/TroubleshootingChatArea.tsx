@@ -35,13 +35,14 @@ import "github-markdown-css/github-markdown.css";
 import Pill from "../../components/Pills.tsx";
 import CustomerInfoModal from "../../components/Modals/CustomerInfoModal.tsx";
 import KbCitationViewerModal from "../../components/Modals/KbCitationViewerModal.tsx";
+import type { SelectedAsset } from "../../components/Modals/AssetNumberModal.tsx";
 
 interface Props {
   onNewChatAddition: () => void;
   disabled?: boolean;
   onQuestionAsked?: any;
-  pendingAssetNumber?: string | null;
-  clearPendingAssetNumber?: () => void;
+  pendingAsset?: SelectedAsset | null;
+  clearPendingAsset?: () => void;
 }
 
 type Event = ChangeEvent<HTMLInputElement>;
@@ -54,8 +55,8 @@ const ChatArea: React.FC<Props> = ({
   onNewChatAddition,
   disabled,
   onQuestionAsked,
-  pendingAssetNumber,
-  clearPendingAssetNumber,
+  pendingAsset,
+  clearPendingAsset,
 }) => {
   const [inputValue, setInputValue] = useState("");
   const dispatch = useDispatch<Dispatch>();
@@ -295,12 +296,12 @@ const ChatArea: React.FC<Props> = ({
   // first-turn product pills. Creates the chat session on the first message.
   const submitMessage = async (text: string) => {
     if (!text.trim()) return;
-    // A new chat (no active session) must have an asset number before it can
-    // be started. The asset dialog enforces this, but guard here too.
-    if (!chat_id && !pendingAssetNumber) {
+    // A new chat (no active session) must have an asset selected before it
+    // can be started. The asset dialog enforces this, but guard here too.
+    if (!chat_id && !pendingAsset) {
       dispatch.toast.openToast({
         status: true,
-        message: "Please enter an asset number to start a new chat.",
+        message: "Please select an asset to start a new chat.",
         type: "error",
       });
       return;
@@ -309,13 +310,13 @@ const ChatArea: React.FC<Props> = ({
     dispatch.chatContent.addQuestion([{ human: text }]);
     try {
       const activeChatId = chat_id ?? (await (async () => {
-        const newSession = await CreateChat(text, pendingAssetNumber || undefined);
+        const newSession = await CreateChat(text, pendingAsset?.asset_name, pendingAsset?.sf_asset_id);
         if (!newSession?.id) {
           dispatch.toast.openToast({ status: true, message: newSession?.detail, type: "error" });
           setLoading(false);
           return null;
         }
-        clearPendingAssetNumber?.();
+        clearPendingAsset?.();
         // Tell the chat_id effect not to wipe the optimistic question on this navigation.
         justCreatedChatRef.current = true;
         navigate(`/ai-studio/troubleshooting?chat_id=${newSession.id}${mode === "KB" ? "&mode=kb" : ""}`);
