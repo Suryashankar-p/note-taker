@@ -320,7 +320,6 @@ const LoadFiles = () => {
         </div>
       </div>
 
-      {/* Create Session Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
           <div className="bg-white border border-slate-100 rounded-2xl p-6 w-[400px] max-w-full text-slate-800 shadow-xl text-left">
