@@ -24,8 +24,58 @@ interface RevenueVsCogsChartProps {
     quarter: string;
     revenue_inr: number;
     cogs_inr: number;
+    transactions?: number;
   }>;
 }
+
+const customLabelsPlugin = {
+  id: 'customLabels',
+  afterDatasetsDraw: (chart: any) => {
+    const { ctx, data, chartArea: { top } } = chart;
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    const revenueMeta = chart.getDatasetMeta(0);
+    const cogsMeta = chart.getDatasetMeta(1);
+    
+    data.labels.forEach((label: any, i: number) => {
+      const revBar = revenueMeta.data[i];
+      const cogsBar = cogsMeta.data[i];
+      if (!revBar || !cogsBar) return;
+      
+      const transactions = data.datasets[0].transactionsData?.[i];
+
+
+      if (transactions) {
+        const midX = (revBar.x + cogsBar.x) / 2;
+        const text = transactions.toLocaleString();
+        
+        ctx.font = 'bold 10px sans-serif';
+        const textWidth = ctx.measureText(text).width;
+        const paddingX = 10;
+        const pillHeight = 20;
+        const pillY = top + 5; 
+        
+        ctx.fillStyle = '#fee2e2'; 
+        ctx.beginPath();
+        const r = pillHeight / 2;
+        const rx = midX - textWidth/2 - paddingX;
+        const rw = textWidth + paddingX*2;
+        ctx.moveTo(rx + r, pillY);
+        ctx.arcTo(rx + rw, pillY, rx + rw, pillY + pillHeight, r);
+        ctx.arcTo(rx + rw, pillY + pillHeight, rx, pillY + pillHeight, r);
+        ctx.arcTo(rx, pillY + pillHeight, rx, pillY, r);
+        ctx.arcTo(rx, pillY, rx + rw, pillY, r);
+        ctx.fill();
+        
+        ctx.fillStyle = '#991b1b'; 
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, midX, pillY + pillHeight/2);
+      }
+    });
+    ctx.restore();
+  }
+};
 
 const RevenueVsCogsChart = ({ data: apiData }: RevenueVsCogsChartProps) => {
   const sortQuarters = (a: string, b: string) => {
@@ -45,6 +95,7 @@ const RevenueVsCogsChart = ({ data: apiData }: RevenueVsCogsChartProps) => {
   if (!apiData || apiData.length === 0) return null;
   
   const sortedApiData = [...apiData].sort((a, b) => sortQuarters(a.quarter, b.quarter));
+  const hasTransactions = sortedApiData.some(item => item.transactions !== undefined && item.transactions !== null);
 
   const chartData = {
     labels: sortedApiData.map((item) => item.quarter),
@@ -52,13 +103,14 @@ const RevenueVsCogsChart = ({ data: apiData }: RevenueVsCogsChartProps) => {
       {
         label: "Revenue",
         data: sortedApiData.map((item) => item.revenue_inr / 10000000),
-        backgroundColor: "#b91c1c", // Red-orange
+        backgroundColor: "#b91c1c",
         borderRadius: 4,
+        transactionsData: sortedApiData.map(item => item.transactions),
       },
       {
         label: "COGS",
         data: sortedApiData.map((item) => item.cogs_inr / 10000000),
-        backgroundColor: "#ea580c", // Orange
+        backgroundColor: "#ea580c", 
         borderRadius: 4,
       },
     ],
@@ -67,6 +119,11 @@ const RevenueVsCogsChart = ({ data: apiData }: RevenueVsCogsChartProps) => {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        top: 40, 
+      }
+    },
     plugins: {
       legend: {
         display: false,
@@ -83,6 +140,7 @@ const RevenueVsCogsChart = ({ data: apiData }: RevenueVsCogsChartProps) => {
     },
     scales: {
       y: {
+        grace: '20%',
         ticks: {
           color: "#64748b",
           callback: (value: any) => `₹${value} Cr`,
@@ -117,11 +175,17 @@ const RevenueVsCogsChart = ({ data: apiData }: RevenueVsCogsChartProps) => {
             <span className="w-2.5 h-2.5 rounded bg-[#ea580c]"></span>
             <span className="text-[10px] text-gray-500 font-bold uppercase">COGS</span>
           </div>
+          {hasTransactions && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-3 rounded-full bg-[#fee2e2]"></span>
+              <span className="text-[10px] text-gray-500 font-bold uppercase">Transactions</span>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="h-64">
-        <Bar data={chartData} options={options} />
+        <Bar data={chartData} options={options} plugins={[customLabelsPlugin]} />
       </div>
     </div>
   );
