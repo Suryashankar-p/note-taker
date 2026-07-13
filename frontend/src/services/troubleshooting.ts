@@ -18,10 +18,13 @@ export const GetAllChatLists = async (skip: number = 0, limit: number = 100, sea
   return response
 }
 
-export const CreateChat = async (title: string, asset_number?: string) => {
+export const CreateChat = async (title: string, asset_number?: string, sf_asset_id?: string) => {
   let url = `/troubleshooting/chat?title=${encodeURIComponent(title)}`;
   if (asset_number) {
     url += `&asset_number=${encodeURIComponent(asset_number)}`;
+  }
+  if (sf_asset_id) {
+    url += `&sf_asset_id=${encodeURIComponent(sf_asset_id)}`;
   }
   const response = await TroubleshootAPI.post(BACKEND_TROUBLESHOOTING_URL + url);
   return response
@@ -414,6 +417,15 @@ export const ReadKbDocumentLink = async (kb_document_id: number | string) => {
   const response = await TroubleshootAPI.get(
     BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/kb_document/${kb_document_id}/link`
   );
+  return response;
+};
+
+export const SearchAssets = async (search_term: string, skip = 0, limit = 20) => {
+  let url = `/troubleshooting/asset/search?skip=${skip}&limit=${limit}`;
+  if (search_term) {
+    url += `&search_term=${encodeURIComponent(search_term)}`;
+  }
+  const response = await TroubleshootAPI.get(BACKEND_TROUBLESHOOTING_URL + url);
   return response;
 };
 
