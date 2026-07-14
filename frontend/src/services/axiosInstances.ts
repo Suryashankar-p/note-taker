@@ -14,6 +14,7 @@ const edge_BaseURL = import.meta.env.VITE_BACKEND_EDGE_URL;
 const cctv_BaseURL = import.meta.env.VITE_BACKEND_CCTV_ANALYTICS_URL;
 const pricingAnalytics_BaseURL = import.meta.env.VITE_BACKEND_PRICING_ANALYTICS_URL;
 
+
 export const axiosSSO: AxiosInstance = axios.create({
   baseURL: sso_BaseURL,
   timeout: 300000,
