@@ -20,6 +20,7 @@
     "axios": "1.7.2",
     "chart.js": "4.4.3",
     "clipboard-copy": "4.0.1",
+    "docx-preview": "^0.4.0",
     "dompurify": "3.1.6",
     "github-markdown-css": "5.6.1",
     "marked": "13.0.3",

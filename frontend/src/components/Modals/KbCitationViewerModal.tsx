@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import {
   Dialog,
   Transition,
@@ -6,6 +6,7 @@ import {
   DialogPanel,
   TransitionChild,
 } from "@headlessui/react";
+import { renderAsync } from "docx-preview";
 import Text from "../Text";
 import Close from "../../assets/close.svg";
 import { PdfViewer } from "../PdfViewer";
@@ -29,6 +30,8 @@ const KbCitationViewerModal: React.FC<Props> = ({
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const docxContainerRef = useRef<HTMLDivElement>(null);
+  const isDocx = filename?.toLowerCase().endsWith(".docx");
 
   useEffect(() => {
     let cancelled = false;
@@ -43,11 +46,11 @@ const KbCitationViewerModal: React.FC<Props> = ({
         const link = res?.data?.link ?? res?.link;
         if (!link) throw new Error("No link returned");
         setFileUrl(link);
+        if (!filename?.toLowerCase().endsWith(".docx")) setLoading(false);
       } catch (e: any) {
         if (cancelled) return;
-        setError("Failed to load PDF");
-      } finally {
-        if (!cancelled) setLoading(false);
+        setError("Failed to load document");
+        setLoading(false);
       }
     };
     load();
@@ -55,6 +58,31 @@ const KbCitationViewerModal: React.FC<Props> = ({
       cancelled = true;
     };
   }, [isOpen, documentId]);
+
+  useEffect(() => {
+    if (!isDocx || !fileUrl || !docxContainerRef.current) return;
+    let cancelled = false;
+    const render = async () => {
+      try {
+        const blob = await (await fetch(fileUrl)).blob();
+        if (cancelled || !docxContainerRef.current) return;
+        docxContainerRef.current.innerHTML = "";
+        await renderAsync(blob, docxContainerRef.current, undefined, {
+          className: "docx-preview",
+          ignoreWidth: false,
+          ignoreHeight: true,
+        });
+      } catch (e) {
+        if (!cancelled) setError("Failed to render document");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    render();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDocx, fileUrl]);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -115,7 +143,7 @@ const KbCitationViewerModal: React.FC<Props> = ({
                       <Text className="text-red-500">{error}</Text>
                     </div>
                   )}
-                  {fileUrl && !error && (
+                  {fileUrl && !error && !isDocx && (
                     <div
                       className="w-full h-full"
                       onContextMenu={(e) => e.preventDefault()}
@@ -125,6 +153,14 @@ const KbCitationViewerModal: React.FC<Props> = ({
                         initialPage={Math.max(0, page - 1)}
                         onLoad={() => setLoading(false)}
                       />
+                    </div>
+                  )}
+                  {fileUrl && !error && isDocx && (
+                    <div
+                      className="w-full h-full overflow-auto bg-gray-100 flex justify-center"
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
+                      <div ref={docxContainerRef} />
                     </div>
                   )}
                 </div>

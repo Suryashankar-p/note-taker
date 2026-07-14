@@ -10,6 +10,7 @@ import Toast from "../Toast";
 interface IFormInput {
   fileName: string;
   file: any;
+  files: File[];
   productId: string;
 }
 
@@ -24,9 +25,15 @@ interface Props {
   // Present only for KB upload, where a product must be chosen. Other callers
   // (e.g. product-document upload) omit it and keep the plain file picker.
   products?: ProductOption[];
+  // Allow selecting more than one file (KB upload only). Other callers keep
+  // the single-file picker and read `data.file` as before.
+  multiple?: boolean;
+  // Restrict the native file picker (e.g. ".pdf,.docx"). Backend still
+  // enforces the real allow-list regardless of this.
+  accept?: string;
 }
 
-const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products }) => {
+const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products, multiple, accept }) => {
   const isOpen = useSelector((state: RootState) => state.modal.isOpen);
   const dispatch = useDispatch<Dispatch>();
   const [fileName, setFileName] = useState<string>("");
@@ -37,6 +44,7 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products }) =
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const toastStatus = useSelector((state: RootState) => state.toast);
   const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const loading = useSelector((state: RootState) => state.loadingState.status);
   const {
     register,
@@ -51,17 +59,32 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products }) =
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
+    if (!event.target.files || event.target.files.length === 0) return;
+
+    if (multiple) {
+      const selectedFiles = Array.from(event.target.files);
+      const label =
+        selectedFiles.length === 1
+          ? selectedFiles[0].name
+          : `${selectedFiles.length} files selected`;
       const truncatedFileName =
-        file.name.length > 20
-          ? `${file.name.substring(0, 20)}...`
-          : file.name;
+        label.length > 20 ? `${label.substring(0, 20)}...` : label;
       setFileName(truncatedFileName);
-      setFile(file);
+      setFiles(selectedFiles);
       clearErrors("fileName");
       setValue("fileName", truncatedFileName);
+      return;
     }
+
+    const file = event.target.files[0];
+    const truncatedFileName =
+      file.name.length > 20
+        ? `${file.name.substring(0, 20)}...`
+        : file.name;
+    setFileName(truncatedFileName);
+    setFile(file);
+    clearErrors("fileName");
+    setValue("fileName", truncatedFileName);
   };
   
   const handleChooseFileClick = () => {
@@ -79,7 +102,9 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products }) =
   };
 
   const onHandle = (data: IFormInput) => {
-    if (file) {
+    if (multiple) {
+      data.files = files;
+    } else if (file) {
       data.file = file;
     }
     if (requireProduct) {
@@ -150,11 +175,11 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products }) =
               {/* Custom File Upload Box */}
               <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-red-400 rounded-xl p-6 text-center bg-red-50 hover:bg-red-100 transition-colors duration-200 cursor-pointer">
                 <FaCloudUploadAlt className="w-10 h-10 text-red-600 mb-2" />
-                {file ? (
+                {(multiple ? files.length > 0 : file) ? (
                   <span className="text-green-600">{fileName}</span>
                 ) : (
                   <span className="text-red-700 font-medium hover:underline">
-                    Click to select a file
+                    {multiple ? "Click to select files" : "Click to select a file"}
                   </span>
                 )}
                 <p className="text-xs text-gray-500 mt-2">
@@ -165,6 +190,8 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products }) =
                   className="hidden"
                   ref={fileInputRef}
                   onChange={handleFileChange}
+                  multiple={multiple}
+                  accept={accept}
                 />
               </label>
 

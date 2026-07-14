@@ -149,13 +149,23 @@ const KnowledgeBase = () => {
   };
 
   const onFileUpload = async (data: any) => {
-    if (!data?.file) return;
+    if (!data?.files?.length) return;
     dispatch.loadingState.startLoading();
     try {
-      const response = await CreateKbDocument(data.file, data.productId);
-      if (response?.id) {
+      const response = await CreateKbDocument(data.files, data.productId);
+      if (response?.created?.length) {
         dispatch.modal.closeModal();
         getAllDocuments(0, pageSize.limit, searchTerm);
+      }
+      if (response?.errors?.length) {
+        setPageError(true);
+        dispatch.toast.openToast({
+          status: true,
+          message: response.errors
+            .map((e: { filename: string; detail: string }) => `${e.filename}: ${e.detail}`)
+            .join("; "),
+          type: "error",
+        });
       }
     } catch (err: any) {
       setPageError(true);
@@ -206,6 +216,8 @@ const KnowledgeBase = () => {
           onSubmit={onFileUpload}
           defaultValues={{}}
           products={products}
+          multiple
+          accept=".pdf,.docx"
         />
       )}
       {viewerDoc && (
@@ -259,19 +271,24 @@ const KnowledgeBase = () => {
 
       <div className="self-center h-full items-center overflow-y-scroll w-full flex flex-col xl:mt-4 gap-4 xl:gap-8">
         {documents.length > 0 ? (
-          documents.map((doc) => (
+          documents.map((doc) => {
+            const isPreviewable = /\.(pdf|docx)$/i.test(doc.filename);
+            const canPreview = doc.status === "COMPLETED" && isPreviewable;
+            return (
             <div
               key={doc.id}
               className="w-[25rem] sm:w-[53vw] lg:w-[55rem] xl:w-[65rem] rounded-lg shadow-custom self-center flex flex-col border"
             >
               <div className="flex flex-row justify-between items-center px-8 pt-4 pb-4 min-h-20 gap-4">
                 <button
-                  onClick={() =>
-                    doc.status === "COMPLETED" ? setViewerDoc(doc) : undefined
-                  }
+                  onClick={() => (canPreview ? setViewerDoc(doc) : undefined)}
                   className="flex flex-1 items-center gap-3 border rounded-full h-10 px-4 py-2 min-w-0"
-                  disabled={doc.status !== "COMPLETED"}
-                  title={doc.filename}
+                  disabled={!canPreview}
+                  title={
+                    doc.status === "COMPLETED" && !isPreviewable
+                      ? `${doc.filename} (preview unavailable for this file type)`
+                      : doc.filename
+                  }
                 >
                   {doc.status === "COMPLETED" ? (
                     <img src={Link} alt="pdf" loading="lazy" />
@@ -303,7 +320,8 @@ const KnowledgeBase = () => {
                 )}
               </div>
             </div>
-          ))
+            );
+          })
         ) : (
           <div className="flex justify-center item-center">
             <NoData />
