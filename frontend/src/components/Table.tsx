@@ -93,11 +93,20 @@ const UserTable: React.FC<Props> = ({
                     {"Role"}
                   </Text>
                 </th>
-                {/* {type === "thermax_gpt" && <th className=" text-start border-b pl-24">
-                  <Text type="bold-body" className="text-primary_text">
-                    {"Services"}
-                  </Text>
-                </th>} */}
+                {type === "thermax_gpt" && (
+                  <>
+                    <th className=" text-start border-b px-4">
+                      <Text type="bold-body" className="text-primary_text">
+                        Yearly Limit
+                      </Text>
+                    </th>
+                    <th className=" text-start border-b px-4">
+                      <Text type="bold-body" className="text-primary_text">
+                        Price Used
+                      </Text>
+                    </th>
+                  </>
+                )}
                 <th className=" text-start border-b"></th>
               </tr>
             </thead>
@@ -129,19 +138,20 @@ const UserTable: React.FC<Props> = ({
                       {user?.role && getKeyByValue(roleMapping, user?.role)}
                     </Text>
                   </td>
-                  {/* {type === "thermax_gpt" && <td className="lg:max-w-full max-w-[90px] pl-24">
-                    <div className="flex flex-wrap gap-2">
-                      {user?.thrmx_gpt_user_service_mapping?.map((service: any, index: number) => (
-                        <span
-                          key={index}
-                          className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full max-w-[120px] truncate"
-                          title={service.title} // Tooltip with full name
-                        >
-                          {service.title}
-                        </span>
-                      ))}
-                    </div>
-                  </td>} */}
+                  {type === "thermax_gpt" && (
+                    <>
+                      <td className="px-4">
+                        <Text className="text-primary_text" type="small">
+                          {user.yearly_limit !== undefined ? `$${user.yearly_limit}` : 'N/A'}
+                        </Text>
+                      </td>
+                      <td className="px-4">
+                        <Text className="text-primary_text" type="small">
+                          {user.total_price_used !== undefined ? `$${user.total_price_used}` : '0'}
+                        </Text>
+                      </td>
+                    </>
+                  )}
                   {(memberDetails?.role === 'OWNER' ) && (
                     <td className="px-4  text-right">
                       <DropDownMenu

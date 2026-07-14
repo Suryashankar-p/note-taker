@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -14,6 +15,7 @@ import { findPercentage, roundToFourDecimals } from "../../../utils/functions";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store";
 import EditLimitModal from "../../../components/Modals/EditLimit";
+import EditGlobalLimitModal from "../../../components/Modals/EditGlobalLimit";
 import { months } from "../../../utils/constants";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -25,7 +27,7 @@ const MODEL_COLORS = [
   { bg: "rgba(16,185,129,0.85)", border: "#10b981", label: "#047857" },
 ];
 
-export default function Cost({ usageData, distributionData, limit, onLimitEdit, month }: any) {
+export default function Cost({ usageData, distributionData, limit, onLimitEdit, onGlobalLimitEdit, month }: any) {
   const totalCost = usageData?.total ? roundToFourDecimals(usageData?.total) : 0;
   const dispatch = useDispatch<Dispatch>();
   const editLimit = useSelector((state: RootState) => state.modal.editLimit);
@@ -36,6 +38,7 @@ export default function Cost({ usageData, distributionData, limit, onLimitEdit, 
   const salesMemberDetails = member?.details ?? {};
   const remaining = limit ? Math.max(0, limit - totalCost) : 0;
   const isOverBudget = totalCost > limit;
+  const [isGlobalLimitModalOpen, setIsGlobalLimitModalOpen] = useState(false);
 
   // Bar chart
   const barData = {
@@ -234,6 +237,25 @@ export default function Cost({ usageData, distributionData, limit, onLimitEdit, 
             </div>
           </div>
 
+          {/* Global Limit Card */}
+          {salesMemberDetails?.role === "OWNER" && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Global Yearly Limit</p>
+                <p className="text-xs text-gray-400">Set limit for all users</p>
+              </div>
+              <button
+                onClick={() => setIsGlobalLimitModalOpen(true)}
+                className="text-xs font-semibold text-white rounded-lg py-2 px-3 transition-colors duration-200"
+                style={{ background: THERMAX_RED }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#D6281E")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = THERMAX_RED)}
+              >
+                Update All Users
+              </button>
+            </div>
+          )}
+
           {/* Model Distribution Donut */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 flex-1">
             <p className="text-sm font-semibold text-gray-800 mb-1">Cost by Model</p>
@@ -254,6 +276,19 @@ export default function Cost({ usageData, distributionData, limit, onLimitEdit, 
       {editLimit && (
         <div className="absolute top-0 left-0 w-full h-full z-50">
           <EditLimitModal defaultValue={limit} onSubmit={onLimitEdit} />
+        </div>
+      )}
+
+      {isGlobalLimitModalOpen && (
+        <div className="absolute top-0 left-0 w-full h-full z-50">
+          <EditGlobalLimitModal 
+            isOpen={isGlobalLimitModalOpen} 
+            onClose={() => setIsGlobalLimitModalOpen(false)} 
+            onSubmit={(data) => {
+              onGlobalLimitEdit(data);
+              setIsGlobalLimitModalOpen(false);
+            }} 
+          />
         </div>
       )}
     </div>
