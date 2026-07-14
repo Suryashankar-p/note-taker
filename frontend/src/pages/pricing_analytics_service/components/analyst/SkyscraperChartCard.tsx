@@ -22,6 +22,9 @@ interface SkyscraperChartCardProps {
     deltaVal: number;
     revenueInr: number;
     share: string;
+    rawActual?: number;
+    rawTarget?: number;
+    rawShare?: number;
   }>;
   compareVs: string;
   setCompareVs: (val: string) => void;
@@ -65,8 +68,28 @@ const SkyscraperChartCard = ({
       tooltip: {
         backgroundColor: "#1e293b",
         callbacks: {
-          label: (context: any) =>
-            `Delta: ${context.parsed.y > 0 ? "+" : ""}${context.parsed.y} pp`,
+          title: (context: any) => {
+            const index = context[0].dataIndex;
+            return families[index]?.name || "";
+          },
+          label: (context: any) => {
+            const index = context.dataIndex;
+            const item = families[index];
+            if (!item) return "";
+            const refLabel = compareVs === "target" ? "Target" : "Baseline";
+            
+            const actVal = typeof item.rawActual === "number" ? `${item.rawActual.toFixed(2)}%` : item.actual;
+            const tgtVal = typeof item.rawTarget === "number" ? `${item.rawTarget.toFixed(2)}%` : item.target;
+            const shrVal = typeof item.rawShare === "number" ? `${item.rawShare.toFixed(2)}%` : item.share;
+            
+            return [
+              `Actual GM: ${actVal}`,
+              `${refLabel} GM: ${tgtVal}`,
+              `Δ vs ${refLabel}: ${item.deltaVal >= 0 ? "+" : ""}${item.deltaVal.toFixed(2)} pp`,
+              `Revenue (L): ₹${(item.revenueInr / 100000).toFixed(2)}L`,
+              `Share of quarter: ${shrVal}`
+            ];
+          },
         },
       },
     },

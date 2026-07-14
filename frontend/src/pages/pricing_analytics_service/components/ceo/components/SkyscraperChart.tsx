@@ -71,7 +71,23 @@ const SkyscraperChart = ({
       tooltip: {
         backgroundColor: "#1e293b",
         callbacks: {
-          label: (context: any) => `Delta: ${context.parsed.y > 0 ? "+" : ""}${context.parsed.y.toFixed(1)} pp`,
+          title: (context: any) => {
+            const index = context[0].dataIndex;
+            return families[index]?.name || "";
+          },
+          label: (context: any) => {
+            const index = context.dataIndex;
+            const item = families[index];
+            if (!item) return "";
+            const refLabel = compareMode === "target" ? "Target" : "Baseline";
+            return [
+              `Actual GM: ${item.actual.toFixed(2)}%`,
+              `${refLabel} GM: ${item.target.toFixed(2)}%`,
+              `Δ vs ${refLabel}: ${item.delta >= 0 ? "+" : ""}${item.delta.toFixed(2)} pp`,
+              `Revenue (L): ₹${(item.revenueInr / 100000).toFixed(2)}L`,
+              `Share of quarter: ${item.share.toFixed(2)}%`
+            ];
+          },
         },
       },
     },

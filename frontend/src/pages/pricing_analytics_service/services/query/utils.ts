@@ -15,18 +15,23 @@ export const transformSkyscraperData = (response: any) => {
       const targetBars = q.vs_target?.bars || [];
       const baselineBars = q.vs_baseline?.bars || [];
       
-      const baselineRefMap = new Map<string, number>();
+      const baselineRefMap = new Map<string, { ref_gm_pct: number; margin_gap_pp: number }>();
       baselineBars.forEach((b: any) => {
         if (b.family_nk) {
-          baselineRefMap.set(b.family_nk.toLowerCase(), b.ref_gm_pct ?? 0);
+          baselineRefMap.set(b.family_nk.toLowerCase(), {
+            ref_gm_pct: b.ref_gm_pct ?? 0,
+            margin_gap_pp: b.margin_gap_pp ?? 0,
+          });
         }
       });
 
       const mergedBars = targetBars.map((tBar: any) => {
         const nk = tBar.family_nk?.toLowerCase();
+        const baselineInfo = nk ? baselineRefMap.get(nk) : undefined;
         return {
           ...tBar,
-          ref_gm_pct: nk ? baselineRefMap.get(nk) ?? tBar.ref_gm_pct : tBar.ref_gm_pct,
+          ref_gm_pct: baselineInfo ? baselineInfo.ref_gm_pct : tBar.ref_gm_pct,
+          baseline_margin_gap_pp: baselineInfo ? baselineInfo.margin_gap_pp : 0,
         };
       });
 
@@ -41,8 +46,8 @@ export const transformSkyscraperData = (response: any) => {
           at_target: q.vs_target?.at_target ?? 0,
         },
         vs_baseline: {
-          above_baseline: q.vs_baseline?.above_baseline ?? 0,
-          below_baseline: q.vs_baseline?.below_baseline ?? 0,
+          above_baseline: q.vs_baseline?.above_baseline ?? q.vs_baseline?.above_target ?? q.vs_baseline?.above ?? 0,
+          below_baseline: q.vs_baseline?.below_baseline ?? q.vs_baseline?.below_target ?? q.vs_baseline?.below ?? 0,
         }
       };
     });

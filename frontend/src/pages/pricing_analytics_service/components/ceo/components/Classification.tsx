@@ -25,14 +25,12 @@ const Classification = () => {
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
-      {/* 1. 3x3 Freq Grid */}
       <ClassificationGrid 
         data={data} 
         selectedQuarter={selectedQuarter}
         setSelectedQuarter={setSelectedQuarter}
       />
 
-      {/* 2. Insights */}
       <ClassificationInsights data={activeInsights} />
     </div>
   );

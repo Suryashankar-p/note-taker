@@ -48,7 +48,7 @@ const Skycraper = () => {
     .map((fam: any) => {
       const actual = fam.actual_gm_pct !== null && fam.actual_gm_pct !== undefined ? fam.actual_gm_pct : 0;
       const ref = (compareMode === "target" ? fam.target_gm_pct : fam.ref_gm_pct) ?? 0;
-      const gap = actual - ref;
+      const gap = (compareMode === "target" ? fam.margin_gap_pp : fam.baseline_margin_gap_pp) ?? 0;
       return {
         name: fam.display_name,
         actual: actual,
@@ -69,7 +69,6 @@ const Skycraper = () => {
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
-      {/* 1. Visual Skyscraper Chart */}
       <SkyscraperChart
         families={processedFamilies}
         compareMode={compareMode}
@@ -80,12 +79,10 @@ const Skycraper = () => {
         meta={quarterMeta}
       />
 
-      {/* 2. Insights */}
       <SkyscraperInsights
         insights={quarterMeta.insights}
       />
 
-      {/* 3. Product Families Table */}
       <SkyscraperProductFamilies
         families={processedFamilies}
         selectedQuarter={activeQuarter}
