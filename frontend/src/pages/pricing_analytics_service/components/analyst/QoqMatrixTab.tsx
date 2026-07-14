@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useGetQoqMatrix } from "../../services/query/query";
@@ -23,182 +22,6 @@ interface QoqMatrixTabProps {
   onNavigateToTab?: (tabId: string) => void;
 }
 
-// Mock details matching the client's screenshot exactly
-const clientFamilyMockData: Record<string, {
-  name: string;
-  revenue: string;
-  actual: string;
-  target: string;
-  delta: string;
-  deltaVal: number;
-  history: Array<{ quarter: string; revenue: number; gm: number }>;
-  baseline: number;
-  targetVal: number;
-  mean: string;
-  stdDev: string;
-  median: string;
-  min: string;
-  max: string;
-}> = {
-  "air nozzle": {
-    name: "Air nozzle",
-    revenue: "₹20.26L",
-    actual: "53.5%",
-    target: "54.6%",
-    delta: "-1.1",
-    deltaVal: -1.1,
-    history: [
-      { quarter: "Q4 FY 24", revenue: 46.7, gm: 49.2 },
-      { quarter: "Q1 FY 25", revenue: 40.3, gm: 40.6 },
-      { quarter: "Q2 FY 25", revenue: 51.2, gm: 50.3 },
-      { quarter: "Q3 FY 25", revenue: 36.5, gm: 47.7 },
-      { quarter: "Q4 FY 25", revenue: 57.8, gm: 51.6 },
-      { quarter: "Q1 FY 26", revenue: 42.0, gm: 50.4 },
-      { quarter: "Q2 FY 26", revenue: 52.0, gm: 51.7 },
-      { quarter: "Q3 FY 26", revenue: 46.8, gm: 51.9 },
-      { quarter: "Q4 FY 26", revenue: 53.5, gm: 52.2 }
-    ],
-    baseline: 50.3,
-    targetVal: 54.6,
-    mean: "51.6%",
-    stdDev: "7.0%",
-    median: "54.6%",
-    min: "39.5%",
-    max: "70.0%"
-  },
-  "he (economiser)": {
-    name: "HE (Economiser)",
-    revenue: "₹25.68L",
-    actual: "49.6%",
-    target: "51.4%",
-    delta: "-1.8",
-    deltaVal: -1.8,
-    history: [
-      { quarter: "Q4 FY 24", revenue: 22.1, gm: 48.0 },
-      { quarter: "Q1 FY 25", revenue: 20.3, gm: 49.1 },
-      { quarter: "Q2 FY 25", revenue: 24.5, gm: 48.8 },
-      { quarter: "Q3 FY 25", revenue: 21.0, gm: 49.0 },
-      { quarter: "Q4 FY 25", revenue: 28.2, gm: 49.2 },
-      { quarter: "Q1 FY 26", revenue: 22.0, gm: 49.3 },
-      { quarter: "Q2 FY 26", revenue: 25.1, gm: 49.5 },
-      { quarter: "Q3 FY 26", revenue: 24.8, gm: 49.6 },
-      { quarter: "Q4 FY 26", revenue: 25.68, gm: 49.6 }
-    ],
-    baseline: 49.0,
-    targetVal: 51.4,
-    mean: "49.1%",
-    stdDev: "0.5%",
-    median: "49.2%",
-    min: "48.0%",
-    max: "49.6%"
-  },
-  "spiral": {
-    name: "Spiral",
-    revenue: "₹9.11L",
-    actual: "56.5%",
-    target: "55.2%",
-    delta: "+1.3",
-    deltaVal: 1.3,
-    history: [
-      { quarter: "Q4 FY 24", revenue: 8.2, gm: 54.0 },
-      { quarter: "Q1 FY 25", revenue: 7.9, gm: 54.5 },
-      { quarter: "Q2 FY 25", revenue: 8.8, gm: 55.0 },
-      { quarter: "Q3 FY 25", revenue: 8.1, gm: 55.2 },
-      { quarter: "Q4 FY 25", revenue: 9.4, gm: 55.5 },
-      { quarter: "Q1 FY 26", revenue: 8.5, gm: 55.8 },
-      { quarter: "Q2 FY 26", revenue: 9.0, gm: 56.0 },
-      { quarter: "Q3 FY 26", revenue: 8.9, gm: 56.2 },
-      { quarter: "Q4 FY 26", revenue: 9.11, gm: 56.5 }
-    ],
-    baseline: 54.5,
-    targetVal: 55.2,
-    mean: "55.3%",
-    stdDev: "0.8%",
-    median: "55.5%",
-    min: "54.0%",
-    max: "56.5%"
-  },
-  "transmitter": {
-    name: "Transmitter",
-    revenue: "₹7.47L",
-    actual: "54.9%",
-    target: "54.4%",
-    delta: "+0.5",
-    deltaVal: 0.5,
-    history: [
-      { quarter: "Q4 FY 24", revenue: 6.8, gm: 53.5 },
-      { quarter: "Q1 FY 25", revenue: 6.5, gm: 54.0 },
-      { quarter: "Q2 FY 25", revenue: 7.2, gm: 54.2 },
-      { quarter: "Q3 FY 25", revenue: 6.9, gm: 54.3 },
-      { quarter: "Q4 FY 25", revenue: 7.5, gm: 54.5 },
-      { quarter: "Q1 FY 26", revenue: 7.0, gm: 54.6 },
-      { quarter: "Q2 FY 26", revenue: 7.3, gm: 54.7 },
-      { quarter: "Q3 FY 26", revenue: 7.2, gm: 54.8 },
-      { quarter: "Q4 FY 26", revenue: 7.47, gm: 54.9 }
-    ],
-    baseline: 54.0,
-    targetVal: 54.4,
-    mean: "54.3%",
-    stdDev: "0.4%",
-    median: "54.5%",
-    min: "53.5%",
-    max: "54.9%"
-  },
-  "rg / cg / pg": {
-    name: "RG / CG / PG",
-    revenue: "₹7.21L",
-    actual: "63.9%",
-    target: "63.0%",
-    delta: "+0.9",
-    deltaVal: 0.9,
-    history: [
-      { quarter: "Q4 FY 24", revenue: 6.5, gm: 62.1 },
-      { quarter: "Q1 FY 25", revenue: 6.2, gm: 62.5 },
-      { quarter: "Q2 FY 25", revenue: 7.0, gm: 62.8 },
-      { quarter: "Q3 FY 25", revenue: 6.6, gm: 63.0 },
-      { quarter: "Q4 FY 25", revenue: 7.3, gm: 63.2 },
-      { quarter: "Q1 FY 26", revenue: 6.8, gm: 63.4 },
-      { quarter: "Q2 FY 26", revenue: 7.1, gm: 63.6 },
-      { quarter: "Q3 FY 26", revenue: 7.0, gm: 63.7 },
-      { quarter: "Q4 FY 26", revenue: 7.21, gm: 63.9 }
-    ],
-    baseline: 62.8,
-    targetVal: 63.0,
-    mean: "63.0%",
-    stdDev: "0.6%",
-    median: "63.2%",
-    min: "62.1%",
-    max: "63.9%"
-  },
-  "level gauge 1": {
-    name: "Level Gauge 1",
-    revenue: "₹10.45L",
-    actual: "53.9%",
-    target: "51.7%",
-    delta: "+2.2",
-    deltaVal: 2.2,
-    history: [
-      { quarter: "Q4 FY 24", revenue: 9.5, gm: 50.1 },
-      { quarter: "Q1 FY 25", revenue: 9.1, gm: 50.8 },
-      { quarter: "Q2 FY 25", revenue: 10.2, gm: 51.2 },
-      { quarter: "Q3 FY 25", revenue: 9.7, gm: 51.5 },
-      { quarter: "Q4 FY 25", revenue: 10.8, gm: 52.0 },
-      { quarter: "Q1 FY 26", revenue: 9.9, gm: 52.4 },
-      { quarter: "Q2 FY 26", revenue: 10.3, gm: 52.8 },
-      { quarter: "Q3 FY 26", revenue: 10.1, gm: 53.2 },
-      { quarter: "Q4 FY 26", revenue: 10.45, gm: 53.9 }
-    ],
-    baseline: 51.2,
-    targetVal: 51.7,
-    mean: "51.8%",
-    stdDev: "1.2%",
-    median: "52.0%",
-    min: "50.1%",
-    max: "53.9%"
-  }
-};
-
-// Static metadata — defined outside the component to avoid recreation on every render
 const columns = [
   "Higher — last 3Q (all > PY avg)",
   "Higher — last 2Q (last 2 > PY avg)",
@@ -255,7 +78,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
   const [selectedQuarter, setSelectedQuarter] = useState<string>("");
 
-  // Quarters are already sorted chronologically by the query hook
   const sortedQuarters: string[] = qoqMatrixQuery.data?.quarters || [];
 
   useEffect(() => {
@@ -264,35 +86,29 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     }
   }, [sortedQuarters, selectedQuarter]);
 
-  // Derive active quarter — computed before any early return so it's stable for hooks below
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
 
-  // O(1) family detail lookups — pre-built by useGetQoqMatrix from all quarters
   const apiFamilyDetails = qoqMatrixQuery.data?.familyDetails || {};
   const familyHistory = qoqMatrixQuery.data?.familyHistory || {};
 
-  // ── ALL hooks must be declared before any conditional return ──────────────
 
   const getFamilyMockDetails = useCallback((name: string) => {
     const key = name.toLowerCase();
-    if (clientFamilyMockData[key]) {
-      return clientFamilyMockData[key];
-    }
 
     const stats = apiFamilyDetails[key];
     const nkKey = stats?.nk ? stats.nk.toLowerCase() : key;
-    const actualVal = (stats?.actual_gm_pct !== null && stats?.actual_gm_pct !== undefined) ? stats.actual_gm_pct : 50.0;
-    const targetVal = (stats?.target_gm_pct !== null && stats?.target_gm_pct !== undefined) ? stats.target_gm_pct : 50.0;
-    const baselineVal = stats?.baseline_gm_pct ?? 50.0;
-    const gap = actualVal - targetVal;
+    const actualVal = stats?.actual_gm_pct ?? 0;
+    const targetVal = stats?.target_gm_pct ?? 0;
+    const baselineVal = stats?.baseline_gm_pct ?? targetVal;
+    const gap = stats?.delta_pp ?? (actualVal - targetVal);
 
     // O(1) per-quarter lookup using the pre-indexed familyHistory map
     const history = sortedQuarters.map((q: string) => {
       const fStats = familyHistory[key]?.[q] ?? familyHistory[nkKey]?.[q];
       return {
         quarter: q,
-        revenue: fStats ? fStats.revenue_inr / 100000 : (stats?.revenue_inr ? stats.revenue_inr / 100000 : 10.0),
-        gm: fStats ? fStats.actual_gm_pct : actualVal,
+        revenue: fStats ? fStats.revenue_inr / 100000 : 0,
+        gm: fStats ? fStats.actual_gm_pct : 0,
       };
     });
 
@@ -324,8 +140,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     };
   }, [apiFamilyDetails, familyHistory, sortedQuarters]);
 
-  // Memoize matrix cell build — only re-runs when the active quarter's data or
-  // the getFamilyMockDetails callback changes
   const matrixData = useMemo(() => {
     const activeMatrix = qoqMatrixQuery.data?.quarterMatrices?.[activeQuarter] || qoqMatrixQuery.data?.matrix || {};
     const data: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>> = {};
@@ -367,7 +181,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
   const selectedDetails = selectedFamily ? getFamilyMockDetails(selectedFamily) : null;
 
-  // ── Early return AFTER all hooks ─────────────────────────────────────────
   if (qoqMatrixQuery.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full bg-slate-50">
@@ -378,7 +191,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
-      {/* 1. QoQ Matrix grid Table */}
       <QoqMatrixTable
         matrixData={matrixData}
         activeQuarter={activeQuarter}
