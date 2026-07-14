@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import CustomSelect from "../../CustomSelect";
 
 interface FamilyItem {
@@ -8,33 +8,68 @@ interface FamilyItem {
   baseline_gm_pct: number;
   target_gm_pct: number;
   revenue_inr: number;
+  transactions?: number;
+  transaction_count?: number;
 }
 
 interface CellData {
   gm_pct: number | null;
   revenue_share_pct: number;
   families: FamilyItem[];
+  total_revenue?: number;
+  weighted_baseline_gm_pct?: number | null;
+  gm_delta_pp?: number | null;
+  below_baseline?: number;
+  above_baseline?: number;
 }
 
 interface ClassificationGridProps {
   data?: {
-    matrix: Record<string, Record<string, CellData>>;
+    matrix?: Record<string, Record<string, CellData>>;
+    quarterMatrices?: Record<string, {
+      matrix: Record<string, Record<string, CellData>>;
+      pooled_actual_gm_pct: number;
+      pooled_baseline_gm_pct: number;
+      global_delta_pp: number;
+      total_revenue_inr: number;
+      total_below_baseline: number;
+      total_above_baseline: number;
+    }>;
+    quarters?: string[];
+    latestQuarter?: string;
     insights?: {
       curr_qtr: string;
       prev_qtr: string;
     } | null;
   };
+  selectedQuarter?: string;
+  setSelectedQuarter?: (qtr: string) => void;
 }
 
-const ClassificationGrid = ({ data }: ClassificationGridProps) => {
-  const matrix = data?.matrix;
-  const insights = data?.insights;
+const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSelectedQuarter: propsSetSelectedQuarter }: ClassificationGridProps) => {
+  const [selectedDetails, setSelectedDetails] = useState<{
+    title: string;
+    families: FamilyItem[];
+  } | null>(null);
+
+  const quarters = data?.quarters || [];
+  const latestQuarter = data?.latestQuarter || "";
+
+  const [localSelectedQuarter, setLocalSelectedQuarter] = useState<string>("");
+
+  const selectedQuarter = propsSelectedQuarter !== undefined ? propsSelectedQuarter : localSelectedQuarter;
+  const setSelectedQuarter = propsSetSelectedQuarter || setLocalSelectedQuarter;
+
+  const activeQuarter = selectedQuarter || latestQuarter || (quarters.length > 0 ? quarters[quarters.length - 1] : "");
+
+  const activeQuarterData = data?.quarterMatrices?.[activeQuarter];
+  const matrix = activeQuarterData?.matrix || data?.matrix;
+
   if (!matrix) return null;
 
   const rowNames = ["Proprietary", "Value-added", "Commodity"];
   const colNames = ["Low", "Medium", "High"];
 
-  // Compute 3x3 Grid Data
   const gridData = rowNames.map((row) => {
     const cols = colNames.map((col) => {
       const cell = matrix[row]?.[col];
@@ -42,23 +77,14 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
         return { red: 0, green: 0, margin: "-", isGreen: false, isRed: false, rev: "₹0.00 (0.0%)" };
       }
 
-      let red = 0;
-      let green = 0;
-      cell.families.forEach((fam) => {
-        if (fam.actual_gm_pct < fam.baseline_gm_pct) {
-          red++;
-        } else {
-          green++;
-        }
-      });
+      const redFamilies = cell.families.filter((fam) => fam.actual_gm_pct < fam.baseline_gm_pct);
+      const greenFamilies = cell.families.filter((fam) => fam.actual_gm_pct >= fam.baseline_gm_pct);
 
-      const totalRev = cell.families.reduce((sum, f) => sum + (f.revenue_inr || 0), 0);
-      const weightedBaseline = totalRev > 0
-        ? cell.families.reduce((sum, f) => sum + (f.baseline_gm_pct * (f.revenue_inr || 0)), 0) / totalRev
-        : 0;
+      const red = cell.below_baseline ?? 0;
+      const green = cell.above_baseline ?? 0;
 
-      const gmVal = cell.gm_pct !== null ? cell.gm_pct : 0;
-      const delta = cell.gm_pct !== null ? (gmVal - weightedBaseline) : 0;
+      const totalRev = cell.total_revenue ?? 0;
+      const delta = cell.gm_delta_pp ?? 0;
 
       const marginStr = cell.gm_pct !== null
         ? `${cell.gm_pct.toFixed(2)}% (${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%)`
@@ -77,6 +103,8 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
       return {
         red,
         green,
+        redFamilies,
+        greenFamilies,
         margin: marginStr,
         isGreen,
         isRed,
@@ -90,35 +118,11 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
     };
   });
 
-  // Compute Global Matrix Metrics
-  let totalRedFamilies = 0;
-  let totalGreenFamilies = 0;
-  let globalTotalRev = 0;
-  let globalActualGmWeightedSum = 0;
-  let globalBaselineGmWeightedSum = 0;
-
-  rowNames.forEach((row) => {
-    colNames.forEach((col) => {
-      const cell = matrix[row]?.[col];
-      if (cell) {
-        cell.families.forEach((fam) => {
-          const rev = fam.revenue_inr || 0;
-          globalTotalRev += rev;
-          globalActualGmWeightedSum += fam.actual_gm_pct * rev;
-          globalBaselineGmWeightedSum += fam.baseline_gm_pct * rev;
-          if (fam.actual_gm_pct < fam.baseline_gm_pct) {
-            totalRedFamilies++;
-          } else {
-            totalGreenFamilies++;
-          }
-        });
-      }
-    });
-  });
-
-  const pooledActualGm = globalTotalRev > 0 ? (globalActualGmWeightedSum / globalTotalRev) : 0;
-  const pooledBaselineGm = globalTotalRev > 0 ? (globalBaselineGmWeightedSum / globalTotalRev) : 0;
-  const globalDelta = pooledActualGm - pooledBaselineGm;
+  const totalRedFamilies = activeQuarterData?.total_below_baseline ?? 0;
+  const totalGreenFamilies = activeQuarterData?.total_above_baseline ?? 0;
+  const pooledActualGm = activeQuarterData?.pooled_actual_gm_pct ?? 0;
+  const globalDelta = activeQuarterData?.global_delta_pp ?? 0;
+  const globalTotalRev = activeQuarterData?.total_revenue_inr ?? 0;
 
   let globalRevStr = "₹0.00";
   if (globalTotalRev >= 10000000) {
@@ -132,9 +136,12 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-bold text-gray-900">Classification × Freq to buy</h2>
         <CustomSelect
-          options={[insights?.curr_qtr || "Q4 FY 26"]}
-          value={insights?.curr_qtr || "Q4 FY 26"}
-          onChange={() => {}}
+          options={quarters.length > 0 ? quarters : [activeQuarter || "Q4 FY 26"]}
+          value={activeQuarter || "Q4 FY 26"}
+          onChange={(val) => {
+            setSelectedQuarter(val);
+            setSelectedDetails(null);
+          }}
           labelPrefix="Quarter: "
           alignRight
         />
@@ -142,14 +149,13 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
 
       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 mb-6">
         <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-          Classification = Freq to buy • {insights?.curr_qtr || "Q4 FY 26"}
+          Classification = Freq to buy • {activeQuarter || "Q4 FY 26"}
         </div>
         <div className="text-xl font-extrabold text-gray-900 mt-1">
           Heating overall GM: <span className="text-[#a61c1e]">{pooledActualGm.toFixed(2)}%</span>
         </div>
       </div>
 
-      {/* 3x3 Freq Grid */}
       <div className="grid grid-cols-4 gap-4 text-xs font-semibold">
         <div></div>
         <div className="text-center font-bold text-gray-500 bg-gray-50 py-2 border border-gray-200 rounded-md">Low</div>
@@ -164,16 +170,31 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
             {row.cols.map((col, cIdx) => (
               <div key={cIdx} className="bg-white border border-gray-200 p-3 rounded-lg flex flex-col gap-2 shadow-xs">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 font-bold">{col.red}</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold">{col.green}</span>
+                  <span 
+                    className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 font-bold cursor-pointer hover:bg-rose-100 transition-colors"
+                    onClick={() => setSelectedDetails({
+                      title: `Below baseline — ${row.row} × ${colNames[cIdx]} - ${activeQuarter || "Q4 FY 26"}`,
+                      families: col.redFamilies
+                    })}
+                  >
+                    {col.red}
+                  </span>
+                  <span 
+                    className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold cursor-pointer hover:bg-emerald-100 transition-colors"
+                    onClick={() => setSelectedDetails({
+                      title: `Above baseline — ${row.row} × ${colNames[cIdx]} - ${activeQuarter || "Q4 FY 26"}`,
+                      families: col.greenFamilies
+                    })}
+                  >
+                    {col.green}
+                  </span>
                 </div>
-                <div className={`text-center font-bold py-1 px-1.5 rounded text-[10px] ${
-                  col.isGreen
+                <div className={`text-center font-bold py-1 px-1.5 rounded text-[10px] ${col.isGreen
                     ? "bg-emerald-50 text-emerald-800"
                     : col.isRed
-                    ? "bg-rose-50 text-rose-800"
-                    : "bg-gray-50 text-gray-400"
-                }`}>
+                      ? "bg-rose-50 text-rose-800"
+                      : "bg-gray-50 text-gray-400"
+                  }`}>
                   {col.margin}
                 </div>
                 <div className="text-center text-[10px] text-gray-500 bg-gray-50 py-1 rounded">
@@ -185,7 +206,6 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
         ))}
       </div>
 
-      {/* Metric Blocks */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Below / above baseline GM (# families)</span>
@@ -211,6 +231,46 @@ const ClassificationGrid = ({ data }: ClassificationGridProps) => {
           </span>
         </div>
       </div>
+
+      {selectedDetails && (
+        <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <h3 className="text-gray-900 font-bold text-sm mb-6">{selectedDetails.title}</h3>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                  <th className="py-3 px-4 font-semibold">PRODUCT FAMILY</th>
+                  <th className="py-3 px-4 font-semibold">BASELINE GM%</th>
+                  <th className="py-3 px-4 font-semibold">TARGET GM%</th>
+                  <th className="py-3 px-4 font-semibold">ACTUAL GM%</th>
+                  <th className="py-3 px-4 font-semibold">REVENUE</th>
+                  <th className="py-3 px-4 font-semibold">TRANSACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="text-xs text-gray-700">
+                {selectedDetails.families.map((fam, idx) => (
+                  <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="py-3 px-4 font-medium text-gray-900">{fam.display_name || fam.family_nk}</td>
+                    <td className="py-3 px-4">{fam.baseline_gm_pct?.toFixed(1)}%</td>
+                    <td className="py-3 px-4">{fam.target_gm_pct?.toFixed(1)}%</td>
+                    <td className="py-3 px-4">{fam.actual_gm_pct?.toFixed(1)}%</td>
+                    <td className="py-3 px-4">₹{fam.revenue_inr?.toLocaleString("en-IN")}</td>
+                    <td className="py-3 px-4">{fam.transaction_count ?? fam.transactions ?? 0} txns</td>
+                  </tr>
+                ))}
+                {selectedDetails.families.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-gray-400 italic">
+                      No product families found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

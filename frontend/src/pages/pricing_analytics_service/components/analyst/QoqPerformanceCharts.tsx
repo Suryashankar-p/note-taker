@@ -257,63 +257,12 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
           <Chart type="bar" data={comboChartData} options={comboChartOptions} />
         </div>
       </div>
-
-
-      {/* 4. GM% Dispersion Analysis
-      <div className="border-t border-gray-150 pt-6 mt-2">
-        <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-4">
-          GM% dispersion analysis
-        </h4>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Normal distribution Chart * /}
-          <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50">
-            <span className="text-[10px] text-gray-400 font-bold uppercase mb-4 block">Normal distribution — GM%</span>
-            <div className="h-52">
-              <Chart type="bar" data={normalChartData} options={normalChartOptions} />
-            </div>
-          </div>
-
-          {/* Confidence Interval Trend Chart * /}
-          <div className="border border-gray-150 rounded-xl p-4 bg-slate-50/50">
-            <span className="text-[10px] text-gray-400 font-bold uppercase mb-4 block">GM% distribution trend — quarter on quarter</span>
-            <div className="h-52">
-              <Line data={confidenceChartData} options={confidenceChartOptions} />
-            </div>
-          </div>
-        </div>
-      </div>
-      */}
-
-      {/* Summary stats
-      <div className="grid grid-cols-5 gap-3 text-center border-t border-gray-150 pt-6">
-        <div>
-          <span className="text-[9px] text-gray-400 font-bold uppercase">Mean GM%</span>
-          <span className="text-sm font-extrabold text-gray-900 block mt-1">{selectedDetails.mean}</span>
-        </div>
-        <div>
-          <span className="text-[9px] text-slate-400 font-bold uppercase">Std-dev (σ)</span>
-          <span className="text-sm font-extrabold text-gray-900 block mt-1">{selectedDetails.stdDev}</span>
-        </div>
-        <div>
-          <span className="text-[9px] text-gray-400 font-bold uppercase">Median</span>
-          <span className="text-sm font-extrabold text-gray-900 block mt-1">{selectedDetails.median}</span>
-        </div>
-        <div>
-          <span className="text-[9px] text-gray-400 font-bold uppercase">Min GM%</span>
-          <span className="text-sm font-extrabold text-rose-600 block mt-1">{selectedDetails.min}</span>
-        </div>
-        <div>
-          <span className="text-[9px] text-gray-400 font-bold uppercase">Max GM%</span>
-          <span className="text-sm font-extrabold text-emerald-600 block mt-1">{selectedDetails.max}</span>
-        </div>
-      </div>
-      */}
-
+      
       <button
         onClick={onNavigateToSku}
         className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm hover:scale-[1.01]"
       >
-        SKU deviation drill-down 
+        SKU deviation drill-down
         <ArrowRight size={14} />
       </button>
     </div>

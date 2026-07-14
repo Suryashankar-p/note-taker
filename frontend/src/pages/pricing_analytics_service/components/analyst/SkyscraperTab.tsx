@@ -49,7 +49,7 @@ const SkyscraperTab = () => {
     .map((fam: any) => {
       const actual = fam.actual_gm_pct !== null && fam.actual_gm_pct !== undefined ? fam.actual_gm_pct : 0;
       const ref = (compareVs === "target" ? fam.target_gm_pct : fam.ref_gm_pct) ?? 0;
-      const gap = actual - ref;
+      const gap = (compareVs === "target" ? fam.margin_gap_pp : fam.baseline_margin_gap_pp) ?? 0;
       return {
         name: fam.display_name,
         actual: `${actual.toFixed(1)}%`,
@@ -58,6 +58,9 @@ const SkyscraperTab = () => {
         deltaVal: gap,
         revenueInr: fam.revenue_inr || 0,
         share: `${(fam.revenue_share_pct || 0).toFixed(1)}%`,
+        rawActual: actual,
+        rawTarget: ref,
+        rawShare: fam.revenue_share_pct || 0
       };
     })
     .sort((a: any, b: any) => b.deltaVal - a.deltaVal);

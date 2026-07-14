@@ -208,19 +208,16 @@ const DispersionCharts = ({
             labelPrefix="Classification: "
           />
           <CustomSelect
-            options={[
-              { value: "null", label: "-- Select Family --" },
-              ...filteredFamilies.map((f) => ({
-                value: f.nk,
-                label: f.display
-                  .replace(/\s*\(\s*(o|n\/a)\s*\)/gi, "")
-                  .replace(/\b(o|n\/a)\b/gi, "")
-                  .replace(/\s+/g, " ")
-                  .trim(),
-              }))
-            ]}
-            value={selectedFamily || "null"}
-            onChange={(val) => setSelectedFamily(val === "null" ? null : val)}
+            options={filteredFamilies.map((f) => ({
+              value: f.nk,
+              label: f.display
+                .replace(/\s*\(\s*(o|n\/a)\s*\)/gi, "")
+                .replace(/\b(o|n\/a)\b/gi, "")
+                .replace(/\s+/g, " ")
+                .trim(),
+            }))}
+            value={selectedFamily || ""}
+            onChange={(val) => setSelectedFamily(val || null)}
             labelPrefix="Product Family: "
             alignRight
           />
