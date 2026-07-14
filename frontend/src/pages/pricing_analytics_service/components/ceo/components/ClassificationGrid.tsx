@@ -9,12 +9,18 @@ interface FamilyItem {
   target_gm_pct: number;
   revenue_inr: number;
   transactions?: number;
+  transaction_count?: number;
 }
 
 interface CellData {
   gm_pct: number | null;
   revenue_share_pct: number;
   families: FamilyItem[];
+  total_revenue?: number;
+  weighted_baseline_gm_pct?: number | null;
+  gm_delta_pp?: number | null;
+  below_baseline?: number;
+  above_baseline?: number;
 }
 
 interface ClassificationGridProps {
@@ -58,14 +64,12 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
 
   const activeQuarterData = data?.quarterMatrices?.[activeQuarter];
   const matrix = activeQuarterData?.matrix || data?.matrix;
-  const insights = data?.insights;
 
   if (!matrix) return null;
 
   const rowNames = ["Proprietary", "Value-added", "Commodity"];
   const colNames = ["Low", "Medium", "High"];
 
-  // Compute 3x3 Grid Data
   const gridData = rowNames.map((row) => {
     const cols = colNames.map((col) => {
       const cell = matrix[row]?.[col];
@@ -73,28 +77,14 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
         return { red: 0, green: 0, margin: "-", isGreen: false, isRed: false, rev: "₹0.00 (0.0%)" };
       }
 
-      let red = 0;
-      let green = 0;
-      const redFamilies: FamilyItem[] = [];
-      const greenFamilies: FamilyItem[] = [];
+      const redFamilies = cell.families.filter((fam) => fam.actual_gm_pct < fam.baseline_gm_pct);
+      const greenFamilies = cell.families.filter((fam) => fam.actual_gm_pct >= fam.baseline_gm_pct);
 
-      cell.families.forEach((fam) => {
-        if (fam.actual_gm_pct < fam.baseline_gm_pct) {
-          red++;
-          redFamilies.push(fam);
-        } else {
-          green++;
-          greenFamilies.push(fam);
-        }
-      });
+      const red = cell.below_baseline ?? 0;
+      const green = cell.above_baseline ?? 0;
 
-      const totalRev = cell.families.reduce((sum, f) => sum + (f.revenue_inr || 0), 0);
-      const weightedBaseline = totalRev > 0
-        ? cell.families.reduce((sum, f) => sum + (f.baseline_gm_pct * (f.revenue_inr || 0)), 0) / totalRev
-        : 0;
-
-      const gmVal = cell.gm_pct !== null ? cell.gm_pct : 0;
-      const delta = cell.gm_pct !== null ? (gmVal - weightedBaseline) : 0;
+      const totalRev = cell.total_revenue ?? 0;
+      const delta = cell.gm_delta_pp ?? 0;
 
       const marginStr = cell.gm_pct !== null
         ? `${cell.gm_pct.toFixed(2)}% (${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%)`
@@ -128,34 +118,11 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
     };
   });
 
-  let totalRedFamilies = 0;
-  let totalGreenFamilies = 0;
-  let globalTotalRev = 0;
-  let globalActualGmWeightedSum = 0;
-  let globalBaselineGmWeightedSum = 0;
-
-  rowNames.forEach((row) => {
-    colNames.forEach((col) => {
-      const cell = matrix[row]?.[col];
-      if (cell) {
-        cell.families.forEach((fam) => {
-          const rev = fam.revenue_inr || 0;
-          globalTotalRev += rev;
-          globalActualGmWeightedSum += fam.actual_gm_pct * rev;
-          globalBaselineGmWeightedSum += fam.baseline_gm_pct * rev;
-          if (fam.actual_gm_pct < fam.baseline_gm_pct) {
-            totalRedFamilies++;
-          } else {
-            totalGreenFamilies++;
-          }
-        });
-      }
-    });
-  });
-
-  const pooledActualGm = globalTotalRev > 0 ? (globalActualGmWeightedSum / globalTotalRev) : 0;
-  const pooledBaselineGm = globalTotalRev > 0 ? (globalBaselineGmWeightedSum / globalTotalRev) : 0;
-  const globalDelta = pooledActualGm - pooledBaselineGm;
+  const totalRedFamilies = activeQuarterData?.total_below_baseline ?? 0;
+  const totalGreenFamilies = activeQuarterData?.total_above_baseline ?? 0;
+  const pooledActualGm = activeQuarterData?.pooled_actual_gm_pct ?? 0;
+  const globalDelta = activeQuarterData?.global_delta_pp ?? 0;
+  const globalTotalRev = activeQuarterData?.total_revenue_inr ?? 0;
 
   let globalRevStr = "₹0.00";
   if (globalTotalRev >= 10000000) {
@@ -189,7 +156,6 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
         </div>
       </div>
 
-      {/* 3x3 Freq Grid */}
       <div className="grid grid-cols-4 gap-4 text-xs font-semibold">
         <div></div>
         <div className="text-center font-bold text-gray-500 bg-gray-50 py-2 border border-gray-200 rounded-md">Low</div>
@@ -290,7 +256,7 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
                     <td className="py-3 px-4">{fam.target_gm_pct?.toFixed(1)}%</td>
                     <td className="py-3 px-4">{fam.actual_gm_pct?.toFixed(1)}%</td>
                     <td className="py-3 px-4">₹{fam.revenue_inr?.toLocaleString("en-IN")}</td>
-                    <td className="py-3 px-4">{fam.transactions || 0} txns</td>
+                    <td className="py-3 px-4">{fam.transaction_count ?? fam.transactions ?? 0} txns</td>
                   </tr>
                 ))}
                 {selectedDetails.families.length === 0 && (
