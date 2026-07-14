@@ -14,7 +14,7 @@ const SkyscraperInsights = ({ insights }: SkyscraperInsightsProps) => {
       </h3>
       <div className="flex flex-col gap-3.5 text-xs text-gray-600 leading-relaxed">
         {insights.map((text, index) => {
-          let borderColor = "border-[#a61c1e]"; // Default Thermax Red
+          let borderColor = "border-[#a61c1e]"; 
           if (text.includes("above target") || text.includes("+")) {
             borderColor = "border-emerald-500";
           } else if (text.includes("below target") || text.includes("-")) {
