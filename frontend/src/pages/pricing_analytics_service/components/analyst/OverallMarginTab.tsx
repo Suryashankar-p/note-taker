@@ -6,6 +6,7 @@ import OverallQoQTable from "../ceo/components/OverallQoQTable";
 import AnalystSnapshotCards from "./AnalystSnapshotCards";
 import GMDecompositionAnalysis from "./GMDecompositionAnalysis";
 import CustomSelect from "../CustomSelect";
+import { useOutletContext } from "react-router-dom";
 import {
   useGetOverallMargin,
   useGetBusinessInsights,
@@ -13,6 +14,9 @@ import {
 } from "../../services/query/query";
 
 const OverallMarginTab = () => {
+  const context = useOutletContext<any>() || {};
+  const onNavigateToTab = context.onNavigateToTab;
+
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
   const [selectedFamily, setSelectedFamily] = useState("All families (109)");
 
@@ -67,6 +71,15 @@ const OverallMarginTab = () => {
       <GMDecompositionAnalysis
         bridge={bridge}
       />
+
+      <div className="flex items-center justify-end border-t border-gray-200 pt-6 mt-4">
+        <button
+          onClick={() => onNavigateToTab?.("skyscraper")}
+          className="px-6 py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md active:scale-95"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

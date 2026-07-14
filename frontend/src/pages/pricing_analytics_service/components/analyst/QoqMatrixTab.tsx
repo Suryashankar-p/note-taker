@@ -202,7 +202,7 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
         getRowTotal={getRowTotal}
       />
 
-      {selectedQoqCell ? (
+      {selectedQoqCell && (
         <>
           <QoqDrilldownTable
             activeFamiliesList={activeFamiliesList}
@@ -220,22 +220,22 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
             />
           )}
         </>
-      ) : (
-        <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-4">
-          <button
-            onClick={() => onNavigateToTab?.("skyscraper")}
-            className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
-          >
-            — Previous
-          </button>
-          <button
-            onClick={() => onNavigateToTab?.("sku-drill-down")}
-            className="px-6 py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md active:scale-95"
-          >
-            Next —
-          </button>
-        </div>
       )}
+
+      <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-4">
+        <button
+          onClick={() => onNavigateToTab?.("skyscraper")}
+          className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onNavigateToTab?.("sku-drill-down")}
+          className="px-6 py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md active:scale-95"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

@@ -42,7 +42,12 @@ const CeoBriefing = () => {
 
       <main className="flex-1 p-8 overflow-y-auto">
         <Suspense fallback={<PageLoading />}>
-          <Outlet />
+          <Outlet
+            context={{
+              onNavigateToTab: (tabId: string) =>
+                navigate(`${SETTINGS_BASE}/ceo/${tabId}`),
+            }}
+          />
         </Suspense>
       </main>
     </div>

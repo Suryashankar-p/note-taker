@@ -3,8 +3,12 @@ import DispersionBoxes from "./DispersionBoxes";
 import DispersionCharts from "./DispersionCharts";
 import DispersionMovementExamples from "./DispersionMovementExamples";
 import { useGetDispersion } from "../../../services/query/query";
+import { useOutletContext } from "react-router-dom";
 
 const DispersionView = () => {
+  const context = useOutletContext<any>() || {};
+  const onNavigateToTab = context.onNavigateToTab;
+
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
   const [selectedQuarter, setSelectedQuarter] = useState<string>("");
@@ -60,6 +64,15 @@ const DispersionView = () => {
         setSelectedFamily={setSelectedFamily}
       />
       */}
+
+      <div className="flex items-center justify-start border-t border-gray-200 pt-6 mt-4">
+        <button
+          onClick={() => onNavigateToTab?.("skycraper")}
+          className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
+        >
+          Previous
+        </button>
+      </div>
     </div>
   );
 };
