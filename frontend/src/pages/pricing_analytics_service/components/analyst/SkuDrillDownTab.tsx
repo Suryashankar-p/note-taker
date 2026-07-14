@@ -23,6 +23,7 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
   selectedFamily: propsSelectedFamily,
 }) => {
   const context = useOutletContext<any>() || {};
+  const onNavigateToTab = context.onNavigateToTab;
   const selectedFamily =
     propsSelectedFamily !== undefined
       ? propsSelectedFamily
@@ -325,6 +326,15 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="flex items-center justify-start border-t border-gray-200 pt-6 mt-4">
+        <button
+          onClick={() => onNavigateToTab?.("qoq-matrix")}
+          className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
+        >
+          Previous
+        </button>
       </div>
     </div>
   );
