@@ -14,7 +14,7 @@ import DeleteMemberIcon from "../../../assets/delete.svg";
 import AddMemberModal from "../components/AddNewMemberModal";
 import EditMemberModal from "../components/EditMemberModal";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
-import { useGetMembersList, useDeleteMember } from "../services/query/query";
+import { useGetMembersList, useDeleteMember, useGetMemberPricingAnalyticsRole } from "../services/query/query";
 import { useInfiniteScroll } from "../../../services/hooks/useInfiniteScroll";
 import MoreIcon from "../../../assets/more.svg";
 import Toast from "../../../components/Toast";
@@ -48,6 +48,9 @@ const MembersSection = () => {
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useGetMembersList(payload);
+
+  const { data: currentUserRoleData } = useGetMemberPricingAnalyticsRole();
+  const isOwner = currentUserRoleData?.role?.toUpperCase() === 'OWNER';
 
   const loadMoreRef = useInfiniteScroll({
     fetchNextPage,
@@ -112,13 +115,15 @@ const MembersSection = () => {
             />
           </div>
 
-          <Button
-            onClick={() => setOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#e03639] text-white rounded-lg hover:bg-[#c92e32] active:bg-[#b0282c] transition-all duration-200 shadow-sm hover:shadow-md"
-          >
-            <img src={AddIcon} alt="add" className="w-4 h-4" />
-            <p className="text-sm font-medium">Add Member</p>
-          </Button>
+          {isOwner && (
+            <Button
+              onClick={() => setOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#e03639] text-white rounded-lg hover:bg-[#c92e32] active:bg-[#b0282c] transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <img src={AddIcon} alt="add" className="w-4 h-4" />
+              <p className="text-sm font-medium">Add Member</p>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -159,7 +164,7 @@ const MembersSection = () => {
                     </span>
                   </td>
                   <td className="px-2 py-2 text-right">
-                    <td className="px-2 py-2 text-right">
+                    {isOwner && (
                       <Menu
                         as="div"
                         className="relative inline-block text-left"
@@ -205,7 +210,7 @@ const MembersSection = () => {
                           </MenuItem>
                         </MenuItems>
                       </Menu>
-                    </td>
+                    )}
                   </td>
                 </tr>
               ))

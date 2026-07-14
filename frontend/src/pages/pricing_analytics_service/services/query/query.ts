@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useInfiniteQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
-import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData } from "./utils";
+import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData, transformClassificationMatrixData } from "./utils";
 
 export * from "./types";
 
@@ -9,6 +9,16 @@ export const GetMemberPricingAnalyticsRole = async () => {
     "/member/me"
   );
   return response;
+};
+
+export const useGetMemberPricingAnalyticsRole = () => {
+  return useQuery({
+    queryKey: ["member-role-pricing-analytics"],
+    queryFn: async () => {
+      const response = await GetMemberPricingAnalyticsRole();
+      return response;
+    },
+  });
 };
 
 // MEMBER
@@ -312,7 +322,7 @@ export const useGetClassificationMatrix = (sessionId: number) => {
         "/analytics/classification-matrix",
         { session_id: sessionId }
       );
-      return response;
+      return transformClassificationMatrixData(response);
     },
     enabled: !!sessionId,
   });
