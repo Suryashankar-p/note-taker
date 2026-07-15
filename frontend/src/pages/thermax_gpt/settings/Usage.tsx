@@ -13,6 +13,7 @@ import {
   ReadUsageLimit,
   UpdateUsageLimit,
   ReadTotalActiveUsers,
+  UpdateAllUsersUsageLimit,
 } from "../../../services/thermax_gpt";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store";
@@ -176,6 +177,21 @@ const Usage = () => {
     }
   };
 
+  const onGlobalLimitEdit = async (data: any) => {
+    if (data?.yearly_limit !== undefined) {
+      try {
+        const editGlobalLimitResponse = await UpdateAllUsersUsageLimit(data?.yearly_limit);
+        if (editGlobalLimitResponse?.message || editGlobalLimitResponse?.status === 200) {
+          dispatch.toast.openToast({ message: "Global limit updated successfully.", status: true, type: "success" });
+        } else {
+          setPageError(true);
+          if (editGlobalLimitResponse?.detail)
+            dispatch.toast.openToast({ message: editGlobalLimitResponse?.detail, status: true, type: "error" });
+        }
+      } catch { setPageError(true); }
+    }
+  };
+
   const handleTabChange = (tabKey: "cost" | "activity" | "tokens") => {
     setActiveTab(tabKey);
   };
@@ -207,7 +223,7 @@ const Usage = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "cost":
-        return <Cost usageData={usageData} distributionData={distributionData} limit={limit} onLimitEdit={onLimitEdit} month={calender.month} />;
+        return <Cost usageData={usageData} distributionData={distributionData} limit={limit} onLimitEdit={onLimitEdit} onGlobalLimitEdit={onGlobalLimitEdit} month={calender.month} />;
       case "activity":
         return <Activity activityData={activityData} distributionData={distributionData} month={calender.month} topUsers={topUsers} reachedBottom={reachedBottom} totalActiveUsers={totalActiveUsers} />;
       case "tokens":

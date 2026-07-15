@@ -147,6 +147,14 @@ export const UpdateUsageLimit = async (limit: number) => {
   return response;
 };
 
+export const UpdateAllUsersUsageLimit = async (yearly_limit: number) => {
+  const response = await GPTAPI.put(
+    BACKEND_THERMAX_GPT_URL + `/thermax_gpt/usage/cost/users/all`,
+    { yearly_limit }
+  );
+  return response;
+};
+
 export const ReadActivityUsage = async (
   year: string | number,
   month: string | number,
