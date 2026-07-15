@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import CustomSelect from "../../CustomSelect";
+import CustomSelect from "../CustomSelect";
 
 interface HeatmapData {
   quarter: string;
@@ -55,7 +55,7 @@ const HeatingMarginsGrid = ({ data }: Props) => {
 
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
   const selectedIdx = sortedQuarters.indexOf(activeQuarter);
-  
+
   // Take last 4 quarters ending at selected index
   const displayedQuartersList = sortedQuarters.slice(
     Math.max(0, selectedIdx - 3),
@@ -162,37 +162,30 @@ const HeatingMarginsGrid = ({ data }: Props) => {
               ))}
             </div>
 
-            {/* Custom Heatmap Grid with Inline Y-Axis Label */}
             <div className="flex items-center gap-1 w-full max-w-[280px]">
-              {/* Y Axis Label (Left) */}
               <div className="text-[9px] font-bold text-gray-500 tracking-wider whitespace-nowrap [writing-mode:vertical-lr] rotate-180 select-none">
                 Target vs baseline
               </div>
 
               <div className="flex flex-col w-full">
-                {/* X Axis Header */}
                 <div className="text-[10px] font-bold text-gray-600 text-center mb-1">
                   Δ Achieved gross margin (vs Baseline)
                 </div>
-                
+
                 <div className="flex">
-                  {/* Row Labels (Y Axis values) */}
                   <div className="flex flex-col justify-around text-[9px] font-bold text-gray-500 pr-1 text-right w-12 py-3">
                     <span>&gt; 5%</span>
                     <span>0% to 5%</span>
                     <span>&lt; 0%</span>
                   </div>
 
-                  {/* Grid Area */}
                   <div className="flex-1 flex flex-col">
-                    {/* Column Labels (X Axis values) */}
                     <div className="grid grid-cols-3 gap-1 mb-1 text-center text-[9px] font-bold text-gray-500">
                       <span>&lt; 0%</span>
                       <span>0% to 5%</span>
                       <span>&gt; 5%</span>
                     </div>
 
-                    {/* Grid Wrapper */}
                     <div className="grid grid-cols-3 grid-rows-3 gap-1.5 aspect-square w-full border border-dashed border-gray-300 p-1.5 rounded-lg bg-gray-50/30">
                       {q.grid.map((row, rowIdx) =>
                         row.map((cell, cellIdx) => (

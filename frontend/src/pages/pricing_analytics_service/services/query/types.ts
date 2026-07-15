@@ -60,3 +60,34 @@ export interface SkuQuarterData {
     nonstd_rows_returned: number;
   };
 }
+
+export interface ClassificationFamilyItem {
+  family_nk: string;
+  display_name: string;
+  actual_gm_pct: number;
+  baseline_gm_pct: number;
+  target_gm_pct: number;
+  revenue_inr: number;
+  transactions?: number;
+  transaction_count?: number;
+}
+
+export interface ClassificationCellData {
+  gm_pct: number | null;
+  revenue_share_pct: number;
+  families: ClassificationFamilyItem[];
+  total_revenue?: number;
+  weighted_baseline_gm_pct?: number | null;
+  gm_delta_pp?: number | null;
+  below_baseline?: number;
+  above_baseline?: number;
+}
+
+export interface QoqMatrixCell {
+  count: number;
+  color: string;
+  families: string[];
+  familyData: any[];
+}
+
+export type QoqMatrixData = Record<string, Record<string, QoqMatrixCell>>;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import SkyscraperChart from "./SkyscraperChart";
 import SkyscraperInsights from "./SkyscraperInsights";
 import SkyscraperProductFamilies from "./SkyscraperProductFamilies";
-import { useGetSkyscraper } from "../../../services/query/query";
+import { useGetSkyscraper } from "../../services/query/query";
 import { useOutletContext } from "react-router-dom";
 
 const Skycraper = () => {

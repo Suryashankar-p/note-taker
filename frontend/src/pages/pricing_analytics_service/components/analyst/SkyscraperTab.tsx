@@ -48,7 +48,6 @@ const SkyscraperTab = () => {
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
   const rawFamilies = data?.[activeQuarter] || [];
 
-  // Map and process product families sorted by margin gap descending
   const processedFamilies = rawFamilies
     .map((fam: any) => {
       const actual = fam.actual_gm_pct !== null && fam.actual_gm_pct !== undefined ? fam.actual_gm_pct : 0;

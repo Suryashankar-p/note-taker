@@ -11,7 +11,7 @@ interface CustomSelectProps {
   value: string;
   onChange: (val: string) => void;
   className?: string;
-  labelPrefix?: string; // e.g. "Quarter: " or "Classification: "
+  labelPrefix?: string; 
   alignRight?: boolean;
 }
 

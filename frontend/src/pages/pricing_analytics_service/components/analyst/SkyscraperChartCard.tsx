@@ -126,7 +126,6 @@ const SkyscraperChartCard = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
-          {/* Compare Vs Selection Toggle */}
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             <button
               onClick={() => setCompareVs("target")}
@@ -160,7 +159,6 @@ const SkyscraperChartCard = ({
         </div>
       </div>
 
-      {/* Skyscraper Chart Area */}
       <div className="h-72 mt-4">
         <Bar data={chartData} options={chartOptions} />
       </div>

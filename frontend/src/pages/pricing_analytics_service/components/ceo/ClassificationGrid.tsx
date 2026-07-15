@@ -1,33 +1,15 @@
 import React, { useState } from "react";
-import CustomSelect from "../../CustomSelect";
-
-interface FamilyItem {
-  family_nk: string;
-  display_name: string;
-  actual_gm_pct: number;
-  baseline_gm_pct: number;
-  target_gm_pct: number;
-  revenue_inr: number;
-  transactions?: number;
-  transaction_count?: number;
-}
-
-interface CellData {
-  gm_pct: number | null;
-  revenue_share_pct: number;
-  families: FamilyItem[];
-  total_revenue?: number;
-  weighted_baseline_gm_pct?: number | null;
-  gm_delta_pp?: number | null;
-  below_baseline?: number;
-  above_baseline?: number;
-}
+import CustomSelect from "../CustomSelect";
+import {
+  type ClassificationFamilyItem,
+  type ClassificationCellData,
+} from "../../services/query/query";
 
 interface ClassificationGridProps {
   data?: {
-    matrix?: Record<string, Record<string, CellData>>;
+    matrix?: Record<string, Record<string, ClassificationCellData>>;
     quarterMatrices?: Record<string, {
-      matrix: Record<string, Record<string, CellData>>;
+      matrix: Record<string, Record<string, ClassificationCellData>>;
       pooled_actual_gm_pct: number;
       pooled_baseline_gm_pct: number;
       global_delta_pp: number;
@@ -49,7 +31,7 @@ interface ClassificationGridProps {
 const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSelectedQuarter: propsSetSelectedQuarter }: ClassificationGridProps) => {
   const [selectedDetails, setSelectedDetails] = useState<{
     title: string;
-    families: FamilyItem[];
+    families: ClassificationFamilyItem[];
   } | null>(null);
 
   const quarters = data?.quarters || [];
@@ -170,7 +152,7 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
             {row.cols.map((col, cIdx) => (
               <div key={cIdx} className="bg-white border border-gray-200 p-3 rounded-lg flex flex-col gap-2 shadow-xs">
                 <div className="flex justify-between items-center text-xs">
-                  <span 
+                  <span
                     className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 font-bold cursor-pointer hover:bg-rose-100 transition-colors"
                     onClick={() => setSelectedDetails({
                       title: `Below baseline — ${row.row} × ${colNames[cIdx]} - ${activeQuarter || "Q4 FY 26"}`,
@@ -179,7 +161,7 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
                   >
                     {col.red}
                   </span>
-                  <span 
+                  <span
                     className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold cursor-pointer hover:bg-emerald-100 transition-colors"
                     onClick={() => setSelectedDetails({
                       title: `Above baseline — ${row.row} × ${colNames[cIdx]} - ${activeQuarter || "Q4 FY 26"}`,
@@ -190,10 +172,10 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
                   </span>
                 </div>
                 <div className={`text-center font-bold py-1 px-1.5 rounded text-[10px] ${col.isGreen
-                    ? "bg-emerald-50 text-emerald-800"
-                    : col.isRed
-                      ? "bg-rose-50 text-rose-800"
-                      : "bg-gray-50 text-gray-400"
+                  ? "bg-emerald-50 text-emerald-800"
+                  : col.isRed
+                    ? "bg-rose-50 text-rose-800"
+                    : "bg-gray-50 text-gray-400"
                   }`}>
                   {col.margin}
                 </div>
@@ -235,7 +217,7 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
       {selectedDetails && (
         <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-gray-900 font-bold text-sm mb-6">{selectedDetails.title}</h3>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>

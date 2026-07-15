@@ -1,9 +1,10 @@
 import React from "react";
 import { AlertCircle } from "lucide-react";
 import CustomSelect from "../CustomSelect";
+import { type QoqMatrixData } from "../../services/query/query";
 
 interface QoqMatrixTableProps {
-  matrixData: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>>;
+  matrixData: QoqMatrixData;
   activeQuarter: string;
   sortedQuarters: string[];
   selectedQuarter: string;

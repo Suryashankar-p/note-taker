@@ -39,7 +39,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
   const activeQuarter = selectedQuarter || data?.latestQuarter || "";
   const quarterData = data?.quarterMap?.[activeQuarter];
 
-  // Only show rows when a family is actively selected from Step 3
   const nonstdRows: SkuNonStdRow[] = useMemo(() => {
     if (!selectedFamily) return [];
     const rows = quarterData?.nonstd_rows || [];
@@ -58,11 +57,10 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
     );
   }, [quarterData, selectedFamily]);
 
-  // Aggregate notional loss for summary banner
-  const totalNotionalLoss = useMemo(
-    () => nonstdRows.reduce((s, r) => s + (r.notional_loss ?? 0), 0),
-    [nonstdRows]
-  );
+  // const totalNotionalLoss = useMemo(
+  //   () => nonstdRows.reduce((s, r) => s + (r.notional_loss ?? 0), 0),
+  //   [nonstdRows]
+  // );
 
   if (isLoading) {
     return (
@@ -84,14 +82,12 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
-      {/* ── Header ── */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h3 className="text-sm font-bold tracking-tight text-gray-850">
             SKU Drill-down — Deviation Analysis
           </h3>
 
-          {/* Quarter picker */}
           {sortedQuarters.length > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quarter</span>
@@ -114,7 +110,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
           )}
         </div>
 
-        {/* Family / summary chips */}
         <div className="flex items-center gap-3 flex-wrap">
           {selectedFamily ? (
             <span className="font-extrabold text-[#a61c1e] bg-red-50 border border-red-200 px-3 py-1 rounded-lg text-xs">
@@ -137,7 +132,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
         </div>
       </div>
 
-      {/* ── 1. Non-Standard SKUs ── */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
         <div className="pb-3 border-b border-gray-100 mb-4 flex items-center justify-between">
           <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">
@@ -257,7 +251,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
         </div>
       </div>
 
-      {/* ── 2. Standard SKUs ── */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
         <div className="pb-3 border-b border-gray-100 mb-4 flex items-center justify-between">
           <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">

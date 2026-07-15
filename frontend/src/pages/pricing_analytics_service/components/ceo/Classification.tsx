@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ClassificationGrid from "./ClassificationGrid";
 import ClassificationInsights from "./ClassificationInsights";
-import { useGetClassificationMatrix } from "../../../services/query/query";
+import { useGetClassificationMatrix } from "../../services/query/query";
 import { useOutletContext } from "react-router-dom";
 
 const Classification = () => {
@@ -29,8 +29,8 @@ const Classification = () => {
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
-      <ClassificationGrid 
-        data={data} 
+      <ClassificationGrid
+        data={data}
         selectedQuarter={selectedQuarter}
         setSelectedQuarter={setSelectedQuarter}
       />

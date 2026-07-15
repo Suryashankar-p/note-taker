@@ -18,8 +18,7 @@ const ClassificationInsights = ({ data }: Props) => {
       </h3>
       <div className="flex flex-col gap-3.5 text-xs text-gray-600 leading-relaxed">
         {texts.map((text, index) => {
-          // Dynamically assign side line colors based on insight tags
-          let borderColor = "border-[#a61c1e]"; // Thermax Red for warnings / movers
+          let borderColor = "border-[#a61c1e]";
           if (text.includes("improved") || text.includes("accretive") || text.includes("gained")) {
             borderColor = "border-emerald-500";
           } else if (text.includes("below baseline across the matrix")) {

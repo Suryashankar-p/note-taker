@@ -95,7 +95,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   const getFamilyMockDetails = useCallback((name: string) => {
     const key = name.toLowerCase();
 
-    // Retrieve stats for the active quarter from familyHistory, or fall back to overall apiFamilyDetails
     const stats = familyHistory[key]?.[activeQuarter] || apiFamilyDetails[key];
     const nkKey = stats?.nk ? stats.nk.toLowerCase() : key;
     const actualVal = stats?.actual_gm_pct ?? 0;
@@ -103,7 +102,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     const baselineVal = stats?.baseline_gm_pct ?? targetVal;
     const gap = stats?.delta_pp ?? (actualVal - targetVal);
 
-    // O(1) per-quarter lookup using the pre-indexed familyHistory map
     const history = sortedQuarters.map((q: string) => {
       const fStats = familyHistory[key]?.[q] ?? familyHistory[nkKey]?.[q];
       return {
@@ -136,7 +134,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       min: `${min.toFixed(1)}%`,
       max: `${max.toFixed(1)}%`,
       transactionCount: stats?.transaction_count ?? 0,
-      // Pass nk directly so dispersion API gets the correct lowercase key
       familyNk: stats?.nk ?? key,
     };
   }, [apiFamilyDetails, familyHistory, sortedQuarters, activeQuarter]);
