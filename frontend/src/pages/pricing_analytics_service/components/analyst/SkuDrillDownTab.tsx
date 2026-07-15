@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import React, { useState, useEffect, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
@@ -30,11 +30,10 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
       : context.selectedFamily;
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data, isLoading, isError } = useGetSkuDeviation(sessionId);
+  const { data, isLoading, isError } = useGetSkuDeviation(sessionId, selectedFamily || null);
 
   const [selectedQuarter, setSelectedQuarter] = useState<string>("");
 
-  // Default to latest quarter once data arrives
   useEffect(() => {
     if (data?.latestQuarter && !selectedQuarter) {
       setSelectedQuarter(data.latestQuarter);
@@ -160,112 +159,28 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[11px] border-collapse min-w-[1100px]">
-            <thead>
-              <tr className="border-b border-gray-150 bg-gray-50 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
-                <th className="py-2.5 px-3">PF</th>
-                <th className="py-2.5 px-3 text-center">Order No</th>
-                <th className="py-2.5 px-3 text-center">Item Code</th>
-                <th className="py-2.5 px-3 w-72">Description</th>
-                <th className="py-2.5 px-3 text-right">Actual NS Margin</th>
-                <th className="py-2.5 px-3 text-right">Target NS Margin</th>
-                <th className="py-2.5 px-3 text-right">Deviation (pp)</th>
-                <th className="py-2.5 px-3 text-right">Overall Actual</th>
-                <th className="py-2.5 px-3 text-right">Overall Target</th>
-                <th className="py-2.5 px-3 text-right">Notional Loss</th>
-                <th className="py-2.5 px-3 text-right">Revenue</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              {nonstdRows.length > 0 ? (
-                nonstdRows.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50">
-                    <td className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap">
-                      {item.product_family}
-                    </td>
-                    <td className="py-2.5 px-3 text-center text-gray-500 whitespace-nowrap">
-                      {item.order_no}
-                    </td>
-                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                      {item.item_code}
-                    </td>
-                    <td className="py-2.5 px-3 text-gray-600 leading-relaxed font-normal">
-                      {item.description}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      {fmt(item.actual_nonstd_margin)}%
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      {fmt(item.target_nonstd_margin)}%
-                    </td>
-                    <td
-                      className={`py-2.5 px-3 text-right font-bold ${
-                        item.deviation_pp < 0 ? "text-rose-600" : "text-emerald-600"
-                      }`}
-                    >
-                      {fmtPP(item.deviation_pp)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      {fmt(item.overall_actual)}%
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      {fmt(item.overall_target)}%
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
-                      {fmtLakhs(item.notional_loss)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                      {fmtLakhs(item.revenue_inr)}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={11}
-                    className="py-6 text-center text-gray-400 font-bold text-xs bg-slate-50/30"
-                  >
-                    {selectedFamily
-                      ? `No non-standard SKU deviations found for "${selectedFamily}" in ${activeQuarter}.`
-                      : "No non-standard SKU data available for this quarter."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── 2. Standard SKUs ── */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
-        <div className="pb-3 border-b border-gray-100 mb-4 flex items-center justify-between">
-          <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">
-            Standard SKUs — price / cost deviations
-          </h4>
-          <span className="text-[10px] text-gray-400 font-bold">
-            {standardRows.length} rows
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
           <table className="w-full text-left text-[11px] border-collapse min-w-[1000px]">
             <thead>
-              <tr className="border-b border-gray-150 bg-gray-50 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
+              <tr className="border-b border-gray-150 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
                 <th className="py-2.5 px-3">PF</th>
                 <th className="py-2.5 px-3 text-center">Order No</th>
                 <th className="py-2.5 px-3 text-center">Item Code</th>
                 <th className="py-2.5 px-3 w-72">Description</th>
+                <th className="py-2.5 px-3">Channel / Direct</th>
                 <th className="py-2.5 px-3 text-right">List Price</th>
                 <th className="py-2.5 px-3 text-right">Actual Price</th>
                 <th className="py-2.5 px-3 text-right">Price Deviation</th>
                 <th className="py-2.5 px-3 text-right">List Cost</th>
                 <th className="py-2.5 px-3 text-right">Actual Cost</th>
                 <th className="py-2.5 px-3 text-right">Cost Deviation</th>
+                <th className="py-2.5 px-3 text-right">Overall margin (actual)</th>
+                <th className="py-2.5 px-3 text-right">PF target (overall)</th>
+                <th className="py-2.5 px-3 text-right">Notional loss (₹)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              {standardRows.length > 0 ? (
-                standardRows.map((item, idx) => {
+              {nonstdRows.length > 0 ? (
+                nonstdRows.map((item, idx) => {
                   const priceDevNum = item.price_deviation ?? 0;
                   const costDevNum = item.cost_deviation ?? 0;
                   return (
@@ -281,6 +196,9 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                       </td>
                       <td className="py-2.5 px-3 text-gray-600 leading-relaxed font-normal">
                         {item.description}
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-gray-700">
+                        {item.channel_direct ?? item.channel ?? item.channel_or_direct ?? "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         {item.list_price != null ? fmt(item.list_price, 2) : "—"}
@@ -308,13 +226,154 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                       >
                         {item.cost_deviation != null ? fmtPP(costDevNum) : "—"}
                       </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                        {item.overall_margin_actual != null
+                          ? `${fmt(item.overall_margin_actual)}%`
+                          : item.overall_actual != null
+                          ? `${fmt(item.overall_actual)}%`
+                          : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                        {item.overall_target_pf != null
+                          ? `${fmt(item.overall_target_pf)}%`
+                          : item.overall_target != null
+                          ? `${fmt(item.overall_target)}%`
+                          : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
+                        {item.notional_loss != null
+                          ? item.notional_loss >= 100000
+                            ? fmtLakhs(item.notional_loss)
+                            : `₹${item.notional_loss.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+                          : "—"}
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={14}
+                    className="py-6 text-center text-gray-400 font-bold text-xs bg-slate-50/30"
+                  >
+                    {selectedFamily
+                      ? `No non-standard SKU deviations found for "${selectedFamily}" in ${activeQuarter}.`
+                      : "No non-standard SKU data available for this quarter."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── 2. Standard SKUs ── */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
+        <div className="pb-3 border-b border-gray-100 mb-4 flex items-center justify-between">
+          <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">
+            Standard SKUs — price / cost deviations
+          </h4>
+          <span className="text-[10px] text-gray-400 font-bold">
+            {standardRows.length} rows
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[11px] border-collapse min-w-[1000px]">
+            <thead>
+              <tr className="border-b border-gray-150 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
+                <th className="py-2.5 px-3">PF</th>
+                <th className="py-2.5 px-3 text-center">Order No</th>
+                <th className="py-2.5 px-3 text-center">Item Code</th>
+                <th className="py-2.5 px-3 w-72">Description</th>
+                <th className="py-2.5 px-3">Channel / Direct</th>
+                <th className="py-2.5 px-3 text-right">List Price</th>
+                <th className="py-2.5 px-3 text-right">Actual Price</th>
+                <th className="py-2.5 px-3 text-right">Price Deviation</th>
+                <th className="py-2.5 px-3 text-right">List Cost</th>
+                <th className="py-2.5 px-3 text-right">Actual Cost</th>
+                <th className="py-2.5 px-3 text-right">Cost Deviation</th>
+                <th className="py-2.5 px-3 text-right">Overall margin (actual)</th>
+                <th className="py-2.5 px-3 text-right">PF target (overall)</th>
+                <th className="py-2.5 px-3 text-right">Notional loss (₹)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+              {standardRows.length > 0 ? (
+                standardRows.map((item, idx) => {
+                  const priceDevNum = item.price_deviation ?? 0;
+                  const costDevNum = item.cost_deviation ?? 0;
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap">
+                        {item.product_family}
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-gray-500 whitespace-nowrap">
+                        {item.order_no}
+                      </td>
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        {item.item_code}
+                      </td>
+                      <td className="py-2.5 px-3 text-gray-600 leading-relaxed font-normal">
+                        {item.description}
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-gray-700">
+                        {item.channel_direct ?? item.channel ?? item.channel_or_direct ?? "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {item.list_price != null ? fmt(item.list_price, 2) : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {item.actual_price != null ? fmt(item.actual_price, 2) : "—"}
+                      </td>
+                      <td
+                        className={`py-2.5 px-3 text-right font-bold ${
+                          priceDevNum < 0 ? "text-rose-600" : "text-emerald-600"
+                        }`}
+                      >
+                        {item.price_deviation != null ? fmtPP(priceDevNum) : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {item.list_cost != null ? fmt(item.list_cost, 2) : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {item.actual_cost != null ? fmt(item.actual_cost, 2) : "—"}
+                      </td>
+                      <td
+                        className={`py-2.5 px-3 text-right font-bold ${
+                          costDevNum < 0 ? "text-rose-600" : "text-emerald-600"
+                        }`}
+                      >
+                        {item.cost_deviation != null ? fmtPP(costDevNum) : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                        {item.overall_margin_actual != null
+                          ? `${fmt(item.overall_margin_actual)}%`
+                          : item.overall_actual != null
+                          ? `${fmt(item.overall_actual)}%`
+                          : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                        {item.overall_target_pf != null
+                          ? `${fmt(item.overall_target_pf)}%`
+                          : item.overall_target != null
+                          ? `${fmt(item.overall_target)}%`
+                          : "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
+                        {item.notional_loss != null
+                          ? item.notional_loss >= 100000
+                            ? fmtLakhs(item.notional_loss)
+                            : `₹${item.notional_loss.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+                          : "—"}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={14}
                     className="py-6 text-center text-gray-400 font-bold text-xs bg-slate-50/30"
                   >
                     {selectedFamily

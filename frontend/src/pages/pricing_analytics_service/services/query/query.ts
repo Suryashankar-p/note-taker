@@ -406,13 +406,16 @@ export const useGetDispersion = (sessionId: number, familyNk: string | null) => 
   });
 };
 
-export const useGetSkuDeviation = (sessionId: number) => {
+export const useGetSkuDeviation = (sessionId: number, familyNk?: string | null) => {
   return useQuery({
-    queryKey: ["sku-deviation", sessionId],
+    queryKey: ["sku-deviation", sessionId, familyNk],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/sku-deviation",
-        { session_id: sessionId }
+        {
+          session_id: sessionId,
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+        }
       );
       return transformSkuDeviationData(response);
     },

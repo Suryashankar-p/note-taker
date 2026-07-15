@@ -95,7 +95,8 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   const getFamilyMockDetails = useCallback((name: string) => {
     const key = name.toLowerCase();
 
-    const stats = apiFamilyDetails[key];
+    // Retrieve stats for the active quarter from familyHistory, or fall back to overall apiFamilyDetails
+    const stats = familyHistory[key]?.[activeQuarter] || apiFamilyDetails[key];
     const nkKey = stats?.nk ? stats.nk.toLowerCase() : key;
     const actualVal = stats?.actual_gm_pct ?? 0;
     const targetVal = stats?.target_gm_pct ?? 0;
@@ -112,14 +113,11 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       };
     });
 
-    const validHistory = history.filter((h: { quarter: string; revenue: number; gm: number }) => h.gm > 0);
-    const actuals = validHistory.map((h: { quarter: string; revenue: number; gm: number }) => h.gm);
-    const mean = actuals.length > 0 ? actuals.reduce((a: number, b: number) => a + b, 0) / actuals.length : actualVal;
-    const min = actuals.length > 0 ? Math.min(...actuals) : actualVal;
-    const max = actuals.length > 0 ? Math.max(...actuals) : actualVal;
-    const sortedAct = [...actuals].sort((a: number, b: number) => a - b);
-    const median = sortedAct.length > 0 ? sortedAct[Math.floor(sortedAct.length / 2)] : actualVal;
-    const std = actuals.length > 1 ? Math.sqrt(actuals.reduce((s: number, v: number) => s + Math.pow(v - mean, 2), 0) / (actuals.length - 1)) : 0.0;
+    const mean = stats?.mean_gm_pct ?? actualVal;
+    const min = stats?.min_gm_pct ?? actualVal;
+    const max = stats?.max_gm_pct ?? actualVal;
+    const median = stats?.median_gm_pct ?? actualVal;
+    const std = stats?.std_dev_gm_pct ?? 0.0;
 
     const revenueInr = stats?.revenue_inr || 0;
     return {
@@ -137,8 +135,11 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       median: `${median.toFixed(1)}%`,
       min: `${min.toFixed(1)}%`,
       max: `${max.toFixed(1)}%`,
+      transactionCount: stats?.transaction_count ?? 0,
+      // Pass nk directly so dispersion API gets the correct lowercase key
+      familyNk: stats?.nk ?? key,
     };
-  }, [apiFamilyDetails, familyHistory, sortedQuarters]);
+  }, [apiFamilyDetails, familyHistory, sortedQuarters, activeQuarter]);
 
   const matrixData = useMemo(() => {
     const activeMatrix = qoqMatrixQuery.data?.quarterMatrices?.[activeQuarter] || qoqMatrixQuery.data?.matrix || {};
@@ -217,6 +218,7 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
               selectedDetails={selectedDetails}
               sortedQuarters={sortedQuarters}
               onNavigateToSku={onNavigateToSku}
+              activeQuarter={activeQuarter}
             />
           )}
         </>

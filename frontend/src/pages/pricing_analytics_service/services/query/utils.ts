@@ -132,6 +132,7 @@ export const transformSkuDeviationData = (response: any) => {
           quarter: qEntry.quarter,
           standard_rows: qEntry.standard_rows || [],
           nonstd_rows: qEntry.nonstd_rows || [],
+          summary: qEntry.summary || undefined,
         };
         sortedQuarters.push(qEntry.quarter);
       });
