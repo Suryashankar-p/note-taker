@@ -1,7 +1,7 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import { Chart, Line } from "react-chartjs-2";
-import { useGetDispersion } from "../../services/query/query";
+import { useGetQoqDistribution, useGetDispersion } from "../../services/query/query";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -59,10 +59,12 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
 }) => {
   const sessionId = Number(localStorage.getItem("pricing_session_id"));
   const familyNk = selectedDetails.familyNk || selectedFamily.toLowerCase();
+  
+  const { data: qoqDistributionData, isFetching: isQoqDistributionFetching } = useGetQoqDistribution(sessionId, activeQuarter, familyNk);
   const { data: dispersionData, isFetching: isDispersionFetching } = useGetDispersion(sessionId, familyNk);
 
   const familyDispersion = dispersionData?.family_dispersion;
-  const hasDispersionData = familyDispersion && familyDispersion.family_nk !== "null";
+  const hasDispersionData = !!qoqDistributionData?.summary;
 
   const gmValues = selectedDetails.history.map(h => h.gm).filter(v => v != null);
   const revValues = selectedDetails.history.map(h => h.revenue).filter(v => v != null);
@@ -161,41 +163,11 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
     }
   };
 
-  const meanVal = parseFloat(selectedDetails.mean)  || 0;
-  const stdVal  = parseFloat(selectedDetails.stdDev) || 0;
-  const minVal  = parseFloat(selectedDetails.min)    || (meanVal - 3.5 * stdVal);
-  const maxVal  = parseFloat(selectedDetails.max)    || (meanVal + 3.5 * stdVal);
-
-  const numBuckets = 8;
-  const rangeMin = Math.min(minVal, meanVal - 3.5 * stdVal);
-  const rangeMax = Math.max(maxVal, meanVal + 3.5 * stdVal);
-  const bucketStep = stdVal > 0 ? (rangeMax - rangeMin) / numBuckets : 5;
-
-  const bucketLabels: string[] = Array.from({ length: numBuckets + 1 }, (_, i) =>
-    `${(rangeMin + i * bucketStep).toFixed(1)}%`
-  );
-
-  const currentCurvePoints: Array<{ x: number; y: number }> =
-    familyDispersion?.density_curves && !Array.isArray(familyDispersion.density_curves)
-      ? (familyDispersion.density_curves as any)["current_quarter"] || []
-      : [];
-
-  const binCounts: number[] = Array(numBuckets).fill(0);
-  currentCurvePoints.forEach((pt: { x: number; y: number }) => {
-    const binIdx = Math.min(Math.floor((pt.x - rangeMin) / bucketStep), numBuckets - 1);
-    if (binIdx >= 0) binCounts[binIdx] += pt.y;
-  });
-
-  const normalPDF = (x: number, mu: number, sigma: number) =>
-    sigma > 0 ? (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * ((x - mu) / sigma) ** 2) : 0;
-
-  const peakPDF = normalPDF(meanVal, meanVal, stdVal);
-  const peakBin = Math.max(...binCounts, 1);
-  const pdfScale = peakPDF > 0 ? peakBin / peakPDF : 1;
-  const bellCurveData: number[] = Array.from({ length: numBuckets }, (_, i) => {
-    const xMid = rangeMin + (i + 0.5) * bucketStep;
-    return normalPDF(xMid, meanVal, stdVal) * pdfScale;
-  });
+  const meanVal = qoqDistributionData?.summary?.mean ?? parseFloat(selectedDetails.mean) ?? 0;
+  const stdVal  = qoqDistributionData?.summary?.std_dev ?? parseFloat(selectedDetails.stdDev) ?? 0;
+  
+  const histogramMin = qoqDistributionData?.summary?.min ? Math.floor(qoqDistributionData.summary.min - 2) : 0;
+  const histogramMax = qoqDistributionData?.summary?.max ? Math.ceil(qoqDistributionData.summary.max + 2) : 100;
 
   const muSigmaPlugin = {
     id: "muSigmaLines",
@@ -210,9 +182,9 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
       };
 
       const lines = [
-        { val: meanVal - stdVal, label: "μ-σ" },
-        { val: meanVal,          label: "μ"   },
-        { val: meanVal + stdVal, label: "μ+σ" },
+        { val: qoqDistributionData?.markers?.mu_minus_sigma ?? (meanVal - stdVal), label: "μ-σ" },
+        { val: qoqDistributionData?.markers?.mu ?? meanVal,          label: "μ"   },
+        { val: qoqDistributionData?.markers?.mu_plus_sigma ?? (meanVal + stdVal), label: "μ+σ" },
       ];
 
       lines.forEach(({ val, label }) => {
@@ -241,33 +213,32 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
     },
   };
 
+  const xBarLabels = qoqDistributionData?.histogram?.map((h: any) => `${h.start}-${h.end}%`) || [];
+
   const histogramChartData = {
+    labels: xBarLabels,
     datasets: [
       {
         type: "bar" as const,
         label: "Frequency",
-        data: binCounts.map((count, i) => ({
-          x: rangeMin + (i + 0.5) * bucketStep,
-          y: count
-        })),
+        xAxisID: "xBar",
+        data: qoqDistributionData?.histogram?.map((h: any) => h.frequency) || [],
         backgroundColor: "rgba(56, 189, 248, 0.65)",
         borderColor: "rgba(56, 189, 248, 0.95)",
         borderWidth: 1,
-        barPercentage: 0.85,
-        categoryPercentage: 0.9,
+        barPercentage: 0.95,
+        categoryPercentage: 1.0,
         order: 2,
         yAxisID: "y",
       },
       {
         type: "line" as const,
         label: "Normal dist.",
-        data: Array.from({ length: 80 }, (_, i) => {
-          const x = rangeMin + (i / 79) * (rangeMax - rangeMin);
-          return {
-            x,
-            y: normalPDF(x, meanVal, stdVal) * pdfScale
-          };
-        }),
+        xAxisID: "xLine",
+        data: qoqDistributionData?.normal_curve?.map((pt: any) => ({
+          x: pt.x,
+          y: pt.y
+        })) || [],
         borderColor: "#f59e0b",
         borderWidth: 2.5,
         tension: 0.45,
@@ -298,18 +269,19 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         grid: { color: "#f1f5f9" },
         ticks: { color: "#64748b", font: { size: 9 }, precision: 0 },
       },
-      x: {
-        type: "linear" as const,
-        min: rangeMin,
-        max: rangeMax,
-        title: { display: true, text: "GM% buckets", color: "#94a3b8", font: { size: 9 } },
+      xBar: {
+        type: "category" as const,
         grid: { display: false },
         ticks: {
-          callback: (value: any) => `${parseFloat(value).toFixed(1)}%`,
-          stepSize: bucketStep,
           color: "#64748b",
           font: { size: 9 }
         },
+      },
+      xLine: {
+        type: "linear" as const,
+        display: false,
+        min: qoqDistributionData?.histogram?.[0]?.start ?? 40,
+        max: qoqDistributionData?.histogram?.[qoqDistributionData.histogram.length - 1]?.end ?? 60,
       },
     },
   };
@@ -436,28 +408,38 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
 
         <div className="bg-slate-50 border border-gray-200 rounded-xl p-5">
           <span className="text-[10px] text-gray-400 font-extrabold uppercase mb-4 block">
-            Distribution statistics — {activeQuarter} · {selectedDetails.name} · {selectedDetails.transactionCount} transactions
+            Distribution statistics — {activeQuarter} · {selectedDetails.name} · {qoqDistributionData?.summary?.count ?? selectedDetails.transactionCount ?? 0} transactions
           </span>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Mean GM%</span>
-              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.mean}</span>
+              <span className="text-xl font-black text-gray-900 mt-1">
+                {qoqDistributionData?.summary?.mean !== undefined ? `${qoqDistributionData.summary.mean.toFixed(1)}%` : selectedDetails.mean}
+              </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Std dev (σ)</span>
-              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.stdDev}</span>
+              <span className="text-xl font-black text-gray-900 mt-1">
+                {qoqDistributionData?.summary?.std_dev !== undefined ? `${qoqDistributionData.summary.std_dev.toFixed(1)}%` : selectedDetails.stdDev}
+              </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Median</span>
-              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.median}</span>
+              <span className="text-xl font-black text-gray-900 mt-1">
+                {qoqDistributionData?.summary?.median !== undefined ? `${qoqDistributionData.summary.median.toFixed(1)}%` : selectedDetails.median}
+              </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Min GM%</span>
-              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.min}</span>
+              <span className="text-xl font-black text-gray-900 mt-1">
+                {qoqDistributionData?.summary?.min !== undefined ? `${qoqDistributionData.summary.min.toFixed(1)}%` : selectedDetails.min}
+              </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Max GM%</span>
-              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.max}</span>
+              <span className="text-xl font-black text-gray-900 mt-1">
+                {qoqDistributionData?.summary?.max !== undefined ? `${qoqDistributionData.summary.max.toFixed(1)}%` : selectedDetails.max}
+              </span>
             </div>
           </div>
         </div>

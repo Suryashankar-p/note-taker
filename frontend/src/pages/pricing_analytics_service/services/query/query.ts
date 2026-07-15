@@ -407,6 +407,29 @@ export const useGetDispersion = (sessionId: number, familyNk: string | null) => 
   });
 };
 
+export const useGetQoqDistribution = (
+  sessionId: number,
+  quarter: string | null,
+  familyNk: string | null
+) => {
+  return useQuery({
+    queryKey: ["qoq-distribution", sessionId, quarter, familyNk],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/qoq-distribution",
+        {
+          session_id: sessionId,
+          quarter: quarter,
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+        }
+      );
+      return response;
+    },
+    enabled: !!sessionId,
+    placeholderData: keepPreviousData,
+  });
+};
+
 export const useGetSkuDeviation = (sessionId: number, familyNk?: string | null) => {
   return useQuery({
     queryKey: ["sku-deviation", sessionId, familyNk],
