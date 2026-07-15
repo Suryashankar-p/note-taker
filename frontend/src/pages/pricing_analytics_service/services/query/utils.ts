@@ -248,3 +248,12 @@ export const transformClassificationMatrixData = (response: any) => {
   };
 };
 
+export const fmt = (n: number | null | undefined, decimals = 1) =>
+  n != null ? n.toFixed(decimals) : "—";
+
+export const fmtLakhs = (n: number | null | undefined) =>
+  n != null ? `₹${(n / 100000).toFixed(2)}L` : "—";
+
+export const fmtPP = (n: number | null | undefined) =>
+  n != null ? `${n >= 0 ? "+" : ""}${n.toFixed(1)}` : "—";
+

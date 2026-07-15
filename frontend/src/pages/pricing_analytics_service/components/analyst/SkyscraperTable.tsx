@@ -1,4 +1,4 @@
-import React from "react";
+import { fmtLakhs } from "../../services/query/query";
 
 interface SkyscraperTableProps {
   families: Array<{
@@ -17,9 +17,6 @@ const SkyscraperTable = ({
   families,
   selectedQuarter,
 }: SkyscraperTableProps) => {
-  const formatRevInLakhs = (val: number) => {
-    return `₹${(val / 100000).toFixed(2)}L`;
-  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -56,7 +53,7 @@ const SkyscraperTable = ({
                     {row.delta}
                   </td>
                   <td className="py-2.5 px-4 text-right">
-                    {formatRevInLakhs(row.revenueInr)}
+                    {fmtLakhs(row.revenueInr)}
                   </td>
                   <td className="py-2.5 px-4 text-right">{row.share}</td>
                 </tr>

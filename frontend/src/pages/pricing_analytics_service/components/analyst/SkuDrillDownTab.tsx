@@ -6,18 +6,14 @@ import {
   useGetSkuDeviation,
   type SkuNonStdRow,
   type SkuStandardRow,
+  fmt,
+  fmtLakhs,
+  fmtPP,
 } from "../../services/query/query";
 
 interface SkuDrillDownTabProps {
   selectedFamily?: string | null;
 }
-
-const fmt = (n: number | null | undefined, decimals = 1) =>
-  n != null ? n.toFixed(decimals) : "—";
-const fmtLakhs = (n: number | null | undefined) =>
-  n != null ? `₹${(n / 100000).toFixed(2)}L` : "—";
-const fmtPP = (n: number | null | undefined) =>
-  n != null ? `${n >= 0 ? "+" : ""}${n.toFixed(1)}` : "—";
 
 const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
   selectedFamily: propsSelectedFamily,
@@ -127,12 +123,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
           ) : (
             <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
               ⚠ No family selected — go to Step 3
-            </span>
-          )}
-
-          {selectedFamily && nonstdRows.length > 0 && (
-            <span className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">
-              Notional Loss: {fmtLakhs(totalNotionalLoss)} across {nonstdRows.length} non-std SKUs
             </span>
           )}
         </div>

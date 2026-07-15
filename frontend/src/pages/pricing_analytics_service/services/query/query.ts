@@ -3,6 +3,7 @@ import { PricingAnalyticsAPI } from "../../../../services/Axios";
 import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData, transformClassificationMatrixData } from "./utils";
 
 export * from "./types";
+export { fmt, fmtLakhs, fmtPP } from "./utils";
 
 export const GetMemberPricingAnalyticsRole = async () => {
   const response = await PricingAnalyticsAPI.get(
