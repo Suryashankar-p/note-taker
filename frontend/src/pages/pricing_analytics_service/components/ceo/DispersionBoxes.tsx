@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import CustomSelect from "../../CustomSelect";
+import CustomSelect from "../CustomSelect";
 
 interface DispersionBoxesProps {
   qoqCards: Array<{

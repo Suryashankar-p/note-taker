@@ -5,7 +5,7 @@ import MarginTrendChart from "./MarginTrendChart";
 import RevenueVsCogsChart from "./RevenueVsCogsChart";
 import HeatingMarginsGrid from "./HeatingMarginsGrid";
 import InsightsList from "./InsightsList";
-import { useGetOverallMargin, useGetBusinessInsights } from "../../../services/query/query";
+import { useGetOverallMargin, useGetBusinessInsights } from "../../services/query/query";
 import { useOutletContext } from "react-router-dom";
 
 const OverallMargin = () => {

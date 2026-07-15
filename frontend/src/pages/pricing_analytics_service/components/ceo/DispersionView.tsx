@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DispersionBoxes from "./DispersionBoxes";
 import DispersionCharts from "./DispersionCharts";
 import DispersionMovementExamples from "./DispersionMovementExamples";
-import { useGetDispersion } from "../../../services/query/query";
+import { useGetDispersion } from "../../services/query/query";
 import { useOutletContext } from "react-router-dom";
 
 const DispersionView = () => {

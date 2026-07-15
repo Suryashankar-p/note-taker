@@ -3,6 +3,7 @@ import { PricingAnalyticsAPI } from "../../../../services/Axios";
 import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData, transformClassificationMatrixData } from "./utils";
 
 export * from "./types";
+export { fmt, fmtLakhs, fmtPP } from "./utils";
 
 export const GetMemberPricingAnalyticsRole = async () => {
   const response = await PricingAnalyticsAPI.get(
@@ -406,13 +407,16 @@ export const useGetDispersion = (sessionId: number, familyNk: string | null) => 
   });
 };
 
-export const useGetSkuDeviation = (sessionId: number) => {
+export const useGetSkuDeviation = (sessionId: number, familyNk?: string | null) => {
   return useQuery({
-    queryKey: ["sku-deviation", sessionId],
+    queryKey: ["sku-deviation", sessionId, familyNk],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/sku-deviation",
-        { session_id: sessionId }
+        {
+          session_id: sessionId,
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+        }
       );
       return transformSkuDeviationData(response);
     },

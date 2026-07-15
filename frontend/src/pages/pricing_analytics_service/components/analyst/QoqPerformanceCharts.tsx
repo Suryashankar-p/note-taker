@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import { Chart, Line } from "react-chartjs-2";
+import { useGetDispersion } from "../../services/query/query";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -41,9 +42,12 @@ interface QoqPerformanceChartsProps {
     median: string;
     min: string;
     max: string;
+    transactionCount?: number;
+    familyNk?: string;
   };
   sortedQuarters: string[];
   onNavigateToSku: () => void;
+  activeQuarter: string;
 }
 
 const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
@@ -51,8 +55,21 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
   selectedDetails,
   sortedQuarters,
   onNavigateToSku,
+  activeQuarter,
 }) => {
-  // Configuration for dynamic combo chart
+  const sessionId = Number(localStorage.getItem("pricing_session_id"));
+  const familyNk = selectedDetails.familyNk || selectedFamily.toLowerCase();
+  const { data: dispersionData, isFetching: isDispersionFetching } = useGetDispersion(sessionId, familyNk);
+
+  const familyDispersion = dispersionData?.family_dispersion;
+  const hasDispersionData = familyDispersion && familyDispersion.family_nk !== "null";
+
+  const gmValues = selectedDetails.history.map(h => h.gm).filter(v => v != null);
+  const revValues = selectedDetails.history.map(h => h.revenue).filter(v => v != null);
+  const gmMin = gmValues.length > 0 ? Math.floor(Math.min(...gmValues, selectedDetails.targetVal, selectedDetails.baseline) - 10) : 0;
+  const gmMax = gmValues.length > 0 ? Math.ceil(Math.max(...gmValues, selectedDetails.targetVal, selectedDetails.baseline) + 10) : 100;
+  const revMax = revValues.length > 0 ? Math.ceil(Math.max(...revValues) * 1.3) : 100;
+
   const comboChartData = {
     labels: selectedDetails.history.map(h => h.quarter),
     datasets: [
@@ -111,160 +128,348 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: "#1e293b",
-        padding: 10,
-        cornerRadius: 6,
-      }
+      legend: { display: false },
+      tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 6 }
     },
     scales: {
       yGM: {
         type: "linear" as const,
         position: "left" as const,
-        min: 30,
-        max: 110,
+        min: gmMin,
+        max: gmMax,
         ticks: {
           color: "#64748b",
-          callback: (value: any) => `${value}.0%`,
+          callback: (value: any) => `${value}%`,
         },
-        grid: {
-          color: "#f1f5f9",
-        }
+        grid: { color: "#f1f5f9" }
       },
       yRev: {
         type: "linear" as const,
         position: "right" as const,
         min: 0,
-        max: 80,
+        max: revMax,
         ticks: {
           color: "#64748b",
           callback: (value: any) => `₹${value}L`,
         },
-        grid: {
-          display: false,
-        }
+        grid: { display: false }
       },
       x: {
-        ticks: {
-          color: "#64748b",
-        },
-        grid: {
-          display: false,
-        }
+        ticks: { color: "#64748b" },
+        grid: { display: false }
       }
     }
   };
 
+  const meanVal = parseFloat(selectedDetails.mean)  || 0;
+  const stdVal  = parseFloat(selectedDetails.stdDev) || 0;
+  const minVal  = parseFloat(selectedDetails.min)    || (meanVal - 3.5 * stdVal);
+  const maxVal  = parseFloat(selectedDetails.max)    || (meanVal + 3.5 * stdVal);
 
-  // Normal distribution curve mockup data
-  /*
-  const normalChartData = {
-    labels: ["10.0%", "20.0%", "30.0%", "40.0%", "50.0%", "60.0%", "70.0%", "80.0%"],
+  const numBuckets = 8;
+  const rangeMin = Math.min(minVal, meanVal - 3.5 * stdVal);
+  const rangeMax = Math.max(maxVal, meanVal + 3.5 * stdVal);
+  const bucketStep = stdVal > 0 ? (rangeMax - rangeMin) / numBuckets : 5;
+
+  const bucketLabels: string[] = Array.from({ length: numBuckets + 1 }, (_, i) =>
+    `${(rangeMin + i * bucketStep).toFixed(1)}%`
+  );
+
+  const currentCurvePoints: Array<{ x: number; y: number }> =
+    familyDispersion?.density_curves && !Array.isArray(familyDispersion.density_curves)
+      ? (familyDispersion.density_curves as any)["current_quarter"] || []
+      : [];
+
+  const binCounts: number[] = Array(numBuckets).fill(0);
+  currentCurvePoints.forEach((pt: { x: number; y: number }) => {
+    const binIdx = Math.min(Math.floor((pt.x - rangeMin) / bucketStep), numBuckets - 1);
+    if (binIdx >= 0) binCounts[binIdx] += pt.y;
+  });
+
+  const normalPDF = (x: number, mu: number, sigma: number) =>
+    sigma > 0 ? (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * ((x - mu) / sigma) ** 2) : 0;
+
+  const peakPDF = normalPDF(meanVal, meanVal, stdVal);
+  const peakBin = Math.max(...binCounts, 1);
+  const pdfScale = peakPDF > 0 ? peakBin / peakPDF : 1;
+  const bellCurveData: number[] = Array.from({ length: numBuckets }, (_, i) => {
+    const xMid = rangeMin + (i + 0.5) * bucketStep;
+    return normalPDF(xMid, meanVal, stdVal) * pdfScale;
+  });
+
+  const muSigmaPlugin = {
+    id: "muSigmaLines",
+    afterDraw: (chart: any) => {
+      const ctx = chart.ctx;
+      const xSc = chart.scales["x"];
+      const ySc = chart.scales["y"];
+      if (!xSc || !ySc) return;
+
+      const toPixel = (gmVal: number) => {
+        return xSc.getPixelForValue(gmVal);
+      };
+
+      const lines = [
+        { val: meanVal - stdVal, label: "μ-σ" },
+        { val: meanVal,          label: "μ"   },
+        { val: meanVal + stdVal, label: "μ+σ" },
+      ];
+
+      lines.forEach(({ val, label }) => {
+        const px   = toPixel(val);
+        const yTop = ySc.top;
+        const yBot = ySc.bottom;
+
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth   = 1.5;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(px, yTop);
+        ctx.lineTo(px, yBot);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        ctx.font        = "bold 9px Inter, sans-serif";
+        ctx.fillStyle   = "#f59e0b";
+        ctx.textAlign   = "center";
+        ctx.fillText(label, px, yTop - 4);
+        ctx.restore();
+      });
+    },
+  };
+
+  const histogramChartData = {
     datasets: [
       {
         type: "bar" as const,
         label: "Frequency",
-        data: [1, 2, 8, 30, 48, 12, 3, 0],
-        backgroundColor: "rgba(166, 28, 30, 0.3)",
-        borderRadius: 2,
-        barPercentage: 0.6,
+        data: binCounts.map((count, i) => ({
+          x: rangeMin + (i + 0.5) * bucketStep,
+          y: count
+        })),
+        backgroundColor: "rgba(56, 189, 248, 0.65)",
+        borderColor: "rgba(56, 189, 248, 0.95)",
+        borderWidth: 1,
+        barPercentage: 0.85,
+        categoryPercentage: 0.9,
+        order: 2,
+        yAxisID: "y",
       },
       {
         type: "line" as const,
-        label: "Normal curve",
-        data: [0.5, 2.5, 12, 35, 45, 22, 5, 0.5],
-        borderColor: "#a61c1e",
-        borderWidth: 2,
-        tension: 0.4,
+        label: "Normal dist.",
+        data: Array.from({ length: 80 }, (_, i) => {
+          const x = rangeMin + (i / 79) * (rangeMax - rangeMin);
+          return {
+            x,
+            y: normalPDF(x, meanVal, stdVal) * pdfScale
+          };
+        }),
+        borderColor: "#f59e0b",
+        borderWidth: 2.5,
+        tension: 0.45,
         pointRadius: 0,
-        fill: false,
-      }
-    ]
+        fill: "origin",
+        backgroundColor: "rgba(245, 158, 11, 0.08)",
+        order: 1,
+        yAxisID: "y",
+      },
+    ],
   };
 
-  const normalChartOptions = {
+  const histogramOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: {
+        display: true,
+        position: "top" as const,
+        labels: { boxWidth: 10, font: { size: 9 }, color: "#64748b" },
+      },
+      tooltip: { backgroundColor: "#1e293b", padding: 8, cornerRadius: 6 },
+    },
     scales: {
-      y: { display: false },
-      x: { ticks: { color: "#64748b" }, grid: { display: false } }
-    }
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: "# Transactions", color: "#94a3b8", font: { size: 9 } },
+        grid: { color: "#f1f5f9" },
+        ticks: { color: "#64748b", font: { size: 9 }, precision: 0 },
+      },
+      x: {
+        type: "linear" as const,
+        min: rangeMin,
+        max: rangeMax,
+        title: { display: true, text: "GM% buckets", color: "#94a3b8", font: { size: 9 } },
+        grid: { display: false },
+        ticks: {
+          callback: (value: any) => `${parseFloat(value).toFixed(1)}%`,
+          stepSize: bucketStep,
+          color: "#64748b",
+          font: { size: 9 }
+        },
+      },
+    },
   };
 
-  // Confidence interval trend chart mockup data
-  const confidenceChartData = {
-    labels: sortedQuarters,
+  const trendRows = familyDispersion?.trend || [];
+  const validTrendRows = trendRows.filter((r: any) => r.mean_gm_pct !== null && r.mean_gm_pct !== undefined);
+
+  const trendData = {
+    labels: validTrendRows.map((r: any) => r.quarter),
     datasets: [
       {
         label: "Mean GM%",
-        data: [49.2, 40.6, 50.3, 47.7, 51.6, 50.4, 51.7, 51.9, 52.2],
-        borderColor: "#a61c1e",
-        borderWidth: 2,
-        tension: 0.35,
-        pointBackgroundColor: "#a61c1e",
-        pointRadius: 4,
+        data: validTrendRows.map((r: any) => r.mean_gm_pct),
+        borderColor: "#38bdf8",
+        borderWidth: 2.5,
         fill: false,
+        tension: 0.3,
+        pointRadius: 3,
+      },
+      {
+        label: "Confidence Band",
+        data: validTrendRows.map((r: any) => r.upper_band),
+        borderColor: "rgba(56, 189, 248, 0.05)",
+        backgroundColor: "rgba(56, 189, 248, 0.15)",
+        fill: "+1",
+        tension: 0.3,
+        pointRadius: 0,
       },
       {
         label: "Lower Band",
-        data: [44.2, 35.6, 45.3, 42.7, 46.6, 45.4, 46.7, 46.9, 47.2],
-        borderColor: "transparent",
-        pointRadius: 0,
-        fill: "+1",
-        backgroundColor: "rgba(166, 28, 30, 0.08)",
-      },
-      {
-        label: "Upper Band",
-        data: [54.2, 45.6, 55.3, 52.7, 56.6, 55.4, 56.7, 56.9, 57.2],
-        borderColor: "transparent",
-        pointRadius: 0,
+        data: validTrendRows.map((r: any) => r.lower_band),
+        borderColor: "rgba(56, 189, 248, 0.05)",
         fill: false,
-      }
-    ]
+        tension: 0.3,
+        pointRadius: 0,
+      },
+    ],
   };
 
-  const confidenceChartOptions = {
+  const trendChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+    },
     scales: {
-      y: { min: 30, max: 70, ticks: { color: "#64748b", callback: (val: any) => `${val}%` }, grid: { color: "#f1f5f9" } },
-      x: { ticks: { color: "#64748b" }, grid: { display: false } }
-    }
+      y: {
+        grid: { color: "#e2e8f0" },
+        ticks: { color: "#64748b" },
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: "#64748b" },
+      },
+    },
   };
-  */
 
   return (
-    <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in">
-      <div>
-        <h3 className="text-sm font-bold tracking-tight text-gray-800">
-          Revenue and GM % by quarter
-        </h3>
-        <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
-          Select a product family row in the table to update all charts below. (Active: <strong className="text-[#a61c1e]">{selectedFamily}</strong>)
-        </p>
-      </div>
+    <div className="flex flex-col gap-8 w-full">
+      <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in">
+        <div>
+          <h3 className="text-sm font-bold tracking-tight text-gray-800">
+            Revenue and GM % by quarter
+          </h3>
+          <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
+            Select a product family row in the table to update all charts below. (Active: <strong className="text-[#a61c1e]">{selectedFamily}</strong>)
+          </p>
+        </div>
 
-      <div className="h-72 bg-slate-50 rounded-xl border border-gray-150 p-5">
-        <span className="text-[10px] text-gray-400 font-extrabold uppercase mb-2 block">
-          Revenue and GM % by quarter for {selectedFamily}
-        </span>
-        <div className="h-60">
-          <Chart type="bar" data={comboChartData} options={comboChartOptions} />
+        <div className="h-72 bg-slate-50 rounded-xl border border-gray-150 p-5">
+          <span className="text-[10px] text-gray-400 font-extrabold uppercase mb-2 block">
+            Revenue and GM % by quarter for {selectedFamily}
+          </span>
+          <div className="h-60">
+            <Chart type="bar" data={comboChartData} options={comboChartOptions} />
+          </div>
         </div>
       </div>
-      
-      <button
-        onClick={onNavigateToSku}
-        className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm hover:scale-[1.01]"
-      >
-        SKU deviation drill-down
-        <ArrowRight size={14} />
-      </button>
+
+      <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in relative text-gray-800">
+        {isDispersionFetching && (
+          <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all rounded-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
+          </div>
+        )}
+
+        <div>
+          <h3 className="text-sm font-bold tracking-tight text-gray-850 text-blue-900">
+            GM% dispersion analysis
+          </h3>
+          <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
+            Invoice-line GM% for the selected product family (each COGS row = one transaction). Charts update when you pick a family in the table above. <strong className="text-[#a61c1e]">{activeQuarter} - {selectedDetails.name}</strong>
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-b border-gray-150 pb-6">
+          <div className="bg-slate-50 border border-gray-150 p-5 rounded-xl">
+            <h4 className="text-xs font-bold text-gray-700 mb-1">Normal distribution — GM%</h4>
+            <p className="text-[10px] text-gray-400 mb-4">Bell curve fit · histogram overlay · μ±σ bands</p>
+            <div className="h-56">
+              {hasDispersionData || stdVal > 0 ? (
+                <Chart type="bar" data={histogramChartData} options={histogramOptions} plugins={[muSigmaPlugin]} />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gray-50 border border-dashed border-gray-200 rounded-lg text-xs text-gray-400">
+                  Select a product family above to view gross margin dispersion curves.
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="bg-slate-50 border border-gray-150 p-5 rounded-xl">
+            <h4 className="text-xs font-bold text-gray-700 mb-1">GM% distribution trend — quarter on quarter</h4>
+            <p className="text-[10px] text-gray-400 mb-4">Mean GM% with ±1σ confidence band</p>
+            <div className="h-56">
+              {hasDispersionData && validTrendRows.length > 0 ? (
+                <Line data={trendData} options={trendChartOptions} />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gray-50 border border-dashed border-gray-200 rounded-lg text-xs text-gray-400">
+                  Select a product family above to view gross margin distribution trends.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-50 border border-gray-200 rounded-xl p-5">
+          <span className="text-[10px] text-gray-400 font-extrabold uppercase mb-4 block">
+            Distribution statistics — {activeQuarter} · {selectedDetails.name} · {selectedDetails.transactionCount} transactions
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Mean GM%</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.mean}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Std dev (σ)</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.stdDev}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Median</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.median}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Min GM%</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.min}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Max GM%</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{selectedDetails.max}</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={onNavigateToSku}
+          className="mt-2 flex items-center justify-center gap-2 w-full py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md hover:scale-[1.01] active:scale-[0.99]"
+        >
+          SKU deviation drill-down
+          <ArrowRight size={14} />
+        </button>
+      </div>
     </div>
   );
 };

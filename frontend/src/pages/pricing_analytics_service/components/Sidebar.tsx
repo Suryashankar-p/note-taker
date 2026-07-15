@@ -54,7 +54,6 @@ const SettingsSidebar = () => {
           </p>
         </div>
 
-        {/* Main Navigation (Restored to original items) */}
         <nav className="flex flex-col gap-1.5">
           {sidebarItems.map((item) => (
             <SidebarItem

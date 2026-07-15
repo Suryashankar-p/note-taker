@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useGetSnapshotKpis } from "../../../services/query/query";
-import CustomSelect from "../../CustomSelect";
+import { useGetSnapshotKpis } from "../../services/query/query";
+import CustomSelect from "../CustomSelect";
 
 const ExecutiveSnapshot = () => {
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;

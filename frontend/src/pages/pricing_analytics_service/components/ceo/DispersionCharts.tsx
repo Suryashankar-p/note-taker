@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Line } from "react-chartjs-2";
-import CustomSelect from "../../CustomSelect";
+import CustomSelect from "../CustomSelect";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -81,30 +81,30 @@ const DispersionCharts = ({
   const dispersionCurveData = {
     datasets: familyDispersion?.density_curves && !Array.isArray(familyDispersion.density_curves)
       ? Object.entries(familyDispersion.density_curves).map(([key, pointsArray]: [string, any]) => {
-          let color = "#94a3b8";
-          if (key.toLowerCase().includes("current")) {
-            color = "#a61c1e";
-          } else if (key.toLowerCase().includes("prior")) {
-            color = "#0ea5e9";
-          }
+        let color = "#94a3b8";
+        if (key.toLowerCase().includes("current")) {
+          color = "#a61c1e";
+        } else if (key.toLowerCase().includes("prior")) {
+          color = "#0ea5e9";
+        }
 
-          const nameMap: Record<string, string> = {
-            baseline: "Baseline",
-            prior_quarter: "Prior Quarter",
-            current_quarter: "Current Quarter"
-          };
-          const label = nameMap[key] || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        const nameMap: Record<string, string> = {
+          baseline: "Baseline",
+          prior_quarter: "Prior Quarter",
+          current_quarter: "Current Quarter"
+        };
+        const label = nameMap[key] || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-          return {
-            label,
-            data: pointsArray,
-            borderColor: color,
-            borderWidth: 2,
-            fill: false,
-            tension: 0.4,
-            pointRadius: 0,
-          };
-        })
+        return {
+          label,
+          data: pointsArray,
+          borderColor: color,
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+        };
+      })
       : [],
   };
 

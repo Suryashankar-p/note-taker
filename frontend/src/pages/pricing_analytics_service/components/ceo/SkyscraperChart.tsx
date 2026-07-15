@@ -1,6 +1,6 @@
 import React from "react";
 import { Bar } from "react-chartjs-2";
-import CustomSelect from "../../CustomSelect";
+import CustomSelect from "../CustomSelect";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -102,7 +102,7 @@ const SkyscraperChart = ({
         },
       },
       x: {
-        display: false, // Hide individual family names for clean view
+        display: false,
       },
     },
   };

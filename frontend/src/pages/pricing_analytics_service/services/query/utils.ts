@@ -132,6 +132,7 @@ export const transformSkuDeviationData = (response: any) => {
           quarter: qEntry.quarter,
           standard_rows: qEntry.standard_rows || [],
           nonstd_rows: qEntry.nonstd_rows || [],
+          summary: qEntry.summary || undefined,
         };
         sortedQuarters.push(qEntry.quarter);
       });
@@ -246,4 +247,13 @@ export const transformClassificationMatrixData = (response: any) => {
     }
   };
 };
+
+export const fmt = (n: number | null | undefined, decimals = 1) =>
+  n != null ? n.toFixed(decimals) : "—";
+
+export const fmtLakhs = (n: number | null | undefined) =>
+  n != null ? `₹${(n / 100000).toFixed(2)}L` : "—";
+
+export const fmtPP = (n: number | null | undefined) =>
+  n != null ? `${n >= 0 ? "+" : ""}${n.toFixed(1)}` : "—";
 

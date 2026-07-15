@@ -11,7 +11,7 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import CustomSelect from "../../CustomSelect";
+import CustomSelect from "../CustomSelect";
 
 ChartJS.register(
   CategoryScale,
@@ -41,7 +41,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
   const normalizedData = React.useMemo(() => {
     if (!data) return {};
     if (Array.isArray(data)) return { "All Families": data };
-    
+
     if (typeof data === "object") {
       const validData: Record<string, MarginDataPoint[]> = {};
       for (const key in data) {
@@ -81,7 +81,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
   };
 
   if (families.length === 0) return null;
-  
+
   const activeFamily = selectedFamily && families.includes(selectedFamily) ? selectedFamily : families[0];
   const apiData = normalizedData[activeFamily] || [];
 
@@ -128,17 +128,17 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
           label: (context: any) => {
             const dataPoint = sortedApiData[context.dataIndex];
             if (!dataPoint) return `Overall Margin: ${context.parsed.y?.toFixed(1)}%`;
-            
+
             const lines = [`Overall Margin: ${context.parsed.y?.toFixed(1)}%`];
-            
+
             if (dataPoint.standard_gm_pct !== null && dataPoint.standard_gm_pct !== undefined) {
               lines.push(`Standard Margin: ${dataPoint.standard_gm_pct.toFixed(1)}%`);
             }
-            
+
             if (dataPoint.non_standard_gm_pct !== null && dataPoint.non_standard_gm_pct !== undefined) {
               lines.push(`Non-Standard Margin: ${dataPoint.non_standard_gm_pct.toFixed(1)}%`);
             }
-            
+
             return lines;
           },
         },

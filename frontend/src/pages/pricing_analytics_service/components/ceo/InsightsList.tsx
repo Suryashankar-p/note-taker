@@ -60,7 +60,6 @@ const InsightsList = ({ data }: Props) => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 1. Top Insights List */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase mb-4">
           Top Insights {bridge?.curr_q ? `— ${bridge.curr_q}` : ""}
@@ -79,14 +78,12 @@ const InsightsList = ({ data }: Props) => {
         </div>
       </div>
 
-      {/* 2. Business Insights (QoQ GM Bridge) */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase mb-4">
           Business insights
         </h3>
         {bridge ? (
           <div className="border border-gray-200 bg-gray-50/50 rounded-lg p-5">
-            {/* Percentage Bridge */}
             <p className={`text-xs font-semibold leading-normal mb-6 p-3 rounded-lg ${
               bridge.pct.total_change_pp >= 0
                 ? "text-emerald-700 bg-emerald-50/80 border border-emerald-100"
@@ -96,7 +93,6 @@ const InsightsList = ({ data }: Props) => {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs">
-              {/* Mix Impact section */}
               <div>
                 <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3">
                   Mix impact (% GM)
@@ -137,7 +133,6 @@ const InsightsList = ({ data }: Props) => {
                 </div>
               </div>
 
-              {/* Margin Impact section */}
               <div>
                 <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3">
                   Margin impact (% GM)
@@ -181,7 +176,6 @@ const InsightsList = ({ data }: Props) => {
 
             <hr className="my-6 border-gray-200" />
 
-            {/* Absolute Bridge */}
             <p className={`text-xs font-semibold leading-normal mb-6 p-3 rounded-lg ${
               bridge.abs.total_change_abs >= 0
                 ? "text-teal-700 bg-teal-50/80 border border-teal-100"
@@ -191,7 +185,6 @@ const InsightsList = ({ data }: Props) => {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs">
-              {/* Mix Impact section */}
               <div>
                 <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3">
                   Mix impact (absolute ₹)
@@ -232,7 +225,6 @@ const InsightsList = ({ data }: Props) => {
                 </div>
               </div>
 
-              {/* Margin Impact section */}
               <div>
                 <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3">
                   Margin impact (absolute ₹)
