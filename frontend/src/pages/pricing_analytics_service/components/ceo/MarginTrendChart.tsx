@@ -85,7 +85,18 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
   const activeFamily = selectedFamily && families.includes(selectedFamily) ? selectedFamily : families[0];
   const apiData = normalizedData[activeFamily] || [];
 
-  const sortedApiData = [...apiData].sort((a, b) => sortQuarters(a?.quarter || "", b?.quarter || ""));
+  const sortedApiData = [...apiData]
+    .filter((item) => {
+      const q = item?.quarter || "";
+      const match = q.match(/Q(\d) /);
+      const year = q.match(/FY (\d+)/);
+      if (!match || !year) return false;
+      const qNum = parseInt(match[1]);
+      const yNum = parseInt(year[1]);
+      const val = yNum * 10 + qNum;
+      return val >= 244 && val <= 264;
+    })
+    .sort((a, b) => sortQuarters(a?.quarter || "", b?.quarter || ""));
 
   const chartData = {
     labels: sortedApiData.map((item) => item.quarter),

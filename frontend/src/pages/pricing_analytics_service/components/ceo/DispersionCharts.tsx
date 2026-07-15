@@ -108,8 +108,34 @@ const DispersionCharts = ({
       : [],
   };
 
+  const sortQuarters = (a: string, b: string) => {
+    const matchA = a.match(/Q(\d) /);
+    const matchB = b.match(/Q(\d) /);
+    const yearA = a.match(/FY (\d+)/);
+    const yearB = b.match(/FY (\d+)/);
+    if (!matchA || !matchB || !yearA || !yearB) return 0;
+    const qA = parseInt(matchA[1]);
+    const yA = parseInt(yearA[1]);
+    const qB = parseInt(matchB[1]);
+    const yB = parseInt(yearB[1]);
+    if (yA !== yB) return yA - yB;
+    return qA - qB;
+  };
+
   const trendRows = familyDispersion?.trend || [];
-  const validTrendRows = trendRows.filter((r) => r.mean_gm_pct !== null && r.mean_gm_pct !== undefined);
+  const validTrendRows = [...trendRows]
+    .filter((r) => r.mean_gm_pct !== null && r.mean_gm_pct !== undefined)
+    .filter((item) => {
+      const q = item?.quarter || "";
+      const match = q.match(/Q(\d) /);
+      const year = q.match(/FY (\d+)/);
+      if (!match || !year) return false;
+      const qNum = parseInt(match[1]);
+      const yNum = parseInt(year[1]);
+      const val = yNum * 10 + qNum;
+      return val >= 244 && val <= 264;
+    })
+    .sort((a, b) => sortQuarters(a.quarter, b.quarter));
 
   const trendData = {
     labels: validTrendRows.map((r) => r.quarter),
