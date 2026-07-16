@@ -5,10 +5,11 @@ import ChatArea from "./TroubleshootingChatArea.tsx";
 import { DeleteChat, GetAllChatLists } from "../../services/troubleshooting.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../redux/store";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import useApiCheck from "../../hooks/useApiCheck";
 import Toast from "../../components/Toast";
 import PageLoading from "../../components/PageLoading";
+import AssetNumberModal, { SelectedAsset } from "../../components/Modals/AssetNumberModal.tsx";
 
 const breadCrumbs = [
   {
@@ -27,13 +28,45 @@ const TroubleshootingMain = () => {
   const [historyList, SetHistoryList] = useState<any>([]);
   const dispatch = useDispatch<Dispatch>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const chat_id = searchParams.get("chat_id");
   const toast = useSelector((state: RootState) => state.toast);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [assetModalOpen, setAssetModalOpen] = useState<boolean>(false);
+  const [pendingAsset, setPendingAsset] = useState<SelectedAsset | null>(null);
+
+  const openNewChatFlow = () => {
+    dispatch.chatContent.clearChat();
+    setPendingAsset(null);
+    navigate(`/ai-studio/troubleshooting`);
+    setAssetModalOpen(true);
+  };
+
+  const onAssetSubmit = (asset: SelectedAsset) => {
+    setPendingAsset(asset);
+    setAssetModalOpen(false);
+  };
 
   useEffect(() => {
     getChatLists();
   }, []);
+
+  // Drive the asset dialog off the active session (chat_id):
+  //  - No chat_id  => new/empty chat: a new chat must have an asset number, so
+  //    (re)prompt for one and clear any stale value. Covers initial load, the
+  //    "New Chat" button, and clearing/deleting chats.
+  //  - Has chat_id => an existing chat already has its asset number, so always
+  //    close the dialog. This lets the user freely switch to recent chats and
+  //    prevents the dialog from lingering (with a Cancel button) over them.
+  useEffect(() => {
+    if (!chat_id) {
+      setPendingAsset(null);
+      setAssetModalOpen(true);
+    } else {
+      setAssetModalOpen(false);
+    }
+  }, [chat_id]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -108,6 +141,7 @@ const TroubleshootingMain = () => {
             onSideBarclose={() => setIsSidebarOpen(false)}
             onChatDeleteClick={onChatDeleteClick}
             history={historyList}
+            onNewChatClick={openNewChatFlow}
           />
         </div>
   
@@ -121,12 +155,24 @@ const TroubleshootingMain = () => {
           <ChatArea
             onNewChatAddition={getChatLists}
             disabled={relatedExpanded}
+            pendingAsset={pendingAsset}
+            clearPendingAsset={() => setPendingAsset(null)}
           />
         </div>
       </div>
+      <AssetNumberModal
+        show={assetModalOpen}
+        onSubmit={onAssetSubmit}
+        onClose={() => setAssetModalOpen(false)}
+        // The dialog only ever opens for a new chat, which must have an asset
+        // number, so it is always mandatory (no Cancel/X/Esc/backdrop close).
+        // The user can still leave by picking a recent chat in the sidebar,
+        // which sets chat_id and closes the dialog via the effect above.
+        mandatory
+      />
     </div>
   );
-  
+
 };
 
 export default TroubleshootingMain;

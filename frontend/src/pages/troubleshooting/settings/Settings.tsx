@@ -8,6 +8,9 @@ import SettingsSidebar from "./Sidebar";
 import Members from "./Members";
 import Usage from "./Usage";
 import Products from "./Product";
+import KnowledgeBase from "./KnowledgeBase";
+import Analysis from "./Analysis";
+import Feedback from "./Feedback";
 // import Problem from "./Problem";
 
 const breadCrumbs = [
@@ -31,6 +34,10 @@ const Settings = () => {
       title: "Product",
       component: <Products />,
     },
+    knowledge_base: {
+      title: "Knowledge Base",
+      component: <KnowledgeBase />,
+    },
     members: {
       title: "Members",
       component: <Members />,
@@ -38,6 +45,14 @@ const Settings = () => {
     usage: {
       title: "Usage",
       component: <Usage />,
+    },
+    analysis: {
+      title: "Analysis",
+      component: <Analysis />,
+    },
+    feedback: {
+      title: "Feedback",
+      component: <Feedback />,
     },
     // 'problem': {
     //     title: 'Problem',
