@@ -17,9 +17,11 @@ const OverallMarginTab = () => {
   const onNavigateToTab = context.onNavigateToTab;
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [snapshotQuarter, setSnapshotQuarter] = useState<string>("");
+  const [insightsQuarter, setInsightsQuarter] = useState<string>("");
 
-  const { data: overallData, isLoading: isOverallLoading } = useGetOverallMargin(sessionId);
+  const { data: overallData, isLoading: isOverallLoading } =
+    useGetOverallMargin(sessionId);
 
   const sortQuarters = (a: string, b: string) => {
     const matchA = a.match(/Q(\d) /);
@@ -48,13 +50,22 @@ const OverallMarginTab = () => {
   }, [overallData]);
 
   useEffect(() => {
-    if (quartersList.length > 0 && !selectedQuarter) {
-      setSelectedQuarter(quartersList[quartersList.length - 1]);
+    if (quartersList.length > 0 && !insightsQuarter) {
+      setInsightsQuarter(quartersList[quartersList.length - 1]);
     }
-  }, [quartersList, selectedQuarter]);
+  }, [quartersList, insightsQuarter]);
 
-  const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(sessionId, selectedQuarter);
-  const { data: snapshotKpis, isLoading: isSnapshotLoading } = useGetSnapshotKpis(sessionId);
+  const { data: insightsData, isLoading: isInsightsLoading } =
+    useGetBusinessInsights(sessionId, insightsQuarter);
+  const { data: snapshotKpis, isLoading: isSnapshotLoading } =
+    useGetSnapshotKpis(sessionId);
+
+  useEffect(() => {
+    const qlist = (snapshotKpis?.quarters || []).map((q: any) => q.quarter);
+    if (qlist.length > 0 && !snapshotQuarter) {
+      setSnapshotQuarter(qlist[qlist.length - 1]);
+    }
+  }, [snapshotKpis, snapshotQuarter]);
 
   if (isOverallLoading || isSnapshotLoading) {
     return (
@@ -83,15 +94,17 @@ const OverallMarginTab = () => {
       <AnalystSnapshotCards
         snapshotKpis={snapshotKpis}
         insights={topInsights}
-        selectedQuarter={selectedQuarter}
-        setSelectedQuarter={setSelectedQuarter}
+        snapshotQuarter={snapshotQuarter}
+        setSnapshotQuarter={setSnapshotQuarter}
+        insightsQuarter={insightsQuarter}
+        setInsightsQuarter={setInsightsQuarter}
         quartersList={quartersList}
       />
 
       <GMDecompositionAnalysis
         bridge={bridge}
-        isLoading={isInsightsLoading || !selectedQuarter}
-        selectedQuarter={selectedQuarter}
+        isLoading={isInsightsLoading || !insightsQuarter}
+        selectedQuarter={insightsQuarter}
         quartersList={quartersList}
       />
 

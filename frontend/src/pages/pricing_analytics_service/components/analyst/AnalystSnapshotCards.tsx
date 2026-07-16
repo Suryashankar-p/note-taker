@@ -16,20 +16,24 @@ interface AnalystSnapshotCardsProps {
     }>;
   };
   insights: string[];
-  selectedQuarter: string;
-  setSelectedQuarter: (q: string) => void;
+  snapshotQuarter: string;
+  setSnapshotQuarter: (q: string) => void;
+  insightsQuarter: string;
+  setInsightsQuarter: (q: string) => void;
   quartersList: string[];
 }
 
 const AnalystSnapshotCards = ({
   snapshotKpis,
   insights,
-  selectedQuarter,
-  setSelectedQuarter,
+  snapshotQuarter,
+  setSnapshotQuarter,
+  insightsQuarter,
+  setInsightsQuarter,
   quartersList,
 }: AnalystSnapshotCardsProps) => {
   const activeSnapshot = (snapshotKpis?.quarters || []).find(
-    (item: any) => item.quarter === selectedQuarter
+    (item: any) => item.quarter === snapshotQuarter,
   );
 
   const stats = activeSnapshot
@@ -70,9 +74,9 @@ const AnalystSnapshotCards = ({
     : [];
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-      {/* Executive Snapshot Card */}
-      <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
+      {/* Executive Snapshot Card - full width */}
+      <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-6">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <h3 className="text-sm font-bold tracking-tight text-gray-800">
             Executive snapshot
@@ -80,8 +84,8 @@ const AnalystSnapshotCards = ({
           {quartersList.length > 0 && (
             <CustomSelect
               options={quartersList}
-              value={selectedQuarter}
-              onChange={setSelectedQuarter}
+              value={snapshotQuarter}
+              onChange={setSnapshotQuarter}
               labelPrefix="Quarter: "
               alignRight
             />
@@ -102,8 +106,8 @@ const AnalystSnapshotCards = ({
                   st.isPositive
                     ? "text-emerald-600"
                     : st.isNegative
-                    ? "text-rose-600"
-                    : "text-gray-800"
+                      ? "text-rose-600"
+                      : "text-gray-800"
                 }`}
               >
                 {st.value}
@@ -112,32 +116,42 @@ const AnalystSnapshotCards = ({
           ))}
           {stats.length === 0 && (
             <div className="col-span-4 text-xs text-gray-400 italic py-4 text-center">
-              No snapshot data for {selectedQuarter || "this quarter"}.
+              No snapshot data for {snapshotQuarter || "this quarter"}.
             </div>
           )}
         </div>
       </div>
 
-      {/* Strategic Actions (Dark Card) */}
-      <div className="bg-[#131517] text-white border border-[#202226] rounded-xl p-6 shadow-sm flex flex-col justify-between">
+      {/* Top Insights (CEO/CFO style) */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
         <div>
-          <h3 className="text-sm font-extrabold tracking-tight text-white mb-4 border-b border-[#202226] pb-3 flex items-center gap-2">
-            <Sparkles size={16} className="text-[#a61c1e]" />
-            Strategic actions
-          </h3>
-          <ul className="flex flex-col gap-3.5 text-xs text-gray-300 leading-relaxed font-semibold">
-            {insights.map((insight, idx) => (
-              <li key={idx} className="flex gap-2.5 items-start">
-                <span className="text-[#a61c1e] mt-1 font-bold">▶</span>
-                <span>{insight}</span>
-              </li>
-            ))}
-            {insights.length === 0 && (
-              <li className="text-gray-400 italic font-medium">
-                No actions available.
-              </li>
+          <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase mb-6 pb-3 border-b border-gray-100 flex items-center justify-between">
+            <span>Top Insights</span>
+            {quartersList && setInsightsQuarter && insightsQuarter && (
+              <CustomSelect
+                options={quartersList}
+                value={insightsQuarter}
+                onChange={setInsightsQuarter}
+                labelPrefix="Qtr: "
+                alignRight
+              />
             )}
-          </ul>
+          </h3>
+
+          {insights.length === 0 ? (
+            <div className="text-gray-400 italic font-medium">
+              No insights available.
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-3.5 text-xs text-gray-600 leading-relaxed font-semibold">
+              {insights.map((insight, idx) => (
+                <li key={idx} className="flex gap-2.5 items-start">
+                  <span className="text-[#a61c1e] mt-1 font-bold">▶</span>
+                  <span>{insight}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
