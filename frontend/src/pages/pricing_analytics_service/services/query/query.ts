@@ -431,19 +431,21 @@ export const useGetQoqDistribution = (
   });
 };
 
-export const useGetSkuDeviation = (sessionId: number, familyNk?: string | null) => {
+export const useGetSkuDeviation = (sessionId: number, familyNk?: string | null, quarter?: string | null) => {
   return useQuery({
-    queryKey: ["sku-deviation", sessionId, familyNk],
+    queryKey: ["sku-deviation", sessionId, familyNk, quarter],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/sku-deviation",
         {
           session_id: sessionId,
-          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+          quarter: quarter || ""
         }
       );
       return transformSkuDeviationData(response);
     },
     enabled: !!sessionId,
+    placeholderData: keepPreviousData,
   });
 };

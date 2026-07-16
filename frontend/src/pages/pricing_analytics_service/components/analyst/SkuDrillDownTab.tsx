@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
+import CustomSelect from "../CustomSelect";
 import {
   useGetSkuDeviation,
   type SkuNonStdRow,
@@ -26,41 +27,23 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
       : context.selectedFamily;
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data, isLoading, isError } = useGetSkuDeviation(sessionId, selectedFamily || null);
 
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const sortedQuarters = [
+    "Q1 FY 24", "Q2 FY 24", "Q3 FY 24", "Q4 FY 24",
+    "Q1 FY 25", "Q2 FY 25", "Q3 FY 25", "Q4 FY 25",
+    "Q1 FY 26", "Q2 FY 26", "Q3 FY 26", "Q4 FY 26"
+  ];
 
-  useEffect(() => {
-    if (data?.latestQuarter && !selectedQuarter) {
-      setSelectedQuarter(data.latestQuarter);
-    }
-  }, [data?.latestQuarter, selectedQuarter]);
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
 
-  const activeQuarter = selectedQuarter || data?.latestQuarter || "";
+  const { data, isLoading, isError } = useGetSkuDeviation(sessionId, selectedFamily || null, selectedQuarter);
+
+  const activeQuarter = selectedQuarter;
   const quarterData = data?.quarterMap?.[activeQuarter];
 
-  const nonstdRows: SkuNonStdRow[] = useMemo(() => {
-    if (!selectedFamily) return [];
-    const rows = quarterData?.nonstd_rows || [];
-    const key = selectedFamily.toLowerCase();
-    return rows.filter(
-      (r) => r.product_family.toLowerCase() === key
-    );
-  }, [quarterData, selectedFamily]);
+  const nonstdRows: SkuNonStdRow[] = quarterData?.nonstd_rows || [];
+  const standardRows: SkuStandardRow[] = quarterData?.standard_rows || [];
 
-  const standardRows: SkuStandardRow[] = useMemo(() => {
-    if (!selectedFamily) return [];
-    const rows = quarterData?.standard_rows || [];
-    const key = selectedFamily.toLowerCase();
-    return rows.filter(
-      (r) => r.product_family.toLowerCase() === key
-    );
-  }, [quarterData, selectedFamily]);
-
-  // const totalNotionalLoss = useMemo(
-  //   () => nonstdRows.reduce((s, r) => s + (r.notional_loss ?? 0), 0),
-  //   [nonstdRows]
-  // );
 
   if (isLoading) {
     return (
@@ -78,8 +61,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
     );
   }
 
-  const sortedQuarters = data?.sortedQuarters || [];
-
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-3">
@@ -88,26 +69,16 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
             SKU Drill-down — Deviation Analysis
           </h3>
 
-          {sortedQuarters.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quarter</span>
-              <div className="flex gap-1 flex-wrap">
-                {sortedQuarters.map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => setSelectedQuarter(q)}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all border ${
-                      activeQuarter === q
-                        ? "bg-[#a61c1e] text-white border-[#a61c1e] shadow-sm"
-                        : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quarter</span>
+            <CustomSelect
+              options={sortedQuarters}
+              value={selectedQuarter}
+              onChange={setSelectedQuarter}
+              labelPrefix=""
+              alignRight
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
