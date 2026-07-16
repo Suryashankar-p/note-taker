@@ -357,13 +357,13 @@ export const useGetQoqMatrix = (sessionId: number) => {
   });
 };
 
-export const useGetSnapshotKpis = (sessionId: number) => {
+export const useGetSnapshotKpis = (sessionId: number, quarter?: string) => {
   return useQuery({
-    queryKey: ["snapshot-kpis", sessionId],
+    queryKey: ["snapshot-kpis", sessionId, quarter],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/snapshot-kpis",
-        { session_id: sessionId }
+        { session_id: sessionId, quarter: quarter }
       );
       return response;
     },

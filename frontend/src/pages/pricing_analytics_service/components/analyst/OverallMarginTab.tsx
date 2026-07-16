@@ -58,16 +58,15 @@ const OverallMarginTab = () => {
   const { data: insightsData, isLoading: isInsightsLoading } =
     useGetBusinessInsights(sessionId, insightsQuarter);
   const { data: snapshotKpis, isLoading: isSnapshotLoading } =
-    useGetSnapshotKpis(sessionId);
+    useGetSnapshotKpis(sessionId, snapshotQuarter);
 
   useEffect(() => {
-    const qlist = (snapshotKpis?.quarters || []).map((q: any) => q.quarter);
-    if (qlist.length > 0 && !snapshotQuarter) {
-      setSnapshotQuarter(qlist[qlist.length - 1]);
+    if (quartersList.length > 0 && !snapshotQuarter) {
+      setSnapshotQuarter(quartersList[quartersList.length - 1]);
     }
-  }, [snapshotKpis, snapshotQuarter]);
+  }, [quartersList, snapshotQuarter]);
 
-  if (isOverallLoading || isSnapshotLoading) {
+  if (isOverallLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-700"></div>
@@ -99,6 +98,7 @@ const OverallMarginTab = () => {
         insightsQuarter={insightsQuarter}
         setInsightsQuarter={setInsightsQuarter}
         quartersList={quartersList}
+        isSnapshotLoading={isSnapshotLoading}
       />
 
       <GMDecompositionAnalysis

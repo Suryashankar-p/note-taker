@@ -59,11 +59,12 @@ const DispersionView = () => {
         isFetching={isFetching && !isInitialLoading}
       />
 
-      {/* 3. Examples Table
+      {/* 3. Examples Table */}
       <DispersionMovementExamples
         setSelectedFamily={setSelectedFamily}
+        dispersionExamples={data?.dispersion_examples}
+        selectedQuarter={selectedQuarter}
       />
-      */}
 
       <div className="flex items-center justify-start border-t border-gray-200 pt-6 mt-4">
         <button

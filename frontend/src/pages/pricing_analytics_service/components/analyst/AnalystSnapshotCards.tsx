@@ -3,24 +3,14 @@ import { Sparkles } from "lucide-react";
 import CustomSelect from "../CustomSelect";
 
 interface AnalystSnapshotCardsProps {
-  snapshotKpis?: {
-    quarters: Array<{
-      quarter: string;
-      revenue_inr: number;
-      overall_gm_pct: number;
-      delta_vs_baseline_pp: number;
-      delta_vs_heating_target_pp: number;
-      families_above_target: number;
-      families_below_target: number;
-      families_above_baseline: number;
-    }>;
-  };
+  snapshotKpis?: any;
   insights: string[];
   snapshotQuarter: string;
   setSnapshotQuarter: (q: string) => void;
   insightsQuarter: string;
   setInsightsQuarter: (q: string) => void;
   quartersList: string[];
+  isSnapshotLoading?: boolean;
 }
 
 const AnalystSnapshotCards = ({
@@ -31,10 +21,11 @@ const AnalystSnapshotCards = ({
   insightsQuarter,
   setInsightsQuarter,
   quartersList,
+  isSnapshotLoading = false,
 }: AnalystSnapshotCardsProps) => {
-  const activeSnapshot = (snapshotKpis?.quarters || []).find(
-    (item: any) => item.quarter === snapshotQuarter,
-  );
+  const activeSnapshot = Array.isArray(snapshotKpis)
+    ? (snapshotKpis.find((item: any) => item.quarter === snapshotQuarter) || snapshotKpis[0])
+    : null;
 
   const stats = activeSnapshot
     ? [
@@ -92,7 +83,12 @@ const AnalystSnapshotCards = ({
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative min-h-[100px]">
+          {isSnapshotLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-xl z-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
+            </div>
+          )}
           {stats.map((st) => (
             <div
               key={st.label}

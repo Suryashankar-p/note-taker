@@ -14,6 +14,7 @@ const OverallMargin = () => {
 
   const sessionId = Number(localStorage.getItem("pricing_session_id"));
   const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [snapshotQuarter, setSnapshotQuarter] = useState<string>("");
 
   const { data: overallData, isLoading: isOverallLoading } = useGetOverallMargin(sessionId);
 
@@ -47,7 +48,10 @@ const OverallMargin = () => {
     if (quartersList.length > 0 && !selectedQuarter) {
       setSelectedQuarter(quartersList[quartersList.length - 1]);
     }
-  }, [quartersList, selectedQuarter]);
+    if (quartersList.length > 0 && !snapshotQuarter) {
+      setSnapshotQuarter(quartersList[quartersList.length - 1]);
+    }
+  }, [quartersList, selectedQuarter, snapshotQuarter]);
 
   const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(sessionId, selectedQuarter);
 
@@ -69,7 +73,11 @@ const OverallMargin = () => {
 
       <HeatingMarginsGrid data={overallData?.pma_baseline_matrices} />
 
-      <ExecutiveSnapshot />
+      <ExecutiveSnapshot
+        quartersList={quartersList}
+        activeQuarter={snapshotQuarter}
+        setActiveQuarter={setSnapshotQuarter}
+      />
 
       <InsightsList
         data={insightsData}
