@@ -316,15 +316,13 @@ const ChatArea: React.FC<Props> = ({
   const onFileClick = async (file: any) => {
     try {
       if (file?.product_id) {
-        const linkResp = await ReadProductDocumentUrl(
-          file.product_id,
-          file.product_document_id
-        );
-        if (linkResp?.link) {
+        const linkResp = await ReadProductDocumentUrl(file);
+        const blobUrl = URL.createObjectURL(linkResp.data);
+        if (blobUrl) {
           let fileInfo: any = {
             name: file.name,
             type: getFileType(file?.name),
-            url: linkResp?.link,
+            url: blobUrl,
           };
           setFileData(fileInfo);
           setFileShow(true);

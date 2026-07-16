@@ -31,6 +31,7 @@ export const setInterceptors = (axiosInstance: AxiosInstance) => {
             return response;
           case 401:
             console.error('Unauthorized:', response.data);
+            redirectToLogin();
             return response;
           case 403:
             console.error('Forbidden:', response.data);

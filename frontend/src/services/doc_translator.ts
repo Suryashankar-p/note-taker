@@ -1,6 +1,7 @@
 import store, { Dispatch } from "../redux/store";
 import { fileTypeSelctor } from "../utils/functions";
 import { DocumentTranslatorAPI } from "./Axios";
+import { axiosDocumentTranslator } from "./axiosInstances";
 import axios from "axios";
 
 const BACKEND_DOC_TRANSLATOR_URL =  import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL || window.env?.BACKEND_DOCUMENT_TRANSLATOR_URL;
@@ -56,6 +57,20 @@ export const GetTranslatorResponse = async (task_id: string) => {
     BACKEND_DOC_TRANSLATOR_URL + `/doc_translator/translate/status/${task_id}`
   );
   return response;
+};
+
+// Streams the input/output document through our own backend (which has the
+// blob-storage network access) instead of fetching the blob URL directly
+// from the browser, which the storage firewall rejects.
+export const GetTranslatorFile = async (
+  task_id: string,
+  which: "input" | "output"
+) => {
+  const response = await axiosDocumentTranslator.get(
+    BACKEND_DOC_TRANSLATOR_URL + `/doc_translator/translate/file/${task_id}/${which}`,
+    { responseType: "blob" }
+  );
+  return response.data;
 };
 
 

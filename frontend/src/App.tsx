@@ -69,6 +69,62 @@ const CyberBuddySettings = lazy(
 const HeatingOCRMain = lazy(
   () => import("./pages/heating_ocr/OcrMain.tsx")
 );
+const PricingAnalyticsService = lazy(
+  () => import("./pages/pricing_analytics_service/index.tsx")
+);
+const LoadFiles = lazy(
+  () => import("./pages/pricing_analytics_service/pages/LoadDataFiles")
+);
+const SettingsLayout = lazy(
+  () => import("./pages/pricing_analytics_service/pages/SettingsLayout")
+);
+const MembersTab = lazy(
+  () => import("./pages/pricing_analytics_service/pages/MembersTab")
+);
+const PricingAnalyticsServiceWorkspace = lazy(
+  () => import("./pages/pricing_analytics_service/pages/Workspace.tsx")
+);
+
+const PricingAnalyticsServiceWorkspaceDashboard = lazy(
+  () => import("./pages/pricing_analytics_service/pages/Dashboard.tsx")
+);
+const PricingAnalyticsServiceWorkspaceAnalytics = lazy(
+  () => import("./pages/pricing_analytics_service/pages/KnowledgeBase.tsx")
+);
+const CeoBriefing = lazy(
+  () => import("./pages/pricing_analytics_service/components/CeoBriefing.tsx")
+);
+const PricingAnalyst = lazy(
+  () => import("./pages/pricing_analytics_service/components/PricingAnalyst.tsx")
+);
+const OverallMargin = lazy(
+  () => import("./pages/pricing_analytics_service/components/ceo/OverallMargin.tsx")
+);
+const Classification = lazy(
+  () => import("./pages/pricing_analytics_service/components/ceo/Classification.tsx")
+);
+const Skycraper = lazy(
+  () => import("./pages/pricing_analytics_service/components/ceo/Skycraper.tsx")
+);
+const DispersionView = lazy(
+  () => import("./pages/pricing_analytics_service/components/ceo/DispersionView.tsx")
+);
+const OverallMarginTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/OverallMarginTab.tsx")
+);
+const SkyscraperTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/SkyscraperTab.tsx")
+);
+const QoqMatrixTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/QoqMatrixTab.tsx")
+);
+const SkuDrillDownTab = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/SkuDrillDownTab.tsx")
+);
+
+
+
+
 
 const App = () => (
   <Suspense fallback={<PageLoading />}>
@@ -147,6 +203,38 @@ const App = () => (
         path="/ai-studio/heating_ocr"
         element={<ProtectedRoute element={<HeatingOCRMain />} />}
       />
+      <Route
+        path="/ai-studio/pricing-analytics"
+        element={<ProtectedRoute element={<PricingAnalyticsService />} />}
+      />
+      <Route
+        path="/ai-studio/pricing-analytics/settings"
+        element={<ProtectedRoute element={<SettingsLayout />} />}
+      >
+        <Route path="members" element={<MembersTab />} />
+      </Route>
+      <Route
+        path="/ai-studio/pricing-analytics/workspace"
+        element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspace />} />}
+      />
+      <Route
+        path="/ai-studio/pricing-analytics/workspace/dashboard"
+        element={<ProtectedRoute element={<PricingAnalyticsServiceWorkspaceDashboard />} />}
+      >
+        <Route index element={<PricingAnalyticsServiceWorkspaceAnalytics />} />
+        <Route path="ceo" element={<CeoBriefing />}>
+          <Route path="overall-margin" element={<OverallMargin />} />
+          <Route path="classification" element={<Classification />} />
+          <Route path="skycraper" element={<Skycraper />} />
+          <Route path="dispersion-view" element={<DispersionView />} />
+        </Route>
+        <Route path="analyst" element={<PricingAnalyst />}>
+          <Route path="overall-margin" element={<OverallMarginTab />} />
+          <Route path="skyscraper" element={<SkyscraperTab />} />
+          <Route path="qoq-matrix" element={<QoqMatrixTab />} />
+          <Route path="sku-drill-down" element={<SkuDrillDownTab />} />
+        </Route>
+      </Route>
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />
     </Routes>
   </Suspense>

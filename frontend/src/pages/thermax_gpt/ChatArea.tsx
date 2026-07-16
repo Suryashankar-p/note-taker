@@ -50,6 +50,8 @@ import { UploadFileModal } from "../../components/Modals/UploadFileModal.tsx";
 import { useDocumentUploadWithStatus } from "../../services/hooks/useDocumentUploadWithStatus.ts";
 import { iconMapping } from "../../utils/constants.ts";
 import { FaLightbulb } from "react-icons/fa6";
+import { useLargeFileStore, useLargeFileStoreHydrated, IngestedFile } from "../../stores/largeFileStore";
+import { isLargeDocument } from "../../utils/fileParser";
 
 const BACKEND_THERMAX_GPT_URL = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL;
 interface MediaRendererProps {
@@ -166,7 +168,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (media_type !== "excel" && media_type !== "docx" && media_type !== "ppt" && media_type !== "chart" && !mediaUrl) {
+    if (media_type !== "excel" && media_type !== "xlsx" && media_type !== "docx" && media_type !== "ppt" && media_type !== "pptx" && media_type !== "chart" && !mediaUrl) {
       if (link) {
         onFetchMedia(String(messageIndex), media_type, link);
       }
@@ -177,7 +179,18 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
     try {
       if (!chatId) return;
       const url = new URL(fileLink);
-      const filenameParam = url.searchParams.get("filename");
+
+      // Try to extract filename from `rscd` param (Azurite/Azure blob format: "inline; filename=...") or fallback to `filename` param
+      let filenameParam: string | null = null;
+      const rscd = url.searchParams.get("rscd");
+      if (rscd) {
+        const match = rscd.match(/filename=([^;]+)/i);
+        if (match) filenameParam = decodeURIComponent(match[1].trim());
+      }
+      if (!filenameParam) {
+        filenameParam = url.searchParams.get("filename");
+      }
+
       let defaultExtension = ".xlsx";
       let defaultMimeType =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -185,14 +198,16 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
         defaultExtension = ".docx";
         defaultMimeType =
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      } else if (mediaType === "ppt") {
+      } else if (mediaType === "ppt" || mediaType === "pptx") {
         defaultExtension = ".pptx";
         defaultMimeType =
           "application/vnd.openxmlformats-officedocument.presentationml.presentation";
       }
       const fileName =
         filenameParam || `generated_file_${Date.now()}${defaultExtension}`;
-      const response = await ReadFile(Number(chatId), mediaType, fileLink);
+      // Normalise mediaType: backend API expects "ppt" for pptx files
+      const apiMediaType = mediaType === "pptx" ? "ppt" : mediaType;
+      const response = await ReadFile(Number(chatId), apiMediaType, fileLink);
       const mediaBlob = new Blob([response.data], {
         type: response.headers["content-type"] || defaultMimeType,
       });
@@ -267,13 +282,15 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({
     );
   }
 
-  if (media_type === "excel" || media_type === "docx" || media_type === "ppt") {
-    const labels = {
+  if (media_type === "excel" || media_type === "xlsx" || media_type === "docx" || media_type === "ppt" || media_type === "pptx") {
+    const labels: Record<string, { text: string; color: string; hover: string }> = {
       excel: { text: "Excel Spreadsheet", color: "bg-green-600", hover: "hover:bg-green-700" },
+      xlsx: { text: "Excel Spreadsheet", color: "bg-green-600", hover: "hover:bg-green-700" },
       docx: { text: "Word Document", color: "bg-blue-600", hover: "hover:bg-blue-700" },
-      ppt: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" }
+      ppt: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" },
+      pptx: { text: "PowerPoint Presentation", color: "bg-red-600", hover: "hover:bg-red-700" },
     };
-    const config = labels[media_type as keyof typeof labels] || labels.excel;
+    const config = labels[media_type] || labels.excel;
 
     return (
       <div className="my-4">
@@ -342,9 +359,9 @@ const MultipleMediaRenderer: React.FC<MultipleMediaRendererProps> = ({
             <div className="text-sm font-medium text-gray-600 mb-2">
               {source.media_type === 'image' && 'Generated Image'}
               {source.media_type === 'video' && 'Generated Video'}
-              {source.media_type === 'excel' && 'Excel File'}
+              {(source.media_type === 'excel' || source.media_type === 'xlsx') && 'Excel File'}
               {source.media_type === 'docx' && 'Word Document'}
-              {source.media_type === 'ppt' && 'PowerPoint Presentation'}
+              {(source.media_type === 'ppt' || source.media_type === 'pptx') && 'PowerPoint Presentation'}
               {source.media_type === 'chart' && 'Generated Chart'}
               {source.media_type === 'unknown' && 'Generated File'}
             </div>
@@ -428,6 +445,18 @@ const ChatArea: React.FC<Props> = ({
   const { upload, uploadState, fileId, status, statusState, isDone } =
     useDocumentUploadWithStatus();
 
+  const [queryFileId, setQueryFileId] = useState<string | undefined>(undefined);
+
+  const {
+    ingestedFiles,
+
+    addIngestedFile,
+    mergeIngestedFiles,
+    setChatId,
+    resetStore,
+  } = useLargeFileStore();
+  const hasHydrated = useLargeFileStoreHydrated();
+
   const [aiProvider, setAiProvider] = useState("GPT 5.4");
   const [isThinking, setIsThinking] = useState(false);
 
@@ -443,10 +472,20 @@ const ChatArea: React.FC<Props> = ({
   }, [currentChatType]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
+    if (chat_id) {
+      setChatId(chat_id);
+    } else {
+      resetStore();
+    }
+  }, [chat_id, setChatId, resetStore, hasHydrated]);
+
+  useEffect(() => {
     onNewChatAdditionRef.current = onNewChatAddition;
   }, [onNewChatAddition]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (chat_id) {
       getPageChat();
     } else {
@@ -455,7 +494,7 @@ const ChatArea: React.FC<Props> = ({
       setAiProvider("GPT 5.4");
       setIsThinking(false);
     }
-  }, [chat_id]);
+  }, [chat_id, hasHydrated]);
 
   // Clear media cache when chat_id changes (navigating between chats)
   useEffect(() => {
@@ -561,6 +600,25 @@ const ChatArea: React.FC<Props> = ({
         await dispatch.chatContent.clearChat();
         setCurrentChatType(response.result[response.result.length - 1]?.type);
         const documentLastIndexMap = new Map<string, number>();
+
+        const newIngestedFiles: IngestedFile[] = [];
+        response.result.forEach((chat: any) => {
+          if (chat.ingest_file_id) {
+            if (!newIngestedFiles.find((f) => f.fileId === chat.ingest_file_id)) {
+              newIngestedFiles.push({
+                fileId: chat.ingest_file_id,
+                fileName: chat.file_name || `File`,
+                ingestedAt: chat.created_on || new Date().toISOString(),
+                fileSize: chat.file_size || 0,
+              });
+            }
+          }
+        });
+        newIngestedFiles.sort(
+          (a, b) =>
+            new Date(b.ingestedAt).getTime() - new Date(a.ingestedAt).getTime()
+        );
+        mergeIngestedFiles(newIngestedFiles);
 
         response.result.forEach((chat: any, index: number) => {
           const doc = chat.document;
@@ -723,6 +781,128 @@ const ChatArea: React.FC<Props> = ({
       eventSourceRef.current = null;
     };
   };
+
+  const startPolling = (
+    statusUrl: string,
+    fileId: string,
+    isNewChat: boolean,
+    newChatId?: string,
+    pendingQuery?: string,
+    localMessagesToPass?: any[],
+    effectiveThinkingToPass?: boolean,
+    fileName?: string,
+    fileSize?: number
+  ) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const backendBase = import.meta.env.VITE_BACKEND_THERMAX_GPT_URL as string;
+        let finalUrl = statusUrl;
+        if (!statusUrl.startsWith('http')) {
+          const urlObj = new URL(backendBase);
+          finalUrl = `${urlObj.origin}${statusUrl.startsWith('/') ? '' : '/'}${statusUrl}`;
+        }
+        const token = localStorage.getItem('access_token');
+        const statusResponse = await fetch(finalUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        });
+        const statusData = await statusResponse.json();
+        console.log("Current ingestion status:", statusData.status);
+        if (statusData.status === "completed") {
+          clearInterval(pollInterval);
+          console.log("File ingested successfully! Summary:", statusData.summary);
+          setQueryFileId(fileId);
+          addIngestedFile({
+            fileId: fileId,
+            fileName: fileName || statusData.filename || 'Ingested File',
+            ingestedAt: new Date().toISOString(),
+            fileSize: fileSize || 0,
+          });
+          dispatch.toast.openToast({
+            status: true,
+            message: "File ingested successfully! You can now ask questions.",
+            type: "success",
+          });
+          setPageError(false);
+
+          if (pendingQuery) {
+            setStreamingStatus("thinking");
+            try {
+              const streamResponse = await CreateChatHistoryStream(
+                pendingQuery,
+                newChatId || chat_id || "",
+                [],
+                aiProvider,
+                effectiveThinkingToPass || false,
+                "query",
+                fileId
+              );
+              const streamId = streamResponse?.id || streamResponse?.chat_history_id;
+              if (streamId) {
+                startStreaming(newChatId || chat_id || "", streamId, localMessagesToPass || [], isNewChat, effectiveThinkingToPass, false);
+              } else {
+                setLoading(false);
+                dispatch.toast.openToast({
+                  status: true,
+                  message: streamResponse?.detail || "Failed to create chat history",
+                  type: "error",
+                });
+                if (isNewChat && newChatId) {
+                  navigate(`/ai-studio/thermax_gpt?chat_id=${newChatId}`);
+                  onNewChatAdditionRef.current();
+                } else {
+                  await getPageChat();
+                }
+              }
+            } catch (error) {
+              setLoading(false);
+              setPageError(true);
+            }
+          } else {
+            setLoading(false);
+            if (isNewChat && newChatId) {
+              navigate(`/ai-studio/thermax_gpt?chat_id=${newChatId}`);
+              onNewChatAdditionRef.current();
+            } else {
+              await getPageChat();
+            }
+          }
+        } else if (statusData.status === "failed") {
+          clearInterval(pollInterval);
+          console.error("Ingestion failed:", statusData.message);
+          setLoading(false);
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: "Ingestion failed: " + (statusData.message || "Unknown error"),
+            type: "error",
+          });
+        } else if (statusData.status === "not_found" || statusResponse.status === 404) {
+          clearInterval(pollInterval);
+          setLoading(false);
+          setPageError(true);
+          dispatch.toast.openToast({
+            status: true,
+            message: "Session expired or file not found.",
+            type: "error",
+          });
+          if (isNewChat && newChatId) {
+            navigate(`/ai-studio/thermax_gpt?chat_id=${newChatId}`);
+            onNewChatAdditionRef.current();
+          } else {
+            await getPageChat();
+          }
+        }
+      } catch (error) {
+        console.error("Error checking status:", error);
+        clearInterval(pollInterval);
+        setLoading(false);
+        setPageError(true);
+      }
+    }, 3000);
+  };
+
   // Handle successful stream completion
   const handleStreamEnd = async (
     data: any,
@@ -788,7 +968,7 @@ const ChatArea: React.FC<Props> = ({
     if (!inputValue.trim() || !aiProvider) return;
     setLoading(true);
     setStreamingStatus("thinking");
-    const isFile = uploadedFiles?.length > 0;
+
 
     const localFiles =
       uploadedFiles?.map((file) => ({
@@ -811,6 +991,27 @@ const ChatArea: React.FC<Props> = ({
 
     const localMessages = [...chatContent, ...localFiles];
 
+    let mode: string | undefined = undefined;
+    let fileIdToSend: string | undefined = undefined;
+
+    if (localFiles?.length > 0) {
+      let isLargeFile = false;
+      for (const f of localFiles) {
+        if (f.file && await isLargeDocument(f.file, 10)) {
+          isLargeFile = true;
+          break;
+        }
+      }
+      if (isLargeFile) {
+        mode = "ingest";
+      } else {
+        mode = "chat";
+      }
+    } else if (ingestedFiles.length > 0) {
+      mode = "query";
+      fileIdToSend = ingestedFiles[0].fileId;
+    }
+
     try {
       if (chat_id) {
         let chatResponse;
@@ -823,10 +1024,31 @@ const ChatArea: React.FC<Props> = ({
             chat_id,
             uploadedFiles,
             aiProvider,
-            effectiveThinking
+            effectiveThinking,
+            mode,
+            fileIdToSend
           );
-          if (streamResponse?.id) {
-            startStreaming(chat_id, streamResponse.id, localMessages, false, effectiveThinking, isFile);
+          if (streamResponse?.status_url) {
+            dispatch.toast.openToast({
+              status: true,
+              message: "File is processing in the background...",
+              type: "success",
+            });
+            startPolling(
+              streamResponse.status_url,
+              streamResponse.file_id,
+              false,
+              undefined,
+              inputValue,
+              localMessages,
+              effectiveThinking,
+              localFiles[0]?.file_name,
+              localFiles[0]?.file_size
+            );
+            return;
+          } else if (streamResponse?.id || streamResponse?.chat_history_id) {
+            const streamId = streamResponse.id || streamResponse.chat_history_id;
+            startStreaming(chat_id, streamId, localMessages, false, effectiveThinking, mode === "query");
             return; // Exit early for streaming
           } else {
             dispatch.toast.openToast({
@@ -895,17 +1117,38 @@ const ChatArea: React.FC<Props> = ({
                 newSessionResponse.id,
                 uploadedFiles,
                 aiProvider,
-                effectiveThinking
+                effectiveThinking,
+                mode,
+                fileIdToSend
               );
 
-              if (streamResponse?.id) {
+              if (streamResponse?.status_url) {
+                dispatch.toast.openToast({
+                  status: true,
+                  message: "File is processing in the background...",
+                  type: "success",
+                });
+                startPolling(
+                  streamResponse.status_url,
+                  streamResponse.file_id,
+                  true,
+                  newSessionResponse.id,
+                  inputValue,
+                  localMessages,
+                  effectiveThinking,
+                  localFiles[0]?.file_name,
+                  localFiles[0]?.file_size
+                );
+                return;
+              } else if (streamResponse?.id || streamResponse?.chat_history_id) {
+                const streamId = streamResponse.id || streamResponse.chat_history_id;
                 startStreaming(
                   newSessionResponse.id,
-                  streamResponse.id,
+                  streamId,
                   localFiles,
                   true,
                   effectiveThinking,
-                  isFile
+                  mode === "query"
                 );
                 return; // Exit early for streaming
               } else {
@@ -1125,7 +1368,7 @@ const ChatArea: React.FC<Props> = ({
   };
 
   const renderAttachFile = () => {
-    return "Attach File (Up to 100MB)";
+    return "Attach File (Up to 1 GB)";
   };
 
   const getStreamingStatusText = (status: string | null) => {
@@ -1568,6 +1811,7 @@ const ChatArea: React.FC<Props> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
+
                   <DropDownMenu
                     disabled={isThinking}
                     content={
