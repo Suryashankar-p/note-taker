@@ -9,7 +9,7 @@ const Classification = () => {
   const onNavigateToTab = context.onNavigateToTab;
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
   const { data, isLoading } = useGetClassificationMatrix(sessionId, selectedQuarter);
 
   if (isLoading) {

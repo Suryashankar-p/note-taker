@@ -14,6 +14,7 @@ interface DispersionBoxesProps {
   selectedQuarter: string;
   setSelectedQuarter: (val: string) => void;
   quarters: string[];
+  isFetching?: boolean;
 }
 
 const DispersionBoxes = ({
@@ -21,8 +22,9 @@ const DispersionBoxes = ({
   selectedQuarter,
   setSelectedQuarter,
   quarters,
+  isFetching,
 }: DispersionBoxesProps) => {
-  const activeIdx = quarters.indexOf(selectedQuarter);
+  const activeIdx = qoqCards.findIndex((card) => card.quarter === selectedQuarter);
   const windowQuarters = activeIdx !== -1
     ? qoqCards.slice(Math.max(0, activeIdx - 3), activeIdx + 1)
     : qoqCards.slice(-4);
@@ -46,7 +48,12 @@ const DispersionBoxes = ({
   });
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm relative">
+      {isFetching && (
+        <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all rounded-xl">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-bold text-gray-900">QoQ movement in dispersion at family level</h2>
         <CustomSelect

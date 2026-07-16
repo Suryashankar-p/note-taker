@@ -31,8 +31,21 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
     families: ClassificationFamilyItem[];
   } | null>(null);
 
-  const quarters = data?.available_quarters || [];
-  const activeQuarter = data?.quarter || "";
+  const quarters = [
+    "Q1 FY 24",
+    "Q2 FY 24",
+    "Q3 FY 24",
+    "Q4 FY 24",
+    "Q1 FY 25",
+    "Q2 FY 25",
+    "Q3 FY 25",
+    "Q4 FY 25",
+    "Q1 FY 26",
+    "Q2 FY 26",
+    "Q3 FY 26",
+    "Q4 FY 26"
+  ];
+  const activeQuarter = data?.quarter || "Q4 FY 26";
 
   const [localSelectedQuarter, setLocalSelectedQuarter] = useState<string>("");
 

@@ -11,18 +11,24 @@ const DispersionView = () => {
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
 
-  const { data, isLoading, isFetching } = useGetDispersion(sessionId, selectedFamily);
+  const { data, isLoading, isFetching } = useGetDispersion(sessionId, selectedFamily, selectedQuarter);
 
-  const sortedQuarters = (data?.qoq_cards || [])
-    .map((q: any) => q.quarter);
-
-  useEffect(() => {
-    if (sortedQuarters.length > 0 && !selectedQuarter) {
-      setSelectedQuarter(sortedQuarters[sortedQuarters.length - 1]);
-    }
-  }, [sortedQuarters, selectedQuarter]);
+  const sortedQuarters = [
+    "Q1 FY 24",
+    "Q2 FY 24",
+    "Q3 FY 24",
+    "Q4 FY 24",
+    "Q1 FY 25",
+    "Q2 FY 25",
+    "Q3 FY 25",
+    "Q4 FY 25",
+    "Q1 FY 26",
+    "Q2 FY 26",
+    "Q3 FY 26",
+    "Q4 FY 26"
+  ];
 
   useEffect(() => {
     if (data?.families && data.families.length > 0 && !selectedFamily) {
@@ -48,6 +54,7 @@ const DispersionView = () => {
         selectedQuarter={selectedQuarter}
         setSelectedQuarter={setSelectedQuarter}
         quarters={sortedQuarters}
+        isFetching={isFetching && !isInitialLoading}
       />
 
       {/* 2. Dispersion Curve and Trend Line Charts */}

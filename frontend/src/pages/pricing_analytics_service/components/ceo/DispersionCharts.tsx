@@ -125,16 +125,6 @@ const DispersionCharts = ({
   const trendRows = familyDispersion?.trend || [];
   const validTrendRows = [...trendRows]
     .filter((r) => r.mean_gm_pct !== null && r.mean_gm_pct !== undefined)
-    .filter((item) => {
-      const q = item?.quarter || "";
-      const match = q.match(/Q(\d) /);
-      const year = q.match(/FY (\d+)/);
-      if (!match || !year) return false;
-      const qNum = parseInt(match[1]);
-      const yNum = parseInt(year[1]);
-      const val = yNum * 10 + qNum;
-      return val >= 244 && val <= 264;
-    })
     .sort((a, b) => sortQuarters(a.quarter, b.quarter));
 
   const trendData = {

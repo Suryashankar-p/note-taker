@@ -389,15 +389,16 @@ export const useSendLLMChat = () => {
   });
 };
 
-export const useGetDispersion = (sessionId: number, familyNk: string | null) => {
+export const useGetDispersion = (sessionId: number, familyNk: string | null, quarter?: string | null) => {
   return useQuery({
-    queryKey: ["dispersion", sessionId, familyNk],
+    queryKey: ["dispersion", sessionId, familyNk, quarter],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/dispersion",
         {
           session_id: sessionId,
-          family_nk: familyNk === "null" || !familyNk ? null : familyNk
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+          quarter: quarter || ""
         }
       );
       return response;
