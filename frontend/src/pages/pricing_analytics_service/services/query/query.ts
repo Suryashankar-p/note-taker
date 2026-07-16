@@ -315,15 +315,15 @@ export const useGetBusinessInsights = (sessionId: number, quarter?: string) => {
   });
 };
 
-export const useGetClassificationMatrix = (sessionId: number) => {
+export const useGetClassificationMatrix = (sessionId: number, quarter?: string) => {
   return useQuery({
-    queryKey: ["classification-matrix", sessionId],
+    queryKey: ["classification-matrix", sessionId, quarter],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/classification-matrix",
-        { session_id: sessionId }
+        { session_id: sessionId, quarter: quarter }
       );
-      return transformClassificationMatrixData(response);
+      return response;
     },
     enabled: !!sessionId,
   });

@@ -7,22 +7,19 @@ import {
 
 interface ClassificationGridProps {
   data?: {
+    quarter?: string;
+    available_quarters?: string[];
     matrix?: Record<string, Record<string, ClassificationCellData>>;
-    quarterMatrices?: Record<string, {
-      matrix: Record<string, Record<string, ClassificationCellData>>;
-      pooled_actual_gm_pct: number;
-      pooled_baseline_gm_pct: number;
-      global_delta_pp: number;
-      total_revenue_inr: number;
-      total_below_baseline: number;
-      total_above_baseline: number;
-    }>;
-    quarters?: string[];
-    latestQuarter?: string;
-    insights?: {
-      curr_qtr: string;
-      prev_qtr: string;
-    } | null;
+    summary?: {
+      total_below_baseline?: number;
+      total_above_baseline?: number;
+      pooled_actual_gm_pct?: number;
+      pooled_baseline_gm_pct?: number;
+      global_delta_pp?: number;
+      total_revenue_inr?: number;
+      overall_gm_pct?: number;
+    };
+    insights?: any;
   };
   selectedQuarter?: string;
   setSelectedQuarter?: (qtr: string) => void;
@@ -34,18 +31,15 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
     families: ClassificationFamilyItem[];
   } | null>(null);
 
-  const quarters = data?.quarters || [];
-  const latestQuarter = data?.latestQuarter || "";
+  const quarters = data?.available_quarters || [];
+  const activeQuarter = data?.quarter || "";
 
   const [localSelectedQuarter, setLocalSelectedQuarter] = useState<string>("");
 
   const selectedQuarter = propsSelectedQuarter !== undefined ? propsSelectedQuarter : localSelectedQuarter;
   const setSelectedQuarter = propsSetSelectedQuarter || setLocalSelectedQuarter;
 
-  const activeQuarter = selectedQuarter || latestQuarter || (quarters.length > 0 ? quarters[quarters.length - 1] : "");
-
-  const activeQuarterData = data?.quarterMatrices?.[activeQuarter];
-  const matrix = activeQuarterData?.matrix || data?.matrix;
+  const matrix = data?.matrix;
 
   if (!matrix) return null;
 
@@ -100,11 +94,11 @@ const ClassificationGrid = ({ data, selectedQuarter: propsSelectedQuarter, setSe
     };
   });
 
-  const totalRedFamilies = activeQuarterData?.total_below_baseline ?? 0;
-  const totalGreenFamilies = activeQuarterData?.total_above_baseline ?? 0;
-  const pooledActualGm = activeQuarterData?.pooled_actual_gm_pct ?? 0;
-  const globalDelta = activeQuarterData?.global_delta_pp ?? 0;
-  const globalTotalRev = activeQuarterData?.total_revenue_inr ?? 0;
+  const totalRedFamilies = data?.summary?.total_below_baseline ?? 0;
+  const totalGreenFamilies = data?.summary?.total_above_baseline ?? 0;
+  const pooledActualGm = data?.summary?.pooled_actual_gm_pct ?? 0;
+  const globalDelta = data?.summary?.global_delta_pp ?? 0;
+  const globalTotalRev = data?.summary?.total_revenue_inr ?? 0;
 
   let globalRevStr = "₹0.00";
   if (globalTotalRev >= 10000000) {
