@@ -2,37 +2,21 @@ import React, { useState, useEffect } from "react";
 import { useGetSnapshotKpis } from "../../services/query/query";
 import CustomSelect from "../CustomSelect";
 
-const ExecutiveSnapshot = () => {
+const ExecutiveSnapshot = ({
+  quartersList = [],
+  activeQuarter = "",
+  setActiveQuarter = () => {},
+}: {
+  quartersList?: string[];
+  activeQuarter?: string;
+  setActiveQuarter?: (q: string) => void;
+}) => {
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data: snapshotKpis, isLoading } = useGetSnapshotKpis(sessionId);
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const { data: snapshotKpis, isLoading } = useGetSnapshotKpis(sessionId, activeQuarter);
 
-  const sortQuarters = (a: string, b: string) => {
-    const matchA = a.match(/Q(\d) /);
-    const matchB = b.match(/Q(\d) /);
-    const yearA = a.match(/FY (\d+)/);
-    const yearB = b.match(/FY (\d+)/);
-    if (!matchA || !matchB || !yearA || !yearB) return 0;
-    const qA = parseInt(matchA[1], 10);
-    const yA = parseInt(yearA[1], 10);
-    const qB = parseInt(matchB[1], 10);
-    const yB = parseInt(yearB[1], 10);
-    if (yA !== yB) return yA - yB;
-    return qA - qB;
-  };
-
-  const quarters = (snapshotKpis?.quarters || [])
-    .map((item: any) => item.quarter)
-    .sort(sortQuarters);
-
-  const activeQuarter = selectedQuarter || quarters[quarters.length - 1] || "";
-  const activeData = (snapshotKpis?.quarters || []).find((item: any) => item.quarter === activeQuarter);
-
-  useEffect(() => {
-    if (quarters.length > 0 && !selectedQuarter) {
-      setSelectedQuarter(quarters[quarters.length - 1]);
-    }
-  }, [quarters, selectedQuarter]);
+  const activeData = Array.isArray(snapshotKpis)
+    ? (snapshotKpis.find((item: any) => item.quarter === activeQuarter) || snapshotKpis[0])
+    : null;
 
   if (isLoading) {
     return (
@@ -65,11 +49,11 @@ const ExecutiveSnapshot = () => {
         <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase">
           Executive Snapshot
         </h3>
-        {quarters.length > 0 && (
+        {quartersList.length > 0 && (
           <CustomSelect
-            options={quarters}
+            options={quartersList}
             value={activeQuarter}
-            onChange={setSelectedQuarter}
+            onChange={setActiveQuarter}
             labelPrefix="Quarter: "
             alignRight
           />

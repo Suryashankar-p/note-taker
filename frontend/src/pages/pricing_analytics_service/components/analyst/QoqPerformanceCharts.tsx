@@ -25,6 +25,20 @@ ChartJS.register(
   Legend
 );
 
+const sortQuarters = (a: string, b: string) => {
+  const matchA = a.match(/Q(\d) /);
+  const matchB = b.match(/Q(\d) /);
+  const yearA = a.match(/FY (\d+)/);
+  const yearB = b.match(/FY (\d+)/);
+  if (!matchA || !matchB || !yearA || !yearB) return 0;
+  const qA = parseInt(matchA[1]);
+  const yA = parseInt(yearA[1]);
+  const qB = parseInt(matchB[1]);
+  const yB = parseInt(yearB[1]);
+  if (yA !== yB) return yA - yB;
+  return qA - qB;
+};
+
 interface QoqPerformanceChartsProps {
   selectedFamily: string;
   selectedDetails: {
@@ -66,20 +80,33 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
   const familyDispersion = dispersionData?.family_dispersion;
   const hasDispersionData = !!qoqDistributionData?.summary;
 
-  const gmValues = selectedDetails.history.map(h => h.gm).filter(v => v != null);
-  const revValues = selectedDetails.history.map(h => h.revenue).filter(v => v != null);
+  const filteredHistory = [...selectedDetails.history]
+    .filter((item) => {
+      const q = item?.quarter || "";
+      const match = q.match(/Q(\d) /);
+      const year = q.match(/FY (\d+)/);
+      if (!match || !year) return false;
+      const qNum = parseInt(match[1]);
+      const yNum = parseInt(year[1]);
+      const val = yNum * 10 + qNum;
+      return val >= 244 && val <= 264;
+    })
+    .sort((a, b) => sortQuarters(a.quarter, b.quarter));
+
+  const gmValues = filteredHistory.map(h => h.gm).filter(v => v != null);
+  const revValues = filteredHistory.map(h => h.revenue).filter(v => v != null);
   const gmMin = gmValues.length > 0 ? Math.floor(Math.min(...gmValues, selectedDetails.targetVal, selectedDetails.baseline) - 10) : 0;
   const gmMax = gmValues.length > 0 ? Math.ceil(Math.max(...gmValues, selectedDetails.targetVal, selectedDetails.baseline) + 10) : 100;
   const revMax = revValues.length > 0 ? Math.ceil(Math.max(...revValues) * 1.3) : 100;
 
   const comboChartData = {
-    labels: selectedDetails.history.map(h => h.quarter),
+    labels: filteredHistory.map(h => h.quarter),
     datasets: [
       {
         type: "bar" as const,
         label: "Revenue",
         yAxisID: "yRev",
-        data: selectedDetails.history.map(h => h.revenue),
+        data: filteredHistory.map(h => h.revenue),
         backgroundColor: "rgba(166, 28, 30, 0.25)",
         borderRadius: 4,
         barPercentage: 0.45,
@@ -89,7 +116,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         type: "line" as const,
         label: "GM %",
         yAxisID: "yGM",
-        data: selectedDetails.history.map(h => h.gm),
+        data: filteredHistory.map(h => h.gm),
         borderColor: "#a61c1e",
         borderWidth: 2,
         tension: 0.35,
@@ -103,7 +130,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         type: "line" as const,
         label: `PMA Target (${selectedDetails.target})`,
         yAxisID: "yGM",
-        data: selectedDetails.history.map(() => selectedDetails.targetVal),
+        data: filteredHistory.map(() => selectedDetails.targetVal),
         borderColor: "#eab308",
         borderDash: [5, 5],
         borderWidth: 1.5,
@@ -115,7 +142,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         type: "line" as const,
         label: `Baseline (${selectedDetails.baseline.toFixed(1)}%)`,
         yAxisID: "yGM",
-        data: selectedDetails.history.map(() => selectedDetails.baseline),
+        data: filteredHistory.map(() => selectedDetails.baseline),
         borderColor: "#eab308",
         borderDash: [5, 5],
         borderWidth: 1.5,
@@ -286,8 +313,21 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
     },
   };
 
+
   const trendRows = familyDispersion?.trend || [];
-  const validTrendRows = trendRows.filter((r: any) => r.mean_gm_pct !== null && r.mean_gm_pct !== undefined);
+  const validTrendRows = [...trendRows]
+    .filter((r: any) => r.mean_gm_pct !== null && r.mean_gm_pct !== undefined)
+    .filter((item: any) => {
+      const q = item?.quarter || "";
+      const match = q.match(/Q(\d) /);
+      const year = q.match(/FY (\d+)/);
+      if (!match || !year) return false;
+      const qNum = parseInt(match[1]);
+      const yNum = parseInt(year[1]);
+      const val = yNum * 10 + qNum;
+      return val >= 244 && val <= 264;
+    })
+    .sort((a: any, b: any) => sortQuarters(a.quarter, b.quarter));
 
   const trendData = {
     labels: validTrendRows.map((r: any) => r.quarter),

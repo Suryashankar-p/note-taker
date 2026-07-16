@@ -27,7 +27,21 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
 
   if (!data || data.length === 0) return null;
   
-  const activeQuarters = Object.keys(data[0].quarters).sort(sortQuarters).reverse();
+  const getQuarterVal = (q: string) => {
+    const match = q.match(/Q(\d) /);
+    const year = q.match(/FY (\d+)/);
+    if (!match || !year) return 0;
+    const qNum = parseInt(match[1]);
+    const yNum = parseInt(year[1]);
+    return yNum * 10 + qNum;
+  };
+
+  const activeQuarters = Object.keys(data[0].quarters)
+    .sort(sortQuarters)
+    .filter((q) => {
+      const val = getQuarterVal(q);
+      return val >= 253 && val <= 264;
+    });
 
   const headers = [
     { label: "Baseline\n(Q4 FY24 + Q1 FY25)", colSpan: 2 },
@@ -36,16 +50,18 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
 
   const subHeaders = Array(headers.length).fill(["Revenue\n(INR Cr)", "Achieved\nGM%"]).flat();
 
-  const rows: Array<{
-    type: string;
-    data: Array<{
-      rev: string;
-      gm: string;
-      isGreen?: boolean;
-      isRed?: boolean;
-    }>;
-  }> = data.map((item) => {
+  const rows = data.map((item) => {
     const baselineGm = item.baseline_gm_pct;
+    
+    const q4Data = item.quarters["Q4 FY 26"];
+    let deltaStr = "-";
+    let deltaClass = "text-gray-500";
+    if (q4Data && q4Data.gm_pct !== null && baselineGm !== null) {
+      const delta = q4Data.gm_pct - baselineGm;
+      deltaStr = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`;
+      deltaClass = delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-gray-500";
+    }
+
     return {
       type: item.label,
       data: [
@@ -75,6 +91,8 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
           };
         }),
       ],
+      deltaStr,
+      deltaClass,
     };
   });
 
@@ -100,6 +118,12 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
                   {h.label}
                 </th>
               ))}
+              <th
+                className="p-3 font-bold text-gray-700 border-r border-gray-200 whitespace-pre-line text-center bg-gray-50/70"
+                rowSpan={2}
+              >
+                {"ΔGM%\n(Q4 FY26 vs Baseline)"}
+              </th>
             </tr>
 
             <tr className="border-b border-gray-250 bg-gray-50/50">
@@ -134,6 +158,9 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
                     </td>
                   </React.Fragment>
                 ))}
+                <td className={`p-3 text-center font-bold border-r border-gray-200 bg-gray-50/30 ${row.deltaClass}`}>
+                  {row.deltaStr}
+                </td>
               </tr>
             ))}
           </tbody>

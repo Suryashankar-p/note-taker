@@ -1,112 +1,153 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Sparkles } from "lucide-react";
 import CustomSelect from "../CustomSelect";
 
 interface AnalystSnapshotCardsProps {
-  snapshotKpis?: {
-    quarters: Array<{
-      quarter: string;
-      revenue_inr: number;
-      overall_gm_pct: number;
-      delta_vs_baseline_pp: number;
-      delta_vs_heating_target_pp: number;
-      families_above_target: number;
-      families_below_target: number;
-      families_above_baseline: number;
-    }>;
-  };
+  snapshotKpis?: any;
   insights: string[];
+  snapshotQuarter: string;
+  setSnapshotQuarter: (q: string) => void;
+  insightsQuarter: string;
+  setInsightsQuarter: (q: string) => void;
+  quartersList: string[];
+  isSnapshotLoading?: boolean;
 }
 
-const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsProps) => {
-  const sortQuarters = (a: string, b: string) => {
-    const matchA = a.match(/Q(\d) /);
-    const matchB = b.match(/Q(\d) /);
-    const yearA = a.match(/FY (\d+)/);
-    const yearB = b.match(/FY (\d+)/);
-    if (!matchA || !matchB || !yearA || !yearB) return 0;
-    const qA = parseInt(matchA[1], 10);
-    const yA = parseInt(yearA[1], 10);
-    const qB = parseInt(matchB[1], 10);
-    const yB = parseInt(yearB[1], 10);
-    if (yA !== yB) return yA - yB;
-    return qA - qB;
-  };
+const AnalystSnapshotCards = ({
+  snapshotKpis,
+  insights,
+  snapshotQuarter,
+  setSnapshotQuarter,
+  insightsQuarter,
+  setInsightsQuarter,
+  quartersList,
+  isSnapshotLoading = false,
+}: AnalystSnapshotCardsProps) => {
+  const activeSnapshot = Array.isArray(snapshotKpis)
+    ? (snapshotKpis.find((item: any) => item.quarter === snapshotQuarter) || snapshotKpis[0])
+    : null;
 
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
-
-  const quarters = (snapshotKpis?.quarters || [])
-    .map((item: any) => item.quarter)
-    .sort(sortQuarters);
-
-  const activeQuarter = selectedQuarter || quarters[quarters.length - 1] || "";
-  const activeSnapshot = (snapshotKpis?.quarters || []).find((item: any) => item.quarter === activeQuarter);
-
-  useEffect(() => {
-    if (quarters.length > 0 && !selectedQuarter) {
-      setSelectedQuarter(quarters[quarters.length - 1]);
-    }
-  }, [quarters, selectedQuarter]);
-
-  const stats = activeSnapshot ? [
-    { label: "HEATING REVENUE", value: `₹${(activeSnapshot.revenue_inr / 10000000).toFixed(1)} Cr` },
-    { label: "OVERALL GM%", value: `${activeSnapshot.overall_gm_pct.toFixed(1)}%` },
-    { label: "Δ VS BASELINE", value: `${activeSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_baseline_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_baseline_pp >= 0, isNegative: activeSnapshot.delta_vs_baseline_pp < 0 },
-    { label: "Δ VS HEATING TARGET", value: `${activeSnapshot.delta_vs_heating_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_heating_target_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_heating_target_pp >= 0, isNegative: activeSnapshot.delta_vs_heating_target_pp < 0 },
-    { label: "FAMILIES ABOVE TARGET", value: String(activeSnapshot.families_above_target) },
-    { label: "FAMILIES BELOW TARGET", value: String(activeSnapshot.families_below_target) },
-    { label: "FAMILIES ABOVE BASELINE", value: String(activeSnapshot.families_above_baseline) },
-  ] : [];
+  const stats = activeSnapshot
+    ? [
+        {
+          label: "HEATING REVENUE",
+          value: `₹${(activeSnapshot.revenue_inr / 10000000).toFixed(1)} Cr`,
+        },
+        {
+          label: "OVERALL GM%",
+          value: `${activeSnapshot.overall_gm_pct.toFixed(1)}%`,
+        },
+        {
+          label: "Δ VS BASELINE",
+          value: `${activeSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_baseline_pp.toFixed(1)}%`,
+          isPositive: activeSnapshot.delta_vs_baseline_pp >= 0,
+          isNegative: activeSnapshot.delta_vs_baseline_pp < 0,
+        },
+        {
+          label: "Δ VS HEATING TARGET",
+          value: `${activeSnapshot.delta_vs_heating_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_heating_target_pp.toFixed(1)}%`,
+          isPositive: activeSnapshot.delta_vs_heating_target_pp >= 0,
+          isNegative: activeSnapshot.delta_vs_heating_target_pp < 0,
+        },
+        {
+          label: "FAMILIES ABOVE TARGET",
+          value: String(activeSnapshot.families_above_target),
+        },
+        {
+          label: "FAMILIES BELOW TARGET",
+          value: String(activeSnapshot.families_below_target),
+        },
+        {
+          label: "FAMILIES ABOVE BASELINE",
+          value: String(activeSnapshot.families_above_baseline),
+        },
+      ]
+    : [];
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-      <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
+      {/* Executive Snapshot Card - full width */}
+      <div className="w-full bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-6">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <h3 className="text-sm font-bold tracking-tight text-gray-800">
             Executive snapshot
           </h3>
-          {quarters.length > 0 && (
+          {quartersList.length > 0 && (
             <CustomSelect
-              options={quarters}
-              value={activeQuarter}
-              onChange={setSelectedQuarter}
+              options={quartersList}
+              value={snapshotQuarter}
+              onChange={setSnapshotQuarter}
               labelPrefix="Quarter: "
               alignRight
             />
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative min-h-[100px]">
+          {isSnapshotLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-xl z-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
+            </div>
+          )}
           {stats.map((st) => (
-            <div key={st.label} className="border border-gray-100 rounded-xl p-4 bg-slate-50/50 shadow-sm flex flex-col justify-between">
+            <div
+              key={st.label}
+              className="border border-gray-100 rounded-xl p-4 bg-slate-50/50 shadow-sm flex flex-col justify-between"
+            >
               <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wide leading-tight mb-2">
                 {st.label}
               </span>
-              <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"}`}>
+              <span
+                className={`text-base font-extrabold tracking-tight ${
+                  st.isPositive
+                    ? "text-emerald-600"
+                    : st.isNegative
+                      ? "text-rose-600"
+                      : "text-gray-800"
+                }`}
+              >
                 {st.value}
               </span>
             </div>
           ))}
+          {stats.length === 0 && (
+            <div className="col-span-4 text-xs text-gray-400 italic py-4 text-center">
+              No snapshot data for {snapshotQuarter || "this quarter"}.
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="bg-[#131517] text-white border border-[#202226] rounded-xl p-6 shadow-sm flex flex-col justify-between">
+      {/* Top Insights (CEO/CFO style) */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
         <div>
-          <h3 className="text-sm font-extrabold tracking-tight text-white mb-4 border-b border-[#202226] pb-3 flex items-center gap-2">
-            <Sparkles size={16} className="text-[#a61c1e]" />
-            Strategic actions
-          </h3>
-          <ul className="flex flex-col gap-3.5 text-xs text-gray-300 leading-relaxed font-semibold">
-            {insights.map((insight, idx) => (
-              <li key={idx} className="flex gap-2.5 items-start">
-                <span className="text-[#a61c1e] mt-1 font-bold">▶</span>
-                <span>{insight}</span>
-              </li>
-            ))}
-            {insights.length === 0 && (
-              <li className="text-gray-400 italic font-medium">No actions available.</li>
+          <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase mb-6 pb-3 border-b border-gray-100 flex items-center justify-between">
+            <span>Top Insights</span>
+            {quartersList && setInsightsQuarter && insightsQuarter && (
+              <CustomSelect
+                options={quartersList}
+                value={insightsQuarter}
+                onChange={setInsightsQuarter}
+                labelPrefix="Qtr: "
+                alignRight
+              />
             )}
-          </ul>
+          </h3>
+
+          {insights.length === 0 ? (
+            <div className="text-gray-400 italic font-medium">
+              No insights available.
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-3.5 text-xs text-gray-600 leading-relaxed font-semibold">
+              {insights.map((insight, idx) => (
+                <li key={idx} className="flex gap-2.5 items-start">
+                  <span className="text-[#a61c1e] mt-1 font-bold">▶</span>
+                  <span>{insight}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

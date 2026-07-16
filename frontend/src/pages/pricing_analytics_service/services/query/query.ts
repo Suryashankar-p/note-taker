@@ -301,17 +301,17 @@ export const useGetOverallMargin = (sessionId: number) => {
   });
 };
 
-export const useGetBusinessInsights = (sessionId: number) => {
+export const useGetBusinessInsights = (sessionId: number, quarter?: string) => {
   return useQuery({
-    queryKey: ["business-insights", sessionId],
+    queryKey: ["business-insights", sessionId, quarter],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/business-insights",
-        { session_id: sessionId }
+        { session_id: sessionId, quarter: quarter }
       );
       return response;
     },
-    enabled: !!sessionId,
+    enabled: !!sessionId && !!quarter,
   });
 };
 
@@ -357,13 +357,13 @@ export const useGetQoqMatrix = (sessionId: number) => {
   });
 };
 
-export const useGetSnapshotKpis = (sessionId: number) => {
+export const useGetSnapshotKpis = (sessionId: number, quarter?: string) => {
   return useQuery({
-    queryKey: ["snapshot-kpis", sessionId],
+    queryKey: ["snapshot-kpis", sessionId, quarter],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/snapshot-kpis",
-        { session_id: sessionId }
+        { session_id: sessionId, quarter: quarter }
       );
       return response;
     },
