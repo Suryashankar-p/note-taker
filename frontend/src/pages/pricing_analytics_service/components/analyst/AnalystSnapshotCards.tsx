@@ -71,6 +71,7 @@ const AnalystSnapshotCards = ({
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      {/* Executive Snapshot Card */}
       <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-6">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <h3 className="text-sm font-bold tracking-tight text-gray-800">
@@ -117,6 +118,7 @@ const AnalystSnapshotCards = ({
         </div>
       </div>
 
+      {/* Strategic Actions (Dark Card) */}
       <div className="bg-[#131517] text-white border border-[#202226] rounded-xl p-6 shadow-sm flex flex-col justify-between">
         <div>
           <h3 className="text-sm font-extrabold tracking-tight text-white mb-4 border-b border-[#202226] pb-3 flex items-center gap-2">

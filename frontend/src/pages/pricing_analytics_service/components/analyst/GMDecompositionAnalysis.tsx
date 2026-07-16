@@ -1,22 +1,18 @@
 import React from "react";
 import { AlertCircle } from "lucide-react";
 
-interface FamilyItem {
-  nk: string;
-  name: string;
-  prev_rev: number;
-  curr_rev: number;
-  prev_gm: number;
-  curr_gm: number;
-  prev_share_pct: number;
-  curr_share_pct: number;
-  share_chg_pp: number;
+interface DriverItem {
+  product_family: string;
   mix_contrib_pp: number;
   margin_contrib_pp: number;
-  net_contrib_pp: number;
-  abs_mix_contrib: number;
-  abs_margin_contrib: number;
-  net_contrib_abs: number;
+  mix_contrib_abs_inr: number;
+  margin_contrib_abs_inr: number;
+  share_change_pp: number;
+  prev_gm_pct: number | null;
+  curr_gm_pct: number | null;
+  prev_share_pct: number;
+  curr_share_pct: number;
+  field_value: number;
 }
 
 interface BridgeData {
@@ -32,7 +28,18 @@ interface BridgeData {
   margin_effect_abs: number;
   prev_total_rev?: number;
   curr_total_rev?: number;
-  families?: FamilyItem[];
+  qoq_gm_bridge_narrative?: string;
+  absolute_gm_bridge_narrative?: string;
+
+  mix_impact_pp_positive?: DriverItem[];
+  mix_impact_pp_negative?: DriverItem[];
+  margin_impact_pp_positive?: DriverItem[];
+  margin_impact_pp_negative?: DriverItem[];
+
+  mix_impact_abs_positive?: DriverItem[];
+  mix_impact_abs_negative?: DriverItem[];
+  margin_impact_abs_positive?: DriverItem[];
+  margin_impact_abs_negative?: DriverItem[];
 }
 
 interface GMDecompositionAnalysisProps {
@@ -55,42 +62,15 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
     return `${isNegative ? "-" : ""}${str}`;
   };
 
-  // Derive top drivers from the families array (flat API structure)
-  const families = bridge?.families || [];
+  const top_mix_pos = bridge?.mix_impact_pp_positive || [];
+  const top_mix_neg = bridge?.mix_impact_pp_negative || [];
+  const top_margin_pos = bridge?.margin_impact_pp_positive || [];
+  const top_margin_neg = bridge?.margin_impact_pp_negative || [];
 
-  const top_mix_pos = [...families]
-    .filter(f => f.mix_contrib_pp > 0)
-    .sort((a, b) => b.mix_contrib_pp - a.mix_contrib_pp)
-    .slice(0, 3);
-  const top_mix_neg = [...families]
-    .filter(f => f.mix_contrib_pp < 0)
-    .sort((a, b) => a.mix_contrib_pp - b.mix_contrib_pp)
-    .slice(0, 3);
-  const top_margin_pos = [...families]
-    .filter(f => f.margin_contrib_pp > 0)
-    .sort((a, b) => b.margin_contrib_pp - a.margin_contrib_pp)
-    .slice(0, 3);
-  const top_margin_neg = [...families]
-    .filter(f => f.margin_contrib_pp < 0)
-    .sort((a, b) => a.margin_contrib_pp - b.margin_contrib_pp)
-    .slice(0, 3);
-
-  const abs_mix_pos = [...families]
-    .filter(f => f.abs_mix_contrib > 0)
-    .sort((a, b) => b.abs_mix_contrib - a.abs_mix_contrib)
-    .slice(0, 3);
-  const abs_mix_neg = [...families]
-    .filter(f => f.abs_mix_contrib < 0)
-    .sort((a, b) => a.abs_mix_contrib - b.abs_mix_contrib)
-    .slice(0, 3);
-  const abs_margin_pos = [...families]
-    .filter(f => f.abs_margin_contrib > 0)
-    .sort((a, b) => b.abs_margin_contrib - a.abs_margin_contrib)
-    .slice(0, 3);
-  const abs_margin_neg = [...families]
-    .filter(f => f.abs_margin_contrib < 0)
-    .sort((a, b) => a.abs_margin_contrib - b.abs_margin_contrib)
-    .slice(0, 3);
+  const abs_mix_pos = bridge?.mix_impact_abs_positive || [];
+  const abs_mix_neg = bridge?.mix_impact_abs_negative || [];
+  const abs_margin_pos = bridge?.margin_impact_abs_positive || [];
+  const abs_margin_neg = bridge?.margin_impact_abs_negative || [];
 
   const hasBridge = !!(
     bridge &&
@@ -103,7 +83,7 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
       <h3 className="text-sm font-bold tracking-tight text-gray-800 mb-6 pb-3 border-b border-gray-105 flex items-center gap-2">
         <AlertCircle size={16} className="text-[#a61c1e]" />
-        GM% Decomposition Analysis
+        Business insights
       </h3>
 
       {isLoading ? (
@@ -114,120 +94,100 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
         <div className="flex flex-col gap-8">
           {/* % GM Bridge */}
           <div className="flex flex-col gap-4">
-            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${
-              bridge!.total_change_pp >= 0
+            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${bridge!.total_change_pp >= 0
                 ? "bg-emerald-50 text-emerald-800 border-emerald-100"
                 : "bg-rose-50 text-rose-800 border-rose-100"
-            }`}>
+              }`}>
               <span className="font-extrabold uppercase">
                 QoQ GM bridge ({bridge!.prev_q} → {bridge!.curr_q}): % GM bridge
               </span>
               {" — "}
-              <span className="text-gray-700 font-medium">
-                GM% {bridge!.total_change_pp >= 0 ? "+" : ""}{bridge!.total_change_pp.toFixed(2)} pp ({bridge!.gm_prev.toFixed(1)}% → {bridge!.gm_curr.toFixed(1)}%).&nbsp;
-                Mix {bridge!.mix_effect_pp >= 0 ? "+" : ""}{bridge!.mix_effect_pp.toFixed(2)} pp + margin {bridge!.margin_effect_pp >= 0 ? "+" : ""}{bridge!.margin_effect_pp.toFixed(2)} pp.
+              <span className="text-gray-700 font-medium font-semibold">
+                {bridge!.qoq_gm_bridge_narrative ||
+                  `GM% ${bridge!.total_change_pp >= 0 ? "+" : ""}${bridge!.total_change_pp.toFixed(2)} pp (${bridge!.gm_prev.toFixed(1)}% → ${bridge!.gm_curr.toFixed(1)}%). Mix ${bridge!.mix_effect_pp >= 0 ? "+" : ""}${bridge!.mix_effect_pp.toFixed(2)} pp + margin ${bridge!.margin_effect_pp >= 0 ? "+" : ""}${bridge!.margin_effect_pp.toFixed(2)} pp.`
+                }
               </span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="flex flex-col gap-3">
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Mix impact (% GM)</span>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {top_mix_pos.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-emerald-600 font-bold">+{item.mix_contrib_pp.toFixed(2)} pp</td>
-                          </tr>
-                        ))}
-                        {top_mix_pos.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+              {/* Mix Impact % GM */}
+              <div>
+                <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3 text-[11px]">
+                  Mix impact (% GM)
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[10px] text-emerald-600 font-bold tracking-wider uppercase block mb-2">Positive (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {top_mix_pos.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-emerald-600 font-bold flex-shrink-0">
+                            +{item.field_value.toFixed(2)} pp
+                          </span>
+                        </div>
+                      ))}
+                      {top_mix_pos.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {top_mix_neg.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-rose-600 font-bold">{item.mix_contrib_pp.toFixed(2)} pp</td>
-                          </tr>
-                        ))}
-                        {top_mix_neg.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                  <div>
+                    <span className="text-[10px] text-rose-600 font-bold tracking-wider uppercase block mb-2">Negative (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {top_mix_neg.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-rose-600 font-bold flex-shrink-0">
+                            {item.field_value.toFixed(2)} pp
+                          </span>
+                        </div>
+                      ))}
+                      {top_mix_neg.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Margin impact (% GM)</span>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {top_margin_pos.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-emerald-600 font-bold">+{item.margin_contrib_pp.toFixed(2)} pp</td>
-                          </tr>
-                        ))}
-                        {top_margin_pos.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+              {/* Margin Impact % GM */}
+              <div>
+                <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3 text-[11px]">
+                  Margin impact (% GM)
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[10px] text-emerald-600 font-bold tracking-wider uppercase block mb-2">Positive (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {top_margin_pos.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-emerald-600 font-bold flex-shrink-0">
+                            +{item.field_value.toFixed(2)} pp
+                          </span>
+                        </div>
+                      ))}
+                      {top_margin_pos.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {top_margin_neg.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-rose-600 font-bold">{item.margin_contrib_pp.toFixed(2)} pp</td>
-                          </tr>
-                        ))}
-                        {top_margin_neg.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                  <div>
+                    <span className="text-[10px] text-rose-600 font-bold tracking-wider uppercase block mb-2">Negative (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {top_margin_neg.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-rose-600 font-bold flex-shrink-0">
+                            {item.field_value.toFixed(2)} pp
+                          </span>
+                        </div>
+                      ))}
+                      {top_margin_neg.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -238,120 +198,99 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
 
           {/* Absolute GM Bridge */}
           <div className="flex flex-col gap-4">
-            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${
-              bridge!.total_change_abs >= 0
+            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${bridge!.total_change_abs >= 0
                 ? "bg-[#e6f4f1] text-[#0d9488] border-[#ccfbf1]"
                 : "bg-rose-50 text-rose-800 border-rose-100"
-            }`}>
+              }`}>
               <span className="font-extrabold uppercase">
                 Absolute GM bridge ({bridge!.prev_q} → {bridge!.curr_q})
               </span>
               {" — "}
-              <span className="text-gray-700 font-medium">
-                Total change {bridge!.total_change_abs >= 0 ? "+" : ""}{formatAbsoluteInr(bridge!.total_change_abs)}.&nbsp;
-                Mix {bridge!.mix_effect_abs >= 0 ? "+" : ""}{formatAbsoluteInr(bridge!.mix_effect_abs)} + margin {bridge!.margin_effect_abs >= 0 ? "+" : ""}{formatAbsoluteInr(bridge!.margin_effect_abs)}.
+              <span className="text-gray-700 font-medium font-semibold">
+                {bridge!.absolute_gm_bridge_narrative ||
+                  `Total change ${bridge!.total_change_abs >= 0 ? "+" : ""}${formatAbsoluteInr(bridge!.total_change_abs)}. Mix ${bridge!.mix_effect_abs >= 0 ? "+" : ""}${formatAbsoluteInr(bridge!.mix_effect_abs)} + margin ${bridge!.margin_effect_abs >= 0 ? "+" : ""}${formatAbsoluteInr(bridge!.margin_effect_abs)}.`
+                }
               </span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="flex flex-col gap-3">
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Mix impact (absolute ₹)</span>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {abs_mix_pos.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-emerald-600 font-bold">+{formatAbsoluteInr(item.abs_mix_contrib)}</td>
-                          </tr>
-                        ))}
-                        {abs_mix_pos.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+              <div>
+                <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3 text-[11px]">
+                  Mix impact (absolute ₹)
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[10px] text-emerald-600 font-bold tracking-wider uppercase block mb-2">Positive (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {abs_mix_pos.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-emerald-600 font-bold flex-shrink-0">
+                            +{formatAbsoluteInr(item.field_value)}
+                          </span>
+                        </div>
+                      ))}
+                      {abs_mix_pos.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {abs_mix_neg.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-rose-600 font-bold">{formatAbsoluteInr(item.abs_mix_contrib)}</td>
-                          </tr>
-                        ))}
-                        {abs_mix_neg.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                  <div>
+                    <span className="text-[10px] text-rose-600 font-bold tracking-wider uppercase block mb-2">Negative (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {abs_mix_neg.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-rose-600 font-bold flex-shrink-0">
+                            {formatAbsoluteInr(item.field_value)}
+                          </span>
+                        </div>
+                      ))}
+                      {abs_mix_neg.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Margin impact (absolute ₹)</span>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wide">Positive (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {abs_margin_pos.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-emerald-600 font-bold">+{formatAbsoluteInr(item.abs_margin_contrib)}</td>
-                          </tr>
-                        ))}
-                        {abs_margin_pos.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+              {/* Margin Impact Absolute */}
+              <div>
+                <h4 className="font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-1.5 mb-3 text-[11px]">
+                  Margin impact (absolute ₹)
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[10px] text-emerald-600 font-bold tracking-wider uppercase block mb-2">Positive (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {abs_margin_pos.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-emerald-600 font-bold flex-shrink-0">
+                            +{formatAbsoluteInr(item.field_value)}
+                          </span>
+                        </div>
+                      ))}
+                      {abs_margin_pos.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-rose-600 font-bold uppercase tracking-wide">Negative (Top 3)</span>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-gray-400 font-bold uppercase text-[8px] border-b border-gray-150">
-                          <th className="py-1.5 px-2">Family</th>
-                          <th className="py-1.5 px-2 text-right">Impact (INR)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-750">
-                        {abs_margin_neg.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-2 px-2 truncate max-w-[120px]" title={item.name}>{i + 1}. {item.name}</td>
-                            <td className="py-2 px-2 text-right text-rose-600 font-bold">{formatAbsoluteInr(item.abs_margin_contrib)}</td>
-                          </tr>
-                        ))}
-                        {abs_margin_neg.length === 0 && (
-                          <tr><td colSpan={2} className="py-2 px-2 text-gray-400 italic text-center">No drivers</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                  <div>
+                    <span className="text-[10px] text-rose-600 font-bold tracking-wider uppercase block mb-2">Negative (Top 3)</span>
+                    <div className="space-y-1.5 text-gray-600 font-medium text-xs">
+                      {abs_margin_neg.map((item, index) => (
+                        <div key={index} className="flex justify-between gap-2">
+                          <span className="truncate" title={item.product_family}>{item.product_family}</span>
+                          <span className="text-rose-600 font-bold flex-shrink-0">
+                            {formatAbsoluteInr(item.field_value)}
+                          </span>
+                        </div>
+                      ))}
+                      {abs_margin_neg.length === 0 && (
+                        <div className="text-gray-400 italic text-[10px]">No drivers</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

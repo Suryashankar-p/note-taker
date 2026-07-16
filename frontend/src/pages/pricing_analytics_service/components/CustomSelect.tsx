@@ -13,6 +13,7 @@ interface CustomSelectProps {
   className?: string;
   labelPrefix?: string; 
   alignRight?: boolean;
+  darkTheme?: boolean;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -22,6 +23,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   className = "",
   labelPrefix,
   alignRight = false,
+  darkTheme = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,7 +55,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#a61c1e]/10 focus:border-[#a61c1e] transition-all cursor-pointer select-none ${className}`}
+        className={`flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#a61c1e]/10 focus:border-[#a61c1e] transition-all cursor-pointer select-none ${
+          darkTheme
+            ? "text-slate-300 bg-[#1e2024] border-[#2e3035] hover:bg-[#25282d]"
+            : "text-gray-700 bg-white border border-gray-200 hover:bg-gray-50"
+        } ${className}`}
       >
         <span className="flex items-center gap-1">
           {labelPrefix && (
@@ -73,9 +79,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
       {isOpen && (
         <div
-          className={`absolute z-[999] mt-1 min-w-[160px] max-h-60 overflow-y-auto rounded-lg border border-gray-150 bg-white p-1 shadow-xl focus:outline-none ${
-            alignRight ? "right-0" : "left-0"
-          }`}
+          className={`absolute z-[999] mt-1 min-w-[160px] max-h-60 overflow-y-auto rounded-lg border p-1 shadow-xl focus:outline-none ${
+            darkTheme
+              ? "bg-[#1e2024] border-[#2e3035] text-slate-300"
+              : "bg-white border-gray-150 text-gray-700"
+          } ${alignRight ? "right-0" : "left-0"}`}
         >
           {normalizedOptions.map((option) => {
             const isSelected = option.value === value;
@@ -90,6 +98,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                 className={`flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-xs font-medium transition-colors ${
                   isSelected
                     ? "bg-[#a61c1e]/5 text-[#a61c1e] font-semibold"
+                    : darkTheme
+                    ? "text-slate-300 hover:bg-[#25282d]"
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >

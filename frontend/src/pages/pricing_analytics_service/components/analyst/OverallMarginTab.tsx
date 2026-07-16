@@ -67,7 +67,6 @@ const OverallMarginTab = () => {
   const topInsights = insightsData?.insights || [];
   const bridge = insightsData?.bridge;
 
-
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
       <OverallQoQTable data={overallData?.bridge_table} />
@@ -81,24 +80,13 @@ const OverallMarginTab = () => {
 
       <HeatingMarginsGrid data={overallData?.pma_baseline_matrices} />
 
-      <div className="border-t border-gray-200 pt-6">
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase">
-            Business Insights & Snapshots
-          </h3>
-          <p className="text-[10px] text-gray-400 mt-1">
-            Changing the quarter below updates the Executive Snapshot, Strategic Actions, and GM Decomposition together.
-          </p>
-        </div>
-
-        <AnalystSnapshotCards
-          snapshotKpis={snapshotKpis}
-          insights={topInsights}
-          selectedQuarter={selectedQuarter}
-          setSelectedQuarter={setSelectedQuarter}
-          quartersList={quartersList}
-        />
-      </div>
+      <AnalystSnapshotCards
+        snapshotKpis={snapshotKpis}
+        insights={topInsights}
+        selectedQuarter={selectedQuarter}
+        setSelectedQuarter={setSelectedQuarter}
+        quartersList={quartersList}
+      />
 
       <GMDecompositionAnalysis
         bridge={bridge}
