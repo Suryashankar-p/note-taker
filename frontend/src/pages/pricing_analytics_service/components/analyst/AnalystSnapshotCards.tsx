@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Sparkles } from "lucide-react";
 import CustomSelect from "../CustomSelect";
 
@@ -16,47 +16,58 @@ interface AnalystSnapshotCardsProps {
     }>;
   };
   insights: string[];
+  selectedQuarter: string;
+  setSelectedQuarter: (q: string) => void;
+  quartersList: string[];
 }
 
-const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsProps) => {
-  const sortQuarters = (a: string, b: string) => {
-    const matchA = a.match(/Q(\d) /);
-    const matchB = b.match(/Q(\d) /);
-    const yearA = a.match(/FY (\d+)/);
-    const yearB = b.match(/FY (\d+)/);
-    if (!matchA || !matchB || !yearA || !yearB) return 0;
-    const qA = parseInt(matchA[1], 10);
-    const yA = parseInt(yearA[1], 10);
-    const qB = parseInt(matchB[1], 10);
-    const yB = parseInt(yearB[1], 10);
-    if (yA !== yB) return yA - yB;
-    return qA - qB;
-  };
+const AnalystSnapshotCards = ({
+  snapshotKpis,
+  insights,
+  selectedQuarter,
+  setSelectedQuarter,
+  quartersList,
+}: AnalystSnapshotCardsProps) => {
+  const activeSnapshot = (snapshotKpis?.quarters || []).find(
+    (item: any) => item.quarter === selectedQuarter
+  );
 
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
-
-  const quarters = (snapshotKpis?.quarters || [])
-    .map((item: any) => item.quarter)
-    .sort(sortQuarters);
-
-  const activeQuarter = selectedQuarter || quarters[quarters.length - 1] || "";
-  const activeSnapshot = (snapshotKpis?.quarters || []).find((item: any) => item.quarter === activeQuarter);
-
-  useEffect(() => {
-    if (quarters.length > 0 && !selectedQuarter) {
-      setSelectedQuarter(quarters[quarters.length - 1]);
-    }
-  }, [quarters, selectedQuarter]);
-
-  const stats = activeSnapshot ? [
-    { label: "HEATING REVENUE", value: `₹${(activeSnapshot.revenue_inr / 10000000).toFixed(1)} Cr` },
-    { label: "OVERALL GM%", value: `${activeSnapshot.overall_gm_pct.toFixed(1)}%` },
-    { label: "Δ VS BASELINE", value: `${activeSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_baseline_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_baseline_pp >= 0, isNegative: activeSnapshot.delta_vs_baseline_pp < 0 },
-    { label: "Δ VS HEATING TARGET", value: `${activeSnapshot.delta_vs_heating_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_heating_target_pp.toFixed(1)}%`, isPositive: activeSnapshot.delta_vs_heating_target_pp >= 0, isNegative: activeSnapshot.delta_vs_heating_target_pp < 0 },
-    { label: "FAMILIES ABOVE TARGET", value: String(activeSnapshot.families_above_target) },
-    { label: "FAMILIES BELOW TARGET", value: String(activeSnapshot.families_below_target) },
-    { label: "FAMILIES ABOVE BASELINE", value: String(activeSnapshot.families_above_baseline) },
-  ] : [];
+  const stats = activeSnapshot
+    ? [
+        {
+          label: "HEATING REVENUE",
+          value: `₹${(activeSnapshot.revenue_inr / 10000000).toFixed(1)} Cr`,
+        },
+        {
+          label: "OVERALL GM%",
+          value: `${activeSnapshot.overall_gm_pct.toFixed(1)}%`,
+        },
+        {
+          label: "Δ VS BASELINE",
+          value: `${activeSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_baseline_pp.toFixed(1)}%`,
+          isPositive: activeSnapshot.delta_vs_baseline_pp >= 0,
+          isNegative: activeSnapshot.delta_vs_baseline_pp < 0,
+        },
+        {
+          label: "Δ VS HEATING TARGET",
+          value: `${activeSnapshot.delta_vs_heating_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_heating_target_pp.toFixed(1)}%`,
+          isPositive: activeSnapshot.delta_vs_heating_target_pp >= 0,
+          isNegative: activeSnapshot.delta_vs_heating_target_pp < 0,
+        },
+        {
+          label: "FAMILIES ABOVE TARGET",
+          value: String(activeSnapshot.families_above_target),
+        },
+        {
+          label: "FAMILIES BELOW TARGET",
+          value: String(activeSnapshot.families_below_target),
+        },
+        {
+          label: "FAMILIES ABOVE BASELINE",
+          value: String(activeSnapshot.families_above_baseline),
+        },
+      ]
+    : [];
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -65,10 +76,10 @@ const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsPr
           <h3 className="text-sm font-bold tracking-tight text-gray-800">
             Executive snapshot
           </h3>
-          {quarters.length > 0 && (
+          {quartersList.length > 0 && (
             <CustomSelect
-              options={quarters}
-              value={activeQuarter}
+              options={quartersList}
+              value={selectedQuarter}
               onChange={setSelectedQuarter}
               labelPrefix="Quarter: "
               alignRight
@@ -78,15 +89,31 @@ const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsPr
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {stats.map((st) => (
-            <div key={st.label} className="border border-gray-100 rounded-xl p-4 bg-slate-50/50 shadow-sm flex flex-col justify-between">
+            <div
+              key={st.label}
+              className="border border-gray-100 rounded-xl p-4 bg-slate-50/50 shadow-sm flex flex-col justify-between"
+            >
               <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wide leading-tight mb-2">
                 {st.label}
               </span>
-              <span className={`text-base font-extrabold tracking-tight ${st.isPositive ? "text-emerald-600" : st.isNegative ? "text-rose-600" : "text-gray-800"}`}>
+              <span
+                className={`text-base font-extrabold tracking-tight ${
+                  st.isPositive
+                    ? "text-emerald-600"
+                    : st.isNegative
+                    ? "text-rose-600"
+                    : "text-gray-800"
+                }`}
+              >
                 {st.value}
               </span>
             </div>
           ))}
+          {stats.length === 0 && (
+            <div className="col-span-4 text-xs text-gray-400 italic py-4 text-center">
+              No snapshot data for {selectedQuarter || "this quarter"}.
+            </div>
+          )}
         </div>
       </div>
 
@@ -104,7 +131,9 @@ const AnalystSnapshotCards = ({ snapshotKpis, insights }: AnalystSnapshotCardsPr
               </li>
             ))}
             {insights.length === 0 && (
-              <li className="text-gray-400 italic font-medium">No actions available.</li>
+              <li className="text-gray-400 italic font-medium">
+                No actions available.
+              </li>
             )}
           </ul>
         </div>
