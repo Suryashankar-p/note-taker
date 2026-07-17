@@ -1,14 +1,23 @@
-import { useMutation, useQuery, useInfiniteQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useInfiniteQuery,
+  keepPreviousData,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { PricingAnalyticsAPI } from "../../../../services/Axios";
-import { transformSkyscraperData, transformQoqMatrixData, transformSkuDeviationData, transformClassificationMatrixData } from "./utils";
+import {
+  transformSkyscraperData,
+  transformQoqMatrixData,
+  transformSkuDeviationData,
+  transformClassificationMatrixData,
+} from "./utils";
 
 export * from "./types";
 export { fmt, fmtLakhs, fmtPP } from "./utils";
 
 export const GetMemberPricingAnalyticsRole = async () => {
-  const response = await PricingAnalyticsAPI.get(
-    "/member/me"
-  );
+  const response = await PricingAnalyticsAPI.get("/member/me");
   return response;
 };
 
@@ -27,12 +36,12 @@ export const useGetMemberPricingAnalyticsRole = () => {
 export const ReadMembers = async (
   skip: number = 0,
   limit: number = 100,
-  search_term?: string
+  search_term?: string,
 ) => {
   const response = await PricingAnalyticsAPI.get(
     `/member?skip=${skip}&limit=${limit}${
       search_term !== "" ? "&search_term=" + search_term : ""
-    }`
+    }`,
   );
   return response;
 };
@@ -40,10 +49,10 @@ export const ReadMembers = async (
 export const CreateMember = async (
   role: string,
   email: string,
-  name: string
+  name: string,
 ) => {
   const response = await PricingAnalyticsAPI.post(
-    `/member?role=${role}&email=${email}&name=${name}`
+    `/member?role=${role}&email=${email}&name=${name}`,
   );
   return response;
 };
@@ -51,31 +60,40 @@ export const CreateMember = async (
 export const UpdateMember = async (
   role: string,
   name: string,
-  member_id: string
+  member_id: string,
 ) => {
   const response = await PricingAnalyticsAPI.patch(
-    `/member/${member_id}?name=${name}&role=${role}`
+    `/member/${member_id}?name=${name}&role=${role}`,
   );
   return response;
 };
 
 export const DeleteMember = async (member_id: string) => {
-  const response = await PricingAnalyticsAPI.delete(
-    `/member/${member_id}`
-  );
+  const response = await PricingAnalyticsAPI.delete(`/member/${member_id}`);
   return response;
 };
 
-export const useGetMembersList = (payload: { limit: number; search_term: string }) => {
+export const useGetMembersList = (payload: {
+  limit: number;
+  search_term: string;
+}) => {
   return useInfiniteQuery({
     queryKey: ["members-list", payload],
     queryFn: async ({ pageParam = 0 }) => {
-      const response = await ReadMembers(pageParam, payload.limit, payload.search_term);
+      const response = await ReadMembers(
+        pageParam,
+        payload.limit,
+        payload.search_term,
+      );
       return response;
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage && lastPage.result && lastPage.result.length < payload.limit) {
+      if (
+        lastPage &&
+        lastPage.result &&
+        lastPage.result.length < payload.limit
+      ) {
         return undefined;
       }
       return allPages.length * payload.limit;
@@ -104,7 +122,11 @@ export const useUpdateMember = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["update-member"],
-    mutationFn: async (data: { member_id: string; name: string; role: string }) => {
+    mutationFn: async (data: {
+      member_id: string;
+      name: string;
+      role: string;
+    }) => {
       const response = await UpdateMember(data.role, data.name, data.member_id);
       if (response?.detail) {
         throw new Error(response.detail);
@@ -134,19 +156,15 @@ export const useDeleteMember = () => {
   });
 };
 
-
 export const useUploadCogs = () => {
   return useMutation({
     mutationKey: ["upload-cogs"],
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await PricingAnalyticsAPI.post(
-        "/upload/cogs",
-        formData
-      );
+      const response = await PricingAnalyticsAPI.post("/upload/cogs", formData);
       return response;
-    }
+    },
   });
 };
 
@@ -158,10 +176,10 @@ export const useUploadTargets = () => {
       formData.append("file", file);
       const response = await PricingAnalyticsAPI.post(
         "/upload/targets",
-        formData
+        formData,
       );
       return response;
-    }
+    },
   });
 };
 
@@ -173,10 +191,10 @@ export const useUploadBaseline = () => {
       formData.append("file", file);
       const response = await PricingAnalyticsAPI.post(
         "/upload/baseline",
-        formData
+        formData,
       );
       return response;
-    }
+    },
   });
 };
 
@@ -188,10 +206,10 @@ export const useUploadNonstdTargets = () => {
       formData.append("file", file);
       const response = await PricingAnalyticsAPI.post(
         "/upload/nonstd-targets",
-        formData
+        formData,
       );
       return response;
-    }
+    },
   });
 };
 
@@ -203,10 +221,10 @@ export const useUploadPriceList = () => {
       formData.append("file", file);
       const response = await PricingAnalyticsAPI.post(
         "/upload/price-list",
-        formData
+        formData,
       );
       return response;
-    }
+    },
   });
 };
 
@@ -218,10 +236,10 @@ export const useUploadCostList = () => {
       formData.append("file", file);
       const response = await PricingAnalyticsAPI.post(
         "/upload/cost-list",
-        formData
+        formData,
       );
       return response;
-    }
+    },
   });
 };
 
@@ -237,12 +255,9 @@ export const useCreateSession = () => {
       price_list_file_id: number;
       cost_list_file_id: number;
     }) => {
-      const response = await PricingAnalyticsAPI.post(
-        "/sessions/",
-        payload
-      );
+      const response = await PricingAnalyticsAPI.post("/sessions/", payload);
       return response;
-    }
+    },
   });
 };
 
@@ -261,7 +276,9 @@ export const useDeleteSession = () => {
   return useMutation({
     mutationKey: ["delete-session"],
     mutationFn: async (sessionId: number) => {
-      const response = await PricingAnalyticsAPI.delete(`/sessions/${sessionId}`);
+      const response = await PricingAnalyticsAPI.delete(
+        `/sessions/${sessionId}`,
+      );
       return response;
     },
     onSuccess: () => {
@@ -275,9 +292,12 @@ export const useUpdateSession = () => {
   return useMutation({
     mutationKey: ["update-session"],
     mutationFn: async (data: { sessionId: number; session_name: string }) => {
-      const response = await PricingAnalyticsAPI.patch(`/sessions/${data.sessionId}`, {
-        session_name: data.session_name,
-      });
+      const response = await PricingAnalyticsAPI.patch(
+        `/sessions/${data.sessionId}`,
+        {
+          session_name: data.session_name,
+        },
+      );
       return response;
     },
     onSuccess: () => {
@@ -286,14 +306,13 @@ export const useUpdateSession = () => {
   });
 };
 
-
 export const useGetOverallMargin = (sessionId: number) => {
   return useQuery({
     queryKey: ["overall-margin", sessionId],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/overall-margin",
-        { session_id: sessionId }
+        { session_id: sessionId },
       );
       return response;
     },
@@ -307,7 +326,7 @@ export const useGetBusinessInsights = (sessionId: number, quarter?: string) => {
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/business-insights",
-        { session_id: sessionId, quarter: quarter }
+        { session_id: sessionId, quarter: quarter },
       );
       return response;
     },
@@ -315,13 +334,16 @@ export const useGetBusinessInsights = (sessionId: number, quarter?: string) => {
   });
 };
 
-export const useGetClassificationMatrix = (sessionId: number, quarter?: string) => {
+export const useGetClassificationMatrix = (
+  sessionId: number,
+  quarter?: string,
+) => {
   return useQuery({
     queryKey: ["classification-matrix", sessionId, quarter],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/classification-matrix",
-        { session_id: sessionId, quarter: quarter }
+        { session_id: sessionId, quarter: quarter },
       );
       return response;
     },
@@ -333,10 +355,9 @@ export const useGetSkyscraper = (sessionId: number) => {
   return useQuery({
     queryKey: ["skyscraper", sessionId],
     queryFn: async () => {
-      const response = await PricingAnalyticsAPI.post(
-        "/analytics/skyscraper",
-        { session_id: sessionId }
-      );
+      const response = await PricingAnalyticsAPI.post("/analytics/skyscraper", {
+        session_id: sessionId,
+      });
       return transformSkyscraperData(response);
     },
     enabled: !!sessionId,
@@ -347,10 +368,9 @@ export const useGetQoqMatrix = (sessionId: number) => {
   return useQuery({
     queryKey: ["qoq-matrix", sessionId],
     queryFn: async () => {
-      const response = await PricingAnalyticsAPI.post(
-        "/analytics/qoq-matrix",
-        { session_id: sessionId }
-      );
+      const response = await PricingAnalyticsAPI.post("/analytics/qoq-matrix", {
+        session_id: sessionId,
+      });
       return transformQoqMatrixData(response);
     },
     enabled: !!sessionId,
@@ -363,7 +383,7 @@ export const useGetSnapshotKpis = (sessionId: number, quarter?: string) => {
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/snapshot-kpis",
-        { session_id: sessionId, quarter: quarter }
+        { session_id: sessionId, quarter: quarter },
       );
       return response;
     },
@@ -380,27 +400,25 @@ export const useSendLLMChat = () => {
       session_id: number;
       history?: Array<{ role: "user" | "assistant"; content: string }>;
     }) => {
-      const response = await PricingAnalyticsAPI.post(
-        "/llm/chat",
-        payload
-      );
+      const response = await PricingAnalyticsAPI.post("/llm/chat", payload);
       return response;
-    }
+    },
   });
 };
 
-export const useGetDispersion = (sessionId: number, familyNk: string | null, quarter?: string | null) => {
+export const useGetDispersion = (
+  sessionId: number,
+  familyNk: string | null,
+  quarter?: string | null,
+) => {
   return useQuery({
     queryKey: ["dispersion", sessionId, familyNk, quarter],
     queryFn: async () => {
-      const response = await PricingAnalyticsAPI.post(
-        "/analytics/dispersion",
-        {
-          session_id: sessionId,
-          family_nk: familyNk === "null" || !familyNk ? null : familyNk,
-          quarter: quarter || ""
-        }
-      );
+      const response = await PricingAnalyticsAPI.post("/analytics/dispersion", {
+        session_id: sessionId,
+        family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+        quarter: quarter || "",
+      });
       return response;
     },
     enabled: !!sessionId,
@@ -411,7 +429,7 @@ export const useGetDispersion = (sessionId: number, familyNk: string | null, qua
 export const useGetQoqDistribution = (
   sessionId: number,
   quarter: string | null,
-  familyNk: string | null
+  familyNk: string | null,
 ) => {
   return useQuery({
     queryKey: ["qoq-distribution", sessionId, quarter, familyNk],
@@ -421,8 +439,8 @@ export const useGetQoqDistribution = (
         {
           session_id: sessionId,
           quarter: quarter,
-          family_nk: familyNk === "null" || !familyNk ? null : familyNk
-        }
+          family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+        },
       );
       return response;
     },
@@ -431,7 +449,11 @@ export const useGetQoqDistribution = (
   });
 };
 
-export const useGetSkuDeviation = (sessionId: number, familyNk?: string | null, quarter?: string | null) => {
+export const useGetSkuDeviation = (
+  sessionId: number,
+  familyNk?: string | null,
+  quarter?: string | null,
+) => {
   return useQuery({
     queryKey: ["sku-deviation", sessionId, familyNk, quarter],
     queryFn: async () => {
@@ -440,12 +462,12 @@ export const useGetSkuDeviation = (sessionId: number, familyNk?: string | null, 
         {
           session_id: sessionId,
           family_nk: familyNk === "null" || !familyNk ? null : familyNk,
-          quarter: quarter || ""
-        }
+          quarter: quarter || "",
+        },
       );
       return transformSkuDeviationData(response);
     },
-    enabled: !!sessionId,
+    enabled: !!sessionId && !!familyNk,
     placeholderData: keepPreviousData,
   });
 };
