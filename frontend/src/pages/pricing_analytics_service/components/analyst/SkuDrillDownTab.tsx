@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
@@ -29,20 +28,37 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
 
   const sortedQuarters = [
-    "Q1 FY 24", "Q2 FY 24", "Q3 FY 24", "Q4 FY 24",
-    "Q1 FY 25", "Q2 FY 25", "Q3 FY 25", "Q4 FY 25",
-    "Q1 FY 26", "Q2 FY 26", "Q3 FY 26", "Q4 FY 26"
+    "Q1 FY 24",
+    "Q2 FY 24",
+    "Q3 FY 24",
+    "Q4 FY 24",
+    "Q1 FY 25",
+    "Q2 FY 25",
+    "Q3 FY 25",
+    "Q4 FY 25",
+    "Q1 FY 26",
+    "Q2 FY 26",
+    "Q3 FY 26",
+    "Q4 FY 26",
   ];
 
   const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
 
-  const { data, isLoading, isError } = useGetSkuDeviation(sessionId, selectedFamily || null, selectedQuarter);
+  const { data, isLoading, isError } = useGetSkuDeviation(
+    sessionId,
+    selectedFamily || null,
+    selectedQuarter,
+  );
 
   const activeQuarter = selectedQuarter;
   const quarterData = data?.quarterMap?.[activeQuarter];
 
-  const nonstdRows: SkuNonStdRow[] = selectedFamily ? quarterData?.nonstd_rows || [] : [];
-  const standardRows: SkuStandardRow[] = selectedFamily ? quarterData?.standard_rows || [] : [];
+  const nonstdRows: SkuNonStdRow[] = selectedFamily
+    ? quarterData?.nonstd_rows || []
+    : [];
+  const standardRows: SkuStandardRow[] = selectedFamily
+    ? quarterData?.standard_rows || []
+    : [];
 
   const getChannelValue = (item: SkuNonStdRow | SkuStandardRow) =>
     item.channel_or_direct ?? item.channel_direct ?? item.channel ?? "—";
@@ -72,7 +88,9 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
           </h3>
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quarter</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              Quarter
+            </span>
             <CustomSelect
               options={sortedQuarters}
               value={selectedQuarter}
@@ -130,7 +148,9 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                 <th className="py-2.5 px-3 text-right">List Cost</th>
                 <th className="py-2.5 px-3 text-right">Actual Cost</th>
                 <th className="py-2.5 px-3 text-right">Cost Deviation</th>
-                <th className="py-2.5 px-3 text-right">Overall margin (actual)</th>
+                <th className="py-2.5 px-3 text-right">
+                  Overall margin (actual)
+                </th>
                 <th className="py-2.5 px-3 text-right">PF target (overall)</th>
                 <th className="py-2.5 px-3 text-right">Notional loss (₹)</th>
               </tr>
@@ -158,23 +178,31 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                         {getChannelValue(item)}
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        {item.list_price != null ? fmt(item.list_price, 2) : "—"}
+                        {item.list_price != null
+                          ? fmt(item.list_price, 2)
+                          : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        {item.actual_price != null ? fmt(item.actual_price, 2) : "—"}
+                        {item.actual_price != null
+                          ? fmt(item.actual_price, 2)
+                          : "—"}
                       </td>
                       <td
                         className={`py-2.5 px-3 text-right font-bold ${
                           priceDevNum < 0 ? "text-rose-600" : "text-emerald-600"
                         }`}
                       >
-                        {item.price_deviation != null ? fmtPP(priceDevNum) : "—"}
+                        {item.price_deviation != null
+                          ? fmtPP(priceDevNum)
+                          : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         {item.list_cost != null ? fmt(item.list_cost, 2) : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        {item.actual_cost != null ? fmt(item.actual_cost, 2) : "—"}
+                        {item.actual_cost != null
+                          ? fmt(item.actual_cost, 2)
+                          : "—"}
                       </td>
                       <td
                         className={`py-2.5 px-3 text-right font-bold ${
@@ -187,15 +215,15 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                         {item.overall_margin_actual != null
                           ? `${fmt(item.overall_margin_actual)}%`
                           : item.overall_actual != null
-                          ? `${fmt(item.overall_actual)}%`
-                          : "—"}
+                            ? `${fmt(item.overall_actual)}%`
+                            : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
                         {item.overall_target_pf != null
                           ? `${fmt(item.overall_target_pf)}%`
                           : item.overall_target != null
-                          ? `${fmt(item.overall_target)}%`
-                          : "—"}
+                            ? `${fmt(item.overall_target)}%`
+                            : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
                         {item.notional_loss != null
@@ -242,8 +270,12 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                 <th className="py-2.5 px-3 text-center">Order No</th>
                 <th className="py-2.5 px-3 text-center">Item Code</th>
                 <th className="py-2.5 px-3 w-72">Description</th>
-                <th className="py-2.5 px-3 text-right">Actual non-std margin</th>
-                <th className="py-2.5 px-3 text-right">Target non-std margin</th>
+                <th className="py-2.5 px-3 text-right">
+                  Actual non-std margin
+                </th>
+                <th className="py-2.5 px-3 text-right">
+                  Target non-std margin
+                </th>
                 <th className="py-2.5 px-3 text-right">Deviation (pp)</th>
                 <th className="py-2.5 px-3 text-right">Overall actual (PF)</th>
                 <th className="py-2.5 px-3 text-right">Overall target (PF)</th>
@@ -267,19 +299,31 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                       {item.description}
                     </td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
-                      {item.actual_nonstd_margin != null ? `${fmt(item.actual_nonstd_margin)}%` : "—"}
+                      {item.actual_nonstd_margin != null
+                        ? `${fmt(item.actual_nonstd_margin)}%`
+                        : "—"}
                     </td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
-                      {item.target_nonstd_margin != null ? `${fmt(item.target_nonstd_margin)}%` : "—"}
+                      {item.target_nonstd_margin != null
+                        ? `${fmt(item.target_nonstd_margin)}%`
+                        : "—"}
                     </td>
-                    <td className={`py-2.5 px-3 text-right font-bold ${item.deviation_pp < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                      {item.deviation_pp != null ? fmtPP(item.deviation_pp) : "—"}
+                    <td
+                      className={`py-2.5 px-3 text-right font-bold ${item.deviation_pp < 0 ? "text-rose-600" : "text-emerald-600"}`}
+                    >
+                      {item.deviation_pp != null
+                        ? fmtPP(item.deviation_pp)
+                        : "—"}
                     </td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
-                      {item.overall_actual != null ? `${fmt(item.overall_actual)}%` : "—"}
+                      {item.overall_actual != null
+                        ? `${fmt(item.overall_actual)}%`
+                        : "—"}
                     </td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
-                      {item.overall_target != null ? `${fmt(item.overall_target)}%` : "—"}
+                      {item.overall_target != null
+                        ? `${fmt(item.overall_target)}%`
+                        : "—"}
                     </td>
                     <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
                       {item.notional_loss != null
