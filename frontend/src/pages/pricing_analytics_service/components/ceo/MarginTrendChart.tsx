@@ -21,7 +21,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 type MarginDataPoint = {
@@ -29,6 +29,10 @@ type MarginDataPoint = {
   overall_gm_pct: number | null;
   standard_gm_pct: number | null;
   non_standard_gm_pct: number | null;
+  baseline_gm_pct?: number | null;
+  target_gm_pct?: number | null;
+  gap_vs_baseline_pp?: number | null;
+  gap_vs_target_pp?: number | null;
 };
 
 interface MarginTrendChartProps {
@@ -82,8 +86,12 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
 
   if (families.length === 0) return null;
 
-  const activeFamily = selectedFamily && families.includes(selectedFamily) ? selectedFamily : families[0];
+  const activeFamily =
+    selectedFamily && families.includes(selectedFamily)
+      ? selectedFamily
+      : families[0];
   const apiData = normalizedData[activeFamily] || [];
+  const baseName = activeFamily === "All Families" ? "Heating" : activeFamily;
 
   const sortedApiData = [...apiData]
     .filter((item) => {
@@ -102,7 +110,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
     labels: sortedApiData.map((item) => item.quarter),
     datasets: [
       {
-        label: `${activeFamily} margin %`,
+        label: `${baseName} margin %`,
         data: sortedApiData.map((item) => item.overall_gm_pct),
         spanGaps: true,
         fill: true,
@@ -116,6 +124,28 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
         pointRadius: 4,
         pointHoverRadius: 6,
       },
+      {
+        label: `${baseName} baseline`,
+        data: sortedApiData.map((item) => item.baseline_gm_pct ?? null),
+        spanGaps: true,
+        fill: false,
+        borderColor: "#f59e0b",
+        backgroundColor: "rgba(245, 158, 11, 0.08)",
+        borderDash: [6, 4],
+        tension: 0.4,
+        pointRadius: 0,
+      },
+      {
+        label: `${baseName} PMA target`,
+        data: sortedApiData.map((item) => item.target_gm_pct ?? null),
+        spanGaps: true,
+        fill: false,
+        borderColor: "#8b5cf6",
+        backgroundColor: "rgba(139,92,246,0.06)",
+        borderDash: [3, 4],
+        tension: 0.4,
+        pointRadius: 0,
+      },
     ],
   };
 
@@ -124,7 +154,9 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false,
+        display: true,
+        position: 'top' as const,
+        labels: { boxWidth: 18, padding: 12 },
       },
       tooltip: {
         backgroundColor: "#0f172a",
@@ -138,16 +170,61 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
         callbacks: {
           label: (context: any) => {
             const dataPoint = sortedApiData[context.dataIndex];
-            if (!dataPoint) return `Overall Margin: ${context.parsed.y?.toFixed(1)}%`;
+            if (!dataPoint)
+              return `Overall Margin: ${context.parsed.y?.toFixed(1)}%`;
 
             const lines = [`Overall Margin: ${context.parsed.y?.toFixed(1)}%`];
 
-            if (dataPoint.standard_gm_pct !== null && dataPoint.standard_gm_pct !== undefined) {
-              lines.push(`Standard Margin: ${dataPoint.standard_gm_pct.toFixed(1)}%`);
+            if (
+              dataPoint.standard_gm_pct !== null &&
+              dataPoint.standard_gm_pct !== undefined
+            ) {
+              lines.push(
+                `Standard Margin: ${dataPoint.standard_gm_pct.toFixed(1)}%`,
+              );
             }
 
-            if (dataPoint.non_standard_gm_pct !== null && dataPoint.non_standard_gm_pct !== undefined) {
-              lines.push(`Non-Standard Margin: ${dataPoint.non_standard_gm_pct.toFixed(1)}%`);
+            if (
+              dataPoint.non_standard_gm_pct !== null &&
+              dataPoint.non_standard_gm_pct !== undefined
+            ) {
+              lines.push(
+                `Non-Standard Margin: ${dataPoint.non_standard_gm_pct.toFixed(1)}%`,
+              );
+            }
+
+            if (
+              dataPoint.baseline_gm_pct !== null &&
+              dataPoint.baseline_gm_pct !== undefined
+            ) {
+              lines.push(
+                `${baseName} baseline: ${dataPoint.baseline_gm_pct.toFixed(1)}%`,
+              );
+            }
+
+            if (
+              dataPoint.gap_vs_baseline_pp !== null &&
+              dataPoint.gap_vs_baseline_pp !== undefined
+            ) {
+              lines.push(
+                `Actual gap vs baseline: ${dataPoint.gap_vs_baseline_pp.toFixed(1)} pp`,
+              );
+            }
+
+            if (
+              dataPoint.target_gm_pct !== null &&
+              dataPoint.target_gm_pct !== undefined
+            ) {
+              lines.push(`${baseName} PMA target: ${dataPoint.target_gm_pct.toFixed(1)}%`);
+            }
+
+            if (
+              dataPoint.gap_vs_target_pp !== null &&
+              dataPoint.gap_vs_target_pp !== undefined
+            ) {
+              lines.push(
+                `Gap vs Target: ${dataPoint.gap_vs_target_pp.toFixed(1)} pp`,
+              );
             }
 
             return lines;
@@ -184,7 +261,9 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
             Margin trend
           </h3>
           <div className="flex items-center gap-3 mt-2">
-            <span className="text-[10px] text-gray-400 font-bold uppercase">Product families</span>
+            <span className="text-[10px] text-gray-400 font-bold uppercase">
+              Product families
+            </span>
             <CustomSelect
               options={families}
               value={activeFamily}
@@ -194,7 +273,9 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-[#a61c1e]"></span>
-          <span className="text-xs text-gray-600 font-semibold">{activeFamily} margin %</span>
+          <span className="text-xs text-gray-600 font-semibold">
+            {activeFamily} margin %
+          </span>
         </div>
       </div>
 

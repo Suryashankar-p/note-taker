@@ -9,8 +9,8 @@ const Classification = () => {
   const onNavigateToTab = context.onNavigateToTab;
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data, isLoading } = useGetClassificationMatrix(sessionId);
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
+  const { data, isLoading } = useGetClassificationMatrix(sessionId, selectedQuarter);
 
   if (isLoading) {
     return (
@@ -20,12 +20,7 @@ const Classification = () => {
     );
   }
 
-  const quarters = data?.quarters || [];
-  const latestQuarter = data?.latestQuarter || "";
-  const activeQuarter = selectedQuarter || latestQuarter || (quarters.length > 0 ? quarters[quarters.length - 1] : "");
-
-  const activeQuarterData = data?.quarterMatrices?.[activeQuarter];
-  const activeInsights = activeQuarterData?.insights || data?.insights;
+  const activeInsights = data?.insights;
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">

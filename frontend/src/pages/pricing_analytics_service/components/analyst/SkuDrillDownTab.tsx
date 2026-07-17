@@ -1,7 +1,7 @@
-
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
+import CustomSelect from "../CustomSelect";
 import {
   useGetSkuDeviation,
   type SkuNonStdRow,
@@ -26,41 +26,42 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
       : context.selectedFamily;
 
   const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data, isLoading, isError } = useGetSkuDeviation(sessionId, selectedFamily || null);
 
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const sortedQuarters = [
+    "Q1 FY 24",
+    "Q2 FY 24",
+    "Q3 FY 24",
+    "Q4 FY 24",
+    "Q1 FY 25",
+    "Q2 FY 25",
+    "Q3 FY 25",
+    "Q4 FY 25",
+    "Q1 FY 26",
+    "Q2 FY 26",
+    "Q3 FY 26",
+    "Q4 FY 26",
+  ];
 
-  useEffect(() => {
-    if (data?.latestQuarter && !selectedQuarter) {
-      setSelectedQuarter(data.latestQuarter);
-    }
-  }, [data?.latestQuarter, selectedQuarter]);
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
 
-  const activeQuarter = selectedQuarter || data?.latestQuarter || "";
+  const { data, isLoading, isError } = useGetSkuDeviation(
+    sessionId,
+    selectedFamily || null,
+    selectedQuarter,
+  );
+
+  const activeQuarter = selectedQuarter;
   const quarterData = data?.quarterMap?.[activeQuarter];
 
-  const nonstdRows: SkuNonStdRow[] = useMemo(() => {
-    if (!selectedFamily) return [];
-    const rows = quarterData?.nonstd_rows || [];
-    const key = selectedFamily.toLowerCase();
-    return rows.filter(
-      (r) => r.product_family.toLowerCase() === key
-    );
-  }, [quarterData, selectedFamily]);
+  const nonstdRows: SkuNonStdRow[] = selectedFamily
+    ? quarterData?.nonstd_rows || []
+    : [];
+  const standardRows: SkuStandardRow[] = selectedFamily
+    ? quarterData?.standard_rows || []
+    : [];
 
-  const standardRows: SkuStandardRow[] = useMemo(() => {
-    if (!selectedFamily) return [];
-    const rows = quarterData?.standard_rows || [];
-    const key = selectedFamily.toLowerCase();
-    return rows.filter(
-      (r) => r.product_family.toLowerCase() === key
-    );
-  }, [quarterData, selectedFamily]);
-
-  // const totalNotionalLoss = useMemo(
-  //   () => nonstdRows.reduce((s, r) => s + (r.notional_loss ?? 0), 0),
-  //   [nonstdRows]
-  // );
+  const getChannelValue = (item: SkuNonStdRow | SkuStandardRow) =>
+    item.channel_or_direct ?? item.channel_direct ?? item.channel ?? "—";
 
   if (isLoading) {
     return (
@@ -78,8 +79,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
     );
   }
 
-  const sortedQuarters = data?.sortedQuarters || [];
-
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-3">
@@ -88,26 +87,18 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
             SKU Drill-down — Deviation Analysis
           </h3>
 
-          {sortedQuarters.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quarter</span>
-              <div className="flex gap-1 flex-wrap">
-                {sortedQuarters.map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => setSelectedQuarter(q)}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all border ${
-                      activeQuarter === q
-                        ? "bg-[#a61c1e] text-white border-[#a61c1e] shadow-sm"
-                        : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              Quarter
+            </span>
+            <CustomSelect
+              options={sortedQuarters}
+              value={selectedQuarter}
+              onChange={setSelectedQuarter}
+              labelPrefix=""
+              alignRight
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -129,125 +120,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
               ? `Showing deviations for "${selectedFamily}". Use the QoQ Matrix to switch families.`
               : "Go back to Step 3 (QoQ Matrix) → click a cell → select a product family to see its SKU deviations here."}
           </p>
-        </div>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
-        <div className="pb-3 border-b border-gray-100 mb-4 flex items-center justify-between">
-          <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">
-            Non-standard SKUs — margin vs. target
-          </h4>
-          <span className="text-[10px] text-gray-400 font-bold">
-            {nonstdRows.length} rows
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-[11px] border-collapse min-w-[1000px]">
-            <thead>
-              <tr className="border-b border-gray-150 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
-                <th className="py-2.5 px-3">PF</th>
-                <th className="py-2.5 px-3 text-center">Order No</th>
-                <th className="py-2.5 px-3 text-center">Item Code</th>
-                <th className="py-2.5 px-3 w-72">Description</th>
-                <th className="py-2.5 px-3">Channel / Direct</th>
-                <th className="py-2.5 px-3 text-right">List Price</th>
-                <th className="py-2.5 px-3 text-right">Actual Price</th>
-                <th className="py-2.5 px-3 text-right">Price Deviation</th>
-                <th className="py-2.5 px-3 text-right">List Cost</th>
-                <th className="py-2.5 px-3 text-right">Actual Cost</th>
-                <th className="py-2.5 px-3 text-right">Cost Deviation</th>
-                <th className="py-2.5 px-3 text-right">Overall margin (actual)</th>
-                <th className="py-2.5 px-3 text-right">PF target (overall)</th>
-                <th className="py-2.5 px-3 text-right">Notional loss (₹)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              {nonstdRows.length > 0 ? (
-                nonstdRows.map((item, idx) => {
-                  const priceDevNum = item.price_deviation ?? 0;
-                  const costDevNum = item.cost_deviation ?? 0;
-                  return (
-                    <tr key={idx} className="hover:bg-slate-50/50">
-                      <td className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap">
-                        {item.product_family}
-                      </td>
-                      <td className="py-2.5 px-3 text-center text-gray-500 whitespace-nowrap">
-                        {item.order_no}
-                      </td>
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                        {item.item_code}
-                      </td>
-                      <td className="py-2.5 px-3 text-gray-600 leading-relaxed font-normal">
-                        {item.description}
-                      </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap text-gray-700">
-                        {item.channel_direct ?? item.channel ?? item.channel_or_direct ?? "—"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {item.list_price != null ? fmt(item.list_price, 2) : "—"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {item.actual_price != null ? fmt(item.actual_price, 2) : "—"}
-                      </td>
-                      <td
-                        className={`py-2.5 px-3 text-right font-bold ${
-                          priceDevNum < 0 ? "text-rose-600" : "text-emerald-600"
-                        }`}
-                      >
-                        {item.price_deviation != null ? fmtPP(priceDevNum) : "—"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {item.list_cost != null ? fmt(item.list_cost, 2) : "—"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {item.actual_cost != null ? fmt(item.actual_cost, 2) : "—"}
-                      </td>
-                      <td
-                        className={`py-2.5 px-3 text-right font-bold ${
-                          costDevNum < 0 ? "text-rose-600" : "text-emerald-600"
-                        }`}
-                      >
-                        {item.cost_deviation != null ? fmtPP(costDevNum) : "—"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
-                        {item.overall_margin_actual != null
-                          ? `${fmt(item.overall_margin_actual)}%`
-                          : item.overall_actual != null
-                          ? `${fmt(item.overall_actual)}%`
-                          : "—"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
-                        {item.overall_target_pf != null
-                          ? `${fmt(item.overall_target_pf)}%`
-                          : item.overall_target != null
-                          ? `${fmt(item.overall_target)}%`
-                          : "—"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
-                        {item.notional_loss != null
-                          ? item.notional_loss >= 100000
-                            ? fmtLakhs(item.notional_loss)
-                            : `₹${item.notional_loss.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
-                          : "—"}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan={14}
-                    className="py-6 text-center text-gray-400 font-bold text-xs bg-slate-50/30"
-                  >
-                    {selectedFamily
-                      ? `No non-standard SKU deviations found for "${selectedFamily}" in ${activeQuarter}.`
-                      : "No non-standard SKU data available for this quarter."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -276,7 +148,9 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                 <th className="py-2.5 px-3 text-right">List Cost</th>
                 <th className="py-2.5 px-3 text-right">Actual Cost</th>
                 <th className="py-2.5 px-3 text-right">Cost Deviation</th>
-                <th className="py-2.5 px-3 text-right">Overall margin (actual)</th>
+                <th className="py-2.5 px-3 text-right">
+                  Overall margin (actual)
+                </th>
                 <th className="py-2.5 px-3 text-right">PF target (overall)</th>
                 <th className="py-2.5 px-3 text-right">Notional loss (₹)</th>
               </tr>
@@ -301,26 +175,34 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                         {item.description}
                       </td>
                       <td className="py-2.5 px-3 whitespace-nowrap text-gray-700">
-                        {item.channel_direct ?? item.channel ?? item.channel_or_direct ?? "—"}
+                        {getChannelValue(item)}
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        {item.list_price != null ? fmt(item.list_price, 2) : "—"}
+                        {item.list_price != null
+                          ? fmt(item.list_price, 2)
+                          : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        {item.actual_price != null ? fmt(item.actual_price, 2) : "—"}
+                        {item.actual_price != null
+                          ? fmt(item.actual_price, 2)
+                          : "—"}
                       </td>
                       <td
                         className={`py-2.5 px-3 text-right font-bold ${
                           priceDevNum < 0 ? "text-rose-600" : "text-emerald-600"
                         }`}
                       >
-                        {item.price_deviation != null ? fmtPP(priceDevNum) : "—"}
+                        {item.price_deviation != null
+                          ? fmtPP(priceDevNum)
+                          : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         {item.list_cost != null ? fmt(item.list_cost, 2) : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        {item.actual_cost != null ? fmt(item.actual_cost, 2) : "—"}
+                        {item.actual_cost != null
+                          ? fmt(item.actual_cost, 2)
+                          : "—"}
                       </td>
                       <td
                         className={`py-2.5 px-3 text-right font-bold ${
@@ -333,15 +215,15 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                         {item.overall_margin_actual != null
                           ? `${fmt(item.overall_margin_actual)}%`
                           : item.overall_actual != null
-                          ? `${fmt(item.overall_actual)}%`
-                          : "—"}
+                            ? `${fmt(item.overall_actual)}%`
+                            : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
                         {item.overall_target_pf != null
                           ? `${fmt(item.overall_target_pf)}%`
                           : item.overall_target != null
-                          ? `${fmt(item.overall_target)}%`
-                          : "—"}
+                            ? `${fmt(item.overall_target)}%`
+                            : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
                         {item.notional_loss != null
@@ -362,6 +244,105 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
                     {selectedFamily
                       ? `No standard SKU deviations found for "${selectedFamily}" in ${activeQuarter}.`
                       : "No standard SKU data available for this quarter."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
+        <div className="pb-3 border-b border-gray-100 mb-4 flex items-center justify-between">
+          <h4 className="text-xs font-extrabold text-gray-500 uppercase tracking-wider">
+            Non-standard SKUs — margin vs. target
+          </h4>
+          <span className="text-[10px] text-gray-400 font-bold">
+            {nonstdRows.length} rows
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[11px] border-collapse min-w-[1000px]">
+            <thead>
+              <tr className="border-b border-gray-150 bg-gray-55 text-gray-500 font-bold uppercase text-[9px] tracking-wider">
+                <th className="py-2.5 px-3">PF</th>
+                <th className="py-2.5 px-3 text-center">Order No</th>
+                <th className="py-2.5 px-3 text-center">Item Code</th>
+                <th className="py-2.5 px-3 w-72">Description</th>
+                <th className="py-2.5 px-3 text-right">
+                  Actual non-std margin
+                </th>
+                <th className="py-2.5 px-3 text-right">
+                  Target non-std margin
+                </th>
+                <th className="py-2.5 px-3 text-right">Deviation (pp)</th>
+                <th className="py-2.5 px-3 text-right">Overall actual (PF)</th>
+                <th className="py-2.5 px-3 text-right">Overall target (PF)</th>
+                <th className="py-2.5 px-3 text-right">Notional loss (₹)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+              {nonstdRows.length > 0 ? (
+                nonstdRows.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-semibold text-gray-900 whitespace-nowrap">
+                      {item.product_family}
+                    </td>
+                    <td className="py-2.5 px-3 text-center text-gray-500 whitespace-nowrap">
+                      {item.order_no}
+                    </td>
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      {item.item_code}
+                    </td>
+                    <td className="py-2.5 px-3 text-gray-600 leading-relaxed font-normal">
+                      {item.description}
+                    </td>
+                    <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                      {item.actual_nonstd_margin != null
+                        ? `${fmt(item.actual_nonstd_margin)}%`
+                        : "—"}
+                    </td>
+                    <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                      {item.target_nonstd_margin != null
+                        ? `${fmt(item.target_nonstd_margin)}%`
+                        : "—"}
+                    </td>
+                    <td
+                      className={`py-2.5 px-3 text-right font-bold ${item.deviation_pp < 0 ? "text-rose-600" : "text-emerald-600"}`}
+                    >
+                      {item.deviation_pp != null
+                        ? fmtPP(item.deviation_pp)
+                        : "—"}
+                    </td>
+                    <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                      {item.overall_actual != null
+                        ? `${fmt(item.overall_actual)}%`
+                        : "—"}
+                    </td>
+                    <td className="py-2.5 px-3 text-right whitespace-nowrap text-gray-700">
+                      {item.overall_target != null
+                        ? `${fmt(item.overall_target)}%`
+                        : "—"}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-bold text-rose-700 whitespace-nowrap">
+                      {item.notional_loss != null
+                        ? item.notional_loss >= 100000
+                          ? fmtLakhs(item.notional_loss)
+                          : `₹${item.notional_loss.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={11}
+                    className="py-6 text-center text-gray-400 font-bold text-xs bg-slate-50/30"
+                  >
+                    {selectedFamily
+                      ? `No non-standard SKU deviations found for "${selectedFamily}" in ${activeQuarter}.`
+                      : "No non-standard SKU data available for this quarter."}
                   </td>
                 </tr>
               )}
