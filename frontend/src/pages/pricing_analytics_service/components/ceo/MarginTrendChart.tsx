@@ -91,6 +91,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
       ? selectedFamily
       : families[0];
   const apiData = normalizedData[activeFamily] || [];
+  const baseName = activeFamily === "All Families" ? "Heating" : activeFamily;
 
   const sortedApiData = [...apiData]
     .filter((item) => {
@@ -109,7 +110,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
     labels: sortedApiData.map((item) => item.quarter),
     datasets: [
       {
-        label: `Actual margin %`,
+        label: `${baseName} margin %`,
         data: sortedApiData.map((item) => item.overall_gm_pct),
         spanGaps: true,
         fill: true,
@@ -124,13 +125,24 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
         pointHoverRadius: 6,
       },
       {
-        label: `Heating baseline`,
+        label: `${baseName} baseline`,
         data: sortedApiData.map((item) => item.baseline_gm_pct ?? null),
         spanGaps: true,
         fill: false,
         borderColor: "#f59e0b",
         backgroundColor: "rgba(245, 158, 11, 0.08)",
         borderDash: [6, 4],
+        tension: 0.4,
+        pointRadius: 0,
+      },
+      {
+        label: `${baseName} PMA target`,
+        data: sortedApiData.map((item) => item.target_gm_pct ?? null),
+        spanGaps: true,
+        fill: false,
+        borderColor: "#8b5cf6",
+        backgroundColor: "rgba(139,92,246,0.06)",
+        borderDash: [3, 4],
         tension: 0.4,
         pointRadius: 0,
       },
@@ -142,7 +154,9 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false,
+        display: true,
+        position: 'top' as const,
+        labels: { boxWidth: 18, padding: 12 },
       },
       tooltip: {
         backgroundColor: "#0f172a",
@@ -184,7 +198,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               dataPoint.baseline_gm_pct !== undefined
             ) {
               lines.push(
-                `Heating baseline: ${dataPoint.baseline_gm_pct.toFixed(1)}%`,
+                `${baseName} baseline: ${dataPoint.baseline_gm_pct.toFixed(1)}%`,
               );
             }
 
@@ -201,7 +215,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               dataPoint.target_gm_pct !== null &&
               dataPoint.target_gm_pct !== undefined
             ) {
-              lines.push(`Target: ${dataPoint.target_gm_pct.toFixed(1)}%`);
+              lines.push(`${baseName} PMA target: ${dataPoint.target_gm_pct.toFixed(1)}%`);
             }
 
             if (
