@@ -172,7 +172,7 @@ const handleDownload = async () => {
               type="file"
               className="hidden"
               ref={fileInputRef}
-               accept=".pdf,.doc,.docx,.ppt,.pptx, .ppsx"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.ppsx,.xls,.xlsx,.csv"
               onChange={handleFileChange}
             />
             <button
