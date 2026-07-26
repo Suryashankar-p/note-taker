@@ -136,8 +136,8 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
 
     if (!hasError && !defaultValues) {
       onCreate(
-        title, 
-        file as File, 
+        title,
+        file as File,
         showTemplate ? template : undefined,
         showNumber && template === "Plate" ? number : undefined
       );
@@ -258,7 +258,8 @@ const CreateActivity: React.FC<CreateActivityModalProps> = ({
           </button>
           <button
             onClick={handleCreate}
-            className="inline-flex justify-center rounded-md border border-transparent bg-[#0061F3] hover:bg-[#0052cc] px-4 py-2 text-sm font-medium text-background focus:outline-none focus-visible:ring-offset-2"
+            disabled={loading}
+            className="inline-flex justify-center rounded-md border border-transparent bg-[#0061F3] hover:bg-[#0052cc] disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-medium text-background focus:outline-none focus-visible:ring-offset-2"
           >
             {loading ? (
               <div className="flex items-center">
