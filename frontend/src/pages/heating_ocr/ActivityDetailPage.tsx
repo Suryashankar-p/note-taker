@@ -36,7 +36,10 @@ interface Item {
   value: string | null;
   is_valid: boolean;
   invalid_reason: string | null;
+  confidence: number | null;
 }
+
+const LOW_CONFIDENCE_THRESHOLD = 0.7;
 
 const ActivityDetailPage: React.FC = () => {
   const location = useLocation();
@@ -881,6 +884,11 @@ const ActivityDetailPage: React.FC = () => {
                   {renderFieldInput(item, index)}
                   {warningFields.includes(item?.title) && (
                     <p className="mt-1 text-xs text-yellow-400">⚠ Always verify {item?.title} result before submitting.</p>
+                  )}
+                  {typeof item?.confidence === "number" && item.confidence < LOW_CONFIDENCE_THRESHOLD && (
+                    <p className="mt-1 text-xs text-orange-500">
+                      ⚠ Low OCR confidence ({Math.round(item.confidence * 100)}%) — please verify.
+                    </p>
                   )}
                 </div>
               ))}
