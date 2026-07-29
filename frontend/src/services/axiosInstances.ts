@@ -13,6 +13,7 @@ const doctranslator_BaseURL = import.meta.env.VITE_BACKEND_DOCUMENT_TRANSLATOR_U
 const edge_BaseURL = import.meta.env.VITE_BACKEND_EDGE_URL;
 const cctv_BaseURL = import.meta.env.VITE_BACKEND_CCTV_ANALYTICS_URL;
 const pricingAnalytics_BaseURL = import.meta.env.VITE_BACKEND_PRICING_ANALYTICS_URL;
+const legalChecker_BaseURL = import.meta.env.VITE_BACKEND_LEGAL_CHECKER_URL;
 
 
 export const axiosSSO: AxiosInstance = axios.create({
@@ -77,5 +78,10 @@ export const axiosEdge: AxiosInstance = axios.create({
 
 export const axiosPricingAnalytics: AxiosInstance = axios.create({
   baseURL: pricingAnalytics_BaseURL,
+  timeout: 300000,
+});
+
+export const axiosLegalChecker: AxiosInstance = axios.create({
+  baseURL: legalChecker_BaseURL,
   timeout: 300000,
 });

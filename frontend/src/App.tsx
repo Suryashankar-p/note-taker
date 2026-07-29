@@ -69,6 +69,9 @@ const CyberBuddySettings = lazy(
 const HeatingOCRMain = lazy(
   () => import("./pages/heating_ocr/OcrMain.tsx")
 );
+const LegalCheckerMain = lazy(
+  () => import("./pages/legal_checker/LegalCheckerMain.tsx")
+);
 const PricingAnalyticsService = lazy(
   () => import("./pages/pricing_analytics_service/index.tsx")
 );
@@ -202,6 +205,10 @@ const App = () => (
       <Route
         path="/ai-studio/heating_ocr"
         element={<ProtectedRoute element={<HeatingOCRMain />} />}
+      />
+      <Route
+        path="/ai-studio/legal_checker"
+        element={<ProtectedRoute element={<LegalCheckerMain />} />}
       />
       <Route
         path="/ai-studio/pricing-analytics"

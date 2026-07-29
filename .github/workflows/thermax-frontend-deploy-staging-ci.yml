@@ -65,6 +65,7 @@ jobs:
             --build-arg VITE_BACKEND_DOCUMENT_TRANSLATOR_URL="${{ secrets.VITE_BACKEND_DOCUMENT_TRANSLATOR_URL }}" \
             --build-arg VITE_BACKEND_EDGE_URL="${{ secrets.VITE_BACKEND_EDGE_URL }}" \
             --build-arg VITE_BACKEND_PRICING_ANALYTICS_URL="${{ secrets.VITE_BACKEND_PRICING_ANALYTICS_URL }}" \
+            --build-arg VITE_BACKEND_LEGAL_CHECKER_URL="${{ secrets.VITE_BACKEND_LEGAL_CHECKER_URL }}" \
             -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
 
       - name: Push Docker image to Staging ACR
