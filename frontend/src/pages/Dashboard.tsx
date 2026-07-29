@@ -327,6 +327,9 @@ const Dashboard: React.FC = () => {
       case "Pricing Analyser":
         getPricingAnalyticsRole();
         break;
+      case "Legal Compliance Checker":
+        navigate("./legal_checker");
+        break;
 
     }
   };

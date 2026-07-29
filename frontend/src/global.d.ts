@@ -18,6 +18,7 @@ declare global {
       BACKEND_TRANSMITTER_OCR_URL: string;
       BACKEND_DOCUMENT_TRANSLATOR_URL: string;
       BACKEND_EDGE_URL: string;
+      BACKEND_LEGAL_CHECKER_URL: string;
     };
   }
 }
