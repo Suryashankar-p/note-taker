@@ -104,3 +104,8 @@ export const UploadNDADeviationMatrix = async (file: File) => {
   );
   return response.data;
 };
+
+export const GetNDAAdminStatus = async () => {
+  const response = await axiosLegalChecker.get("/lcc/admin/nda/status");
+  return response.data;
+};
