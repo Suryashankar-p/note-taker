@@ -786,6 +786,7 @@ const ChatArea: React.FC<Props> = ({
           inputClasssName={`${disabled && "bg-[#0061F3] bg-opacity-10"}`}
           onChange={(event: Event) => setInputValue(event.target.value)}
           value={inputValue}
+          maxLength={500}
           placeholder="Ask your query here..."
           prefixIcon={
             <img
