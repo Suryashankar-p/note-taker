@@ -2,51 +2,24 @@ import React, { useState, useEffect } from "react";
 import SkyscraperChartCard from "./SkyscraperChartCard";
 import SkyscraperAlerts from "./SkyscraperAlerts";
 import SkyscraperTable from "./SkyscraperTable";
-import { useGetSkyscraper } from "../../services/query/query";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
+import { analystSkyscraperMock } from "../../constants/analystMockData";
 
 const SkyscraperTab = () => {
   const context = useOutletContext<any>() || {};
   const onNavigateToTab = context.onNavigateToTab;
+  const { bu } = useParams<{ bu?: string }>();
 
-  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data, isLoading } = useGetSkyscraper(sessionId);
+  const activeBu = bu || "heating";
+  const data = analystSkyscraperMock[activeBu] || analystSkyscraperMock.heating;
 
   const [compareVs, setCompareVs] = useState<string>("target");
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
 
-  const parseQuarter = (qStr: string) => {
-    const match = qStr.match(/Q(\d)\s+FY\s+(\d+)/);
-    if (!match) return { year: 0, quarter: 0 };
-    return {
-      quarter: parseInt(match[1], 10),
-      year: parseInt(match[2], 10),
-    };
-  };
+  const sortedQuarters = ["Q4 FY 26"];
 
-  const sortedQuarters = Object.keys(data || {}).sort((a, b) => {
-    const qa = parseQuarter(a);
-    const qb = parseQuarter(b);
-    if (qa.year !== qb.year) return qa.year - qb.year;
-    return qa.quarter - qb.quarter;
-  });
-
-  useEffect(() => {
-    if (sortedQuarters.length > 0 && !selectedQuarter) {
-      setSelectedQuarter(sortedQuarters[sortedQuarters.length - 1]);
-    }
-  }, [sortedQuarters, selectedQuarter]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-700"></div>
-      </div>
-    );
-  }
-
-  const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
-  const rawFamilies = data?.[activeQuarter] || [];
+  const activeQuarter = selectedQuarter || "Q4 FY 26";
+  const rawFamilies = data[activeQuarter] || [];
 
   const processedFamilies = rawFamilies
     .map((fam: any) => {
@@ -83,7 +56,7 @@ const SkyscraperTab = () => {
         families={processedFamilies}
         selectedQuarter={activeQuarter}
         compareVs={compareVs}
-        insights={data?.byQuarter?.[activeQuarter]?.insights}
+        insights={data.byQuarter?.[activeQuarter]?.insights}
       />
 
       <SkyscraperTable families={processedFamilies} selectedQuarter={activeQuarter} />

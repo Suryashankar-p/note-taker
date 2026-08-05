@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { AlertCircle } from "lucide-react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import CustomSelect from "../CustomSelect";
 import {
-  useGetSkuDeviation,
   type SkuNonStdRow,
   type SkuStandardRow,
   fmt,
   fmtLakhs,
   fmtPP,
 } from "../../services/query/query";
+import { analystSkuDeviationMock } from "../../constants/analystMockData";
 
 interface SkuDrillDownTabProps {
   selectedFamily?: string | null;
@@ -20,35 +20,21 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
 }) => {
   const context = useOutletContext<any>() || {};
   const onNavigateToTab = context.onNavigateToTab;
+  const { bu } = useParams<{ bu?: string }>();
+
+  const activeBu = bu || "heating";
+  const data = analystSkuDeviationMock[activeBu] || analystSkuDeviationMock.heating;
+
   const selectedFamily =
     propsSelectedFamily !== undefined
       ? propsSelectedFamily
       : context.selectedFamily;
 
-  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-
   const sortedQuarters = [
-    "Q1 FY 24",
-    "Q2 FY 24",
-    "Q3 FY 24",
-    "Q4 FY 24",
-    "Q1 FY 25",
-    "Q2 FY 25",
-    "Q3 FY 25",
-    "Q4 FY 25",
-    "Q1 FY 26",
-    "Q2 FY 26",
-    "Q3 FY 26",
     "Q4 FY 26",
   ];
 
   const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
-
-  const { data, isLoading, isError } = useGetSkuDeviation(
-    sessionId,
-    selectedFamily || null,
-    selectedQuarter,
-  );
 
   const activeQuarter = selectedQuarter;
   const quarterData = data?.quarterMap?.[activeQuarter];
@@ -62,22 +48,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
 
   const getChannelValue = (item: SkuNonStdRow | SkuStandardRow) =>
     item.channel_or_direct ?? item.channel_direct ?? item.channel ?? "—";
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full bg-slate-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#a61c1e]" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px] text-rose-600 font-semibold text-sm">
-        Failed to load SKU deviation data. Please try again.
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">

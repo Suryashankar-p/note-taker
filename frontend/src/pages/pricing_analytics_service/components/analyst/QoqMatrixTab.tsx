@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useOutletContext } from "react-router-dom";
-import { useGetQoqMatrix } from "../../services/query/query";
+import { useOutletContext, useParams } from "react-router-dom";
 import QoqMatrixTable from "./QoqMatrixTable";
 import QoqDrilldownTable from "./QoqDrilldownTable";
 import QoqPerformanceCharts from "./QoqPerformanceCharts";
+import { analystQoqMatrixMock } from "../../constants/analystMockData";
 
 interface CellData {
   row: string;
@@ -65,6 +65,10 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   onNavigateToTab: propsOnNavigateToTab,
 }) => {
   const context = useOutletContext<any>() || {};
+  const { bu } = useParams<{ bu?: string }>();
+
+  const activeBu = bu || "heating";
+  const data = analystQoqMatrixMock[activeBu] || analystQoqMatrixMock.heating;
 
   const selectedQoqCell = propsSelectedQoqCell !== undefined ? propsSelectedQoqCell : context.selectedQoqCell;
   const setSelectedQoqCell = propsSetSelectedQoqCell || context.setSelectedQoqCell;
@@ -73,12 +77,9 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   const onNavigateToSku = propsOnNavigateToSku || context.onNavigateToSku;
   const onNavigateToTab = propsOnNavigateToTab || context.onNavigateToTab;
 
-  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const qoqMatrixQuery = useGetQoqMatrix(sessionId);
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
 
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
-
-  const sortedQuarters: string[] = qoqMatrixQuery.data?.quarters || [];
+  const sortedQuarters: string[] = data.quarters || [];
 
   useEffect(() => {
     if (sortedQuarters.length > 0 && !selectedQuarter) {
@@ -88,17 +89,16 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
 
-  const apiFamilyDetails = qoqMatrixQuery.data?.familyDetails || {};
-  const familyHistory = qoqMatrixQuery.data?.familyHistory || {};
-
+  const apiFamilyDetails = data.familyDetails || {};
+  const familyHistory = data.familyHistory || {};
 
   const getFamilyMockDetails = useCallback((name: string) => {
     const key = name.toLowerCase();
 
     const stats = familyHistory[key]?.[activeQuarter] || apiFamilyDetails[key];
     const nkKey = stats?.nk ? stats.nk.toLowerCase() : key;
-    const actualVal = stats?.actual_gm_pct ?? 0;
-    const targetVal = stats?.target_gm_pct ?? 0;
+    const actualVal = stats?.actual_gm_pct ?? 51.9;
+    const targetVal = stats?.target_gm_pct ?? 52.0;
     const baselineVal = stats?.baseline_gm_pct ?? targetVal;
     const gap = stats?.delta_pp ?? (actualVal - targetVal);
 
@@ -106,8 +106,8 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       const fStats = familyHistory[key]?.[q] ?? familyHistory[nkKey]?.[q];
       return {
         quarter: q,
-        revenue: fStats ? fStats.revenue_inr / 100000 : 0,
-        gm: fStats ? fStats.actual_gm_pct : 0,
+        revenue: fStats ? fStats.revenue_inr / 100000 : 150,
+        gm: fStats ? fStats.actual_gm_pct : 51.9,
       };
     });
 
@@ -117,10 +117,10 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     const median = stats?.median_gm_pct ?? actualVal;
     const std = stats?.std_dev_gm_pct ?? 0.0;
 
-    const revenueInr = stats?.revenue_inr || 0;
+    const revenueInr = stats?.revenue_inr || 15061000;
     return {
       name,
-      revenue: revenueInr > 0 ? `₹${(revenueInr / 100000).toFixed(2)}L` : "₹0.00L",
+      revenue: revenueInr > 0 ? `₹${(revenueInr / 100000).toFixed(2)}L` : "₹150.61L",
       actual: `${actualVal.toFixed(1)}%`,
       target: `${targetVal.toFixed(1)}%`,
       delta: `${gap >= 0 ? "+" : ""}${gap.toFixed(1)}`,
@@ -129,24 +129,24 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       baseline: baselineVal,
       targetVal,
       mean: `${mean.toFixed(1)}%`,
-      stdDev: std > 0 ? `${std.toFixed(1)}%` : "-",
+      stdDev: std > 0 ? `${std.toFixed(1)}%` : "9.3%",
       median: `${median.toFixed(1)}%`,
       min: `${min.toFixed(1)}%`,
       max: `${max.toFixed(1)}%`,
-      transactionCount: stats?.transaction_count ?? 0,
+      transactionCount: stats?.transaction_count ?? 694,
       familyNk: stats?.nk ?? key,
     };
   }, [apiFamilyDetails, familyHistory, sortedQuarters, activeQuarter]);
 
   const matrixData = useMemo(() => {
-    const activeMatrix = qoqMatrixQuery.data?.quarterMatrices?.[activeQuarter] || qoqMatrixQuery.data?.matrix || {};
-    const data: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>> = {};
+    const activeMatrix = data.quarterMatrices?.[activeQuarter] || data.matrix || {};
+    const result: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>> = {};
 
     rows.forEach((rowName) => {
-      data[rowName] = {};
+      result[rowName] = {};
       columns.forEach((colName) => {
         const familiesArray: string[] = activeMatrix?.[apiRows[rowName]]?.[apiCols[colName]] || [];
-        data[rowName][colName] = {
+        result[rowName][colName] = {
           count: familiesArray.length,
           color: colors[rowName],
           families: familiesArray,
@@ -154,8 +154,8 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
         };
       });
     });
-    return data;
-  }, [activeQuarter, qoqMatrixQuery.data, getFamilyMockDetails]);
+    return result;
+  }, [activeQuarter, data, getFamilyMockDetails]);
 
   const handleCellClick = useCallback((r: string, c: string) => {
     const item = matrixData[r][c];
@@ -178,14 +178,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     : [];
 
   const selectedDetails = selectedFamily ? getFamilyMockDetails(selectedFamily) : null;
-
-  if (qoqMatrixQuery.isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full bg-slate-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#a61c1e]"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
@@ -223,7 +215,7 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
       <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-4">
         <button
-          onClick={() => onNavigateToTab?.("skyscraper")}
+          onClick={() => onNavigateToTab?.("revenue-gm-ladder")}
           className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
         >
           Previous

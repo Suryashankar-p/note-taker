@@ -1,7 +1,7 @@
 import { useState, Suspense } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Header from "../../../components/Header";
-import SettingsSidebar from "../components/Sidebar";
+import SettingsSidebar from "../components/UploadSidebar";
 import { pricingAnalyticsServiceBreadCrumbs } from "../constants/constants";
 import CopilotWidget from "../components/CopilotWidget";
 import { Sparkles } from "lucide-react";
@@ -9,13 +9,15 @@ import PageLoading from "../../../components/PageLoading";
 
 const Dashboard = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isCeo = pathname.includes("/ceo");
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden relative">
+    <div className="flex flex-col h-screen overflow-hidden relative bg-slate-50">
       <Header breadCrumbs={pricingAnalyticsServiceBreadCrumbs} />
       <div className="flex flex-1 overflow-hidden mt-16">
         <SettingsSidebar />
-        <div className="overflow-y-auto w-full max-h-[calc(100vh-4rem)]">
+        <div className="overflow-y-auto w-full max-h-[calc(100vh-4rem)] bg-slate-50">
           <Suspense fallback={<PageLoading />}>
             <Outlet />
           </Suspense>

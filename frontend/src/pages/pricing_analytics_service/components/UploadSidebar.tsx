@@ -9,11 +9,25 @@ const UploadSidebar = () => {
 
   const baseUploadPath = "/ai-studio/pricing-analytics";
 
-  const { data: sessions, isLoading: isLoadingSessions } = useGetSessions();
-  const { mutate: deleteSession, isPending: isDeletingSession } = useDeleteSession();
-  const { mutate: updateSession, isPending: isUpdatingSession } = useUpdateSession();
+  const sessions = [
+    { id: 10, session_name: "Q4 FY26 Strategy Run" },
+    { id: 11, session_name: "FY26 Baseline Analysis" }
+  ];
+  const isLoadingSessions = false;
 
-  const currentSessionId = localStorage.getItem("pricing_session_id");
+  const deleteSession = (id: number, options?: { onSuccess?: () => void }) => {
+    console.log("Deleted mock session: ", id);
+    options?.onSuccess?.();
+  };
+  const isDeletingSession = false;
+
+  const updateSession = (args: { sessionId: number; session_name: string }, options?: { onSuccess?: () => void }) => {
+    console.log("Updated mock session: ", args);
+    options?.onSuccess?.();
+  };
+  const isUpdatingSession = false;
+
+  const currentSessionId = localStorage.getItem("pricing_session_id") || "10";
 
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState<boolean>(false);
@@ -59,23 +73,23 @@ const UploadSidebar = () => {
 
         <hr className="border-t border-[#202226] mb-5" />
 
-        {/* Sessions list */}
+        {/* Sessions list (Commented out for now)
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex items-center gap-2 px-1 mb-3">
-            <Database className="w-3.5 h-3.5 text-gray-500" />
-            <span className="text-[10px] text-gray-500 font-bold tracking-wider uppercase">
+            <Database className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-[10px] text-gray-400 font-bold tracking-wider uppercase">
               Sessions
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-0">
             {isLoadingSessions ? (
-              <div className="flex items-center gap-2 px-2 py-3 text-xs text-gray-500">
+              <div className="flex items-center gap-2 px-2 py-3 text-xs text-gray-505">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#a61c1e]" />
                 <span>Loading...</span>
               </div>
             ) : !sessions || sessions.length === 0 ? (
-              <div className="px-2 py-3 text-xs text-gray-500 italic">
+              <div className="px-2 py-3 text-xs text-gray-400 italic">
                 No active sessions
               </div>
             ) : (
@@ -89,10 +103,10 @@ const UploadSidebar = () => {
                       className={`flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all duration-200 text-left truncate pr-8 ${
                         isActive
                           ? "bg-[#a61c1e] text-white font-semibold shadow-sm"
-                          : "text-[#a3a3a6] hover:bg-[#202022] hover:text-white"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                       }`}
                     >
-                      <FolderOpen className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-500"}`} />
+                      <FolderOpen className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`} />
                       <span className="truncate">{session.session_name || `Session #${session.id}`}</span>
                     </button>
 
@@ -101,7 +115,7 @@ const UploadSidebar = () => {
                         e.stopPropagation();
                         setActiveDropdownId(activeDropdownId === session.id ? null : session.id);
                       }}
-                      className="absolute right-2 p-1 text-gray-400 hover:text-white rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                      className="absolute right-2 p-1 text-gray-400 hover:text-gray-600 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                     >
                       <MoreVertical className="w-3.5 h-3.5" />
                     </button>
@@ -109,7 +123,7 @@ const UploadSidebar = () => {
                     {activeDropdownId === session.id && (
                       <div
                         ref={dropdownRef}
-                        className="absolute right-2 top-8 z-30 w-28 bg-[#202022] border border-[#303033] rounded-lg shadow-lg py-1 text-left"
+                        className="absolute right-2 top-8 z-30 w-28 bg-white border border-gray-200 rounded-lg shadow-lg py-1 text-left"
                       >
                         <button
                           onClick={(e) => {
@@ -119,9 +133,9 @@ const UploadSidebar = () => {
                             setIsRenameModalOpen(true);
                             setActiveDropdownId(null);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-300 hover:bg-[#303033] hover:text-white transition-colors"
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          <Edit2 className="w-3.5 h-3.5" />
                           <span>Rename</span>
                         </button>
                         <button
@@ -131,9 +145,9 @@ const UploadSidebar = () => {
                             setIsDeleteModalOpen(true);
                             setActiveDropdownId(null);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-red-400 hover:bg-[#303033] hover:text-red-300 transition-colors"
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-red-655 hover:bg-gray-50 hover:text-red-700 transition-colors"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           <span>Delete</span>
                         </button>
                       </div>
@@ -144,16 +158,16 @@ const UploadSidebar = () => {
             )}
           </div>
         </div>
+        */}
       </div>
 
       <nav className="flex flex-col mt-4">
         <NavLink
           to={`${baseUploadPath}/settings/members`}
           className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200 ${
-              isActive
-                ? "bg-[#a61c1e] text-white font-medium shadow-md"
-                : "text-[#a3a3a6] hover:bg-[#202022] hover:text-white"
+            `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200 ${isActive
+              ? "bg-[#a61c1e] text-white font-medium shadow-md"
+              : "text-[#a3a3a6] hover:bg-[#202022] hover:text-white"
             }`
           }
         >

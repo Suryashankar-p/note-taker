@@ -22,11 +22,11 @@ const SkyscraperProductFamilies = ({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-      <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase mb-2">
+    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm text-gray-800">
+      <h3 className="text-sm font-bold tracking-wider text-gray-550 uppercase mb-2">
         Product families — {selectedQuarter}
       </h3>
-      <p className="text-[10px] text-gray-400 mb-4">
+      <p className="text-[10px] text-gray-400 mb-4 font-semibold uppercase">
         Showing all {families.length} families.
       </p>
 
@@ -42,19 +42,19 @@ const SkyscraperProductFamilies = ({
               <th className="p-3 text-center">Share</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-gray-600">
             {families.map((fam, index) => {
               const isPositive = fam.delta >= 0;
               return (
-                <tr key={index} className="border-b border-gray-150 hover:bg-gray-50 transition-colors">
-                  <td className="p-3 font-semibold text-gray-800">{fam.name}</td>
-                  <td className="p-3 text-center text-gray-600">{fam.actual.toFixed(1)}%</td>
-                  <td className="p-3 text-center text-gray-600">{fam.target.toFixed(1)}%</td>
+                <tr key={index} className="border-b border-gray-150 hover:bg-gray-50/50 transition-colors">
+                  <td className="p-3 font-semibold text-gray-900">{fam.name}</td>
+                  <td className="p-3 text-center">{fam.actual.toFixed(1)}%</td>
+                  <td className="p-3 text-center">{fam.target.toFixed(1)}%</td>
                   <td className={`p-3 text-center font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
                     {isPositive ? "+" : ""}{fam.delta.toFixed(1)}
                   </td>
-                  <td className="p-3 text-center text-gray-600">{formatRevInLakhs(fam.revenueInr)}</td>
-                  <td className="p-3 text-center text-gray-600">{fam.share.toFixed(1)}%</td>
+                  <td className="p-3 text-center">{formatRevInLakhs(fam.revenueInr)}</td>
+                  <td className="p-3 text-center">{fam.share.toFixed(1)}%</td>
                 </tr>
               );
             })}

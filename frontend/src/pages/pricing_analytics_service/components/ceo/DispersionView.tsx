@@ -1,85 +1,75 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import DispersionBoxes from "./DispersionBoxes";
 import DispersionCharts from "./DispersionCharts";
 import DispersionMovementExamples from "./DispersionMovementExamples";
-import { useGetDispersion } from "../../services/query/query";
-import { useOutletContext } from "react-router-dom";
+import { buDispersionMock } from "../../constants/mockData";
 
 const DispersionView = () => {
-  const context = useOutletContext<any>() || {};
-  const onNavigateToTab = context.onNavigateToTab;
-
-  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
+  const { bu } = useParams<{ bu: string }>();
+  const navigate = useNavigate();
+  const [selectedFamily, setSelectedFamily] = useState<string>("Air nozzle");
   const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
 
-  const { data, isLoading, isFetching } = useGetDispersion(sessionId, selectedFamily, selectedQuarter);
-
-  const sortedQuarters = [
-    "Q1 FY 24",
-    "Q2 FY 24",
-    "Q3 FY 24",
-    "Q4 FY 24",
-    "Q1 FY 25",
-    "Q2 FY 25",
-    "Q3 FY 25",
-    "Q4 FY 25",
-    "Q1 FY 26",
-    "Q2 FY 26",
-    "Q3 FY 26",
-    "Q4 FY 26"
-  ];
-
-  useEffect(() => {
-    if (data?.families && data.families.length > 0 && !selectedFamily) {
-      setSelectedFamily(data.families[0].nk);
-    }
-  }, [data?.families, selectedFamily]);
-
-  const isInitialLoading = isLoading && !data;
-
-  if (isInitialLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-700"></div>
-      </div>
-    );
-  }
+  const activeBu = bu || "heating";
+  const mockData = buDispersionMock[activeBu] || buDispersionMock["heating"];
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto text-gray-800">
       {/* 1. Upper Dispersion Boxes */}
       <DispersionBoxes
-        qoqCards={data?.qoq_cards || []}
+        qoqCards={mockData.qoqMovement || []}
         selectedQuarter={selectedQuarter}
         setSelectedQuarter={setSelectedQuarter}
-        quarters={sortedQuarters}
-        isFetching={isFetching && !isInitialLoading}
+        quarters={["Q4 FY 26"]}
+        isFetching={false}
       />
 
       {/* 2. Dispersion Curve and Trend Line Charts */}
       <DispersionCharts
-        familyDispersion={data?.family_dispersion}
-        families={data?.families || []}
+        familyDispersion={{
+          curve: mockData.dispersionCurve,
+          trend: mockData.trendLine,
+        }}
+        families={[
+          { nk: "Air nozzle", display_name: "Air nozzle" },
+          { nk: "Compressor", display_name: "Compressor" },
+          { nk: "Membranes", display_name: "Membranes" },
+        ]}
         selectedFamily={selectedFamily}
         setSelectedFamily={setSelectedFamily}
-        isFetching={isFetching && !isInitialLoading}
+        isFetching={false}
       />
 
       {/* 3. Examples Table */}
       <DispersionMovementExamples
         setSelectedFamily={setSelectedFamily}
-        dispersionExamples={data?.dispersion_examples}
+        dispersionExamples={mockData.examples}
         selectedQuarter={selectedQuarter}
       />
 
-      <div className="flex items-center justify-start border-t border-gray-200 pt-6 mt-4">
+      <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-4">
         <button
-          onClick={() => onNavigateToTab?.("skycraper")}
+          onClick={() => navigate("../select-bu")}
           className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
         >
-          Previous
+          ← Welcome
         </button>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate(`../${activeBu}/revenue-gm-ladder`)}
+            className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
+          >
+            ← Previous
+          </button>
+          <button
+            onClick={() => navigate("../select-bu")}
+            className="px-6 py-2 bg-[#a61c1e] hover:bg-[#8e181a] text-white font-bold rounded-lg text-xs tracking-wide transition-all shadow-md active:scale-95"
+          >
+            Back to business units
+          </button>
+        </div>
       </div>
     </div>
   );
