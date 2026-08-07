@@ -7,6 +7,7 @@ interface ClassificationGridProps {
   quartersList?: string[];
   selectedQuarter?: string;
   setSelectedQuarter?: (qtr: string) => void;
+  activeBu?: string;
 }
 
 const ClassificationGrid = ({
@@ -14,6 +15,7 @@ const ClassificationGrid = ({
   quartersList = [],
   selectedQuarter: propsSelectedQuarter,
   setSelectedQuarter: propsSetSelectedQuarter,
+  activeBu,
 }: ClassificationGridProps) => {
   const [selectedDetails, setSelectedDetails] = useState<{
     title: string;
@@ -110,7 +112,7 @@ const ClassificationGrid = ({
           Classification × Freq to buy • {activeQuarter}
         </div>
         <div className="text-lg font-extrabold text-gray-900 mt-1">
-          Heating overall GM: <span className="text-[#a61c1e]">{pooledActualGm.toFixed(2)}%</span>
+          {activeBu ? activeBu.charAt(0).toUpperCase() + activeBu.slice(1) : "Heating"} overall GM: <span className="text-[#a61c1e]">{pooledActualGm.toFixed(2)}%</span>
         </div>
       </div>
 

@@ -27,15 +27,21 @@ ChartJS.register(
 interface DispersionChartsProps {
   familyDispersion?: {
     curve?: {
-      baseline: number[];
-      lastQuarter: number[];
-      currentQuarter: number[];
-    };
+      baseline?: any[];
+      prior_quarter?: any[];
+      lastQuarter?: any[];
+      current_quarter?: any[];
+      currentQuarter?: any[];
+    } | null;
     trend?: Array<{
       quarter: string;
-      mean: number;
-      range: number[];
-    }>;
+      std_dev?: number;
+      lower_band?: number;
+      upper_band?: number;
+      mean_gm_pct?: number;
+      mean?: number;
+      range?: number[];
+    }> | null;
   } | null;
   families: Array<{
     nk: string;
@@ -56,14 +62,23 @@ const DispersionCharts = ({
   const [selectedClassification, setSelectedClassification] = useState<string>("All");
 
   const activeFamily = selectedFamily || "Air nozzle";
+  const activeFamilyDisplayName = families.find((f) => f.nk === activeFamily)?.display_name || activeFamily;
 
-  const curveLabels = ["-10%", "0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"];
+  const baselineData = familyDispersion?.curve?.baseline || [];
+  const priorData = familyDispersion?.curve?.prior_quarter || familyDispersion?.curve?.lastQuarter || [];
+  const currentData = familyDispersion?.curve?.current_quarter || familyDispersion?.curve?.currentQuarter || [];
+
+  const hasCurveData = baselineData.length > 0;
+  const curveLabels = hasCurveData
+    ? baselineData.map((pt: any) => `${pt.x}%`)
+    : ["-10%", "0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%"];
+
   const curveData = {
     labels: curveLabels,
     datasets: [
       {
-        label: "Baseline (Q4 FY 24 + Q1 FY 25)",
-        data: familyDispersion?.curve?.baseline || [10, 15, 30, 60, 95, 120, 110, 80, 45, 20, 5],
+        label: "Baseline",
+        data: hasCurveData ? baselineData.map((pt: any) => pt.y) : [],
         borderColor: "#94a3b8",
         borderWidth: 2,
         tension: 0.35,
@@ -71,8 +86,8 @@ const DispersionCharts = ({
         pointRadius: 0,
       },
       {
-        label: "Last Quarter (Q3 FY 26)",
-        data: familyDispersion?.curve?.lastQuarter || [8, 12, 25, 55, 90, 130, 115, 75, 40, 15, 4],
+        label: "Last Quarter",
+        data: priorData.length > 0 ? priorData.map((pt: any) => pt.y) : [],
         borderColor: "#f43f5e",
         borderWidth: 2,
         tension: 0.35,
@@ -80,8 +95,8 @@ const DispersionCharts = ({
         pointRadius: 0,
       },
       {
-        label: "Current Quarter (Q4 FY 26)",
-        data: familyDispersion?.curve?.currentQuarter || [6, 10, 20, 50, 85, 140, 125, 70, 35, 12, 3],
+        label: "Current Quarter",
+        data: currentData.length > 0 ? currentData.map((pt: any) => pt.y) : [],
         borderColor: "#a61c1e",
         borderWidth: 2,
         tension: 0.35,
@@ -93,16 +108,16 @@ const DispersionCharts = ({
 
   const trendDataList = familyDispersion?.trend || [];
   const trendLabels = trendDataList.map((t) => t.quarter);
-  const trendMeans = trendDataList.map((t) => t.mean);
-  const trendUppers = trendDataList.map((t) => t.range[1]);
-  const trendLowers = trendDataList.map((t) => t.range[0]);
+  const trendMeans = trendDataList.map((t) => t.mean_gm_pct ?? t.mean);
+  const trendUppers = trendDataList.map((t) => t.upper_band ?? t.range?.[1]);
+  const trendLowers = trendDataList.map((t) => t.lower_band ?? t.range?.[0]);
 
   const trendData = {
-    labels: trendLabels.length > 0 ? trendLabels : ["Q1 FY 25", "Q2 FY 25", "Q3 FY 25", "Q4 FY 25", "Q1 FY 26", "Q2 FY 26", "Q3 FY 26", "Q4 FY 26"],
+    labels: trendLabels,
     datasets: [
       {
         label: "Mean GM%",
-        data: trendMeans.length > 0 ? trendMeans : [52.4, 51.9, 52.8, 53.5, 54.1, 55.3, 53.9, 54.8],
+        data: trendMeans.length > 0 && trendMeans[0] !== undefined ? trendMeans : [],
         borderColor: "#06b6d4",
         borderWidth: 2.5,
         tension: 0.3,
@@ -112,7 +127,7 @@ const DispersionCharts = ({
       },
       {
         label: "Upper Confidence Band",
-        data: trendUppers.length > 0 ? trendUppers : [59.7, 59.0, 59.6, 61.2, 61.7, 62.8, 61.8, 62.5],
+        data: trendUppers.length > 0 && trendUppers[0] !== undefined ? trendUppers : [],
         borderColor: "rgba(6, 182, 212, 0.02)",
         backgroundColor: "rgba(6, 182, 212, 0.02)",
         fill: "+1",
@@ -121,7 +136,7 @@ const DispersionCharts = ({
       },
       {
         label: "Lower Confidence Band",
-        data: trendLowers.length > 0 ? trendLowers : [45.1, 44.8, 46.0, 45.8, 46.5, 47.8, 46.0, 47.1],
+        data: trendLowers.length > 0 && trendLowers[0] !== undefined ? trendLowers : [],
         borderColor: "rgba(6, 182, 212, 0.02)",
         fill: false,
         tension: 0.3,
@@ -179,7 +194,7 @@ const DispersionCharts = ({
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm relative text-gray-800">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-b border-gray-200 pb-4">
-        <h3 className="text-base font-bold text-gray-900">Family-level GM% dispersion — {activeFamily}</h3>
+        <h3 className="text-base font-bold text-gray-900">Family-level GM% dispersion — {activeFamilyDisplayName}</h3>
         <div className="flex gap-3">
           <CustomSelect
             options={["All", "Proprietary", "Value-added", "Commodity"]}
@@ -188,7 +203,7 @@ const DispersionCharts = ({
             labelPrefix="Classification: "
           />
           <CustomSelect
-            options={families.map((f) => f.display_name)}
+            options={families.map((f) => ({ value: f.nk, label: f.display_name }))}
             value={activeFamily}
             onChange={(val) => setSelectedFamily(val)}
             labelPrefix="Product Family: "

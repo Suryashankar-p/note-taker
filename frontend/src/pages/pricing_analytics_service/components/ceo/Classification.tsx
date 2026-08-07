@@ -10,11 +10,11 @@ const Classification = () => {
   const navigate = useNavigate();
   const activeBu = bu || "heating";
 
-  const { data: classificationData, isLoading, error } = useGetClassificationMatrix(activeBu);
   const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+  const { data: classificationData, isLoading, error } = useGetClassificationMatrix(activeBu, selectedQuarter || undefined);
 
   const quartersList = useMemo(() => {
-    return classificationData?.quarters || [];
+    return classificationData?.available_quarters || classificationData?.quarters || [];
   }, [classificationData]);
 
   useEffect(() => {
@@ -49,8 +49,8 @@ const Classification = () => {
     );
   }
 
-  const activeQuarter = selectedQuarter || classificationData.latestQuarter || "";
-  const activeData = classificationData.quarterMatrices?.[activeQuarter] || null;
+  const activeQuarter = selectedQuarter || classificationData.quarter || "";
+  const activeData = classificationData || null;
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto text-gray-800">
@@ -59,6 +59,7 @@ const Classification = () => {
         quartersList={quartersList}
         selectedQuarter={activeQuarter}
         setSelectedQuarter={setSelectedQuarter}
+        activeBu={activeBu}
       />
 
       {activeData?.insights?.insight_texts && (

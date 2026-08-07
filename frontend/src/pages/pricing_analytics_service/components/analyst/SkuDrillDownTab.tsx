@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { AlertCircle } from "lucide-react";
-import { useOutletContext, useParams } from "react-router-dom";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useOutletContext, useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Dispatch, RootState } from "../../../../redux/store";
+import Toast from "../../../../components/Toast";
 import CustomSelect from "../CustomSelect";
 import {
   type SkuNonStdRow,
@@ -9,6 +12,7 @@ import {
   fmtLakhs,
   fmtPP,
   useGetSkuDeviation,
+  usePublish,
 } from "../../services/query/query";
 import PageLoading from "../../../../components/PageLoading";
 
@@ -23,6 +27,13 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
   const onNavigateToTab = context.onNavigateToTab;
   const { bu } = useParams<{ bu?: string }>();
   const activeBu = bu || "heating";
+  const buLabel = activeBu.charAt(0).toUpperCase() + activeBu.slice(1);
+
+  const navigate = useNavigate();
+  const dispatch = useDispatch<Dispatch>();
+  const toastStatus = useSelector((state: RootState) => state.toast);
+  const [showPublishModal, setShowPublishModal] = useState<boolean>(false);
+  const { mutate: publish, isPending: isPublishing } = usePublish();
 
   const selectedFamily =
     propsSelectedFamily !== undefined
@@ -86,8 +97,50 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
   const getChannelValue = (item: SkuNonStdRow | SkuStandardRow) =>
     item.channel_or_direct ?? item.channel_direct ?? item.channel ?? "—";
 
+  const handlePublishClick = () => {
+    setShowPublishModal(true);
+  };
+
+  const handleConfirmPublish = () => {
+    publish(
+      { business_unit: activeBu },
+      {
+        onSuccess: (data: any) => {
+          if (data && data.detail) {
+            dispatch.toast.openToast({
+              status: true,
+              message: data.detail,
+              type: "error",
+            });
+            return;
+          }
+
+          dispatch.toast.openToast({
+            status: true,
+            message: data.message || "Workspace published successfully",
+            type: "success",
+          });
+          setShowPublishModal(false);
+          navigate("/ai-studio/pricing-analytics/workspace/dashboard/analyst/select-bu");
+        },
+        onError: (error: any) => {
+          dispatch.toast.openToast({
+            status: true,
+            message: error?.response?.data?.detail || "Publishing failed",
+            type: "error",
+          });
+        },
+      }
+    );
+  };
+
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
+      {toastStatus.status && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-4">
+          <Toast type={toastStatus.type as "success" | "error"} />
+        </div>
+      )}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h3 className="text-sm font-bold tracking-tight text-gray-850">
@@ -360,14 +413,56 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-start border-t border-gray-200 pt-6 mt-4">
+      <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-4">
         <button
           onClick={() => onNavigateToTab?.("qoq-matrix")}
           className="px-5 py-2 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 rounded-lg text-xs font-semibold tracking-wide transition-colors shadow-sm"
         >
           Previous
         </button>
+        <button
+          onClick={handlePublishClick}
+          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs tracking-wider uppercase transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer"
+        >
+          Publish Workspace
+        </button>
       </div>
+
+      {showPublishModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
+          <div className="bg-white border border-slate-100 rounded-2xl p-6 w-[450px] max-w-full text-slate-800 shadow-xl text-left">
+            <h3 className="text-sm font-extrabold mb-3 text-slate-900 uppercase tracking-wider">
+              Publish Draft Calculations
+            </h3>
+            <p className="text-xs text-slate-650 mb-6 leading-relaxed">
+              Are you sure you want to publish the draft calculations for the <strong>{buLabel}</strong> business unit? This will promote the latest compiled data to the live dashboard for CEO/CFO view.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowPublishModal(false)}
+                disabled={isPublishing}
+                className="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPublish}
+                disabled={isPublishing}
+                className="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  "Confirm & Publish"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

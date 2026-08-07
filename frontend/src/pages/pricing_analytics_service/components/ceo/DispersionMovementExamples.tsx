@@ -2,10 +2,7 @@ import React from "react";
 
 interface DispersionMovementExamplesProps {
   setSelectedFamily: (val: string) => void;
-  dispersionExamples?: Array<{
-    category: string;
-    examples: string[];
-  }>;
+  dispersionExamples?: any;
   selectedQuarter?: string;
 }
 
@@ -14,30 +11,38 @@ const DispersionMovementExamples = ({
   dispersionExamples,
   selectedQuarter = "",
 }: DispersionMovementExamplesProps) => {
-  const defaultCategories = [
-    {
-      category: "GM gone up, Dispersion came down",
-      examples: ["Heat Pump (Unclassified)", "Panel 2 (VA) (Value-added)"],
-    },
-    {
-      category: "GM gone up, Dispersion gone up",
-      examples: ["Burner 1 (Commodity)", "PUMP 1 (Commodity)"],
-    },
-    {
-      category: "GM flat, dispersion down",
-      examples: ["Pressure switch (Commodity)", "Ignition transformer (Commodity)"],
-    },
-  ];
+  const getPriorQuarter = (qtr: string) => {
+    const match = qtr.match(/Q(\d)\s+FY\s+(\d+)/);
+    if (!match) return "";
+    const q = parseInt(match[1]);
+    const y = parseInt(match[2]);
+    if (q === 1) {
+      return `Q4 FY ${y - 1}`;
+    }
+    return `Q${q - 1} FY ${y}`;
+  };
 
-  const categories = dispersionExamples || defaultCategories;
+  let categories: Array<{ category: string; examples: string[] }> = [];
+  if (Array.isArray(dispersionExamples)) {
+    categories = dispersionExamples;
+  } else if (dispersionExamples && typeof dispersionExamples === "object") {
+    categories = Object.entries(dispersionExamples).map(([key, val]) => ({
+      category: key,
+      examples: Array.isArray(val) ? val : [],
+    }));
+  }
+
+  if (categories.length === 0) {
+    return null;
+  }
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm text-gray-800">
       <h3 className="text-sm font-bold tracking-wider text-gray-550 uppercase mb-2">
-        Dispersion movement examples
+        Dispersion movement examples {selectedQuarter ? `(${selectedQuarter})` : ""}
       </h3>
       <p className="text-[10px] text-gray-400 mb-4 font-semibold uppercase">
-        Click a family to update the dispersion charts above.
+        Click a family to update the dispersion charts above.{selectedQuarter ? ` GM movement vs prior quarter (${getPriorQuarter(selectedQuarter)}); dispersion vs baseline (Q4 FY 24 + Q1 FY 25).` : ""}
       </p>
 
       <table className="w-full text-xs text-left border border-gray-200 rounded-xl overflow-hidden">
@@ -59,14 +64,18 @@ const DispersionMovementExamples = ({
                     <span className="text-gray-400 italic text-[11px]">No examples</span>
                   ) : (
                     ex.examples.map((item, itemIdx) => {
-                      const cleanNk = item.split(" (")[0];
+                      if (!item) return null;
+                      const isString = typeof item === "string";
+                      const anyItem = item as any;
+                      const itemText = isString ? item : (anyItem.display_name || anyItem.name || anyItem.display || anyItem.nk || "");
+                      const cleanNk = isString ? item.split(" (")[0] : (anyItem.nk || anyItem.name || "");
                       return (
                         <span
                           key={itemIdx}
                           onClick={() => setSelectedFamily(cleanNk)}
                           className="bg-gray-100 hover:bg-gray-200 border border-gray-250 px-2.5 py-1 rounded-md text-[11px] font-medium text-gray-700 cursor-pointer transition-colors shadow-xs"
                         >
-                          {item}
+                          {itemText}
                         </span>
                       );
                     })

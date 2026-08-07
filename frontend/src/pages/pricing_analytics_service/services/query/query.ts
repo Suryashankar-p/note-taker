@@ -297,12 +297,13 @@ export const usePublish = () => {
 };
 
 export const useGetOverallMargin = (businessUnit: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["overall-margin", businessUnit],
+    queryKey: ["overall-margin", businessUnit, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/overall-margin",
-        { business_unit: businessUnit },
+        { business_unit: businessUnit, published_only: publishedOnly },
       );
       return response;
     },
@@ -311,12 +312,13 @@ export const useGetOverallMargin = (businessUnit: string) => {
 };
 
 export const useGetBusinessInsights = (businessUnit: string, quarter?: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["business-insights", businessUnit, quarter],
+    queryKey: ["business-insights", businessUnit, quarter, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/business-insights",
-        { business_unit: businessUnit, quarter: quarter || null },
+        { business_unit: businessUnit, quarter: quarter || null, published_only: publishedOnly },
       );
       return response;
     },
@@ -328,12 +330,13 @@ export const useGetClassificationMatrix = (
   businessUnit: string,
   quarter?: string,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["classification-matrix", businessUnit, quarter],
+    queryKey: ["classification-matrix", businessUnit, quarter, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/classification-matrix",
-        { business_unit: businessUnit, quarter: quarter || null },
+        { business_unit: businessUnit, quarter: quarter || null, published_only: publishedOnly },
       );
       return response;
     },
@@ -342,11 +345,13 @@ export const useGetClassificationMatrix = (
 };
 
 export const useGetSkyscraper = (businessUnit: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["skyscraper", businessUnit],
+    queryKey: ["skyscraper", businessUnit, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post("/analytics/skyscraper", {
         business_unit: businessUnit,
+        published_only: publishedOnly,
       });
       return transformSkyscraperData(response);
     },
@@ -359,13 +364,15 @@ export const useGetQoqMatrix = (
   quarter?: string,
   familyNk?: string | null,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["qoq-matrix", businessUnit, quarter, familyNk],
+    queryKey: ["qoq-matrix", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post("/analytics/qoq-matrix", {
         business_unit: businessUnit,
         quarter: quarter || null,
         family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+        published_only: publishedOnly,
       });
       return transformQoqMatrixData(response);
     },
@@ -374,12 +381,13 @@ export const useGetQoqMatrix = (
 };
 
 export const useGetSnapshotKpis = (businessUnit: string, quarter?: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["snapshot-kpis", businessUnit, quarter],
+    queryKey: ["snapshot-kpis", businessUnit, quarter, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/snapshot-kpis",
-        { business_unit: businessUnit, quarter: quarter || null },
+        { business_unit: businessUnit, quarter: quarter || null, published_only: publishedOnly },
       );
       return response;
     },
@@ -407,13 +415,15 @@ export const useGetDispersion = (
   quarter: string | null,
   familyNk?: string | null,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["dispersion", businessUnit, quarter, familyNk],
+    queryKey: ["dispersion", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post("/analytics/dispersion", {
         business_unit: businessUnit,
         quarter: quarter,
         family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+        published_only: publishedOnly,
       });
       return response;
     },
@@ -427,8 +437,9 @@ export const useGetQoqDistribution = (
   quarter: string | null,
   familyNk: string | null,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["qoq-distribution", businessUnit, quarter, familyNk],
+    queryKey: ["qoq-distribution", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/qoq-distribution",
@@ -436,6 +447,7 @@ export const useGetQoqDistribution = (
           business_unit: businessUnit,
           quarter: quarter,
           family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+          published_only: publishedOnly,
         },
       );
       return response;
@@ -450,8 +462,9 @@ export const useGetSkuDeviation = (
   quarter?: string | null,
   familyNk?: string | null,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["sku-deviation", businessUnit, quarter, familyNk],
+    queryKey: ["sku-deviation", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/sku-deviation",
@@ -459,6 +472,7 @@ export const useGetSkuDeviation = (
           business_unit: businessUnit,
           quarter: quarter || null,
           family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+          published_only: publishedOnly,
         },
       );
       return transformSkuDeviationData(response);
@@ -469,13 +483,15 @@ export const useGetSkuDeviation = (
 };
 
 export const useGetGmDecompose = (businessUnit: string, quarter?: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["gm-decompose", businessUnit, quarter],
+    queryKey: ["gm-decompose", businessUnit, quarter, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/gm-decompose",
         {
           business_unit: businessUnit,
+          published_only: publishedOnly,
           ...(quarter ? { quarter } : {}),
         },
       );

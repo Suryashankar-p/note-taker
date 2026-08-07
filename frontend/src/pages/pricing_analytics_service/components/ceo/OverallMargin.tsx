@@ -12,9 +12,8 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import { useGetOverallMargin } from "../../services/query/query";
+import { overallMarginTableData as mockTableData, marginTrendChartMock as mockTrendData } from "../../constants/mockData";
 import CustomSelect from "../CustomSelect";
-import PageLoading from "../../../../components/PageLoading";
 
 ChartJS.register(
   CategoryScale,
@@ -40,20 +39,7 @@ const OverallMargin = () => {
   const navigate = useNavigate();
   const [selectedBU, setSelectedBU] = useState<string>("All BUs");
 
-  // Fetch real data for all three BUs
-  const heatingQuery = useGetOverallMargin("heating");
-  const coolingQuery = useGetOverallMargin("cooling");
-  const waterQuery = useGetOverallMargin("water");
-
-  const isLoading = heatingQuery.isLoading || coolingQuery.isLoading || waterQuery.isLoading;
-
-  const overallMarginTableData = useMemo(() => {
-    const list: any[] = [];
-    if (heatingQuery.data?.bridge_table) list.push(...heatingQuery.data.bridge_table);
-    if (coolingQuery.data?.bridge_table) list.push(...coolingQuery.data.bridge_table);
-    if (waterQuery.data?.bridge_table) list.push(...waterQuery.data.bridge_table);
-    return list;
-  }, [heatingQuery.data, coolingQuery.data, waterQuery.data]);
+  const overallMarginTableData = mockTableData;
 
   // Quarters list from table data
   const tableQuarters = useMemo(() => {
@@ -68,36 +54,28 @@ const OverallMargin = () => {
 
   // Quarters list for the trend chart
   const trendQuarters = useMemo(() => {
-    const qSet = new Set<string>();
-    heatingQuery.data?.margin_trend?.forEach((item: any) => qSet.add(item.quarter));
-    coolingQuery.data?.margin_trend?.forEach((item: any) => qSet.add(item.quarter));
-    waterQuery.data?.margin_trend?.forEach((item: any) => qSet.add(item.quarter));
-    return Array.from(qSet).sort(sortQuarters);
-  }, [heatingQuery.data, coolingQuery.data, waterQuery.data]);
+    return mockTrendData.map((item) => item.quarter);
+  }, []);
 
   const latestQuarter = trendQuarters[trendQuarters.length - 1] || "Q4 FY 26";
 
   const heatingTrendMap = useMemo(() => {
     const map = new Map<string, number>();
-    heatingQuery.data?.margin_trend?.forEach((item: any) => map.set(item.quarter, item.overall_gm_pct));
+    mockTrendData.forEach((item: any) => map.set(item.quarter, item.Heating));
     return map;
-  }, [heatingQuery.data]);
+  }, []);
 
   const coolingTrendMap = useMemo(() => {
     const map = new Map<string, number>();
-    coolingQuery.data?.margin_trend?.forEach((item: any) => map.set(item.quarter, item.overall_gm_pct));
+    mockTrendData.forEach((item: any) => map.set(item.quarter, item.Cooling));
     return map;
-  }, [coolingQuery.data]);
+  }, []);
 
   const waterTrendMap = useMemo(() => {
     const map = new Map<string, number>();
-    waterQuery.data?.margin_trend?.forEach((item: any) => map.set(item.quarter, item.overall_gm_pct));
+    mockTrendData.forEach((item: any) => map.set(item.quarter, item.Water));
     return map;
-  }, [waterQuery.data]);
-
-  if (isLoading) {
-    return <PageLoading />;
-  }
+  }, []);
 
   // Table rendering logic
   const renderTable = () => {
