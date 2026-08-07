@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Settings, Database, FolderOpen, Loader2, MoreVertical, Trash2, Edit2, Check, X } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useGetSessions, useDeleteSession, useUpdateSession } from "../services/query/query";
+// Sessions list imports removed
 
 const UploadSidebar = () => {
   const { pathname } = useLocation();

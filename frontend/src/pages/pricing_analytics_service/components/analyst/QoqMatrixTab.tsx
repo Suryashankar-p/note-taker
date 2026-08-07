@@ -3,7 +3,8 @@ import { useOutletContext, useParams } from "react-router-dom";
 import QoqMatrixTable from "./QoqMatrixTable";
 import QoqDrilldownTable from "./QoqDrilldownTable";
 import QoqPerformanceCharts from "./QoqPerformanceCharts";
-import { analystQoqMatrixMock } from "../../constants/analystMockData";
+import { useGetQoqMatrix } from "../../services/query/query";
+import PageLoading from "../../../../components/PageLoading";
 
 interface CellData {
   row: string;
@@ -66,9 +67,9 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 }) => {
   const context = useOutletContext<any>() || {};
   const { bu } = useParams<{ bu?: string }>();
-
   const activeBu = bu || "heating";
-  const data = analystQoqMatrixMock[activeBu] || analystQoqMatrixMock.heating;
+
+  const { data, isLoading, error } = useGetQoqMatrix(activeBu);
 
   const selectedQoqCell = propsSelectedQoqCell !== undefined ? propsSelectedQoqCell : context.selectedQoqCell;
   const setSelectedQoqCell = propsSetSelectedQoqCell || context.setSelectedQoqCell;
@@ -77,9 +78,11 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   const onNavigateToSku = propsOnNavigateToSku || context.onNavigateToSku;
   const onNavigateToTab = propsOnNavigateToTab || context.onNavigateToTab;
 
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
 
-  const sortedQuarters: string[] = data.quarters || [];
+  const sortedQuarters = useMemo(() => {
+    return data?.quarters || [];
+  }, [data]);
 
   useEffect(() => {
     if (sortedQuarters.length > 0 && !selectedQuarter) {
@@ -87,18 +90,23 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     }
   }, [sortedQuarters, selectedQuarter]);
 
+  const is404 = useMemo(() => {
+    const check404 = (err: any) => err?.response?.status === 404 || err?.status === 404;
+    return check404(error);
+  }, [error]);
+
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
 
-  const apiFamilyDetails = data.familyDetails || {};
-  const familyHistory = data.familyHistory || {};
+  const apiFamilyDetails = data?.familyDetails || {};
+  const familyHistory = data?.familyHistory || {};
 
   const getFamilyMockDetails = useCallback((name: string) => {
     const key = name.toLowerCase();
 
     const stats = familyHistory[key]?.[activeQuarter] || apiFamilyDetails[key];
     const nkKey = stats?.nk ? stats.nk.toLowerCase() : key;
-    const actualVal = stats?.actual_gm_pct ?? 51.9;
-    const targetVal = stats?.target_gm_pct ?? 52.0;
+    const actualVal = stats?.actual_gm_pct ?? 0;
+    const targetVal = stats?.target_gm_pct ?? 0;
     const baselineVal = stats?.baseline_gm_pct ?? targetVal;
     const gap = stats?.delta_pp ?? (actualVal - targetVal);
 
@@ -106,8 +114,8 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       const fStats = familyHistory[key]?.[q] ?? familyHistory[nkKey]?.[q];
       return {
         quarter: q,
-        revenue: fStats ? fStats.revenue_inr / 100000 : 150,
-        gm: fStats ? fStats.actual_gm_pct : 51.9,
+        revenue: fStats ? fStats.revenue_inr / 100000 : 0,
+        gm: fStats ? fStats.actual_gm_pct : 0,
       };
     });
 
@@ -117,10 +125,10 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     const median = stats?.median_gm_pct ?? actualVal;
     const std = stats?.std_dev_gm_pct ?? 0.0;
 
-    const revenueInr = stats?.revenue_inr || 15061000;
+    const revenueInr = stats?.revenue_inr || 0;
     return {
       name,
-      revenue: revenueInr > 0 ? `₹${(revenueInr / 100000).toFixed(2)}L` : "₹150.61L",
+      revenue: `₹${(revenueInr / 100000).toFixed(2)}L`,
       actual: `${actualVal.toFixed(1)}%`,
       target: `${targetVal.toFixed(1)}%`,
       delta: `${gap >= 0 ? "+" : ""}${gap.toFixed(1)}`,
@@ -129,17 +137,17 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
       baseline: baselineVal,
       targetVal,
       mean: `${mean.toFixed(1)}%`,
-      stdDev: std > 0 ? `${std.toFixed(1)}%` : "9.3%",
+      stdDev: `${std.toFixed(1)}%`,
       median: `${median.toFixed(1)}%`,
       min: `${min.toFixed(1)}%`,
       max: `${max.toFixed(1)}%`,
-      transactionCount: stats?.transaction_count ?? 694,
+      transactionCount: stats?.transaction_count ?? 0,
       familyNk: stats?.nk ?? key,
     };
   }, [apiFamilyDetails, familyHistory, sortedQuarters, activeQuarter]);
 
   const matrixData = useMemo(() => {
-    const activeMatrix = data.quarterMatrices?.[activeQuarter] || data.matrix || {};
+    const activeMatrix = data?.quarterMatrices?.[activeQuarter] || data?.matrix || {};
     const result: Record<string, Record<string, { count: number; color: string; families: string[]; familyData: any[] }>> = {};
 
     rows.forEach((rowName) => {
@@ -172,6 +180,27 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   const getRowTotal = useCallback((r: string) => {
     return columns.reduce((sum, c) => sum + (matrixData[r]?.[c]?.count || 0), 0);
   }, [matrixData]);
+
+  if (isLoading) {
+    return <PageLoading />;
+  }
+
+  if (is404 || !data || sortedQuarters.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white border border-dashed border-gray-300 rounded-2xl p-8 text-center">
+        <h2 className="text-base font-bold text-gray-900 mb-2">No Qoq Matrix Data Available</h2>
+        <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
+          The {activeBu} workspace has no Qoq Matrix data compiled. Upload the required files to start.
+        </p>
+        <button
+          onClick={() => onNavigateToTab?.("upload")}
+          className="px-4 py-2 bg-[#a61c1e] text-white hover:bg-red-700 font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm"
+        >
+          Go to Upload Page
+        </button>
+      </div>
+    );
+  }
 
   const activeFamiliesList = selectedQoqCell
     ? matrixData[selectedQoqCell.row]?.[selectedQoqCell.col]?.familyData || []

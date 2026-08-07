@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { useGetSnapshotKpis } from "../../services/query/query";
 import CustomSelect from "../CustomSelect";
 
@@ -11,8 +12,9 @@ const ExecutiveSnapshot = ({
   activeQuarter?: string;
   setActiveQuarter?: (q: string) => void;
 }) => {
-  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data: snapshotKpis, isLoading } = useGetSnapshotKpis(sessionId, activeQuarter);
+  const { bu } = useParams<{ bu?: string }>();
+  const activeBu = bu || "heating";
+  const { data: snapshotKpis, isLoading } = useGetSnapshotKpis(activeBu, activeQuarter);
 
   const activeData = Array.isArray(snapshotKpis)
     ? (snapshotKpis.find((item: any) => item.quarter === activeQuarter) || snapshotKpis[0])

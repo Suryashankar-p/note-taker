@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { useOutletContext, useParams } from "react-router-dom";
 import CustomSelect from "../CustomSelect";
@@ -8,8 +8,9 @@ import {
   fmt,
   fmtLakhs,
   fmtPP,
+  useGetSkuDeviation,
 } from "../../services/query/query";
-import { analystSkuDeviationMock } from "../../constants/analystMockData";
+import PageLoading from "../../../../components/PageLoading";
 
 interface SkuDrillDownTabProps {
   selectedFamily?: string | null;
@@ -21,23 +22,59 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
   const context = useOutletContext<any>() || {};
   const onNavigateToTab = context.onNavigateToTab;
   const { bu } = useParams<{ bu?: string }>();
-
   const activeBu = bu || "heating";
-  const data = analystSkuDeviationMock[activeBu] || analystSkuDeviationMock.heating;
 
   const selectedFamily =
     propsSelectedFamily !== undefined
       ? propsSelectedFamily
       : context.selectedFamily;
 
-  const sortedQuarters = [
-    "Q4 FY 26",
-  ];
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
 
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
+  const { data: skuData, isLoading, error } = useGetSkuDeviation(
+    activeBu,
+    selectedQuarter || null,
+    selectedFamily || null
+  );
 
-  const activeQuarter = selectedQuarter;
-  const quarterData = data?.quarterMap?.[activeQuarter];
+  const sortedQuarters = useMemo(() => {
+    return skuData?.sortedQuarters || [];
+  }, [skuData]);
+
+  useEffect(() => {
+    if (sortedQuarters.length > 0 && !selectedQuarter) {
+      setSelectedQuarter(sortedQuarters[sortedQuarters.length - 1]);
+    }
+  }, [sortedQuarters, selectedQuarter]);
+
+  const is404 = useMemo(() => {
+    const check404 = (err: any) => err?.response?.status === 404 || err?.status === 404;
+    return check404(error);
+  }, [error]);
+
+  if (isLoading) {
+    return <PageLoading />;
+  }
+
+  if (is404 || !skuData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white border border-dashed border-gray-300 rounded-2xl p-8 text-center">
+        <h2 className="text-base font-bold text-gray-900 mb-2">No SKU Deviation Data Available</h2>
+        <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
+          The {activeBu} workspace has no SKU deviation data compiled. Upload the required files to start.
+        </p>
+        <button
+          onClick={() => onNavigateToTab?.("upload")}
+          className="px-4 py-2 bg-[#a61c1e] text-white hover:bg-red-700 font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm"
+        >
+          Go to Upload Page
+        </button>
+      </div>
+    );
+  }
+
+  const activeQuarter = selectedQuarter || skuData?.latestQuarter || "";
+  const quarterData = skuData?.quarterMap?.[activeQuarter];
 
   const nonstdRows: SkuNonStdRow[] = selectedFamily
     ? quarterData?.nonstd_rows || []
@@ -61,13 +98,15 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
               Quarter
             </span>
-            <CustomSelect
-              options={sortedQuarters}
-              value={selectedQuarter}
-              onChange={setSelectedQuarter}
-              labelPrefix=""
-              alignRight
-            />
+            {sortedQuarters.length > 0 && (
+              <CustomSelect
+                options={sortedQuarters}
+                value={activeQuarter}
+                onChange={setSelectedQuarter}
+                labelPrefix=""
+                alignRight
+              />
+            )}
           </div>
         </div>
 

@@ -6,64 +6,111 @@ import OverallQoQTable from "../ceo/OverallQoQTable";
 import AnalystSnapshotCards from "./AnalystSnapshotCards";
 import GMDecompositionAnalysis from "./GMDecompositionAnalysis";
 import { useOutletContext, useParams } from "react-router-dom";
-import { analystOverallMarginMock, analystKpisMock } from "../../constants/analystMockData";
+import {
+  useGetOverallMargin,
+  useGetSnapshotKpis,
+  useGetBusinessInsights,
+  useGetGmDecompose,
+} from "../../services/query/query";
+import PageLoading from "../../../../components/PageLoading";
 
 const OverallMarginTab = () => {
   const context = useOutletContext<any>() || {};
   const onNavigateToTab = context.onNavigateToTab;
   const { bu } = useParams<{ bu?: string }>();
-
   const activeBu = bu || "heating";
 
-  const overallData = analystOverallMarginMock[activeBu] || analystOverallMarginMock.heating;
-  const kpiData = analystKpisMock[activeBu] || analystKpisMock.heating;
+  // Real Queries
+  const { data: overallData, isLoading: isOverallLoading, error: overallError } = useGetOverallMargin(activeBu);
+  const [snapshotQuarter, setSnapshotQuarter] = useState<string>("");
+  const [insightsQuarter, setInsightsQuarter] = useState<string>("");
 
-  const [snapshotQuarter, setSnapshotQuarter] = useState<string>("Q4 FY 26");
-  const [insightsQuarter, setInsightsQuarter] = useState<string>("Q4 FY 26");
+  // Extract quarters list dynamically from overallData
+  const quartersList = useMemo(() => {
+    if (!overallData?.margin_trend) return [];
+    if (Array.isArray(overallData.margin_trend)) {
+      return overallData.margin_trend.map((item: any) => item.quarter);
+    }
+    const keys = Object.keys(overallData.margin_trend);
+    if (keys.length > 0) {
+      const firstKey = keys[0];
+      const list = overallData.margin_trend[firstKey];
+      if (Array.isArray(list)) {
+        return list.map((item: any) => item.quarter);
+      }
+    }
+    return [];
+  }, [overallData]);
 
-  const quartersList = ["Q4 FY 24", "Q1 FY 25", "Q2 FY 25", "Q3 FY 25", "Q4 FY 25", "Q1 FY 26", "Q2 FY 26", "Q3 FY 26", "Q4 FY 26"];
+  // Set default quarters
+  useEffect(() => {
+    if (quartersList.length > 0) {
+      setSnapshotQuarter(quartersList[quartersList.length - 1]);
+      setInsightsQuarter(quartersList[quartersList.length - 1]);
+    }
+  }, [quartersList]);
 
-  const topInsights = kpiData.insights || [];
-  const bridge = kpiData.bridge;
+  const { data: snapshotKpis, isLoading: isSnapshotLoading } = useGetSnapshotKpis(activeBu, snapshotQuarter || undefined);
+  const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(activeBu, insightsQuarter || undefined);
+  const { data: decomposeData, isLoading: isDecomposeLoading } = useGetGmDecompose(activeBu, insightsQuarter || undefined);
+
+  // Handle 404 / empty state if nothing has been compiled yet
+  const is404 = useMemo(() => {
+    const check404 = (err: any) => err?.response?.status === 404 || err?.status === 404;
+    return check404(overallError);
+  }, [overallError]);
+
+  if (isOverallLoading) {
+    return <PageLoading />;
+  }
+
+  if (is404 || !overallData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white border border-dashed border-gray-300 rounded-2xl p-8 text-center">
+        <h2 className="text-base font-bold text-gray-900 mb-2">No Draft Data Available</h2>
+        <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
+          It looks like the {activeBu} business unit has not been compiled yet. Upload the required files to start.
+        </p>
+        <button
+          onClick={() => onNavigateToTab?.("upload")}
+          className="px-4 py-2 bg-[#a61c1e] text-white hover:bg-red-700 font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm"
+        >
+          Go to Upload Page
+        </button>
+      </div>
+    );
+  }
+
+  const topInsights = insightsData?.insights || [];
+  const bridge = decomposeData?.bridge || null;
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
-      <OverallQoQTable data={overallData.bridge_table} />
+      {overallData?.bridge_table && <OverallQoQTable data={overallData.bridge_table} />}
 
       <div className="bg-slate-100/50 border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <MarginTrendChart data={overallData.margin_trend} />
-          <RevenueVsCogsChart data={overallData.revenue_vs_cogs} />
+          {overallData?.margin_trend && <MarginTrendChart data={overallData.margin_trend} />}
+          {overallData?.revenue_vs_cogs && <RevenueVsCogsChart data={overallData.revenue_vs_cogs} />}
         </div>
       </div>
 
-      <HeatingMarginsGrid data={overallData.pma_baseline_matrices} />
+      {overallData?.pma_baseline_matrices && <HeatingMarginsGrid data={overallData.pma_baseline_matrices} />}
 
       <AnalystSnapshotCards
-        snapshotKpis={{
-          quarter: snapshotQuarter,
-          revenue_inr: 218300000,
-          actual_gm_pct: activeBu === "cooling" ? 71.0 : 52.2,
-          target_gm_pct: activeBu === "cooling" ? 68.0 : 49.7,
-          baseline_gm_pct: activeBu === "cooling" ? 64.9 : 49.7,
-          total_revenue_inr: 218300000,
-          pooled_actual_gm_pct: activeBu === "cooling" ? 71.0 : 52.2,
-          global_delta_pp: activeBu === "cooling" ? 3.0 : 2.5,
-          total_below_baseline: 1,
-          total_above_baseline: 3,
-        }}
+        snapshotKpis={snapshotKpis || {}}
         insights={topInsights}
         snapshotQuarter={snapshotQuarter}
         setSnapshotQuarter={setSnapshotQuarter}
         insightsQuarter={insightsQuarter}
         setInsightsQuarter={setInsightsQuarter}
         quartersList={quartersList}
-        isSnapshotLoading={false}
+        isSnapshotLoading={isSnapshotLoading || isInsightsLoading}
       />
 
       <GMDecompositionAnalysis
         bridge={bridge}
-        isLoading={false}
+        isLoading={isDecomposeLoading}
         selectedQuarter={insightsQuarter}
         quartersList={quartersList}
       />

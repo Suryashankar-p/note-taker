@@ -1,52 +1,98 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DispersionBoxes from "./DispersionBoxes";
 import DispersionCharts from "./DispersionCharts";
 import DispersionMovementExamples from "./DispersionMovementExamples";
-import { buDispersionMock } from "../../constants/mockData";
+import { useGetDispersion, useGetQoqMatrix } from "../../services/query/query";
+import PageLoading from "../../../../components/PageLoading";
 
 const DispersionView = () => {
   const { bu } = useParams<{ bu: string }>();
   const navigate = useNavigate();
-  const [selectedFamily, setSelectedFamily] = useState<string>("Air nozzle");
-  const [selectedQuarter, setSelectedQuarter] = useState<string>("Q4 FY 26");
-
   const activeBu = bu || "heating";
-  const mockData = buDispersionMock[activeBu] || buDispersionMock["heating"];
+
+  const [selectedFamily, setSelectedFamily] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+
+  // Get available quarters and families list from QoqMatrix API
+  const { data: matrixData, isLoading: isMatrixLoading } = useGetQoqMatrix(activeBu);
+
+  const quarters = useMemo(() => {
+    return matrixData?.quarters || [];
+  }, [matrixData]);
+
+  const families = useMemo(() => {
+    if (!matrixData?.familyDetails) return [];
+    return Object.values(matrixData.familyDetails).map((f: any) => ({
+      nk: f.nk || f.name || "",
+      display_name: f.name || f.display_name || f.nk || "",
+    }));
+  }, [matrixData]);
+
+  // Set default selection values
+  useEffect(() => {
+    if (quarters.length > 0 && !selectedQuarter) {
+      setSelectedQuarter(quarters[quarters.length - 1]);
+    }
+  }, [quarters, selectedQuarter]);
+
+  useEffect(() => {
+    if (families.length > 0 && !selectedFamily) {
+      setSelectedFamily(families[0].nk);
+    }
+  }, [families, selectedFamily]);
+
+  const { data: dispersionData, isLoading: isDispersionLoading } = useGetDispersion(
+    activeBu,
+    selectedQuarter || null,
+    selectedFamily || null
+  );
+
+  if (isMatrixLoading || isDispersionLoading) {
+    return <PageLoading />;
+  }
+
+  const qoqCards = dispersionData?.qoq_movement || dispersionData?.qoqCards || [];
+  const examples = dispersionData?.examples || dispersionData?.dispersionExamples || [];
+  
+  // Format dispersion curve and trend data for DispersionCharts component
+  const familyDispersion = {
+    curve: dispersionData?.family_dispersion?.curve || dispersionData?.dispersionCurve || [],
+    trend: dispersionData?.family_dispersion?.trend || dispersionData?.trendLine || [],
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto text-gray-800">
       {/* 1. Upper Dispersion Boxes */}
-      <DispersionBoxes
-        qoqCards={mockData.qoqMovement || []}
-        selectedQuarter={selectedQuarter}
-        setSelectedQuarter={setSelectedQuarter}
-        quarters={["Q4 FY 26"]}
-        isFetching={false}
-      />
+      {quarters.length > 0 && (
+        <DispersionBoxes
+          qoqCards={qoqCards}
+          selectedQuarter={selectedQuarter}
+          setSelectedQuarter={setSelectedQuarter}
+          quarters={quarters}
+          isFetching={isDispersionLoading}
+        />
+      )}
 
       {/* 2. Dispersion Curve and Trend Line Charts */}
-      <DispersionCharts
-        familyDispersion={{
-          curve: mockData.dispersionCurve,
-          trend: mockData.trendLine,
-        }}
-        families={[
-          { nk: "Air nozzle", display_name: "Air nozzle" },
-          { nk: "Compressor", display_name: "Compressor" },
-          { nk: "Membranes", display_name: "Membranes" },
-        ]}
-        selectedFamily={selectedFamily}
-        setSelectedFamily={setSelectedFamily}
-        isFetching={false}
-      />
+      {families.length > 0 && (
+        <DispersionCharts
+          familyDispersion={familyDispersion}
+          families={families}
+          selectedFamily={selectedFamily}
+          setSelectedFamily={setSelectedFamily}
+          isFetching={isDispersionLoading}
+        />
+      )}
 
       {/* 3. Examples Table */}
-      <DispersionMovementExamples
-        setSelectedFamily={setSelectedFamily}
-        dispersionExamples={mockData.examples}
-        selectedQuarter={selectedQuarter}
-      />
+      {examples.length > 0 && (
+        <DispersionMovementExamples
+          setSelectedFamily={setSelectedFamily}
+          dispersionExamples={examples}
+          selectedQuarter={selectedQuarter}
+        />
+      )}
 
       <div className="flex items-center justify-between border-t border-gray-200 pt-6 mt-4">
         <button

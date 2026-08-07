@@ -3,27 +3,15 @@ import CustomSelect from "../CustomSelect";
 import { type ClassificationFamilyItem, type ClassificationCellData } from "../../services/query/query";
 
 interface ClassificationGridProps {
-  data?: {
-    quarter?: string;
-    available_quarters?: string[];
-    matrix?: Record<string, Record<string, ClassificationCellData>>;
-    summary?: {
-      total_below_baseline?: number;
-      total_above_baseline?: number;
-      pooled_actual_gm_pct?: number;
-      pooled_baseline_gm_pct?: number;
-      global_delta_pp?: number;
-      total_revenue_inr?: number;
-      overall_gm_pct?: number;
-    };
-    insights?: any;
-  };
+  data?: any;
+  quartersList?: string[];
   selectedQuarter?: string;
   setSelectedQuarter?: (qtr: string) => void;
 }
 
 const ClassificationGrid = ({
   data,
+  quartersList = [],
   selectedQuarter: propsSelectedQuarter,
   setSelectedQuarter: propsSetSelectedQuarter,
 }: ClassificationGridProps) => {
@@ -32,21 +20,8 @@ const ClassificationGrid = ({
     families: ClassificationFamilyItem[];
   } | null>(null);
 
-  const quarters = [
-    "Q1 FY 24",
-    "Q2 FY 24",
-    "Q3 FY 24",
-    "Q4 FY 24",
-    "Q1 FY 25",
-    "Q2 FY 25",
-    "Q3 FY 25",
-    "Q4 FY 25",
-    "Q1 FY 26",
-    "Q2 FY 26",
-    "Q3 FY 26",
-    "Q4 FY 26",
-  ];
-  const activeQuarter = propsSelectedQuarter || data?.quarter || "Q4 FY 26";
+  const quarters = quartersList;
+  const activeQuarter = propsSelectedQuarter || "Q4 FY 26";
   const setSelectedQuarter = propsSetSelectedQuarter || (() => {});
 
   const matrix = data?.matrix;

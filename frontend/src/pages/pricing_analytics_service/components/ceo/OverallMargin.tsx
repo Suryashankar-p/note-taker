@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Line } from "react-chartjs-2";
 import {
@@ -12,8 +12,9 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import { overallMarginTableData, marginTrendChartMock } from "../../constants/mockData";
+import { useGetOverallMargin } from "../../services/query/query";
 import CustomSelect from "../CustomSelect";
+import PageLoading from "../../../../components/PageLoading";
 
 ChartJS.register(
   CategoryScale,
@@ -26,23 +27,88 @@ ChartJS.register(
   Filler
 );
 
+const sortQuarters = (a: string, b: string) => {
+  const parseQ = (s: string) => {
+    if (s.toLowerCase() === "baseline") return 0;
+    const m = s.match(/Q(\d)\s+FY\s+(\d+)/);
+    return m ? parseInt(m[2]) * 10 + parseInt(m[1]) : 999;
+  };
+  return parseQ(a) - parseQ(b);
+};
+
 const OverallMargin = () => {
   const navigate = useNavigate();
   const [selectedBU, setSelectedBU] = useState<string>("All BUs");
 
-  const quarters = [
-    "Baseline",
-    "Q2 FY 25",
-    "Q3 FY 25",
-    "Q4 FY 25",
-    "Q1 FY 26",
-    "Q2 FY 26",
-    "Q3 FY 26",
-    "Q4 FY 26",
-  ];
+  // Fetch real data for all three BUs
+  const heatingQuery = useGetOverallMargin("heating");
+  const coolingQuery = useGetOverallMargin("cooling");
+  const waterQuery = useGetOverallMargin("water");
 
-  // Table rendering logic based on mock data
+  const isLoading = heatingQuery.isLoading || coolingQuery.isLoading || waterQuery.isLoading;
+
+  const overallMarginTableData = useMemo(() => {
+    const list: any[] = [];
+    if (heatingQuery.data?.bridge_table) list.push(...heatingQuery.data.bridge_table);
+    if (coolingQuery.data?.bridge_table) list.push(...coolingQuery.data.bridge_table);
+    if (waterQuery.data?.bridge_table) list.push(...waterQuery.data.bridge_table);
+    return list;
+  }, [heatingQuery.data, coolingQuery.data, waterQuery.data]);
+
+  // Quarters list from table data
+  const tableQuarters = useMemo(() => {
+    const qSet = new Set<string>();
+    overallMarginTableData.forEach((row) => {
+      if (row.quarters) {
+        Object.keys(row.quarters).forEach((q) => qSet.add(q));
+      }
+    });
+    return Array.from(qSet).sort(sortQuarters);
+  }, [overallMarginTableData]);
+
+  // Quarters list for the trend chart
+  const trendQuarters = useMemo(() => {
+    const qSet = new Set<string>();
+    heatingQuery.data?.margin_trend?.forEach((item: any) => qSet.add(item.quarter));
+    coolingQuery.data?.margin_trend?.forEach((item: any) => qSet.add(item.quarter));
+    waterQuery.data?.margin_trend?.forEach((item: any) => qSet.add(item.quarter));
+    return Array.from(qSet).sort(sortQuarters);
+  }, [heatingQuery.data, coolingQuery.data, waterQuery.data]);
+
+  const latestQuarter = trendQuarters[trendQuarters.length - 1] || "Q4 FY 26";
+
+  const heatingTrendMap = useMemo(() => {
+    const map = new Map<string, number>();
+    heatingQuery.data?.margin_trend?.forEach((item: any) => map.set(item.quarter, item.overall_gm_pct));
+    return map;
+  }, [heatingQuery.data]);
+
+  const coolingTrendMap = useMemo(() => {
+    const map = new Map<string, number>();
+    coolingQuery.data?.margin_trend?.forEach((item: any) => map.set(item.quarter, item.overall_gm_pct));
+    return map;
+  }, [coolingQuery.data]);
+
+  const waterTrendMap = useMemo(() => {
+    const map = new Map<string, number>();
+    waterQuery.data?.margin_trend?.forEach((item: any) => map.set(item.quarter, item.overall_gm_pct));
+    return map;
+  }, [waterQuery.data]);
+
+  if (isLoading) {
+    return <PageLoading />;
+  }
+
+  // Table rendering logic
   const renderTable = () => {
+    if (overallMarginTableData.length === 0) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500 text-xs">
+          No margin table data available. Make sure divisions are compiled.
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm overflow-x-auto text-gray-800">
         <div className="text-center mb-4">
@@ -50,9 +116,9 @@ const OverallMargin = () => {
             Overall margins — all business units
           </h3>
         </div>
-        <table className="w-full border-collapse text-left text-xs">
+        <table className="w-full border-collapse text-left text-xs min-w-[1000px]">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50/75">
+            <tr className="border-b border-gray-200 bg-gray-55/75">
               <th className="p-3 font-bold text-gray-600 border-r border-gray-200" rowSpan={2}>
                 Business Unit
               </th>
@@ -60,19 +126,25 @@ const OverallMargin = () => {
                 Segment
               </th>
               <th className="p-3 font-bold text-gray-600 border-r border-gray-200 text-center" colSpan={2}>
-                Baseline<br /><span className="text-[10px] text-gray-400 font-normal">(Q4 FY24 + Q1 FY25)</span>
+                Baseline
               </th>
-              {quarters.slice(1).map((q) => (
+              {tableQuarters.map((q) => (
                 <th key={q} className="p-3 font-bold text-gray-600 border-r border-gray-200 text-center" colSpan={2}>
                   {q}
                 </th>
               ))}
               <th className="p-3 font-bold text-gray-600 text-center bg-red-50/50" rowSpan={2}>
-                ΔGM%<br /><span className="text-[10px] text-gray-400 font-normal">Q4 FY26 vs baseline</span>
+                ΔGM%<br /><span className="text-[10px] text-gray-400 font-normal">{latestQuarter} vs baseline</span>
               </th>
             </tr>
-            <tr className="border-b border-gray-200 bg-gray-50/50">
-              {quarters.map((_, i) => (
+            <tr className="border-b border-gray-200 bg-gray-55/50">
+              <th className="p-2 text-center text-[10px] font-bold text-gray-450 border-r border-gray-200">
+                Revenue (Cr)
+              </th>
+              <th className="p-2 text-center text-[10px] font-bold text-gray-450 border-r border-gray-200">
+                Achieved GM%
+              </th>
+              {tableQuarters.map((_, i) => (
                 <React.Fragment key={i}>
                   <th className="p-2 text-center text-[10px] font-bold text-gray-450 border-r border-gray-200">
                     Revenue (Cr)
@@ -86,48 +158,50 @@ const OverallMargin = () => {
           </thead>
           <tbody>
             {overallMarginTableData.map((row, idx) => {
-              const baselineGm = row.baseline_gm_pct;
-              const q4Data = row.quarters["Q4 FY 26"];
-              const delta = q4Data ? q4Data.gm_pct - baselineGm : 0;
+              const baselineGm = row.baseline_gm_pct || 0;
+              const latestData = row.quarters?.[latestQuarter];
+              const delta = latestData ? latestData.gm_pct - baselineGm : 0;
               const deltaStr = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`;
               const deltaClass = delta >= 0 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100";
 
-              const showSegment = idx === 0 || idx === 3 || idx === 6;
-
+              // Simple rendering segments grouping check (Heating, Cooling, Water have standard/non-standard options)
+              // We will just show segment names for each row label
               return (
                 <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50/50 transition-colors">
-                  {showSegment ? (
-                    <td
-                      className="p-3 font-bold text-gray-900 border-r border-gray-200 align-middle bg-gray-50/20"
-                      rowSpan={3}
-                    >
-                      {row.segment}
-                    </td>
-                  ) : null}
-                  <td className="p-3 font-semibold text-gray-600 border-r border-gray-200 bg-gray-50/10">
-                    {row.label}
+                  <td className="p-3 font-bold text-gray-900 border-r border-gray-200 align-middle bg-gray-50/20">
+                    {row.segment || "Unknown"}
+                  </td>
+                  <td className="p-3 font-semibold text-gray-600 border-r border-gray-200 bg-gray-55/10">
+                    {row.label || "Overall"}
                   </td>
                   <td className="p-3 text-center text-gray-600 border-r border-gray-200">
-                    {row.baseline_rev_cr.toFixed(1)}
+                    {row.baseline_rev_cr?.toFixed(1) ?? "—"}
                   </td>
                   <td className="p-3 text-center font-bold text-gray-600 border-r border-gray-200">
-                    {row.baseline_gm_pct.toFixed(1)}%
+                    {row.baseline_gm_pct != null ? `${row.baseline_gm_pct.toFixed(1)}%` : "—"}
                   </td>
-                  {quarters.slice(1).map((q) => {
-                    const qData = row.quarters[q];
-                    if (!qData) return <td key={q} colSpan={2} className="p-3 border-r border-gray-200">-</td>;
+                  {tableQuarters.map((q) => {
+                    const qData = row.quarters?.[q];
+                    if (!qData) {
+                      return (
+                        <React.Fragment key={q}>
+                          <td className="p-3 text-center text-gray-400 border-r border-gray-200">—</td>
+                          <td className="p-3 text-center text-gray-400 border-r border-gray-200">—</td>
+                        </React.Fragment>
+                      );
+                    }
                     const isImproved = qData.gm_pct >= baselineGm;
                     return (
                       <React.Fragment key={q}>
                         <td className="p-3 text-center text-gray-600 border-r border-gray-200">
-                          {qData.rev_cr.toFixed(1)}
+                          {qData.rev_cr?.toFixed(1) ?? "—"}
                         </td>
                         <td
                           className={`p-3 text-center font-bold border-r border-gray-200 ${
-                            isImproved ? "text-emerald-650" : "text-rose-650"
+                            isImproved ? "text-emerald-600" : "text-rose-600"
                           }`}
                         >
-                          {qData.gm_pct.toFixed(1)}%
+                          {qData.gm_pct != null ? `${qData.gm_pct.toFixed(1)}%` : "—"}
                         </td>
                       </React.Fragment>
                     );
@@ -141,24 +215,18 @@ const OverallMargin = () => {
           </tbody>
         </table>
         <div className="text-[10px] text-gray-400 mt-3 text-center">
-          Baseline: Q4 FY24 + Q1 FY25. Select a business unit below for charts, snapshot, and insights.
+          Baseline is determined by transaction data from earlier quarters. Select a business unit below for detailed charts and matrices.
         </div>
       </div>
     );
   };
 
-  // Line Chart Configuration
-  const chartLabels = marginTrendChartMock.map((m) => m.quarter);
-  const heatingData = marginTrendChartMock.map((m) => m.Heating);
-  const coolingData = marginTrendChartMock.map((m) => m.Cooling);
-  const waterData = marginTrendChartMock.map((m) => m.Water);
-
   const chartData = {
-    labels: chartLabels,
+    labels: trendQuarters,
     datasets: [
       {
         label: "Heating margin %",
-        data: heatingData,
+        data: trendQuarters.map((q) => heatingTrendMap.get(q)),
         borderColor: "#f97316",
         backgroundColor: "rgba(249, 115, 22, 0.02)",
         tension: 0.35,
@@ -167,7 +235,7 @@ const OverallMargin = () => {
       },
       {
         label: "Cooling margin %",
-        data: coolingData,
+        data: trendQuarters.map((q) => coolingTrendMap.get(q)),
         borderColor: "#06b6d4",
         backgroundColor: "rgba(6, 182, 212, 0.02)",
         tension: 0.35,
@@ -176,7 +244,7 @@ const OverallMargin = () => {
       },
       {
         label: "Water margin %",
-        data: waterData,
+        data: trendQuarters.map((q) => waterTrendMap.get(q)),
         borderColor: "#3b82f6",
         backgroundColor: "rgba(59, 130, 246, 0.02)",
         tension: 0.35,

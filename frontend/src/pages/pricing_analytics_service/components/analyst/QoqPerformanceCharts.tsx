@@ -1,4 +1,4 @@
-import React from "react";
+import { useParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Chart, Line } from "react-chartjs-2";
 import { useGetQoqDistribution, useGetDispersion } from "../../services/query/query";
@@ -71,11 +71,12 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
   onNavigateToSku,
   activeQuarter,
 }) => {
-  const sessionId = Number(localStorage.getItem("pricing_session_id"));
+  const { bu } = useParams<{ bu?: string }>();
+  const activeBu = bu || "heating";
   const familyNk = selectedDetails.familyNk || selectedFamily.toLowerCase();
   
-  const { data: qoqDistributionData, isFetching: isQoqDistributionFetching } = useGetQoqDistribution(sessionId, activeQuarter, familyNk);
-  const { data: dispersionData, isFetching: isDispersionFetching } = useGetDispersion(sessionId, familyNk);
+  const { data: qoqDistributionData, isFetching: isQoqDistributionFetching } = useGetQoqDistribution(activeBu, activeQuarter, familyNk);
+  const { data: dispersionData, isFetching: isDispersionFetching } = useGetDispersion(activeBu, activeQuarter, familyNk);
 
   const familyDispersion = dispersionData?.family_dispersion;
   const hasDispersionData = !!qoqDistributionData?.summary;

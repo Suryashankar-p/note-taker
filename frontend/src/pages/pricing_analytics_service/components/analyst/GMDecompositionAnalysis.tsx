@@ -62,21 +62,21 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
     return `${isNegative ? "-" : ""}${str}`;
   };
 
-  const top_mix_pos = bridge?.mix_impact_pp_positive || [];
-  const top_mix_neg = bridge?.mix_impact_pp_negative || [];
-  const top_margin_pos = bridge?.margin_impact_pp_positive || [];
-  const top_margin_neg = bridge?.margin_impact_pp_negative || [];
+  const activeBridge = (bridge as any)?.bridge || bridge || null;
 
-  const abs_mix_pos = bridge?.mix_impact_abs_positive || [];
-  const abs_mix_neg = bridge?.mix_impact_abs_negative || [];
-  const abs_margin_pos = bridge?.margin_impact_abs_positive || [];
-  const abs_margin_neg = bridge?.margin_impact_abs_negative || [];
+  const top_mix_pos = activeBridge?.mix_impact_pp_positive || [];
+  const top_mix_neg = activeBridge?.mix_impact_pp_negative || [];
+  const top_margin_pos = activeBridge?.margin_impact_pp_positive || [];
+  const top_margin_neg = activeBridge?.margin_impact_pp_negative || [];
+
+  const abs_mix_pos = activeBridge?.mix_impact_abs_positive || [];
+  const abs_mix_neg = activeBridge?.mix_impact_abs_negative || [];
+  const abs_margin_pos = activeBridge?.margin_impact_abs_positive || [];
+  const abs_margin_neg = activeBridge?.margin_impact_abs_negative || [];
 
   const hasBridge = !!(
-    bridge &&
-    bridge.prev_q &&
-    bridge.curr_q &&
-    bridge.total_change_pp !== undefined
+    activeBridge &&
+    (activeBridge.prev_q || activeBridge.curr_q)
   );
 
   return (
@@ -94,17 +94,17 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
         <div className="flex flex-col gap-8">
           {/* % GM Bridge */}
           <div className="flex flex-col gap-4">
-            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${bridge!.total_change_pp >= 0
+            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${activeBridge!.total_change_pp >= 0
                 ? "bg-emerald-50 text-emerald-800 border-emerald-100"
                 : "bg-rose-50 text-rose-800 border-rose-100"
               }`}>
               <span className="font-extrabold uppercase">
-                QoQ GM bridge ({bridge!.prev_q} → {bridge!.curr_q}): % GM bridge
+                QoQ GM bridge ({activeBridge!.prev_q} → {activeBridge!.curr_q}): % GM bridge
               </span>
               {" — "}
               <span className="text-gray-700 font-medium font-semibold">
-                {bridge!.qoq_gm_bridge_narrative ||
-                  `GM% ${bridge!.total_change_pp >= 0 ? "+" : ""}${bridge!.total_change_pp.toFixed(2)} pp (${bridge!.gm_prev.toFixed(1)}% → ${bridge!.gm_curr.toFixed(1)}%). Mix ${bridge!.mix_effect_pp >= 0 ? "+" : ""}${bridge!.mix_effect_pp.toFixed(2)} pp + margin ${bridge!.margin_effect_pp >= 0 ? "+" : ""}${bridge!.margin_effect_pp.toFixed(2)} pp.`
+                {activeBridge!.qoq_gm_bridge_narrative ||
+                  `GM% ${activeBridge!.total_change_pp >= 0 ? "+" : ""}${activeBridge!.total_change_pp.toFixed(2)} pp (${activeBridge!.gm_prev.toFixed(1)}% → ${activeBridge!.gm_curr.toFixed(1)}%). Mix ${activeBridge!.mix_effect_pp >= 0 ? "+" : ""}${activeBridge!.mix_effect_pp.toFixed(2)} pp + margin ${activeBridge!.margin_effect_pp >= 0 ? "+" : ""}${activeBridge!.margin_effect_pp.toFixed(2)} pp.`
                 }
               </span>
             </div>
@@ -198,17 +198,17 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
 
           {/* Absolute GM Bridge */}
           <div className="flex flex-col gap-4">
-            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${bridge!.total_change_abs >= 0
+            <div className={`p-3 rounded-lg text-xs font-bold leading-relaxed border ${activeBridge!.total_change_abs >= 0
                 ? "bg-[#e6f4f1] text-[#0d9488] border-[#ccfbf1]"
                 : "bg-rose-50 text-rose-800 border-rose-100"
               }`}>
               <span className="font-extrabold uppercase">
-                Absolute GM bridge ({bridge!.prev_q} → {bridge!.curr_q})
+                Absolute GM bridge ({activeBridge!.prev_q} → {activeBridge!.curr_q})
               </span>
               {" — "}
               <span className="text-gray-700 font-medium font-semibold">
-                {bridge!.absolute_gm_bridge_narrative ||
-                  `Total change ${bridge!.total_change_abs >= 0 ? "+" : ""}${formatAbsoluteInr(bridge!.total_change_abs)}. Mix ${bridge!.mix_effect_abs >= 0 ? "+" : ""}${formatAbsoluteInr(bridge!.mix_effect_abs)} + margin ${bridge!.margin_effect_abs >= 0 ? "+" : ""}${formatAbsoluteInr(bridge!.margin_effect_abs)}.`
+                {activeBridge!.absolute_gm_bridge_narrative ||
+                  `Total change ${activeBridge!.total_change_abs >= 0 ? "+" : ""}${formatAbsoluteInr(activeBridge!.total_change_abs)}. Mix ${activeBridge!.mix_effect_abs >= 0 ? "+" : ""}${formatAbsoluteInr(activeBridge!.mix_effect_abs)} + margin ${activeBridge!.margin_effect_abs >= 0 ? "+" : ""}${formatAbsoluteInr(activeBridge!.margin_effect_abs)}.`
                 }
               </span>
             </div>

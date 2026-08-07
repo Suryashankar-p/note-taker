@@ -19,7 +19,6 @@ import {
   useUploadNonstdTargets,
   useUploadPriceList,
   useUploadCostList,
-  useCreateSession,
 } from "../services/query/query";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store";
@@ -43,7 +42,8 @@ const LoadFiles = () => {
   const { mutate: uploadNonstdTargets } = useUploadNonstdTargets();
   const { mutate: uploadPriceList } = useUploadPriceList();
   const { mutate: uploadCostList } = useUploadCostList();
-  const { mutate: createSession, isPending: isCreatingSession } = useCreateSession();
+  const createSession = (() => {}) as any;
+  const isCreatingSession = false;
 
   const [files, setFiles] = useState([
     {
