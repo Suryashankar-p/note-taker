@@ -12,8 +12,9 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import { overallMarginTableData as mockTableData, marginTrendChartMock as mockTrendData } from "../../constants/mockData";
 import CustomSelect from "../CustomSelect";
+import { useGetOverallMarginAllDivisions } from "../../services/query/query";
+import PageLoading from "../../../../components/PageLoading";
 
 ChartJS.register(
   CategoryScale,
@@ -39,7 +40,32 @@ const OverallMargin = () => {
   const navigate = useNavigate();
   const [selectedBU, setSelectedBU] = useState<string>("All BUs");
 
-  const overallMarginTableData = mockTableData;
+  const { data: allDivisionsData, isLoading, error } = useGetOverallMarginAllDivisions();
+
+  const overallMarginTableData = useMemo(() => {
+    if (!allDivisionsData) return [];
+    const flattenedRows: any[] = [];
+    Object.entries(allDivisionsData).forEach(([bu, buData]: [string, any]) => {
+      if (!buData || !buData.bridge_table) return;
+      const buName = bu.charAt(0).toUpperCase() + bu.slice(1);
+      buData.bridge_table.forEach((row: any) => {
+        flattenedRows.push({
+          segment: buName,
+          label: row.label,
+          baseline_rev_cr: row.baseline_rev_cr,
+          baseline_gm_pct: row.baseline_gm_pct,
+          quarters: Object.entries(row.quarters || {}).reduce((acc: any, [q, val]: [string, any]) => {
+            acc[q] = {
+              rev_cr: val.rev_cr,
+              gm_pct: val.gm_pct,
+            };
+            return acc;
+          }, {}),
+        });
+      });
+    });
+    return flattenedRows;
+  }, [allDivisionsData]);
 
   // Quarters list from table data
   const tableQuarters = useMemo(() => {
@@ -52,30 +78,60 @@ const OverallMargin = () => {
     return Array.from(qSet).sort(sortQuarters);
   }, [overallMarginTableData]);
 
-  // Quarters list for the trend chart
-  const trendQuarters = useMemo(() => {
-    return mockTrendData.map((item) => item.quarter);
-  }, []);
+  const latestQuarter = tableQuarters[tableQuarters.length - 1] || "Q4 FY 26";
 
-  const latestQuarter = trendQuarters[trendQuarters.length - 1] || "Q4 FY 26";
+  // Build trend data dynamically
+  const trendData = useMemo(() => {
+    if (!allDivisionsData) return [];
+    const quartersSet = new Set<string>();
+    Object.values(allDivisionsData).forEach((buData: any) => {
+      const trend = buData?.margin_trend?.["All Families"];
+      if (Array.isArray(trend)) {
+        trend.forEach((pt: any) => quartersSet.add(pt.quarter));
+      }
+    });
+    const sortedQuartersList = Array.from(quartersSet).sort(sortQuarters);
+
+    return sortedQuartersList.map((q) => {
+      const heatingPoint = allDivisionsData.heating?.margin_trend?.["All Families"]?.find((pt: any) => pt.quarter === q);
+      const coolingPoint = allDivisionsData.cooling?.margin_trend?.["All Families"]?.find((pt: any) => pt.quarter === q);
+      const waterPoint = allDivisionsData.water?.margin_trend?.["All Families"]?.find((pt: any) => pt.quarter === q);
+
+      return {
+        quarter: q,
+        Heating: heatingPoint?.overall_gm_pct ?? null,
+        Cooling: coolingPoint?.overall_gm_pct ?? null,
+        Water: waterPoint?.overall_gm_pct ?? null,
+      };
+    });
+  }, [allDivisionsData]);
+
+  const trendQuarters = useMemo(() => {
+    return trendData.map((item) => item.quarter);
+  }, [trendData]);
 
   const heatingTrendMap = useMemo(() => {
-    const map = new Map<string, number>();
-    mockTrendData.forEach((item: any) => map.set(item.quarter, item.Heating));
+    const map = new Map<string, number | null>();
+    trendData.forEach((item: any) => map.set(item.quarter, item.Heating));
     return map;
-  }, []);
+  }, [trendData]);
 
   const coolingTrendMap = useMemo(() => {
-    const map = new Map<string, number>();
-    mockTrendData.forEach((item: any) => map.set(item.quarter, item.Cooling));
+    const map = new Map<string, number | null>();
+    trendData.forEach((item: any) => map.set(item.quarter, item.Cooling));
     return map;
-  }, []);
+  }, [trendData]);
 
   const waterTrendMap = useMemo(() => {
-    const map = new Map<string, number>();
-    mockTrendData.forEach((item: any) => map.set(item.quarter, item.Water));
+    const map = new Map<string, number | null>();
+    trendData.forEach((item: any) => map.set(item.quarter, item.Water));
     return map;
-  }, []);
+  }, [trendData]);
+
+  if (isLoading) {
+    return <PageLoading />;
+  }
+
 
   // Table rendering logic
   const renderTable = () => {

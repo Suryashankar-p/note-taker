@@ -311,6 +311,21 @@ export const useGetOverallMargin = (businessUnit: string) => {
   });
 };
 
+export const useGetOverallMarginAllDivisions = () => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
+  return useQuery({
+    queryKey: ["overall-margin-all-divisions", publishedOnly],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/overall-margin/all-divisions",
+        { published_only: publishedOnly },
+      );
+      return response;
+    },
+  });
+};
+
+
 export const useGetBusinessInsights = (businessUnit: string, quarter?: string) => {
   const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
