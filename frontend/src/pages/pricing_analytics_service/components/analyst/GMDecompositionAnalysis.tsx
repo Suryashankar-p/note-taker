@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { AlertCircle } from "lucide-react";
+import CustomSelect from "../CustomSelect";
 
 interface DriverItem {
   product_family: string;
@@ -46,10 +47,11 @@ interface GMDecompositionAnalysisProps {
   bridge?: BridgeData | null;
   isLoading?: boolean;
   selectedQuarter?: string;
+  setSelectedQuarter?: (q: string) => void;
   quartersList?: string[];
 }
 
-const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersList }: GMDecompositionAnalysisProps) => {
+const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, setSelectedQuarter, quartersList }: GMDecompositionAnalysisProps) => {
   const formatAbsoluteInr = (val: number) => {
     const isNegative = val < 0;
     const absVal = Math.abs(val);
@@ -62,7 +64,17 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
     return `${isNegative ? "-" : ""}${str}`;
   };
 
-  const activeBridge = (bridge as any)?.bridge || bridge || null;
+  const activeBridge = useMemo(() => {
+    const rawBridge = (bridge as any)?.bridge || bridge || null;
+    if (!rawBridge) return null;
+    if (Array.isArray(rawBridge.all_quarter_pairs)) {
+      const found = rawBridge.all_quarter_pairs.find(
+        (pair: any) => pair.curr_q === selectedQuarter
+      );
+      if (found) return found;
+    }
+    return rawBridge;
+  }, [bridge, selectedQuarter]);
 
   const top_mix_pos = activeBridge?.mix_impact_pp_positive || [];
   const top_mix_neg = activeBridge?.mix_impact_pp_negative || [];
@@ -81,9 +93,20 @@ const GMDecompositionAnalysis = ({ bridge, isLoading, selectedQuarter, quartersL
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-      <h3 className="text-sm font-bold tracking-tight text-gray-800 mb-6 pb-3 border-b border-gray-105 flex items-center gap-2">
-        <AlertCircle size={16} className="text-[#a61c1e]" />
-        Business insights
+      <h3 className="text-sm font-bold tracking-tight text-gray-800 mb-6 pb-3 border-b border-gray-105 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertCircle size={16} className="text-[#a61c1e]" />
+          <span>Business insights</span>
+        </div>
+        {quartersList && setSelectedQuarter && selectedQuarter && (
+          <CustomSelect
+            options={quartersList}
+            value={selectedQuarter}
+            onChange={setSelectedQuarter}
+            labelPrefix="Quarter: "
+            alignRight
+          />
+        )}
       </h3>
 
       {isLoading ? (

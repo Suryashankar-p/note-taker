@@ -14,8 +14,8 @@ const PricingAnalyticsService = () => {
       <Header breadCrumbs={breadCrumbs} />
       <div className="flex flex-1 overflow-hidden mt-16">
         <UploadSidebar />
-        <div className="flex-1 overflow-y-auto bg-slate-50 flex items-center justify-center py-12">
-          <div className="w-[850px] px-8 py-10 bg-white rounded-2xl border border-gray-200 shadow-lg">
+        <div className="flex-1 overflow-y-auto bg-slate-50 flex justify-center py-12">
+          <div className="w-[850px] px-8 py-10 bg-white rounded-2xl border border-gray-200 shadow-lg my-auto">
             <div className="text-center mb-8">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 border border-red-100 shadow-sm">
                 <BarChart3 className="text-[#a61c1e]" size={24} />

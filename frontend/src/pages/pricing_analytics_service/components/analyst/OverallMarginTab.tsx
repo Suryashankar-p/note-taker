@@ -24,6 +24,7 @@ const OverallMarginTab = () => {
   const { data: overallData, isLoading: isOverallLoading, error: overallError } = useGetOverallMargin(activeBu);
   const [snapshotQuarter, setSnapshotQuarter] = useState<string>("");
   const [insightsQuarter, setInsightsQuarter] = useState<string>("");
+  const [decomposeQuarter, setDecomposeQuarter] = useState<string>("");
 
   // Extract quarters list dynamically from overallData
   const quartersList = useMemo(() => {
@@ -47,12 +48,13 @@ const OverallMarginTab = () => {
     if (quartersList.length > 0) {
       setSnapshotQuarter(quartersList[quartersList.length - 1]);
       setInsightsQuarter(quartersList[quartersList.length - 1]);
+      setDecomposeQuarter(quartersList[quartersList.length - 1]);
     }
   }, [quartersList]);
 
   const { data: snapshotKpis, isLoading: isSnapshotLoading } = useGetSnapshotKpis(activeBu, snapshotQuarter || undefined);
   const { data: insightsData, isLoading: isInsightsLoading } = useGetBusinessInsights(activeBu, insightsQuarter || undefined);
-  const { data: decomposeData, isLoading: isDecomposeLoading } = useGetGmDecompose(activeBu, insightsQuarter || undefined);
+  const { data: decomposeData, isLoading: isDecomposeLoading } = useGetGmDecompose(activeBu, decomposeQuarter || undefined);
 
   // Handle 404 / empty state if nothing has been compiled yet
   const is404 = useMemo(() => {
@@ -82,7 +84,7 @@ const OverallMarginTab = () => {
   }
 
   const topInsights = insightsData?.insights || [];
-  const bridge = decomposeData?.bridge || null;
+  const bridge = decomposeData || null;
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
@@ -111,7 +113,8 @@ const OverallMarginTab = () => {
       <GMDecompositionAnalysis
         bridge={bridge}
         isLoading={isDecomposeLoading}
-        selectedQuarter={insightsQuarter}
+        selectedQuarter={decomposeQuarter}
+        setSelectedQuarter={setDecomposeQuarter}
         quartersList={quartersList}
       />
 
