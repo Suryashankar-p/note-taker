@@ -33,7 +33,7 @@ export const pricingAnalyticsServiceBreadCrumbsWorkspace = [
 ];
 
 export const pricingAnalyticsServiceBreadCrumbs = [
-  ...pricingAnalyticsServiceBreadCrumbsWorkspace,
+  ...breadCrumbs,
   {
     title: "Dashboard",
     url: "/ai-studio/pricing-analytics/workspace",

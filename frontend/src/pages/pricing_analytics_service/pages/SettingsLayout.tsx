@@ -2,7 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import Header from "../../../components/Header";
 import { pricingAnalyticsServicesettingsBreadCrumbs } from "../constants/constants";
-import BriefingSettingsSidebar from "../components/BriefingSettingsSidebar";
+import BriefingSettingsSidebar from "../components/UploadSidebar";
 
 const SettingsLayout = () => {
   return (

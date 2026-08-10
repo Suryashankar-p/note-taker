@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import CustomSelect from "../CustomSelect";
 
 type DriverItem = {
@@ -57,7 +57,17 @@ type Props = {
 
 const InsightsList = ({ data, isLoading, selectedQuarter, setSelectedQuarter, quartersList }: Props) => {
   const insights = data?.insights || [];
-  const bridge = data?.bridge;
+  const bridge = useMemo(() => {
+    const rawBridge = data?.bridge || data || null;
+    if (!rawBridge) return null;
+    if (Array.isArray((rawBridge as any).all_quarter_pairs)) {
+      const found = (rawBridge as any).all_quarter_pairs.find(
+        (pair: any) => pair.curr_q === selectedQuarter
+      );
+      if (found) return found;
+    }
+    return rawBridge;
+  }, [data, selectedQuarter]);
 
   const formatAbsoluteInr = (val: number) => {
     const isNegative = val < 0;
