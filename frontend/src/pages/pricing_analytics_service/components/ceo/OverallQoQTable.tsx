@@ -1,6 +1,7 @@
 import React from "react";
 
 interface OverallQoQTableProps {
+  businessUnit?: string;
   data?: Array<{
     segment: string;
     label: string;
@@ -10,7 +11,10 @@ interface OverallQoQTableProps {
   }>;
 }
 
-const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
+const OverallQoQTable = ({ data, businessUnit }: OverallQoQTableProps) => {
+  const activeBu = businessUnit || "heating";
+  const buLabel = activeBu.charAt(0).toUpperCase() + activeBu.slice(1);
+
   const sortQuarters = (a: string, b: string) => {
     const matchA = a.match(/Q(\d) /);
     const matchB = b.match(/Q(\d) /);
@@ -99,7 +103,7 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-hidden">
       <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase mb-4">
-        Heating — overall QoQ (standard vs non-standard)
+        {buLabel} — overall QoQ (standard vs non-standard)
       </h3>
 
       <div className="overflow-x-auto">
@@ -107,7 +111,7 @@ const OverallQoQTable = ({ data }: OverallQoQTableProps) => {
           <thead>
             <tr className="border-b border-gray-250 bg-gray-50">
               <th className="p-3 font-bold text-gray-600 border-r border-gray-200" rowSpan={2}>
-                Heating
+                {buLabel}
               </th>
               {headers.map((h, i) => (
                 <th

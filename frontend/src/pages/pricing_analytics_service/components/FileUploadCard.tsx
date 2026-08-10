@@ -1,11 +1,12 @@
 import React, { useRef, type ReactNode } from "react";
-import { Upload, CheckCircle, Loader2 } from "lucide-react";
+import { Upload, CheckCircle, Loader2, X } from "lucide-react";
 
 type FileUploadCardProps = {
   title: string;
   status: "loaded" | "upload" | "loading";
   icon: ReactNode;
   onUpload?: (file: File) => void;
+  onClear?: () => void;
   fileName?: string;
 };
 
@@ -14,6 +15,7 @@ const FileUploadCard = ({
   status,
   icon,
   onUpload,
+  onClear,
   fileName
 }: FileUploadCardProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,9 +44,18 @@ const FileUploadCard = ({
         </div>
 
         {status === "loaded" ? (
-          <div className="flex items-center gap-2 rounded-full border border-green-300 bg-green-50 px-3 py-1.5 text-xs text-green-700">
-            <CheckCircle size={15} />
-            LOADED
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-full border border-green-300 bg-green-50 px-3 py-1.5 text-xs text-green-700 font-semibold select-none">
+              <CheckCircle size={15} />
+              LOADED
+            </div>
+            <button
+              onClick={onClear}
+              className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-gray-100 transition-colors"
+              title="Remove file"
+            >
+              <X size={16} />
+            </button>
           </div>
         ) : status === "loading" ? (
           <div className="flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-700">

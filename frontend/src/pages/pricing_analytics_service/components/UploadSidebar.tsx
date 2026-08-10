@@ -16,13 +16,11 @@ const UploadSidebar = () => {
   const isLoadingSessions = false;
 
   const deleteSession = (id: number, options?: { onSuccess?: () => void }) => {
-    console.log("Deleted mock session: ", id);
     options?.onSuccess?.();
   };
   const isDeletingSession = false;
 
   const updateSession = (args: { sessionId: number; session_name: string }, options?: { onSuccess?: () => void }) => {
-    console.log("Updated mock session: ", args);
     options?.onSuccess?.();
   };
   const isUpdatingSession = false;
@@ -165,9 +163,9 @@ const UploadSidebar = () => {
         <NavLink
           to={`${baseUploadPath}/settings/members`}
           className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200 ${isActive
-              ? "bg-[#a61c1e] text-white font-medium shadow-md"
-              : "text-[#a3a3a6] hover:bg-[#202022] hover:text-white"
+            `flex items-center gap-3 px-4 py-2.5 text-sm transition-all duration-200 ${isActive
+              ? "text-[#e03639] font-semibold"
+              : "text-[#a3a3a6] hover:text-white"
             }`
           }
         >

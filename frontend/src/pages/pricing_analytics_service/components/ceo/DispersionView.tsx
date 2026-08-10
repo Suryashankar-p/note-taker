@@ -90,19 +90,25 @@ const DispersionView = () => {
     return <PageLoading />;
   }
 
+  const isCeo = window.location.pathname.includes("/ceo");
+
   if (is404 || !matrixData || quarters.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white border border-dashed border-gray-300 rounded-2xl p-8 text-center text-gray-800">
         <h2 className="text-base font-bold text-gray-900 mb-2">No Dispersion Data Available</h2>
         <p className="text-xs text-gray-500 max-w-sm mb-6 leading-relaxed">
-          The {activeBu} workspace has no dispersion data compiled. Upload the required files to start.
+          {isCeo
+            ? `The ${activeBu} workspace has no dispersion data compiled yet.`
+            : `The ${activeBu} workspace has no dispersion data compiled. Upload the required files to start.`}
         </p>
-        <button
-          onClick={() => navigate(`/ai-studio/pricing-analytics/workspace/dashboard/analyst/${activeBu}/upload`)}
-          className="px-4 py-2 bg-[#a61c1e] text-white hover:bg-red-700 font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm"
-        >
-          Go to Upload Page
-        </button>
+        {!isCeo && (
+          <button
+            onClick={() => navigate(`/ai-studio/pricing-analytics/workspace/dashboard/analyst/${activeBu}/upload`)}
+            className="px-4 py-2 bg-[#a61c1e] text-white hover:bg-red-700 font-bold rounded-lg text-xs tracking-wide transition-colors shadow-sm"
+          >
+            Go to Upload Page
+          </button>
+        )}
       </div>
     );
   }

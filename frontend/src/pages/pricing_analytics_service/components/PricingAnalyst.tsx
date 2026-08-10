@@ -41,6 +41,14 @@ const PricingAnalyst = () => {
         {/* Action/navigation buttons in header on the right */}
         {bu && (
           <div className="flex items-center gap-3">
+            {!isUpload && (
+              <button
+                onClick={() => navigate(`${SETTINGS_BASE}/analyst/${bu}/upload`)}
+                className="px-3.5 py-1.5 bg-[#a61c1e] hover:bg-red-750 text-white rounded-lg text-[10px] font-bold tracking-wide transition-colors shadow-sm"
+              >
+                Upload Files 📤
+              </button>
+            )}
             <button
               onClick={() => navigate(`${SETTINGS_BASE}/analyst/select-bu`)}
               className="px-3.5 py-1.5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold tracking-wide transition-colors"

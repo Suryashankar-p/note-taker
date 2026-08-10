@@ -81,7 +81,6 @@ const MembersSection = () => {
     if (memberToDelete) {
       deleteMember(memberToDelete.id, {
         onSuccess: () => {
-          console.log("Member deleted successfully");
           setDeleteOpen(false);
           setMemberToDelete(null);
         },

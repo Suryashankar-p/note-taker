@@ -88,7 +88,7 @@ const OverallMarginTab = () => {
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
-      {overallData?.bridge_table && <OverallQoQTable data={overallData.bridge_table} />}
+      {overallData?.bridge_table && <OverallQoQTable data={overallData.bridge_table} businessUnit={activeBu} />}
 
       <div className="bg-slate-100/50 border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

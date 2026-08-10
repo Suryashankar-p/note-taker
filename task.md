@@ -1,0 +1,2 @@
+- [x] Modify `PricingAnalyst.tsx` to remove the navigation tab and add the "Upload Files" header button.
+- [x] Verify the header button layout and redirect behavior.

@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { useGetCompileStatus } from "../../services/query/query";
 
 const AnalystSelectBu = () => {
   const navigate = useNavigate();
+  const [loadingBuId, setLoadingBuId] = useState<string | null>(null);
+  const checkStatus = useGetCompileStatus();
 
   const businessUnits = [
     {
@@ -25,6 +29,28 @@ const AnalystSelectBu = () => {
     },
   ];
 
+  const handleBuClick = (buId: string) => {
+    if (loadingBuId) return;
+    setLoadingBuId(buId);
+    checkStatus.mutate(
+      { business_unit: buId },
+      {
+        onSuccess: (data: any) => {
+          setLoadingBuId(null);
+          if (Array.isArray(data) && data.length > 0) {
+            navigate(`../${buId}/overall-margin`);
+          } else {
+            navigate(`../${buId}/upload`);
+          }
+        },
+        onError: (err) => {
+          setLoadingBuId(null);
+          navigate(`../${buId}/upload`);
+        },
+      }
+    );
+  };
+
   return (
     <div className="min-h-[70vh] flex flex-col justify-center items-center px-4 py-8 bg-slate-50 text-gray-800">
       <div className="max-w-4xl w-full">
@@ -38,23 +64,36 @@ const AnalystSelectBu = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {businessUnits.map((bu) => (
-            <div
-              key={bu.id}
-              onClick={() => navigate(`../${bu.id}/upload`)}
-              className={`cursor-pointer bg-white border border-gray-200 p-6 rounded-xl transition-all duration-300 flex flex-col justify-between h-56 shadow-sm ${bu.colorClass}`}
-            >
-              <div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{bu.title}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed line-clamp-4">
-                  {bu.description}
-                </p>
+          {businessUnits.map((bu) => {
+            const isLoading = loadingBuId === bu.id;
+
+            return (
+              <div
+                key={bu.id}
+                onClick={() => handleBuClick(bu.id)}
+                className={`cursor-pointer bg-white border border-gray-200 p-6 rounded-xl transition-all duration-300 flex flex-col justify-between h-56 shadow-sm ${
+                  isLoading ? "opacity-75 pointer-events-none" : bu.colorClass
+                }`}
+              >
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 mb-2">{bu.title}</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-4">
+                    {bu.description}
+                  </p>
+                </div>
+                <div className="text-[#a61c1e] text-xs font-bold tracking-wider uppercase mt-4 flex items-center gap-1 hover:text-red-750">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Checking data...
+                    </>
+                  ) : (
+                    "Explore Analytics →"
+                  )}
+                </div>
               </div>
-              <div className="text-[#a61c1e] text-xs font-bold tracking-wider uppercase mt-4 flex items-center gap-1 hover:text-red-750">
-                Explore Analytics →
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

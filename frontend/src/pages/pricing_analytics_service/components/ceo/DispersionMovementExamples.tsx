@@ -36,6 +36,24 @@ const DispersionMovementExamples = ({
     return null;
   }
 
+  const getCategoryLabel = (catKey: string) => {
+    const key = catKey.toLowerCase().trim();
+    switch (key) {
+      case "gm_up_disp_up":
+        return "GM Improved & Dispersion Increased (Margin ↑, Spread ↑)";
+      case "gm_up_disp_down":
+        return "GM Improved & Dispersion Decreased (Margin ↑, Spread ↓)";
+      case "gm_down_disp_up":
+        return "GM Declined & Dispersion Increased (Margin ↓, Spread ↑)";
+      case "gm_down_disp_down":
+        return "GM Declined & Dispersion Decreased (Margin ↓, Spread ↓)";
+      default:
+        return catKey
+          .replace(/[_-]/g, " ")
+          .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm text-gray-800">
       <h3 className="text-sm font-bold tracking-wider text-gray-550 uppercase mb-2">
@@ -56,7 +74,7 @@ const DispersionMovementExamples = ({
           {categories.map((ex, index) => (
             <tr key={index} className="border-b border-gray-200 hover:bg-gray-50/50 transition-colors">
               <td className="p-3 font-semibold text-gray-900 border-r border-gray-200 bg-gray-50/20">
-                {ex.category}
+                {getCategoryLabel(ex.category)}
               </td>
               <td className="p-3">
                 <div className="flex flex-wrap gap-2">

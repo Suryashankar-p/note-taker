@@ -296,6 +296,16 @@ export const usePublish = () => {
   });
 };
 
+export const useGetCompileStatus = () => {
+  return useMutation({
+    mutationKey: ["compile-status"],
+    mutationFn: async (payload: { business_unit: string }) => {
+      const response = await PricingAnalyticsAPI.post("/upload/compile/status", payload);
+      return response;
+    },
+  });
+};
+
 export const useGetOverallMargin = (businessUnit: string) => {
   const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({

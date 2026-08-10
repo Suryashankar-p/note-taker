@@ -89,7 +89,6 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
         { id: Date.now(), sender: "system", content: replyText },
       ]);
     } catch (error: any) {
-      console.error("Error communicating with chat API:", error);
       setMessages((prev) => [
         ...prev,
         {

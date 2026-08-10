@@ -44,10 +44,11 @@ const AnalystUpload = () => {
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
 
   const getRequiredFiles = (businessUnit: string) => {
+    const unitLabel = businessUnit.charAt(0).toUpperCase() + businessUnit.slice(1);
     const common = [
       { type: "cogs", title: "COGS Extract", icon: <FileText className="text-red-650" /> },
-      { type: "targets", title: `${buLabel} Targets`, icon: <Thermometer className="text-red-650" /> },
-      { type: "baseline", title: `${buLabel} Baseline`, icon: <BarChart3 className="text-red-650" /> },
+      { type: "targets", title: `${unitLabel} Targets`, icon: <Thermometer className="text-red-650" /> },
+      { type: "baseline", title: `${unitLabel} Baseline`, icon: <BarChart3 className="text-red-650" /> },
       { type: "nonstd_targets", title: "Non-standard Targets", icon: <X className="text-red-650" /> },
     ];
 
@@ -117,8 +118,10 @@ const AnalystUpload = () => {
       { file, business_unit: activeBu },
       {
         onSuccess: (data: any) => {
-          if (data && data.detail) {
-            console.error(`${type} upload error:`, data.detail);
+          const errorMessage = data?.detail || data?.error || data?.message || (data?.success === false ? "Upload failed" : null);
+          const fileId = data?.file_id ?? data?.id ?? (data?.result && data?.result.id);
+
+          if (errorMessage || !fileId) {
             setFileStates((prev) => ({
               ...prev,
               [type]: { status: "upload", fileName: "", id: null },
@@ -126,13 +129,12 @@ const AnalystUpload = () => {
             setPageError(true);
             dispatch.toast.openToast({
               status: true,
-              message: data.detail,
+              message: errorMessage || "Upload failed: Invalid server response",
               type: "error",
             });
             return;
           }
 
-          const fileId = data.file_id ?? data.id ?? (data.result && data.result.id);
           setFileStates((prev) => ({
             ...prev,
             [type]: {
@@ -143,7 +145,6 @@ const AnalystUpload = () => {
           }));
         },
         onError: (error: any) => {
-          console.error(`${type} upload failed:`, error);
           setFileStates((prev) => ({
             ...prev,
             [type]: { status: "upload", fileName: "", id: null },
@@ -239,6 +240,12 @@ const AnalystUpload = () => {
                 status={state.status}
                 icon={file.icon}
                 onUpload={(uploadedFile: File) => handleUpload(file.type, uploadedFile)}
+                onClear={() => {
+                  setFileStates((prev) => ({
+                    ...prev,
+                    [file.type]: { status: "upload", fileName: "", id: null },
+                  }));
+                }}
                 fileName={state.fileName}
               />
             );
