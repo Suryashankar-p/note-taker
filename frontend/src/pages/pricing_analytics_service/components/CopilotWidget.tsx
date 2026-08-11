@@ -58,7 +58,9 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
 
     const currentPath = location.pathname;
     const mode = currentPath.includes("/analyst") ? "pricing_analyst" : "ceo_cfo";
-    const sessionId = Number(localStorage.getItem("pricing_session_id")) || 16;
+    const activeBu = currentPath.split("/").find((segment) =>
+      ["heating", "cooling", "water"].includes(segment.toLowerCase())
+    ) || "heating";
 
     const chatHistory = messages
       .filter((msg) => msg.sender === "user" || msg.sender === "system")
@@ -71,7 +73,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
       const data = await chatMutation.mutateAsync({
         query: userQuery,
         mode: mode,
-        session_id: sessionId,
+        business_unit: activeBu,
         history: chatHistory,
       });
 
@@ -87,7 +89,6 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
         { id: Date.now(), sender: "system", content: replyText },
       ]);
     } catch (error: any) {
-      console.error("Error communicating with chat API:", error);
       setMessages((prev) => [
         ...prev,
         {

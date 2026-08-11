@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import CustomSelect from "../CustomSelect";
 
 interface HeatmapData {
@@ -12,6 +13,10 @@ type Props = {
 };
 
 const HeatingMarginsGrid = ({ data }: Props) => {
+  const { bu } = useParams<{ bu?: string }>();
+  const activeBu = bu || "heating";
+  const buLabel = activeBu.charAt(0).toUpperCase() + activeBu.slice(1);
+
   const [selectedQuarter, setSelectedQuarter] = useState<string>("");
 
   const sortQuarters = (a: string, b: string) => {
@@ -132,10 +137,10 @@ const HeatingMarginsGrid = ({ data }: Props) => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-sm font-semibold tracking-wider text-gray-500 uppercase">
-            Heating Margins: QoQ view
+            {buLabel} Margins: QoQ view
           </h3>
           <p className="text-[10px] text-gray-400 mt-1">
-            Heating Spares — PMA target vs baseline by product family
+            {buLabel} Spares — PMA target vs baseline by product family
           </p>
         </div>
         {sortedQuarters.length > 0 && (
@@ -211,7 +216,7 @@ const HeatingMarginsGrid = ({ data }: Props) => {
         ))}
       </div>
       <p className="text-[10px] text-gray-400 mt-4 text-center leading-normal">
-        Showing up to 4 quarters ending {activeQuarter}. Cell top-left = # families; bottom-right = % revenue share. Baseline from Heating_baseline.csv; PMA target from Heating_Targets.csv.
+        Showing up to 4 quarters ending {activeQuarter}. Cell top-left = # families; bottom-right = % revenue share. Baseline from {buLabel}_baseline.csv; PMA target from {buLabel}_Targets.csv.
       </p>
     </div>
   );

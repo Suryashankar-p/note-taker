@@ -159,10 +159,13 @@ export const useDeleteMember = () => {
 export const useUploadCogs = () => {
   return useMutation({
     mutationKey: ["upload-cogs"],
-    mutationFn: async (file: File) => {
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
       const formData = new FormData();
-      formData.append("file", file);
-      const response = await PricingAnalyticsAPI.post("/upload/cogs", formData);
+      formData.append("file", payload.file);
+      const response = await PricingAnalyticsAPI.post(
+        `/upload/cogs?business_unit=${payload.business_unit}`,
+        formData,
+      );
       return response;
     },
   });
@@ -171,11 +174,11 @@ export const useUploadCogs = () => {
 export const useUploadTargets = () => {
   return useMutation({
     mutationKey: ["upload-targets"],
-    mutationFn: async (file: File) => {
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", payload.file);
       const response = await PricingAnalyticsAPI.post(
-        "/upload/targets",
+        `/upload/targets?business_unit=${payload.business_unit}`,
         formData,
       );
       return response;
@@ -186,11 +189,11 @@ export const useUploadTargets = () => {
 export const useUploadBaseline = () => {
   return useMutation({
     mutationKey: ["upload-baseline"],
-    mutationFn: async (file: File) => {
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", payload.file);
       const response = await PricingAnalyticsAPI.post(
-        "/upload/baseline",
+        `/upload/baseline?business_unit=${payload.business_unit}`,
         formData,
       );
       return response;
@@ -201,11 +204,11 @@ export const useUploadBaseline = () => {
 export const useUploadNonstdTargets = () => {
   return useMutation({
     mutationKey: ["upload-nonstd-targets"],
-    mutationFn: async (file: File) => {
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", payload.file);
       const response = await PricingAnalyticsAPI.post(
-        "/upload/nonstd-targets",
+        `/upload/nonstd-targets?business_unit=${payload.business_unit}`,
         formData,
       );
       return response;
@@ -216,11 +219,11 @@ export const useUploadNonstdTargets = () => {
 export const useUploadPriceList = () => {
   return useMutation({
     mutationKey: ["upload-price-list"],
-    mutationFn: async (file: File) => {
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", payload.file);
       const response = await PricingAnalyticsAPI.post(
-        "/upload/price-list",
+        `/upload/price-list?business_unit=${payload.business_unit}`,
         formData,
       );
       return response;
@@ -231,11 +234,11 @@ export const useUploadPriceList = () => {
 export const useUploadCostList = () => {
   return useMutation({
     mutationKey: ["upload-cost-list"],
-    mutationFn: async (file: File) => {
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", payload.file);
       const response = await PricingAnalyticsAPI.post(
-        "/upload/cost-list",
+        `/upload/cost-list?business_unit=${payload.business_unit}`,
         formData,
       );
       return response;
@@ -243,151 +246,177 @@ export const useUploadCostList = () => {
   });
 };
 
-export const useCreateSession = () => {
+export const useUploadChannelPriceList = () => {
   return useMutation({
-    mutationKey: ["create-session"],
-    mutationFn: async (payload: {
-      session_name?: string;
-      cogs_file_id: number;
-      targets_file_id: number;
-      baseline_file_id: number;
-      nonstd_targets_file_id: number;
-      price_list_file_id: number;
-      cost_list_file_id: number;
-    }) => {
-      const response = await PricingAnalyticsAPI.post("/sessions/", payload);
-      return response;
-    },
-  });
-};
-
-export const useGetSessions = () => {
-  return useQuery({
-    queryKey: ["sessions"],
-    queryFn: async () => {
-      const response = await PricingAnalyticsAPI.get("/sessions/");
-      return response;
-    },
-  });
-};
-
-export const useDeleteSession = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationKey: ["delete-session"],
-    mutationFn: async (sessionId: number) => {
-      const response = await PricingAnalyticsAPI.delete(
-        `/sessions/${sessionId}`,
+    mutationKey: ["upload-channel-price-list"],
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
+      const formData = new FormData();
+      formData.append("file", payload.file);
+      const response = await PricingAnalyticsAPI.post(
+        `/upload/channel-price-list?business_unit=${payload.business_unit}`,
+        formData,
       );
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
-    },
   });
 };
 
-export const useUpdateSession = () => {
-  const queryClient = useQueryClient();
+export const useUploadDirectPriceList = () => {
   return useMutation({
-    mutationKey: ["update-session"],
-    mutationFn: async (data: { sessionId: number; session_name: string }) => {
-      const response = await PricingAnalyticsAPI.patch(
-        `/sessions/${data.sessionId}`,
-        {
-          session_name: data.session_name,
-        },
+    mutationKey: ["upload-direct-price-list"],
+    mutationFn: async (payload: { file: File; business_unit: string }) => {
+      const formData = new FormData();
+      formData.append("file", payload.file);
+      const response = await PricingAnalyticsAPI.post(
+        `/upload/direct-price-list?business_unit=${payload.business_unit}`,
+        formData,
       );
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+  });
+};
+
+export const useCompile = () => {
+  return useMutation({
+    mutationKey: ["compile"],
+    mutationFn: async (payload: { business_unit: string; file_ids: number[] }) => {
+      const response = await PricingAnalyticsAPI.post("/upload/compile", payload);
+      return response;
     },
   });
 };
 
-export const useGetOverallMargin = (sessionId: number) => {
+export const usePublish = () => {
+  return useMutation({
+    mutationKey: ["publish"],
+    mutationFn: async (payload: { business_unit: string }) => {
+      const response = await PricingAnalyticsAPI.post("/upload/publish", payload);
+      return response;
+    },
+  });
+};
+
+export const useGetCompileStatus = () => {
+  return useMutation({
+    mutationKey: ["compile-status"],
+    mutationFn: async (payload: { business_unit: string }) => {
+      const response = await PricingAnalyticsAPI.post("/upload/compile/status", payload);
+      return response;
+    },
+  });
+};
+
+export const useGetOverallMargin = (businessUnit: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["overall-margin", sessionId],
+    queryKey: ["overall-margin", businessUnit, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/overall-margin",
-        { session_id: sessionId },
+        { business_unit: businessUnit, published_only: publishedOnly },
       );
       return response;
     },
-    enabled: !!sessionId,
+    enabled: !!businessUnit,
   });
 };
 
-export const useGetBusinessInsights = (sessionId: number, quarter?: string) => {
+export const useGetOverallMarginAllDivisions = () => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["business-insights", sessionId, quarter],
+    queryKey: ["overall-margin-all-divisions", publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
-        "/analytics/business-insights",
-        { session_id: sessionId, quarter: quarter },
+        "/analytics/overall-margin/all-divisions",
+        { published_only: publishedOnly },
       );
       return response;
     },
-    enabled: !!sessionId && !!quarter,
+  });
+};
+
+
+export const useGetBusinessInsights = (businessUnit: string, quarter?: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
+  return useQuery({
+    queryKey: ["business-insights", businessUnit, quarter, publishedOnly],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/business-insights",
+        { business_unit: businessUnit, quarter: quarter || null, published_only: publishedOnly },
+      );
+      return response;
+    },
+    enabled: !!businessUnit && !!quarter,
   });
 };
 
 export const useGetClassificationMatrix = (
-  sessionId: number,
+  businessUnit: string,
   quarter?: string,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["classification-matrix", sessionId, quarter],
+    queryKey: ["classification-matrix", businessUnit, quarter, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/classification-matrix",
-        { session_id: sessionId, quarter: quarter },
+        { business_unit: businessUnit, quarter: quarter || null, published_only: publishedOnly },
       );
       return response;
     },
-    enabled: !!sessionId,
+    enabled: !!businessUnit,
   });
 };
 
-export const useGetSkyscraper = (sessionId: number) => {
+export const useGetSkyscraper = (businessUnit: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["skyscraper", sessionId],
+    queryKey: ["skyscraper", businessUnit, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post("/analytics/skyscraper", {
-        session_id: sessionId,
+        business_unit: businessUnit,
+        published_only: publishedOnly,
       });
       return transformSkyscraperData(response);
     },
-    enabled: !!sessionId,
+    enabled: !!businessUnit,
   });
 };
 
-export const useGetQoqMatrix = (sessionId: number) => {
+export const useGetQoqMatrix = (
+  businessUnit: string,
+  quarter?: string,
+  familyNk?: string | null,
+) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["qoq-matrix", sessionId],
+    queryKey: ["qoq-matrix", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post("/analytics/qoq-matrix", {
-        session_id: sessionId,
+        business_unit: businessUnit,
+        quarter: quarter || null,
+        family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+        published_only: publishedOnly,
       });
       return transformQoqMatrixData(response);
     },
-    enabled: !!sessionId,
+    enabled: !!businessUnit,
   });
 };
 
-export const useGetSnapshotKpis = (sessionId: number, quarter?: string) => {
+export const useGetSnapshotKpis = (businessUnit: string, quarter?: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["snapshot-kpis", sessionId, quarter],
+    queryKey: ["snapshot-kpis", businessUnit, quarter, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/snapshot-kpis",
-        { session_id: sessionId, quarter: quarter },
+        { business_unit: businessUnit, quarter: quarter || null, published_only: publishedOnly },
       );
       return response;
     },
-    enabled: !!sessionId,
+    enabled: !!businessUnit && !!quarter,
   });
 };
 
@@ -397,7 +426,7 @@ export const useSendLLMChat = () => {
     mutationFn: async (payload: {
       query: string;
       mode: string;
-      session_id: number;
+      business_unit: string;
       history?: Array<{ role: "user" | "assistant"; content: string }>;
     }) => {
       const response = await PricingAnalyticsAPI.post("/llm/chat", payload);
@@ -407,67 +436,92 @@ export const useSendLLMChat = () => {
 };
 
 export const useGetDispersion = (
-  sessionId: number,
-  familyNk: string | null,
-  quarter?: string | null,
+  businessUnit: string,
+  quarter: string | null,
+  familyNk?: string | null,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["dispersion", sessionId, familyNk, quarter],
+    queryKey: ["dispersion", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post("/analytics/dispersion", {
-        session_id: sessionId,
+        business_unit: businessUnit,
+        quarter: quarter,
         family_nk: familyNk === "null" || !familyNk ? null : familyNk,
-        quarter: quarter || "",
+        published_only: publishedOnly,
       });
       return response;
     },
-    enabled: !!sessionId,
+    enabled: !!businessUnit && !!quarter,
     placeholderData: keepPreviousData,
   });
 };
 
 export const useGetQoqDistribution = (
-  sessionId: number,
+  businessUnit: string,
   quarter: string | null,
   familyNk: string | null,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["qoq-distribution", sessionId, quarter, familyNk],
+    queryKey: ["qoq-distribution", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/qoq-distribution",
         {
-          session_id: sessionId,
+          business_unit: businessUnit,
           quarter: quarter,
           family_nk: familyNk === "null" || !familyNk ? null : familyNk,
+          published_only: publishedOnly,
         },
       );
       return response;
     },
-    enabled: !!sessionId,
+    enabled: !!businessUnit && !!quarter && !!familyNk,
     placeholderData: keepPreviousData,
   });
 };
 
 export const useGetSkuDeviation = (
-  sessionId: number,
-  familyNk?: string | null,
+  businessUnit: string,
   quarter?: string | null,
+  familyNk?: string | null,
 ) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
   return useQuery({
-    queryKey: ["sku-deviation", sessionId, familyNk, quarter],
+    queryKey: ["sku-deviation", businessUnit, quarter, familyNk, publishedOnly],
     queryFn: async () => {
       const response = await PricingAnalyticsAPI.post(
         "/analytics/sku-deviation",
         {
-          session_id: sessionId,
+          business_unit: businessUnit,
+          quarter: quarter || null,
           family_nk: familyNk === "null" || !familyNk ? null : familyNk,
-          quarter: quarter || "",
+          published_only: publishedOnly,
         },
       );
       return transformSkuDeviationData(response);
     },
-    enabled: !!sessionId && !!familyNk,
+    enabled: !!businessUnit,
     placeholderData: keepPreviousData,
+  });
+};
+
+export const useGetGmDecompose = (businessUnit: string, quarter?: string) => {
+  const publishedOnly = window.location.pathname.includes("/ceo");
+  return useQuery({
+    queryKey: ["gm-decompose", businessUnit, quarter, publishedOnly],
+    queryFn: async () => {
+      const response = await PricingAnalyticsAPI.post(
+        "/analytics/gm-decompose",
+        {
+          business_unit: businessUnit,
+          published_only: publishedOnly,
+          ...(quarter ? { quarter } : {}),
+        },
+      );
+      return response;
+    },
+    enabled: !!businessUnit && !!quarter,
   });
 };

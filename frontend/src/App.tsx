@@ -112,6 +112,9 @@ const Skycraper = lazy(
 const DispersionView = lazy(
   () => import("./pages/pricing_analytics_service/components/ceo/DispersionView.tsx")
 );
+const SelectBu = lazy(
+  () => import("./pages/pricing_analytics_service/components/ceo/SelectBu.tsx")
+);
 const OverallMarginTab = lazy(
   () => import("./pages/pricing_analytics_service/components/analyst/OverallMarginTab.tsx")
 );
@@ -123,6 +126,12 @@ const QoqMatrixTab = lazy(
 );
 const SkuDrillDownTab = lazy(
   () => import("./pages/pricing_analytics_service/components/analyst/SkuDrillDownTab.tsx")
+);
+const AnalystSelectBu = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/AnalystSelectBu.tsx")
+);
+const AnalystUpload = lazy(
+  () => import("./pages/pricing_analytics_service/components/analyst/AnalystUpload.tsx")
 );
 
 
@@ -231,15 +240,19 @@ const App = () => (
         <Route index element={<PricingAnalyticsServiceWorkspaceAnalytics />} />
         <Route path="ceo" element={<CeoBriefing />}>
           <Route path="overall-margin" element={<OverallMargin />} />
-          <Route path="classification" element={<Classification />} />
-          <Route path="skycraper" element={<Skycraper />} />
-          <Route path="dispersion-view" element={<DispersionView />} />
+          <Route path="select-bu" element={<SelectBu />} />
+          <Route path=":bu/classification" element={<Classification />} />
+          <Route path=":bu/revenue-gm-ladder" element={<Skycraper />} />
+          <Route path=":bu/dispersion-view" element={<DispersionView />} />
         </Route>
         <Route path="analyst" element={<PricingAnalyst />}>
-          <Route path="overall-margin" element={<OverallMarginTab />} />
-          <Route path="skyscraper" element={<SkyscraperTab />} />
-          <Route path="qoq-matrix" element={<QoqMatrixTab />} />
-          <Route path="sku-drill-down" element={<SkuDrillDownTab />} />
+          <Route index element={<Navigate to="select-bu" replace />} />
+          <Route path="select-bu" element={<AnalystSelectBu />} />
+          <Route path=":bu/upload" element={<AnalystUpload />} />
+          <Route path=":bu/overall-margin" element={<OverallMarginTab />} />
+          <Route path=":bu/revenue-gm-ladder" element={<SkyscraperTab />} />
+          <Route path=":bu/qoq-matrix" element={<QoqMatrixTab />} />
+          <Route path=":bu/sku-drill-down" element={<SkuDrillDownTab />} />
         </Route>
       </Route>
       <Route path="*" element={<ProtectedRoute element={<PageNotFound />} />} />

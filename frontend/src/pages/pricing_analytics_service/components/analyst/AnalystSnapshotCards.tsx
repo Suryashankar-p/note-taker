@@ -27,39 +27,44 @@ const AnalystSnapshotCards = ({
     ? (snapshotKpis.find((item: any) => item.quarter === snapshotQuarter) || snapshotKpis[0])
     : null;
 
+  const revenue = activeSnapshot?.revenue_inr ?? 0;
+  const overallGm = activeSnapshot?.overall_gm_pct ?? 0;
+  const deltaBaseline = activeSnapshot?.delta_vs_baseline_pp ?? 0;
+  const deltaTarget = activeSnapshot?.delta_vs_target_pp ?? activeSnapshot?.delta_vs_heating_target_pp ?? activeSnapshot?.delta_vs_cooling_target_pp ?? activeSnapshot?.delta_vs_water_target_pp ?? 0;
+
   const stats = activeSnapshot
     ? [
         {
-          label: "HEATING REVENUE",
-          value: `₹${(activeSnapshot.revenue_inr / 10000000).toFixed(1)} Cr`,
+          label: "REVENUE",
+          value: `₹${(revenue / 10000000).toFixed(1)} Cr`,
         },
         {
           label: "OVERALL GM%",
-          value: `${activeSnapshot.overall_gm_pct.toFixed(1)}%`,
+          value: `${overallGm.toFixed(1)}%`,
         },
         {
           label: "Δ VS BASELINE",
-          value: `${activeSnapshot.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_baseline_pp.toFixed(1)}%`,
-          isPositive: activeSnapshot.delta_vs_baseline_pp >= 0,
-          isNegative: activeSnapshot.delta_vs_baseline_pp < 0,
+          value: `${deltaBaseline >= 0 ? "+" : ""}${deltaBaseline.toFixed(1)}%`,
+          isPositive: deltaBaseline >= 0,
+          isNegative: deltaBaseline < 0,
         },
         {
-          label: "Δ VS HEATING TARGET",
-          value: `${activeSnapshot.delta_vs_heating_target_pp >= 0 ? "+" : ""}${activeSnapshot.delta_vs_heating_target_pp.toFixed(1)}%`,
-          isPositive: activeSnapshot.delta_vs_heating_target_pp >= 0,
-          isNegative: activeSnapshot.delta_vs_heating_target_pp < 0,
+          label: "Δ VS TARGET",
+          value: `${deltaTarget >= 0 ? "+" : ""}${deltaTarget.toFixed(1)}%`,
+          isPositive: deltaTarget >= 0,
+          isNegative: deltaTarget < 0,
         },
         {
           label: "FAMILIES ABOVE TARGET",
-          value: String(activeSnapshot.families_above_target),
+          value: String(activeSnapshot.families_above_target ?? 0),
         },
         {
           label: "FAMILIES BELOW TARGET",
-          value: String(activeSnapshot.families_below_target),
+          value: String(activeSnapshot.families_below_target ?? 0),
         },
         {
           label: "FAMILIES ABOVE BASELINE",
-          value: String(activeSnapshot.families_above_baseline),
+          value: String(activeSnapshot.families_above_baseline ?? 0),
         },
       ]
     : [];

@@ -19,7 +19,6 @@ import {
   useUploadNonstdTargets,
   useUploadPriceList,
   useUploadCostList,
-  useCreateSession,
 } from "../services/query/query";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch, RootState } from "../../../redux/store";
@@ -43,7 +42,8 @@ const LoadFiles = () => {
   const { mutate: uploadNonstdTargets } = useUploadNonstdTargets();
   const { mutate: uploadPriceList } = useUploadPriceList();
   const { mutate: uploadCostList } = useUploadCostList();
-  const { mutate: createSession, isPending: isCreatingSession } = useCreateSession();
+  const createSession = (() => {}) as any;
+  const isCreatingSession = false;
 
   const [files, setFiles] = useState([
     {
@@ -141,8 +141,10 @@ const LoadFiles = () => {
 
       uploadMutation(uploadedFile, {
         onSuccess: (data: any) => {
-          if (data && data.detail) {
-            console.error(`${title} upload error:`, data.detail);
+          const errorMessage = data?.detail || data?.error || data?.message || (data?.success === false ? "Upload failed" : null);
+          const fileId = data?.id ?? data?.file_id ?? (data?.result && data?.result.id);
+
+          if (errorMessage || !fileId) {
             setFiles((prev) =>
               prev.map((file) =>
                 file.title === title
@@ -153,7 +155,7 @@ const LoadFiles = () => {
             setPageError(true);
             dispatch.toast.openToast({
               status: true,
-              message: data.detail,
+              message: errorMessage || "Upload failed: Invalid server response",
               type: "error",
             });
             return;
@@ -166,14 +168,13 @@ const LoadFiles = () => {
                   ...file,
                   status: "loaded",
                   fileName: uploadedFile.name,
-                  id: data.id ?? data.file_id ?? (data.result && data.result.id)
+                  id: fileId
                 }
                 : file,
             ),
           );
         },
         onError: (error: any) => {
-          console.error(`${title} upload failed:`, error);
           setFiles((prev) =>
             prev.map((file) =>
               file.title === title
@@ -274,6 +275,15 @@ const LoadFiles = () => {
               onUpload={(uploadedFile: File) =>
                 handleUpload(file.title, uploadedFile)
               }
+              onClear={() => {
+                setFiles((prev) =>
+                  prev.map((f) =>
+                    f.title === file.title
+                      ? { ...f, status: "upload", fileName: "", id: null }
+                      : f
+                  )
+                );
+              }}
               fileName={file.fileName}
             />
           ))}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { useGetSnapshotKpis } from "../../services/query/query";
 import CustomSelect from "../CustomSelect";
 
@@ -11,8 +12,9 @@ const ExecutiveSnapshot = ({
   activeQuarter?: string;
   setActiveQuarter?: (q: string) => void;
 }) => {
-  const sessionId = Number(localStorage.getItem("pricing_session_id")) || 10;
-  const { data: snapshotKpis, isLoading } = useGetSnapshotKpis(sessionId, activeQuarter);
+  const { bu } = useParams<{ bu?: string }>();
+  const activeBu = bu || "heating";
+  const { data: snapshotKpis, isLoading } = useGetSnapshotKpis(activeBu, activeQuarter);
 
   const activeData = Array.isArray(snapshotKpis)
     ? (snapshotKpis.find((item: any) => item.quarter === activeQuarter) || snapshotKpis[0])
@@ -28,16 +30,18 @@ const ExecutiveSnapshot = ({
 
   if (!activeData) return null;
 
+  const buLabel = activeBu.toUpperCase();
   const heatingRevenue = `₹${(activeData.revenue_inr / 10000000).toFixed(1)} Cr`;
   const overallGm = `${activeData.overall_gm_pct.toFixed(1)}%`;
   const deltaBaseline = `${activeData.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeData.delta_vs_baseline_pp.toFixed(1)}%`;
-  const deltaTarget = `${activeData.delta_vs_heating_target_pp >= 0 ? "+" : ""}${activeData.delta_vs_heating_target_pp.toFixed(1)}%`;
+  const rawDeltaTarget = activeData.delta_vs_target_pp ?? activeData.delta_vs_heating_target_pp ?? activeData.delta_vs_cooling_target_pp ?? activeData.delta_vs_water_target_pp ?? 0;
+  const deltaTarget = `${rawDeltaTarget >= 0 ? "+" : ""}${rawDeltaTarget.toFixed(1)}%`;
 
   const snapshotData = [
-    { label: "HEATING REVENUE", value: heatingRevenue },
+    { label: `${buLabel} REVENUE`, value: heatingRevenue },
     { label: "OVERALL GM%", value: overallGm },
     { label: "Δ VS BASELINE", value: deltaBaseline, highlight: activeData.delta_vs_baseline_pp >= 0 ? "text-emerald-600" : "text-rose-600" },
-    { label: "Δ VS HEATING TARGET", value: deltaTarget, highlight: activeData.delta_vs_heating_target_pp >= 0 ? "text-emerald-600" : "text-rose-600" },
+    { label: `Δ VS ${buLabel} TARGET`, value: deltaTarget, highlight: rawDeltaTarget >= 0 ? "text-emerald-600" : "text-rose-600" },
     { label: "FAMILIES ABOVE TARGET", value: String(activeData.families_above_target) },
     { label: "FAMILIES BELOW TARGET", value: String(activeData.families_below_target), highlight: "text-rose-500" },
     { label: "FAMILIES ABOVE BASELINE", value: String(activeData.families_above_baseline) },

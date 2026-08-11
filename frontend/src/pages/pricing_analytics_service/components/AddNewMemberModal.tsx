@@ -55,7 +55,6 @@ const AddMemberModal = ({ open, onClose }: Props) => {
     });
   };
   const onSubmit = (data: MemberFormData) => {
-    console.log(data)
     mutate(data, {
       onSuccess: () => {
         reset();
