@@ -997,7 +997,7 @@ const ChatArea: React.FC<Props> = ({
     if (localFiles?.length > 0) {
       let isLargeFile = false;
       for (const f of localFiles) {
-        if (f.file && await isLargeDocument(f.file, 10)) {
+        if (f.file && await isLargeDocument(f.file, 20)) {
           isLargeFile = true;
           break;
         }
