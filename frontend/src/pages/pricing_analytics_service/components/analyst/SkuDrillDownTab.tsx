@@ -121,7 +121,6 @@ const SkuDrillDownTab: React.FC<SkuDrillDownTabProps> = ({
             type: "success",
           });
           setShowPublishModal(false);
-          navigate("/ai-studio/pricing-analytics/workspace/dashboard/analyst/select-bu");
         },
         onError: (error: any) => {
           dispatch.toast.openToast({
