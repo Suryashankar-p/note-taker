@@ -46,7 +46,7 @@ const PricingAnalyst = () => {
                 onClick={() => navigate(`${SETTINGS_BASE}/analyst/${bu}/upload`)}
                 className="px-3.5 py-1.5 bg-[#a61c1e] hover:bg-red-750 text-white rounded-lg text-[10px] font-bold tracking-wide transition-colors shadow-sm"
               >
-                Upload Files 📤
+                Upload Files
               </button>
             )}
             <button

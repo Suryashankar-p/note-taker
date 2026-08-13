@@ -104,6 +104,16 @@ const RevenueVsCogsChart = ({ data }: RevenueVsCogsChartProps) => {
 
   const families = Object.keys(normalizedData);
 
+  const selectOptions = React.useMemo(() => {
+    const familyCount = families.filter((f) => f !== "All Families").length;
+    return families.map((fam) => {
+      if (fam === "All Families") {
+        return { value: "All Families", label: `All Families (${familyCount})` };
+      }
+      return { value: fam, label: fam };
+    });
+  }, [families]);
+
   useEffect(() => {
     if (families.length > 0 && !selectedFamily) {
       if (families.includes("All Families")) {
@@ -200,6 +210,13 @@ const RevenueVsCogsChart = ({ data }: RevenueVsCogsChartProps) => {
         borderWidth: 1,
         padding: 10,
         cornerRadius: 6,
+        callbacks: {
+          label: (context: any) => {
+            const label = context.dataset.label || "";
+            const value = context.parsed.y;
+            return `${label}: ₹${value !== null && value !== undefined ? value.toFixed(2) : "0.00"} Cr`;
+          },
+        },
       },
     },
     scales: {
@@ -236,7 +253,7 @@ const RevenueVsCogsChart = ({ data }: RevenueVsCogsChartProps) => {
               Product families
             </span>
             <CustomSelect
-              options={families}
+              options={selectOptions}
               value={activeFamily}
               onChange={setSelectedFamily}
             />

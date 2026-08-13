@@ -20,9 +20,13 @@ const QoqDrilldownTable: React.FC<QoqDrilldownTableProps> = ({
         Product family drill-down
       </h3>
       
-      <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 text-teal-800 p-3 rounded-lg mb-4 text-xs font-semibold">
+      <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 text-teal-800 p-3 rounded-lg mb-2 text-xs font-semibold">
         <AlertCircle className="text-teal-600 shrink-0" size={14} />
         <p>Click a product family to see performance and dispersion. Scroll down and open SKU drill-down for line-level deviations.</p>
+      </div>
+
+      <div className="text-[11px] text-gray-400 font-semibold mb-4 pl-1">
+        {activeFamiliesList.length} {activeFamiliesList.length === 1 ? "family" : "families"} · {activeQuarter}
       </div>
 
       <div className="overflow-x-auto">

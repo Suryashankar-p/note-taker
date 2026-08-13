@@ -36,23 +36,27 @@ const AnalystSnapshotCards = ({
     ? [
         {
           label: "REVENUE",
-          value: `₹${(revenue / 10000000).toFixed(1)} Cr`,
+          value: `₹${(revenue / 10000000).toFixed(2)} Cr`,
         },
         {
           label: "OVERALL GM%",
-          value: `${overallGm.toFixed(1)}%`,
+          value: `${overallGm.toFixed(2)}%`,
         },
         {
           label: "Δ VS BASELINE",
-          value: `${deltaBaseline >= 0 ? "+" : ""}${deltaBaseline.toFixed(1)}%`,
+          value: `${deltaBaseline >= 0 ? "+" : ""}${deltaBaseline.toFixed(2)}%`,
           isPositive: deltaBaseline >= 0,
           isNegative: deltaBaseline < 0,
         },
         {
           label: "Δ VS TARGET",
-          value: `${deltaTarget >= 0 ? "+" : ""}${deltaTarget.toFixed(1)}%`,
+          value: `${deltaTarget >= 0 ? "+" : ""}${deltaTarget.toFixed(2)}%`,
           isPositive: deltaTarget >= 0,
           isNegative: deltaTarget < 0,
+        },
+        {
+          label: "FAMILIES ABOVE BASELINE",
+          value: String(activeSnapshot.families_above_baseline ?? 0),
         },
         {
           label: "FAMILIES ABOVE TARGET",
@@ -61,10 +65,6 @@ const AnalystSnapshotCards = ({
         {
           label: "FAMILIES BELOW TARGET",
           value: String(activeSnapshot.families_below_target ?? 0),
-        },
-        {
-          label: "FAMILIES ABOVE BASELINE",
-          value: String(activeSnapshot.families_above_baseline ?? 0),
         },
       ]
     : [];

@@ -116,7 +116,9 @@ const SkyscraperChart = ({
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm text-gray-850">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Revenue & GM ladder — margin delta vs target × revenue share</h2>
+          <h2 className="text-base font-bold text-gray-900">
+            Revenue & GM ladder — margin delta vs {compareMode} × revenue share
+          </h2>
           <div className="flex gap-2 mt-3">
             <button
               onClick={() => setCompareMode("target")}

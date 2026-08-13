@@ -117,7 +117,7 @@ const SkyscraperChartCard = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-gray-100 gap-4">
         <div>
           <h3 className="text-sm font-bold tracking-tight text-gray-850">
-            Skyscraper — margin delta vs target × revenue share
+            Revenue & GM ladder — margin delta vs {compareVs} × revenue share
           </h3>
           <p className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">
             {families.length} families — <strong>{aboveCount} above {compareVs}</strong> —{" "}

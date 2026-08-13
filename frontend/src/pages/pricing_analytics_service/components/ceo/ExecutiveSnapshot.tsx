@@ -31,20 +31,20 @@ const ExecutiveSnapshot = ({
   if (!activeData) return null;
 
   const buLabel = activeBu.toUpperCase();
-  const heatingRevenue = `₹${(activeData.revenue_inr / 10000000).toFixed(1)} Cr`;
-  const overallGm = `${activeData.overall_gm_pct.toFixed(1)}%`;
-  const deltaBaseline = `${activeData.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeData.delta_vs_baseline_pp.toFixed(1)}%`;
+  const heatingRevenue = `₹${(activeData.revenue_inr / 10000000).toFixed(2)} Cr`;
+  const overallGm = `${activeData.overall_gm_pct.toFixed(2)}%`;
+  const deltaBaseline = `${activeData.delta_vs_baseline_pp >= 0 ? "+" : ""}${activeData.delta_vs_baseline_pp.toFixed(2)}%`;
   const rawDeltaTarget = activeData.delta_vs_target_pp ?? activeData.delta_vs_heating_target_pp ?? activeData.delta_vs_cooling_target_pp ?? activeData.delta_vs_water_target_pp ?? 0;
-  const deltaTarget = `${rawDeltaTarget >= 0 ? "+" : ""}${rawDeltaTarget.toFixed(1)}%`;
+  const deltaTarget = `${rawDeltaTarget >= 0 ? "+" : ""}${rawDeltaTarget.toFixed(2)}%`;
 
   const snapshotData = [
     { label: `${buLabel} REVENUE`, value: heatingRevenue },
     { label: "OVERALL GM%", value: overallGm },
     { label: "Δ VS BASELINE", value: deltaBaseline, highlight: activeData.delta_vs_baseline_pp >= 0 ? "text-emerald-600" : "text-rose-600" },
     { label: `Δ VS ${buLabel} TARGET`, value: deltaTarget, highlight: rawDeltaTarget >= 0 ? "text-emerald-600" : "text-rose-600" },
+    { label: "FAMILIES ABOVE BASELINE", value: String(activeData.families_above_baseline) },
     { label: "FAMILIES ABOVE TARGET", value: String(activeData.families_above_target) },
     { label: "FAMILIES BELOW TARGET", value: String(activeData.families_below_target), highlight: "text-rose-500" },
-    { label: "FAMILIES ABOVE BASELINE", value: String(activeData.families_above_baseline) },
   ];
 
   return (

@@ -60,6 +60,16 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
 
   const families = Object.keys(normalizedData);
 
+  const selectOptions = React.useMemo(() => {
+    const familyCount = families.filter((f) => f !== "All Families").length;
+    return families.map((fam) => {
+      if (fam === "All Families") {
+        return { value: "All Families", label: `All Families (${familyCount})` };
+      }
+      return { value: fam, label: fam };
+    });
+  }, [families]);
+
   useEffect(() => {
     if (families.length > 0 && !selectedFamily) {
       if (families.includes("All Families")) {
@@ -171,16 +181,16 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
           label: (context: any) => {
             const dataPoint = sortedApiData[context.dataIndex];
             if (!dataPoint)
-              return `Overall Margin: ${context.parsed.y?.toFixed(1)}%`;
+              return `Overall Margin: ${context.parsed.y?.toFixed(2)}%`;
 
-            const lines = [`Overall Margin: ${context.parsed.y?.toFixed(1)}%`];
+            const lines = [`Overall Margin: ${context.parsed.y?.toFixed(2)}%`];
 
             if (
               dataPoint.standard_gm_pct !== null &&
               dataPoint.standard_gm_pct !== undefined
             ) {
               lines.push(
-                `Standard Margin: ${dataPoint.standard_gm_pct.toFixed(1)}%`,
+                `Standard Margin: ${dataPoint.standard_gm_pct.toFixed(2)}%`,
               );
             }
 
@@ -189,7 +199,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               dataPoint.non_standard_gm_pct !== undefined
             ) {
               lines.push(
-                `Non-Standard Margin: ${dataPoint.non_standard_gm_pct.toFixed(1)}%`,
+                `Non-Standard Margin: ${dataPoint.non_standard_gm_pct.toFixed(2)}%`,
               );
             }
 
@@ -198,7 +208,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               dataPoint.baseline_gm_pct !== undefined
             ) {
               lines.push(
-                `${baseName} baseline: ${dataPoint.baseline_gm_pct.toFixed(1)}%`,
+                `${baseName} baseline: ${dataPoint.baseline_gm_pct.toFixed(2)}%`,
               );
             }
 
@@ -207,7 +217,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               dataPoint.gap_vs_baseline_pp !== undefined
             ) {
               lines.push(
-                `Actual gap vs baseline: ${dataPoint.gap_vs_baseline_pp.toFixed(1)} pp`,
+                `Actual gap vs baseline: ${dataPoint.gap_vs_baseline_pp.toFixed(2)} pp`,
               );
             }
 
@@ -215,7 +225,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               dataPoint.target_gm_pct !== null &&
               dataPoint.target_gm_pct !== undefined
             ) {
-              lines.push(`${baseName} PMA target: ${dataPoint.target_gm_pct.toFixed(1)}%`);
+              lines.push(`${baseName} PMA target: ${dataPoint.target_gm_pct.toFixed(2)}%`);
             }
 
             if (
@@ -223,7 +233,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               dataPoint.gap_vs_target_pp !== undefined
             ) {
               lines.push(
-                `Gap vs Target: ${dataPoint.gap_vs_target_pp.toFixed(1)} pp`,
+                `Gap vs Target: ${dataPoint.gap_vs_target_pp.toFixed(2)} pp`,
               );
             }
 
@@ -265,7 +275,7 @@ const MarginTrendChart = ({ data }: MarginTrendChartProps) => {
               Product families
             </span>
             <CustomSelect
-              options={families}
+              options={selectOptions}
               value={activeFamily}
               onChange={setSelectedFamily}
             />

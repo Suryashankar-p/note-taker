@@ -1,3 +1,4 @@
+import React from "react";
 import { useParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Chart, Line } from "react-chartjs-2";
@@ -75,8 +76,8 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
   const activeBu = bu || "heating";
   const familyNk = selectedDetails.familyNk || selectedFamily.toLowerCase();
   
-  const { data: qoqDistributionData, isFetching: isQoqDistributionFetching } = useGetQoqDistribution(activeBu, activeQuarter, familyNk);
-  const { data: dispersionData, isFetching: isDispersionFetching } = useGetDispersion(activeBu, activeQuarter, familyNk);
+  const { data: qoqDistributionData, isLoading: isQoqDistributionLoading } = useGetQoqDistribution(activeBu, activeQuarter, familyNk);
+  const { data: dispersionData, isLoading: isDispersionLoading } = useGetDispersion(activeBu, activeQuarter, familyNk);
 
   const familyDispersion = dispersionData?.family_dispersion;
   const hasDispersionData = !!qoqDistributionData?.summary;
@@ -132,7 +133,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         label: `PMA Target (${selectedDetails.target})`,
         yAxisID: "yGM",
         data: filteredHistory.map(() => selectedDetails.targetVal),
-        borderColor: "#eab308",
+        borderColor: "#8b5cf6",
         borderDash: [5, 5],
         borderWidth: 1.5,
         pointRadius: 0,
@@ -141,10 +142,10 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
       },
       {
         type: "line" as const,
-        label: `Baseline (${selectedDetails.baseline.toFixed(1)}%)`,
+        label: `Baseline (${selectedDetails.baseline.toFixed(2)}%)`,
         yAxisID: "yGM",
         data: filteredHistory.map(() => selectedDetails.baseline),
-        borderColor: "#eab308",
+        borderColor: "#f59e0b",
         borderDash: [5, 5],
         borderWidth: 1.5,
         pointRadius: 0,
@@ -158,7 +159,11 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: "top" as const,
+        labels: { boxWidth: 12, font: { size: 9 }, color: "#64748b" },
+      },
       tooltip: { backgroundColor: "#1e293b", padding: 10, cornerRadius: 6 }
     },
     scales: {
@@ -197,11 +202,11 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
   const histogramMin = qoqDistributionData?.summary?.min ? Math.floor(qoqDistributionData.summary.min - 2) : 0;
   const histogramMax = qoqDistributionData?.summary?.max ? Math.ceil(qoqDistributionData.summary.max + 2) : 100;
 
-  const muSigmaPlugin = {
+  const muSigmaPlugin = React.useMemo(() => ({
     id: "muSigmaLines",
     afterDraw: (chart: any) => {
       const ctx = chart.ctx;
-      const xSc = chart.scales["x"];
+      const xSc = chart.scales["xLine"];
       const ySc = chart.scales["y"];
       if (!xSc || !ySc) return;
 
@@ -239,7 +244,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
         ctx.restore();
       });
     },
-  };
+  }), [qoqDistributionData, meanVal, stdVal]);
 
   const xBarLabels = qoqDistributionData?.histogram?.map((h: any) => `${h.start}-${h.end}%`) || [];
 
@@ -403,7 +408,7 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
       </div>
 
       <div className="bg-white border border-gray-250 rounded-xl p-6 shadow-sm flex flex-col gap-6 animate-fade-in relative text-gray-800">
-        {isDispersionFetching && (
+        {isDispersionLoading && (
           <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all rounded-xl">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-700"></div>
           </div>
@@ -455,31 +460,31 @@ const QoqPerformanceCharts: React.FC<QoqPerformanceChartsProps> = ({
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Mean GM%</span>
               <span className="text-xl font-black text-gray-900 mt-1">
-                {qoqDistributionData?.summary?.mean !== undefined ? `${qoqDistributionData.summary.mean.toFixed(1)}%` : selectedDetails.mean}
+                {qoqDistributionData?.summary?.mean !== undefined ? `${qoqDistributionData.summary.mean.toFixed(2)}%` : selectedDetails.mean}
               </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Std dev (σ)</span>
               <span className="text-xl font-black text-gray-900 mt-1">
-                {qoqDistributionData?.summary?.std_dev !== undefined ? `${qoqDistributionData.summary.std_dev.toFixed(1)}%` : selectedDetails.stdDev}
+                {qoqDistributionData?.summary?.std_dev !== undefined ? `${qoqDistributionData.summary.std_dev.toFixed(2)}%` : selectedDetails.stdDev}
               </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Median</span>
               <span className="text-xl font-black text-gray-900 mt-1">
-                {qoqDistributionData?.summary?.median !== undefined ? `${qoqDistributionData.summary.median.toFixed(1)}%` : selectedDetails.median}
+                {qoqDistributionData?.summary?.median !== undefined ? `${qoqDistributionData.summary.median.toFixed(2)}%` : selectedDetails.median}
               </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Min GM%</span>
               <span className="text-xl font-black text-gray-900 mt-1">
-                {qoqDistributionData?.summary?.min !== undefined ? `${qoqDistributionData.summary.min.toFixed(1)}%` : selectedDetails.min}
+                {qoqDistributionData?.summary?.min !== undefined ? `${qoqDistributionData.summary.min.toFixed(2)}%` : selectedDetails.min}
               </span>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-gray-400 uppercase">Max GM%</span>
               <span className="text-xl font-black text-gray-900 mt-1">
-                {qoqDistributionData?.summary?.max !== undefined ? `${qoqDistributionData.summary.max.toFixed(1)}%` : selectedDetails.max}
+                {qoqDistributionData?.summary?.max !== undefined ? `${qoqDistributionData.summary.max.toFixed(2)}%` : selectedDetails.max}
               </span>
             </div>
           </div>

@@ -222,7 +222,7 @@ const OverallMargin = () => {
               const baselineGm = row.baseline_gm_pct || 0;
               const latestData = row.quarters?.[latestQuarter];
               const delta = latestData ? latestData.gm_pct - baselineGm : 0;
-              const deltaStr = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`;
+              const deltaStr = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`;
               const deltaClass = delta >= 0 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100";
 
               // Simple rendering segments grouping check (Heating, Cooling, Water have standard/non-standard options)
@@ -236,10 +236,10 @@ const OverallMargin = () => {
                     {row.label || "Overall"}
                   </td>
                   <td className="p-3 text-center text-gray-600 border-r border-gray-200">
-                    {row.baseline_rev_cr?.toFixed(1) ?? "—"}
+                    {row.baseline_rev_cr?.toFixed(2) ?? "—"}
                   </td>
                   <td className="p-3 text-center font-bold text-gray-600 border-r border-gray-200">
-                    {row.baseline_gm_pct != null ? `${row.baseline_gm_pct.toFixed(1)}%` : "—"}
+                    {row.baseline_gm_pct != null ? `${row.baseline_gm_pct.toFixed(2)}%` : "—"}
                   </td>
                   {tableQuarters.map((q) => {
                     const qData = row.quarters?.[q];
@@ -255,14 +255,14 @@ const OverallMargin = () => {
                     return (
                       <React.Fragment key={q}>
                         <td className="p-3 text-center text-gray-600 border-r border-gray-200">
-                          {qData.rev_cr?.toFixed(1) ?? "—"}
+                          {qData.rev_cr?.toFixed(2) ?? "—"}
                         </td>
                         <td
                           className={`p-3 text-center font-bold border-r border-gray-200 ${
                             isImproved ? "text-emerald-600" : "text-rose-600"
                           }`}
                         >
-                          {qData.gm_pct != null ? `${qData.gm_pct.toFixed(1)}%` : "—"}
+                          {qData.gm_pct != null ? `${qData.gm_pct.toFixed(2)}%` : "—"}
                         </td>
                       </React.Fragment>
                     );

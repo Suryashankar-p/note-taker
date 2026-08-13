@@ -97,8 +97,8 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
 
   const activeQuarter = selectedQuarter || sortedQuarters[sortedQuarters.length - 1] || "";
 
-  const apiFamilyDetails = data?.familyDetails || {};
-  const familyHistory = data?.familyHistory || {};
+  const apiFamilyDetails = useMemo(() => data?.familyDetails || {}, [data]);
+  const familyHistory = useMemo(() => data?.familyHistory || {}, [data]);
 
   const getFamilyMockDetails = useCallback((name: string) => {
     const key = name.toLowerCase();
@@ -129,18 +129,18 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     return {
       name,
       revenue: `₹${(revenueInr / 100000).toFixed(2)}L`,
-      actual: `${actualVal.toFixed(1)}%`,
-      target: `${targetVal.toFixed(1)}%`,
-      delta: `${gap >= 0 ? "+" : ""}${gap.toFixed(1)}`,
+      actual: `${actualVal.toFixed(2)}%`,
+      target: `${targetVal.toFixed(2)}%`,
+      delta: `${gap >= 0 ? "+" : ""}${gap.toFixed(2)}`,
       deltaVal: gap,
       history,
       baseline: baselineVal,
       targetVal,
-      mean: `${mean.toFixed(1)}%`,
-      stdDev: `${std.toFixed(1)}%`,
-      median: `${median.toFixed(1)}%`,
-      min: `${min.toFixed(1)}%`,
-      max: `${max.toFixed(1)}%`,
+      mean: `${mean.toFixed(2)}%`,
+      stdDev: `${std.toFixed(2)}%`,
+      median: `${median.toFixed(2)}%`,
+      min: `${min.toFixed(2)}%`,
+      max: `${max.toFixed(2)}%`,
       transactionCount: stats?.transaction_count ?? 0,
       familyNk: stats?.nk ?? key,
     };
@@ -181,6 +181,10 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
     return columns.reduce((sum, c) => sum + (matrixData[r]?.[c]?.count || 0), 0);
   }, [matrixData]);
 
+  const selectedDetails = useMemo(() => {
+    return selectedFamily ? getFamilyMockDetails(selectedFamily) : null;
+  }, [selectedFamily, getFamilyMockDetails]);
+
   if (isLoading) {
     return <PageLoading />;
   }
@@ -205,8 +209,6 @@ const QoqMatrixTab: React.FC<QoqMatrixTabProps> = ({
   const activeFamiliesList = selectedQoqCell
     ? matrixData[selectedQoqCell.row]?.[selectedQoqCell.col]?.familyData || []
     : [];
-
-  const selectedDetails = selectedFamily ? getFamilyMockDetails(selectedFamily) : null;
 
   return (
     <div className="flex flex-col gap-8 text-gray-800 pb-12">
