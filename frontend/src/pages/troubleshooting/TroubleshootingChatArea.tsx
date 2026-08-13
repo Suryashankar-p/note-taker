@@ -719,9 +719,10 @@ const ChatArea: React.FC<Props> = ({
               )}
             </div>
           ))
-        ) : !loading && productTitles.length > 0 ? (
-          // First turn: ask the user to pick a product via pills before the
-          // normal flow (TROUBLESHOOTING) / KB retrieval (KB) begins.
+        ) : !loading && mode === "KB" && productTitles.length > 0 ? (
+          // KB mode only: retrieval is scoped to one product, so the user picks it
+          // first. TROUBLESHOOTING mode resolves the product from the linked asset
+          // and the question itself, so it opens straight into a free-text box.
           <div className="flex items-start space-x-2">
             <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
               <span className="text-gray-600">AI</span>
