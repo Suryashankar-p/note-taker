@@ -32,7 +32,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
     {
       id: 1,
       sender: "system",
-      content: "Welcome to GIA Co-pilot, how can I help you today?",
+      content: "Welcome to GM Insights Co-pilot, how can I help you today?",
     },
   ]);
 
@@ -110,7 +110,7 @@ const CopilotWidget: React.FC<CopilotWidgetProps> = ({ onClose }) => {
       <div className="flex items-center justify-between px-4 py-3.5 bg-[#1a1c1e] border-b border-[#202226]">
         <div className="flex items-center gap-2">
           <Sparkles className="text-[#ED3438]" size={16} />
-          <span className="text-sm font-bold tracking-tight">GIA LLM Co-pilot</span>
+          <span className="text-sm font-bold tracking-tight">GM Insights Co-pilot</span>
         </div>
         <div className="flex items-center gap-3 text-gray-400">
           <button onClick={onClose} className="hover:text-white transition-colors pl-1">

@@ -29,7 +29,7 @@ const PricingAnalyst = () => {
       <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex flex-col">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            GIA — <span className="text-[#a61c1e]">{bu ? "Pricing Analyst / Pricing Council" : "Pricing Analyst Studio"}</span>
+            Gross Margin Insights & Analytics — <span className="text-[#a61c1e]">{bu ? "Pricing Analyst / Pricing Council" : "Pricing Analyst Studio"}</span>
           </h1>
           {bu && (
             <p className="text-[10px] text-gray-500 font-semibold tracking-wide mt-0.5 uppercase">

@@ -26,11 +26,11 @@ const CeoBriefing = () => {
       <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white shadow-sm">
         <div className="flex flex-col">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            GIA — <span className="text-[#a61c1e]">{isOverallMargin ? "CEO/CFO portfolio overview" : "CEO/CFO briefing"}</span>
+            Gross Margin Insights & Analytics — <span className="text-[#a61c1e]">{isOverallMargin ? "CEO/CFO portfolio overview" : "CEO/CFO briefing"}</span>
           </h1>
           {isOverallMargin && (
             <p className="text-[10px] text-gray-500 font-semibold tracking-wide mt-0.5 uppercase">
-              All business units — overall margins (Q4 FY24 – Q8 FY26)
+              All business units — overall margins
             </p>
           )}
           {!isOverallMargin && bu && (
