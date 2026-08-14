@@ -275,7 +275,7 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
       )}
 
       {/* Main content */}
-      <div className="flex-1 p-6 h-full flex flex-col overflow-hidden">
+      <div className="flex-1 p-6 h-full">
         <div className="flex justify-between items-center mt-1.5 mb-4 w-full">
           <div className="flex flex-col">
             <Text className="text-2xl -mt-1 font-bold" type="header2">
@@ -327,8 +327,8 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
             )}
           </div>
 
-          <TabPanels className="flex-1 overflow-hidden">
-            <TabPanel className="h-full flex flex-col overflow-hidden">
+          <TabPanels className="h-full">
+            <TabPanel className="h-full">
               {/* Master Activities Section */}
               <div className="mt-2 mb-3">
                 <Text className="text-xl font-semibold" type="header3">
