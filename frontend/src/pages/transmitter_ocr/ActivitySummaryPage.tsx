@@ -416,7 +416,7 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
               {isTagsLoading ? (
                 <PageLoading />
               ) : (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col">
                   <div className="mb-4">
                     <Text className="text-xl font-semibold text-gray-800" type="header3">
                       Total Tags Processed in {processedYears[yearIndex]} (Total: {tagsData?.total ?? 0})
