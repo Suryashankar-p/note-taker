@@ -398,3 +398,13 @@ export const TransmitterGetChildActivitySummaryDetails = async (
   const response = await TransmitterOCRAPI.get(url);
   return response;
 }
+
+export const TransmitterGetYearTagsCount = async (year: number) => {
+  const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/child_usage/year-tags-count?year=${year}`);
+  return response;
+};
+
+export const TransmitterGetProcessedYears = async () => {
+  const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/child_usage/processed-years`);
+  return response;
+};

@@ -9,7 +9,13 @@ import { getInitials } from "../../utils/functions.ts";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
 import PageLoading from "../../components/PageLoading.tsx";
-import { TransmitterGetMasterActivities } from "../../services/transmitter_ocr.ts";
+import { 
+  TransmitterGetMasterActivities,
+  TransmitterGetYearTagsCount,
+  TransmitterGetProcessedYears
+} from "../../services/transmitter_ocr.ts";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+import { months } from "../../utils/constants.ts";
 
 interface MasterActivity {
   id: number;
@@ -25,6 +31,43 @@ interface ActivitySummaryPageProps {
   onSelectActivity?: (activity: MasterActivity) => void;
 }
 
+interface YearButtonProps {
+  processedYears: number[];
+  yearIndex: number;
+  onPrev: () => void;
+  onNext: () => void;
+}
+
+const YearButton: React.FC<YearButtonProps> = ({ processedYears, yearIndex, onPrev, onNext }) => {
+  return (
+    <div className="flex items-center gap-4 bg-transparent">
+      <button
+        type="button"
+        disabled={yearIndex === processedYears.length - 1}
+        className={`w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded font-semibold text-lg transition duration-300 ${
+          yearIndex === processedYears.length - 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+        }`}
+        onClick={onPrev}
+      >
+        &lt;
+      </button>
+      <span className="w-16 text-center font-bold text-lg text-gray-800">
+        {processedYears[yearIndex]}
+      </span>
+      <button
+        type="button"
+        disabled={yearIndex === 0}
+        className={`w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded font-semibold text-lg transition duration-300 ${
+          yearIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+        }`}
+        onClick={onNext}
+      >
+        &gt;
+      </button>
+    </div>
+  );
+};
+
 const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActivity }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch<Dispatch>();
@@ -37,6 +80,59 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
   const [pageSize, setPageSize] = useState({ skip: 0, limit: 50 });
   const [pageError, setPageError] = useState<boolean>(false);
   const toastStatus = useSelector((state: RootState) => state.toast);
+
+  const [activeTab, setActiveTab] = useState<'master_activities' | 'analytics'>('master_activities');
+  const [tagsData, setTagsData] = useState<any>(null);
+  const [processedYears, setProcessedYears] = useState<number[]>([new Date().getFullYear()]);
+  const [yearIndex, setYearIndex] = useState<number>(0);
+  const [isTagsLoading, setIsTagsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadYears = async () => {
+      try {
+        const response = await TransmitterGetProcessedYears();
+        if (response && response.length > 0) {
+          setProcessedYears(response);
+          setYearIndex(0);
+        } else {
+          setProcessedYears([new Date().getFullYear()]);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadYears();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'analytics' && processedYears.length > 0) {
+      fetchTags(processedYears[yearIndex]);
+    }
+  }, [activeTab, yearIndex, processedYears]);
+
+  const fetchTags = async (year: number) => {
+    setIsTagsLoading(true);
+    try {
+      const res = await TransmitterGetYearTagsCount(year);
+      if (res) setTagsData(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsTagsLoading(false);
+    }
+  };
+
+  const handlePrevYear = () => {
+    if (yearIndex < processedYears.length - 1) {
+      setYearIndex(yearIndex + 1);
+    }
+  };
+
+  const handleNextYear = () => {
+    if (yearIndex > 0) {
+      setYearIndex(yearIndex - 1);
+    }
+  };
 
   let timeoutId: NodeJS.Timeout | null = null;
 
@@ -179,106 +275,192 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
       )}
 
       {/* Main content */}
-      <div className="flex-1 p-6 h-full">
+      <div className="flex-1 p-6 h-full flex flex-col overflow-hidden">
         <div className="flex justify-between items-center mt-1.5 mb-4 w-full">
           <div className="flex flex-col">
             <Text className="text-2xl -mt-1 font-bold" type="header2">
               Activity Summary
             </Text>
           </div>
-
-          <div className="flex items-center">
-            <Input
-              prefixIcon={<img src={Search} alt="search" loading="lazy" />}
-              placeholder="Search"
-              fixed_size="large"
-              onChange={onSearchChange}
-              value={searchValue}
-            />
-          </div>
         </div>
 
-        {/* Master Activities Section */}
-        <div className="mt-6 mb-3">
-          <Text className="text-xl font-semibold" type="header3">
-            Master Activities
-          </Text>
-        </div>
-
-        {/* Table Header */}
-        <div className="bg-gray-50 border-t border-b border-gray-200 py-3 px-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Text
-              type="small"
-              className="text-gray-600 uppercase"
-            >
-              MASTER ACTIVITY
-            </Text>
-            <Text
-              type="small"
-              className="text-gray-600 uppercase pl-12"
-            >
-              CREATED ON
-            </Text>
-          </div>
-        </div>
-
-        {/* Activities List */}
-        <div
-          ref={activityListRef}
-          className="flex-1 h-[calc(100vh-300px)] overflow-y-auto"
-        >
-          {isLoading && masterActivities.length === 0 ? (
-            <PageLoading />
-          ) : masterActivities.length > 0 ? (
-            masterActivities.map((activity, index) => (
-              <div
-                key={activity.id}
-                className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== masterActivities.length - 1
-                  ? "border-b border-gray-200"
-                  : ""
-                  }`}
-                onClick={() => handleMasterClick(activity)}
+        <TabGroup onChange={(index) => setActiveTab(index === 0 ? 'master_activities' : 'analytics')}>
+          <div className="flex justify-between items-center mt-2 mb-4 w-full">
+            <TabList className="flex space-x-2">
+              <Tab
+                className={({ selected }) =>
+                  `px-4 py-2 rounded-md transition-colors duration-300 ${
+                    selected ? 'bg-danger text-white font-medium' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
+                  }`
+                }
               >
-                <div className="grid grid-cols-2 gap-4 items-center">
-                  <div className="flex items-center">
-                    <div
-                      title={activity?.user?.name}
-                      className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-medium text-sm"
-                    >
-                      {getInitials(activity?.user?.name)}
-                    </div>
-                    <Text type="body" className="ml-3 text-gray-800">
-                      {activity.title}
-                    </Text>
-                  </div>
-                  <div className="flex justify-start pl-12">
-                    <Text type="body" className="text-gray-500">
-                      {new Date(activity.created_on).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "numeric",
-                          day: "numeric",
-                          year: "numeric",
-                        }
-                      )}
-                    </Text>
-                  </div>
+                <Text type="body">Master Activities</Text>
+              </Tab>
+              <Tab
+                className={({ selected }) =>
+                  `px-4 py-2 rounded-md transition-colors duration-300 ${
+                    selected ? 'bg-danger text-white font-medium' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
+                  }`
+                }
+              >
+                <Text type="body">Analytics</Text>
+              </Tab>
+            </TabList>
+
+            {activeTab === 'master_activities' ? (
+              <div className="flex items-center">
+                <Input
+                  prefixIcon={<img src={Search} alt="search" loading="lazy" />}
+                  placeholder="Search"
+                  fixed_size="large"
+                  onChange={onSearchChange}
+                  value={searchValue}
+                />
+              </div>
+            ) : (
+              <YearButton
+                processedYears={processedYears}
+                yearIndex={yearIndex}
+                onPrev={handlePrevYear}
+                onNext={handleNextYear}
+              />
+            )}
+          </div>
+
+          <TabPanels className="flex-1 overflow-hidden">
+            <TabPanel className="h-full flex flex-col overflow-hidden">
+              {/* Master Activities Section */}
+              <div className="mt-2 mb-3">
+                <Text className="text-xl font-semibold" type="header3">
+                  Master Activities
+                </Text>
+              </div>
+
+              {/* Table Header */}
+              <div className="bg-gray-50 border-t border-b border-gray-200 py-3 px-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Text
+                    type="small"
+                    className="text-gray-600 uppercase"
+                  >
+                    MASTER ACTIVITY
+                  </Text>
+                  <Text
+                    type="small"
+                    className="text-gray-600 uppercase pl-12"
+                  >
+                    CREATED ON
+                  </Text>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="flex justify-center items-center h-full">
-              <NoData />
-            </div>
-          )}
 
-          {isFetching && (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-danger"></div>
-            </div>
-          )}
-        </div>
+              {/* Activities List */}
+              <div
+                ref={activityListRef}
+                className="flex-1 h-[calc(100vh-300px)] overflow-y-auto"
+              >
+                {isLoading && masterActivities.length === 0 ? (
+                  <PageLoading />
+                ) : masterActivities.length > 0 ? (
+                  masterActivities.map((activity, index) => (
+                    <div
+                      key={activity.id}
+                      className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== masterActivities.length - 1
+                        ? "border-b border-gray-200"
+                        : ""
+                        }`}
+                      onClick={() => handleMasterClick(activity)}
+                    >
+                      <div className="grid grid-cols-2 gap-4 items-center">
+                        <div className="flex items-center">
+                          <div
+                            title={activity?.user?.name}
+                            className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-medium text-sm"
+                          >
+                            {getInitials(activity?.user?.name)}
+                          </div>
+                          <Text type="body" className="ml-3 text-gray-800">
+                            {activity.title}
+                          </Text>
+                        </div>
+                        <div className="flex justify-start pl-12">
+                          <Text type="body" className="text-gray-500">
+                            {new Date(activity.created_on).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "numeric",
+                                day: "numeric",
+                                year: "numeric",
+                              }
+                            )}
+                          </Text>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex justify-center items-center h-full">
+                    <NoData />
+                  </div>
+                )}
+
+                {isFetching && (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-danger"></div>
+                  </div>
+                )}
+              </div>
+            </TabPanel>
+
+            <TabPanel className="h-full flex flex-col overflow-y-auto bg-white border border-gray-200 rounded-lg p-6">
+              {isTagsLoading ? (
+                <PageLoading />
+              ) : (
+                <div className="flex flex-col h-full">
+                  <div className="mb-4">
+                    <Text className="text-xl font-semibold text-gray-800" type="header3">
+                      Total Tags Processed in {processedYears[yearIndex]} (Total: {tagsData?.total ?? 0})
+                    </Text>
+                  </div>
+                  
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            Month
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            Tags Count
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {months.map((monthName, idx) => {
+                          const monthNum = idx + 1;
+                          const countIndex = tagsData?.month?.indexOf(monthNum);
+                          const rawCount = countIndex !== undefined && countIndex !== -1 ? tagsData?.activity?.[countIndex] : 0;
+                          const displayCount = rawCount > 0 ? rawCount : "-";
+                          
+                          return (
+                            <tr key={monthName} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {monthName}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {displayCount}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </TabPanel>
+          </TabPanels>
+        </TabGroup>
       </div>
     </div>
   );
