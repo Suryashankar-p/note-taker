@@ -11,6 +11,7 @@ import Products from "./Product";
 import KnowledgeBase from "./KnowledgeBase";
 import Analysis from "./Analysis";
 import Feedback from "./Feedback";
+import SupportInteractions from "./SupportInteractions";
 // import Problem from "./Problem";
 
 const breadCrumbs = [
@@ -53,6 +54,10 @@ const Settings = () => {
     feedback: {
       title: "Feedback",
       component: <Feedback />,
+    },
+    support_report: {
+      title: "Support Report",
+      component: <SupportInteractions />,
     },
     // 'problem': {
     //     title: 'Problem',

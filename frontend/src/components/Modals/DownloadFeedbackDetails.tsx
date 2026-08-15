@@ -6,12 +6,16 @@ interface DownloadFeedbackDetailsProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (fromDate: string, toDate: string) => void;
+  // Shared by the usage, feedback and support-interaction exports — they all ask
+  // for the same date range, so the dialog is reused rather than copied.
+  title?: string;
 }
 
 const DownloadFeedbackDetails: React.FC<DownloadFeedbackDetailsProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  title = "Download Usage Details",
 }) => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -83,7 +87,7 @@ const DownloadFeedbackDetails: React.FC<DownloadFeedbackDetailsProps> = ({
                   as="h3"
                   className="text-[24px] relative text-black font-medium flex justify-between leading-6"
                 >
-                  <span className="text-primary_text">Download Usage Details</span>
+                  <span className="text-primary_text">{title}</span>
                   <button className='absolute -right-2 -top-4' onClick={handleClose}>
                     <img src={Close} alt="close" loading="lazy" />
                   </button>
