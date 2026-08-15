@@ -35,16 +35,23 @@ const TroubleshootingMain = () => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [assetModalOpen, setAssetModalOpen] = useState<boolean>(false);
   const [pendingAsset, setPendingAsset] = useState<SelectedAsset | null>(null);
+  const [pendingTicketId, setPendingTicketId] = useState<string | null>(null);
+
+  const clearPending = () => {
+    setPendingAsset(null);
+    setPendingTicketId(null);
+  };
 
   const openNewChatFlow = () => {
     dispatch.chatContent.clearChat();
-    setPendingAsset(null);
+    clearPending();
     navigate(`/ai-studio/troubleshooting`);
     setAssetModalOpen(true);
   };
 
-  const onAssetSubmit = (asset: SelectedAsset) => {
+  const onAssetSubmit = (asset: SelectedAsset, ticketId: string) => {
     setPendingAsset(asset);
+    setPendingTicketId(ticketId);
     setAssetModalOpen(false);
   };
 
@@ -61,11 +68,12 @@ const TroubleshootingMain = () => {
   //    prevents the dialog from lingering (with a Cancel button) over them.
   useEffect(() => {
     if (!chat_id) {
-      setPendingAsset(null);
+      clearPending();
       setAssetModalOpen(true);
     } else {
       setAssetModalOpen(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chat_id]);
 
   useEffect(() => {
@@ -156,7 +164,8 @@ const TroubleshootingMain = () => {
             onNewChatAddition={getChatLists}
             disabled={relatedExpanded}
             pendingAsset={pendingAsset}
-            clearPendingAsset={() => setPendingAsset(null)}
+            pendingTicketId={pendingTicketId}
+            clearPendingAsset={clearPending}
           />
         </div>
       </div>

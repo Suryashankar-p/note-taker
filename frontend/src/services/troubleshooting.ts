@@ -18,7 +18,12 @@ export const GetAllChatLists = async (skip: number = 0, limit: number = 100, sea
   return response
 }
 
-export const CreateChat = async (title: string, asset_number?: string, sf_asset_id?: string) => {
+export const CreateChat = async (
+  title: string,
+  asset_number?: string,
+  sf_asset_id?: string,
+  ticket_id?: string,
+) => {
   let url = `/troubleshooting/chat?title=${encodeURIComponent(title)}`;
   if (asset_number) {
     url += `&asset_number=${encodeURIComponent(asset_number)}`;
@@ -26,7 +31,29 @@ export const CreateChat = async (title: string, asset_number?: string, sf_asset_
   if (sf_asset_id) {
     url += `&sf_asset_id=${encodeURIComponent(sf_asset_id)}`;
   }
+  // Required by the backend — every session must be traceable to a ticket.
+  if (ticket_id) {
+    url += `&ticket_id=${encodeURIComponent(ticket_id)}`;
+  }
   const response = await TroubleshootAPI.post(BACKEND_TROUBLESHOOTING_URL + url);
+  return response
+}
+
+// Close out a session. `solution_source` is normally omitted: the backend derives
+// it from the turns, since the agent already recorded where each answer came from.
+export const UpdateChatResolution = async (
+  chat_id: number | string,
+  resolved: boolean,
+  note?: string,
+  solution_source?: string,
+) => {
+  const body: Record<string, any> = { resolved };
+  if (note) body.note = note;
+  if (solution_source) body.solution_source = solution_source;
+  const response = await TroubleshootAPI.patch(
+    BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/chat/${chat_id}/resolution`,
+    body,
+  );
   return response
 }
 
@@ -360,6 +387,39 @@ export const DownloadFeedbackData = async (fromDate: string, toDate: string) => 
   const body = { from_date: fromDate, to_date: toDate };
   const response = await TroubleshootAPI.post(
     BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/feedback/download`,
+    body,
+    { responseType: "blob" },
+  );
+  return response;
+};
+
+//<====================================Support interaction report (owner)===============================>
+
+export const ReadSessionReport = async (
+  from_date?: string,
+  to_date?: string,
+  skip: number = 0,
+  limit: number = 50,
+  resolution_status?: string,
+  search_term?: string,
+) => {
+  const params = new URLSearchParams();
+  if (from_date) params.set("from_date", from_date);
+  if (to_date) params.set("to_date", to_date);
+  params.set("skip", String(skip));
+  params.set("limit", String(limit));
+  if (resolution_status) params.set("resolution_status", resolution_status);
+  if (search_term) params.set("search_term", search_term);
+  const response = await TroubleshootAPI.get(
+    BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/analytics/sessions?${params.toString()}`,
+  );
+  return response;
+};
+
+export const DownloadSessionReport = async (fromDate: string, toDate: string) => {
+  const body = { from_date: fromDate, to_date: toDate };
+  const response = await TroubleshootAPI.post(
+    BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/analytics/sessions/download`,
     body,
     { responseType: "blob" },
   );
