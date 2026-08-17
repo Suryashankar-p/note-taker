@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { IoMdDownload } from "react-icons/io";
 
 import Text from "../../../components/Text";
@@ -73,6 +74,7 @@ const Stat = ({ label, value }: { label: string; value: number | string }) => (
  * and which knowledge source that answer came from.
  */
 const SupportInteractions = () => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [total, setTotal] = useState(0);
@@ -147,6 +149,12 @@ const SupportInteractions = () => {
     } catch (err) {
       console.error("Failed to download report:", err);
     }
+  };
+
+  // Open the conversation behind a row. Reading another engineer's session is
+  // allowed for owners (the report exists to review them); posting into it is not.
+  const openSession = (chatId: number) => {
+    navigate(`/ai-studio/troubleshooting?chat_id=${chatId}`);
   };
 
   const sourceStats = useMemo(() => {
@@ -239,7 +247,6 @@ const SupportInteractions = () => {
               <th className="px-3 py-2 whitespace-nowrap">Account</th>
               <th className="px-3 py-2 whitespace-nowrap">Engineer</th>
               <th className="px-3 py-2 whitespace-nowrap">Problem</th>
-              <th className="px-3 py-2 whitespace-nowrap">Question</th>
               <th className="px-3 py-2 whitespace-nowrap">Source</th>
               <th className="px-3 py-2 whitespace-nowrap">Status</th>
             </tr>
@@ -247,19 +254,24 @@ const SupportInteractions = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-6 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-6 text-center text-gray-500">
                   No support interactions in this range.
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.chat_id} className="border-t border-grey align-top">
+                <tr
+                  key={row.chat_id}
+                  onClick={() => openSession(row.chat_id)}
+                  title="Open this conversation"
+                  className="border-t border-grey align-top cursor-pointer hover:bg-blue-50"
+                >
                   <td className="px-3 py-2 whitespace-nowrap">
                     {row.created_on?.slice(0, 10)}
                   </td>
@@ -275,9 +287,6 @@ const SupportInteractions = () => {
                   </td>
                   <td className="px-3 py-2 max-w-[14rem] truncate" title={row.problem ?? ""}>
                     {row.problem || "—"}
-                  </td>
-                  <td className="px-3 py-2 max-w-[16rem] truncate" title={row.first_question ?? ""}>
-                    {row.first_question || "—"}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     {row.solution_source ? SOURCE_LABELS[row.solution_source] ?? row.solution_source : "—"}
