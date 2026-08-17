@@ -412,25 +412,25 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
               </div>
             </TabPanel>
 
-            <TabPanel className="h-full flex flex-col overflow-y-auto bg-white border border-gray-200 rounded-lg p-6">
+            <TabPanel className="h-[calc(100vh-245px)] flex flex-col overflow-hidden bg-white border border-gray-200 rounded-lg p-6">
               {isTagsLoading ? (
                 <PageLoading />
               ) : (
-                <div className="flex flex-col">
-                  <div className="mb-4">
+                <div className="flex flex-col flex-1 min-h-0">
+                  <div className="mb-4 flex-shrink-0">
                     <Text className="text-xl font-semibold text-gray-800" type="header3">
                       Total Tags Processed in {processedYears[yearIndex]} (Total: {tagsData?.total ?? 0})
                     </Text>
                   </div>
                   
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+                  <div className="flex-1 overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-50">
                             Month
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-50">
                             Tags Count
                           </th>
                         </tr>
