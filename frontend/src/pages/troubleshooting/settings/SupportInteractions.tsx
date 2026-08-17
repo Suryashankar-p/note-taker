@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { IoMdDownload } from "react-icons/io";
 
 import Text from "../../../components/Text";
 import DownloadFeedbackDetails from "../../../components/Modals/DownloadFeedbackDetails";
+import SessionTranscriptModal from "../../../components/Modals/SessionTranscriptModal";
 import {
   ReadSessionReport,
   DownloadSessionReport,
@@ -74,8 +74,9 @@ const Stat = ({ label, value }: { label: string; value: number | string }) => (
  * and which knowledge source that answer came from.
  */
 const SupportInteractions = () => {
-  const navigate = useNavigate();
   const [rows, setRows] = useState<ReportRow[]>([]);
+  // The row whose transcript is open. Null = closed.
+  const [openSession, setOpenSession] = useState<ReportRow | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -149,12 +150,6 @@ const SupportInteractions = () => {
     } catch (err) {
       console.error("Failed to download report:", err);
     }
-  };
-
-  // Open the conversation behind a row. Reading another engineer's session is
-  // allowed for owners (the report exists to review them); posting into it is not.
-  const openSession = (chatId: number) => {
-    navigate(`/ai-studio/troubleshooting?chat_id=${chatId}`);
   };
 
   const sourceStats = useMemo(() => {
@@ -268,8 +263,8 @@ const SupportInteractions = () => {
               rows.map((row) => (
                 <tr
                   key={row.chat_id}
-                  onClick={() => openSession(row.chat_id)}
-                  title="Open this conversation"
+                  onClick={() => setOpenSession(row)}
+                  title="View this conversation"
                   className="border-t border-grey align-top cursor-pointer hover:bg-blue-50"
                 >
                   <td className="px-3 py-2 whitespace-nowrap">
@@ -335,6 +330,11 @@ const SupportInteractions = () => {
         onClose={() => setDownloadOpen(false)}
         onSubmit={handleDownload}
         title="Download Support Interactions"
+      />
+
+      <SessionTranscriptModal
+        session={openSession}
+        onClose={() => setOpenSession(null)}
       />
     </div>
   );
