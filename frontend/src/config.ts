@@ -9,4 +9,5 @@ export const ACTIVE_SERVICES = {
     "heating_ocr": true,
     "transmitter_ocr": true,
     "edgeagent-playground": true,
+    "legal_checker": true,
 }

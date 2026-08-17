@@ -28,6 +28,7 @@ import { TransmitterGetMemberOCRRole } from "../services/transmitter_ocr.ts";
 import { GetTranslatorRole } from "../services/doc_translator.ts";
 import { GetMemberEdgeRole } from "../services/edge.ts";
 import { GetMemberPricingAnalyticsRole } from "../pages/pricing_analytics_service/services/query/query.ts";
+import { GetLegalCheckerRole } from "../services/legal_checker.ts";
 
 const DOMAIN = import.meta.env.VITE_DOMAIN;
 
@@ -286,6 +287,21 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const getLegalCheckerRole = async () => {
+    try {
+      const response = await GetLegalCheckerRole();
+      if (response?.email) {
+        navigate("./legal_checker");
+      } else {
+        setPageError(true);
+        if (response?.detail)
+          dispatch.toast.openToast({ status: true, message: response?.detail });
+      }
+    } catch (err) {
+      navigate("/");
+    }
+  };
+
   const openService = (title: string) => {
     switch (title) {
       case "Sales Enablement Tool":
@@ -328,7 +344,7 @@ const Dashboard: React.FC = () => {
         getPricingAnalyticsRole();
         break;
       case "Legal Compliance Checker":
-        navigate("./legal_checker");
+        getLegalCheckerRole();
         break;
 
     }

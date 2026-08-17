@@ -1,11 +1,12 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import { Dispatch } from "../../redux/store.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { Dispatch, RootState } from "../../redux/store.ts";
 import Button from "../../components/Button.tsx";
 import Text from "../../components/Text.tsx";
 import ConfirmationModal from "../../components/Modals/ConfirmationModal.tsx";
 import {
+  GetLegalCheckerRole,
   GetNDAAdminStatus,
   UploadNDADeviationMatrix,
   UploadNDATemplate,
@@ -37,6 +38,7 @@ interface UploadCardProps {
   onUpload: (file: File) => Promise<{ message: string }>;
   onUploaded: () => void;
   requestConfirmation: (content: string, onConfirm: () => void) => void;
+  isOwner: boolean;
 }
 
 const UploadCard: React.FC<UploadCardProps> = ({
@@ -47,6 +49,7 @@ const UploadCard: React.FC<UploadCardProps> = ({
   onUpload,
   onUploaded,
   requestConfirmation,
+  isOwner,
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -101,31 +104,39 @@ const UploadCard: React.FC<UploadCardProps> = ({
           </Text>
         )}
       </div>
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept=".docx"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-        className="w-full text-xs text-gray-600 mb-3"
-      />
-      <Button
-        className="w-full justify-center py-2"
-        onClick={handleUpload}
-        disabled={mutation.isPending}
-      >
-        <Text type="small">
-          {mutation.isPending ? "Uploading..." : buttonLabel}
-        </Text>
-      </Button>
-      {mutation.isSuccess && (
-        <Text type="small" className="text-green-700 mt-2">
-          {mutation.data?.message}
-        </Text>
-      )}
-      {mutation.isError && (
-        <Text type="small" className="text-red-600 mt-2">
-          {(mutation.error as any)?.response?.data?.detail ||
-            "Upload failed."}
+      {isOwner ? (
+        <>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".docx"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            className="w-full text-xs text-gray-600 mb-3"
+          />
+          <Button
+            className="w-full justify-center py-2"
+            onClick={handleUpload}
+            disabled={mutation.isPending}
+          >
+            <Text type="small">
+              {mutation.isPending ? "Uploading..." : buttonLabel}
+            </Text>
+          </Button>
+          {mutation.isSuccess && (
+            <Text type="small" className="text-green-700 mt-2">
+              {mutation.data?.message}
+            </Text>
+          )}
+          {mutation.isError && (
+            <Text type="small" className="text-red-600 mt-2">
+              {(mutation.error as any)?.response?.data?.detail ||
+                "Upload failed."}
+            </Text>
+          )}
+        </>
+      ) : (
+        <Text type="small" className="text-gray-400 italic">
+          Only Owners can update this.
         </Text>
       )}
     </div>
@@ -139,6 +150,20 @@ const Admin: React.FC = () => {
     content: string;
     onConfirm: () => void;
   } | null>(null);
+
+  const memberRole = useSelector((state: RootState) => state.memberRole);
+  const isOwner =
+    memberRole.service === "legal_checker" && memberRole.details?.role === "OWNER";
+
+  useEffect(() => {
+    GetLegalCheckerRole()
+      .then((response) => {
+        if (response?.id) {
+          dispatch.memberRole.setRole({ service: "legal_checker", details: response });
+        }
+      })
+      .catch((err) => console.error("Failed to fetch Legal Checker role", err));
+  }, []);
 
   const { data: status } = useQuery({
     queryKey: ["legal_checker_nda_admin_status"],
@@ -173,6 +198,7 @@ const Admin: React.FC = () => {
           onUpload={(file) => UploadNDATemplate("unilateral", file)}
           onUploaded={refreshStatus}
           requestConfirmation={requestConfirmation}
+          isOwner={isOwner}
         />
         <UploadCard
           title="Standard NDA — Mutual"
@@ -182,6 +208,7 @@ const Admin: React.FC = () => {
           onUpload={(file) => UploadNDATemplate("mutual", file)}
           onUploaded={refreshStatus}
           requestConfirmation={requestConfirmation}
+          isOwner={isOwner}
         />
         <UploadCard
           title="Deviation Matrix"
@@ -191,6 +218,7 @@ const Admin: React.FC = () => {
           onUpload={UploadNDADeviationMatrix}
           onUploaded={refreshStatus}
           requestConfirmation={requestConfirmation}
+          isOwner={isOwner}
         />
       </div>
       {confirmState && (

@@ -12,6 +12,7 @@ import {
   axiosCCTVService,
   axiosEdge,
   axiosPricingAnalytics,
+  axiosLegalChecker,
 } from "./axiosInstances";
 
 import { setInterceptors } from "./axiosConfig";
@@ -30,7 +31,8 @@ import { setInterceptors } from "./axiosConfig";
   axiosDocumentTranslator,
   axiosCCTVService,
   axiosEdge,
-  axiosPricingAnalytics
+  axiosPricingAnalytics,
+  axiosLegalChecker,
 ].forEach(setInterceptors);
 
 // Reusable wrapper for standard HTTP methods

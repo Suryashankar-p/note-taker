@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import Header from "../../components/Header.tsx";
+import PageLoading from "../../components/PageLoading.tsx";
+import useApiCheck from "../../hooks/useApiCheck.ts";
 import LegalCheckerSidebar from "./SideBar.tsx";
 import NdaReview from "./NdaReview.tsx";
 import BankGuaranteeReview from "./BankGuaranteeReview.tsx";
 import Admin from "./Admin.tsx";
+import Members from "./Members.tsx";
 
 const LegalCheckerMain: React.FC = () => {
+  const loading = useApiCheck("legal_checker");
   const [currentPage, setCurrentPage] = useState<string>("NDA Review");
   const breadCrumbs = [
     { title: "AI Studio", url: "/ai-studio" },
@@ -18,11 +22,17 @@ const LegalCheckerMain: React.FC = () => {
         return <BankGuaranteeReview />;
       case "Admin":
         return <Admin />;
+      case "Members":
+        return <Members />;
       case "NDA Review":
       default:
         return <NdaReview />;
     }
   };
+
+  if (loading) {
+    return <PageLoading />;
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
