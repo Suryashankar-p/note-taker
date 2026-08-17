@@ -39,6 +39,15 @@ export const CreateChat = async (
   return response
 }
 
+// One chat's details — asset, ticket, resolution state. The list endpoint is
+// paginated, so an older chat cannot be relied on to be in it client-side.
+export const ReadChat = async (chat_id: number | string) => {
+  const response = await TroubleshootAPI.get(
+    BACKEND_TROUBLESHOOTING_URL + `/troubleshooting/chat/${chat_id}`,
+  );
+  return response
+}
+
 // Close out a session. `solution_source` is normally omitted: the backend derives
 // it from the turns, since the agent already recorded where each answer came from.
 export const UpdateChatResolution = async (

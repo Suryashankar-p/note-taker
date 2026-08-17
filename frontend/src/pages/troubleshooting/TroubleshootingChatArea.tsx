@@ -19,6 +19,7 @@ import {
   TroubleshootingChatMode,
   updateChatHistory,
   UpdateChatResolution,
+  ReadChat,
 } from "../../services/troubleshooting.ts";
 import LikeIcon from "../../assets/Like.tsx";
 import Dislike from "../../assets/Dislike.tsx";
@@ -120,6 +121,13 @@ const ChatArea: React.FC<Props> = ({
   const [sessionClosed, setSessionClosed] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolutionModalOpen, setResolutionModalOpen] = useState(false);
+  // Asset / ticket this conversation belongs to, shown above the messages.
+  const [chatContext, setChatContext] = useState<{
+    ticket_id?: string | null;
+    asset_number?: string | null;
+    sf_asset_id?: string | null;
+    resolution_status?: string | null;
+  } | null>(null);
   const [defaultChatData, setDefaultChatData] = useState<any>(null);
 
   const onLikeClick = async (e: any, message: any) => {
@@ -230,6 +238,28 @@ const ChatArea: React.FC<Props> = ({
     setSessionClosed(false);
     setResolutionModalOpen(false);
   }, [chat_id]);
+
+  // Load this chat's asset/ticket context. Re-runs when the session changes, and
+  // after a resolution so the status chip reflects the new state.
+  useEffect(() => {
+    if (!chat_id) {
+      setChatContext(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const chat: any = await ReadChat(chat_id);
+        if (!cancelled && chat?.id) setChatContext(chat);
+      } catch {
+        // Non-fatal: the conversation still works without the context bar.
+        if (!cancelled) setChatContext(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chat_id, sessionClosed]);
 
   // The newest answer that actually carried a solution.
   //
@@ -616,6 +646,44 @@ const ChatArea: React.FC<Props> = ({
           onClose={() => setShowInfoModal(false)}
         />
       )} */}
+      {/* Which equipment and ticket this conversation belongs to. An engineer
+          often has several sessions open across a shift, and the answers alone
+          do not say which machine they are about. */}
+      {chatContext && (
+        <div className="mx-4 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-grey bg-white px-3 py-2">
+          {chatContext.ticket_id && (
+            <span className="text-[12px] text-primary_text">
+              <span className="text-gray-500">Ticket</span>{" "}
+              <span className="font-medium">{chatContext.ticket_id}</span>
+            </span>
+          )}
+          {chatContext.asset_number && (
+            <span className="text-[12px] text-primary_text">
+              <span className="text-gray-500">Asset</span>{" "}
+              <span className="font-medium">{chatContext.asset_number}</span>
+            </span>
+          )}
+          {chatContext.sf_asset_id && (
+            <span className="text-[12px] text-gray-500" title="Salesforce asset ID">
+              <span className="text-gray-500">Asset ID</span>{" "}
+              <span className="font-medium text-primary_text">{chatContext.sf_asset_id}</span>
+            </span>
+          )}
+          {chatContext.resolution_status &&
+            chatContext.resolution_status !== "OPEN" && (
+              <span
+                className={`ml-auto rounded-full px-2 py-0.5 text-[11px] ${
+                  chatContext.resolution_status === "RESOLVED"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {chatContext.resolution_status}
+              </span>
+            )}
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-scroll smooth-scroll p-4 pb-2 space-y-8 bg-inherit"
