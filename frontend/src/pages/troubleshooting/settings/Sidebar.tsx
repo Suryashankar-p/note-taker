@@ -54,7 +54,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ onSelect, selected })
             key: 'usage'
         },
         {
-            title: 'Analysis',
+            title: 'Analytics',
             src: Message,
             alt: 'analysis',
             key: 'analysis',

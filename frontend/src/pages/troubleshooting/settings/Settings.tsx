@@ -126,9 +126,9 @@ const Settings = () => {
         {/* Sidebar (Hidden by default on mobile, visible on desktop) */}
         <div
           ref={sidebarRef}
-          className={`fixed inset-y-0 left-0 z-40 mt-6 w-3/4 md:w-[20rem] lg:w-[20rem] bg-primary_text transform ${
+          className={`fixed inset-y-0 left-0 z-40 mt-6 w-3/4 sm:w-1/2 bg-primary_text transform ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-transform md:relative md:translate-x-0 md:w-1/4 md:block`}
+          } transition-transform overflow-y-auto md:relative md:mt-0 md:inset-y-auto md:translate-x-0 md:w-64 lg:w-72 md:shrink-0 md:block`}
         >
           {/* Close Button (Mobile Only) */}
           <button
@@ -141,16 +141,21 @@ const Settings = () => {
           <SettingsSidebar selected={selectedKey} onSelect={onSelect} />
         </div>
 
-        {/* Main Content Area */}
+        {/* Main Content Area.
+            Sized purely by the flex row: fixed widths here used to fight flex-1
+            (so the pane never actually filled the screen), and heights above 100vh
+            produced a second scrollbar. min-w-0 is what lets wide children —
+            the report table, the decision tree — scroll inside instead of
+            pushing the layout sideways. */}
         <div
-          className="pl-2 mt-12 sm:mt-10 md:mt-8 lg:mt-6 xl:mt-8 
-                w-[12rem] sm:w-[24rem] md:w-[30rem] lg:w-[35rem] xl:w-[40rem] 
-                flex-1 bg-background overflow-y-auto h-[107.5vh] sm:h-[109vh] md:h-[80vh] lg:h-[85vh] xl:h-[125vh] relative z-0"
+          className="flex-1 min-w-0 pl-2 pt-10 md:pt-4 bg-background overflow-y-auto
+                h-[calc(100vh-5.5vh)] relative z-0"
         >
-          {/* Burger Button (Only for Mobile) */}
+          {/* Burger Button (Only for Mobile). Kept below the drawer's z-40 so it
+              does not float on top of the sidebar once that is open. */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-1 left-4 z-50 text-3xl md:hidden"
+            className="absolute top-1 left-4 z-30 text-3xl md:hidden"
           >
             ☰
           </button>

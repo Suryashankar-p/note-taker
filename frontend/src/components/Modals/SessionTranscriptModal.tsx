@@ -105,7 +105,7 @@ const SessionTranscriptModal: React.FC<Props> = ({ session, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-[#0061F3]/10"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0061F3]/10"
       onClick={onClose}
     >
       <div

@@ -164,6 +164,13 @@ const SupportInteractions = () => {
 
   return (
     <div className="w-full h-full overflow-y-auto px-2 pb-10">
+      <div className="mb-4">
+        <Text type="header2">Support Report</Text>
+        <Text type="small" className="text-gray-500">
+          Every support interaction end to end · asset, engineer, ticket, answer and its source
+        </Text>
+      </div>
+
       <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
         <div className="flex flex-wrap items-end gap-3">
           <div>

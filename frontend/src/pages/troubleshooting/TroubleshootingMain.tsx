@@ -153,10 +153,11 @@ const TroubleshootingMain = () => {
           />
         </div>
   
-        <div className="flex-1 bg-background overflow-y-hidden h-[73.5vh] mt-2 mx-4 relative z-0">
+        <div className="flex-1 min-w-0 bg-background overflow-y-hidden h-[73.5vh] mt-2 mx-4 relative z-0">
+          {/* Kept below the drawer's z-40 so it does not float over the open sidebar. */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-3 left-4 z-50 text-3xl md:hidden"
+            className="absolute top-3 left-4 z-30 text-3xl md:hidden"
           >
             ☰
           </button>
