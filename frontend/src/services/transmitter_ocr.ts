@@ -25,7 +25,7 @@ export const TransmitterGetMasterActivities = async (
       `${search_term && search_term !== '' ? '&search_term=' + encodeURIComponent(search_term) : ''}` +
       `${status ? '&status=' + status : ''}` +
       `${user_status ? '&user_status=' + user_status : ''}` +
-      `${template && template !== 'All' ? '&template=' + encodeURIComponent(template) : ''}`
+      `${template && template !== 'All' ? '&template=' + encodeURIComponent(template.toLowerCase()) : ''}`
   );
   return response;
 };
