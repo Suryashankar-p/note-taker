@@ -218,9 +218,9 @@ const SupportInteractions = () => {
           </form>
         </div>
         <button
-          title="Download report"
-          className="rounded-full bg-[#0061F3] p-2"
+          className="bg-danger rounded-lg p-2 m-2"
           onClick={() => setDownloadOpen(true)}
+          title="Download Support Interactions"
         >
           <IoMdDownload className="text-white w-5 h-5" />
         </button>
