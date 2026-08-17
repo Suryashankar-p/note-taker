@@ -82,6 +82,8 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
   const toastStatus = useSelector((state: RootState) => state.toast);
 
   const [activeTab, setActiveTab] = useState<'master_activities' | 'analytics'>('master_activities');
+  type TemplateFilter = 'All' | 'Honeywell' | 'Gauges Bourdon' | 'Yokogawa' | 'Emerson';
+  const [selectedFilter, setSelectedFilter] = useState<TemplateFilter>('All');
   const [tagsData, setTagsData] = useState<any>(null);
   const [processedYears, setProcessedYears] = useState<number[]>([new Date().getFullYear()]);
   const [yearIndex, setYearIndex] = useState<number>(0);
@@ -120,6 +122,20 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
     } finally {
       setIsTagsLoading(false);
     }
+  };
+
+  const getFilteredActivities = () => {
+    if (selectedFilter === 'All') return masterActivities;
+    return masterActivities.filter((activity) => {
+      const title = (activity.title || '').toLowerCase();
+      if (selectedFilter === 'Honeywell') return title.includes('honeywell');
+      if (selectedFilter === 'Gauges Bourdon') {
+        return title.includes('gauges') || title.includes('bourdon') || title.includes('gauges_bourdon');
+      }
+      if (selectedFilter === 'Yokogawa') return title.includes('yokogawa');
+      if (selectedFilter === 'Emerson') return title.includes('emerson');
+      return true;
+    });
   };
 
   const handlePrevYear = () => {
@@ -327,6 +343,25 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
             )}
           </div>
 
+          {activeTab === 'master_activities' && (
+            <div className="flex space-x-2 mt-2 mb-4">
+              {(['All', 'Honeywell', 'Gauges Bourdon', 'Yokogawa', 'Emerson'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setSelectedFilter(filter)}
+                  className={`px-4 py-2 rounded-md transition-colors duration-300 ${
+                    selectedFilter === filter
+                      ? 'bg-danger text-white font-medium'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
+                  }`}
+                >
+                  <Text type="body">{filter}</Text>
+                </button>
+              ))}
+            </div>
+          )}
+
           <TabPanels className="h-full">
             <TabPanel className="h-full">
               {/* Master Activities Section */}
@@ -361,11 +396,11 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
               >
                 {isLoading && masterActivities.length === 0 ? (
                   <PageLoading />
-                ) : masterActivities.length > 0 ? (
-                  masterActivities.map((activity, index) => (
+                ) : getFilteredActivities().length > 0 ? (
+                  getFilteredActivities().map((activity, index, arr) => (
                     <div
                       key={activity.id}
-                      className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== masterActivities.length - 1
+                      className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== arr.length - 1
                         ? "border-b border-gray-200"
                         : ""
                         }`}
