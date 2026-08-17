@@ -320,7 +320,7 @@ const Usage: React.FC<UsageProps> = ({ usageType }) => {
             <MonthButton onSubmit={onMonthChange} />
           </div>
         </div>
-        <TabPanels className="bg-white h-[22rem] xl:h-[24rem] rounded-lg shadow-lg border border-gray-200">
+        <TabPanels className="bg-white min-h-[28rem] h-auto rounded-lg shadow-lg border border-gray-200 overflow-hidden pb-4">
           {tabs.map(tab => (
             <TabPanel key={tab.key} className='h-full'>
               {renderContent()}
