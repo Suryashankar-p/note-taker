@@ -1,9 +1,5 @@
 import { axiosLegalChecker } from "./axiosInstances";
 
-const BACKEND_LEGAL_CHECKER_URL =
-  import.meta.env.VITE_BACKEND_LEGAL_CHECKER_URL ||
-  window.env?.BACKEND_LEGAL_CHECKER_URL;
-
 //<====================================NDA Review========================================>
 
 export const CreateNDAActivity = async (
@@ -37,8 +33,15 @@ export const GetNDAStatus = async (activityId: number) => {
   return response.data;
 };
 
-export const getNDADownloadUrl = (activityId: number) =>
-  `${BACKEND_LEGAL_CHECKER_URL}/lcc/nda/${activityId}/download`;
+// Fetched through the authenticated axios instance (blob), rather than a raw
+// <a href> URL, since a plain browser navigation wouldn't carry the login
+// token the backend now requires.
+export const GetNDAResultFile = async (activityId: number) => {
+  const response = await axiosLegalChecker.get(`/lcc/nda/${activityId}/download`, {
+    responseType: "blob",
+  });
+  return response.data;
+};
 
 //<====================================Bank Guarantee Review========================================>
 
@@ -73,8 +76,12 @@ export const GetBGStatus = async (activityId: number) => {
   return response.data;
 };
 
-export const getBGDownloadUrl = (activityId: number) =>
-  `${BACKEND_LEGAL_CHECKER_URL}/lcc/bg/${activityId}/download`;
+export const GetBGResultFile = async (activityId: number) => {
+  const response = await axiosLegalChecker.get(`/lcc/bg/${activityId}/download`, {
+    responseType: "blob",
+  });
+  return response.data;
+};
 
 //<====================================Admin — NDA Templates & Deviation Matrix========================================>
 
@@ -107,5 +114,42 @@ export const UploadNDADeviationMatrix = async (file: File) => {
 
 export const GetNDAAdminStatus = async () => {
   const response = await axiosLegalChecker.get("/lcc/admin/nda/status");
+  return response.data;
+};
+
+//<====================================Members========================================>
+
+export const GetLegalCheckerRole = async () => {
+  const response = await axiosLegalChecker.get("/lcc/member/me");
+  return response.data;
+};
+
+export const ReadMembers = async (
+  skip: number = 0,
+  limit: number = 100,
+  search_term?: string
+) => {
+  const response = await axiosLegalChecker.get(
+    `/lcc/member?skip=${skip}&limit=${limit}${
+      search_term ? "&search_term=" + search_term : ""
+    }`
+  );
+  return response.data;
+};
+
+export const CreateMember = async (role: string, email: string, name: string) => {
+  const response = await axiosLegalChecker.post(
+    `/lcc/member?role=${role}&email=${email}&name=${name}`
+  );
+  return response.data;
+};
+
+export const UpdateMember = async (role: string, member_id: string) => {
+  const response = await axiosLegalChecker.patch(`/lcc/member/${member_id}?role=${role}`);
+  return response.data;
+};
+
+export const DeleteMember = async (member_id: string) => {
+  const response = await axiosLegalChecker.delete(`/lcc/member/${member_id}`);
   return response.data;
 };

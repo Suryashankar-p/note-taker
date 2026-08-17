@@ -12,6 +12,7 @@ import { GetMemberCyberBuddyRole } from "../services/cyberbuddy.ts";
 import { GetHeatingOCRRole } from "../services/heating_ocr.ts";
 import { TransmitterGetMemberOCRRole} from "../services/transmitter_ocr.ts";
 import { GetMemberEdgeRole } from "../services/edge.ts";
+import { GetLegalCheckerRole } from "../services/legal_checker.ts";
 
 type Type =
   | "sales"
@@ -24,7 +25,8 @@ type Type =
   | "transmitter_ocr"
   | "cyberbuddy"
   | "heating_ocr"
-  | "edgeagent-playground";
+  | "edgeagent-playground"
+  | "legal_checker";
 
 const useApiCheck = (type?: Type) => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -51,6 +53,8 @@ const useApiCheck = (type?: Type) => {
         return await TransmitterGetMemberOCRRole();
       case "edgeagent-playground":
         return await GetMemberEdgeRole();
+      case "legal_checker":
+        return await GetLegalCheckerRole();
       default:
         return null;
     }

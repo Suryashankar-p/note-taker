@@ -8,9 +8,9 @@ import Toast from "../../components/Toast.tsx";
 import {
   CreateBGActivity,
   GetBGActivity,
+  GetBGResultFile,
   GetBGStatus,
   ListBGActivities,
-  getBGDownloadUrl,
 } from "../../services/legal_checker.ts";
 
 type BGListItem = {
@@ -59,6 +59,31 @@ const BankGuaranteeReview: React.FC = () => {
   const dispatch = useDispatch<Dispatch>();
   const toast = useSelector((state: RootState) => state.toast);
   const queryClient = useQueryClient();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async (activityId: number, title: string) => {
+    setDownloading(true);
+    try {
+      const blob = await GetBGResultFile(activityId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeTitle = title.replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 50);
+      link.href = url;
+      link.download = `${safeTitle}_bg_review.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      dispatch.toast.openToast({
+        message: error?.response?.data?.detail || "Failed to download the reviewed document.",
+        status: true,
+        type: "error",
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const { data: activities } = useQuery({
     queryKey: ["legal_checker_bg_list"],
@@ -293,12 +318,13 @@ const BankGuaranteeReview: React.FC = () => {
                     >
                       {result.overall_risk} RISK
                     </span>
-                    <a
-                      href={getBGDownloadUrl(selectedId)}
-                      className="text-sm text-white px-4 py-1.5 rounded-lg font-medium bg-danger"
+                    <button
+                      onClick={() => handleDownload(selectedId as number, activityDetail.title)}
+                      disabled={downloading}
+                      className="text-sm text-white px-4 py-1.5 rounded-lg font-medium bg-danger disabled:opacity-60"
                     >
-                      ↓ Download Review
-                    </a>
+                      {downloading ? "Preparing…" : "↓ Download Review"}
+                    </button>
                   </div>
                 </div>
 

@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { title: "NDA Review", key: "NDA Review" },
   { title: "BG Review", key: "Bank Guarantee Review" },
   { title: "Admin", key: "Admin" },
+  { title: "Members", key: "Members" },
 ];
 
 const LegalCheckerSidebar: React.FC<LegalCheckerSidebarProps> = ({
