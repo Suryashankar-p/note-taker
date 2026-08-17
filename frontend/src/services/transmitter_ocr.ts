@@ -11,10 +11,24 @@ export const TransmitterGetMemberOCRRole = async () => {
 }
 
 // Master Activity Functions
-export const TransmitterGetMasterActivities = async (skip: number = 0, limit: number = 100, search_term?: string, user_status?: string, status?: string) => {
-  const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity?skip=${skip}&limit=${limit}${search_term !== '' ? '&search_term=' + search_term : ''}${status ? '&status=' + status : ''}${user_status ? '&user_status=' + user_status : ''}`)
-  return response
-}
+export const TransmitterGetMasterActivities = async (
+  skip: number = 0,
+  limit: number = 100,
+  search_term?: string,
+  user_status?: string,
+  status?: string,
+  template?: string
+) => {
+  const response = await TransmitterOCRAPI.get(
+    BACKEND_TBWES_OCR_URL +
+      `/transmitter_ocr/master_activity?skip=${skip}&limit=${limit}` +
+      `${search_term && search_term !== '' ? '&search_term=' + encodeURIComponent(search_term) : ''}` +
+      `${status ? '&status=' + status : ''}` +
+      `${user_status ? '&user_status=' + user_status : ''}` +
+      `${template && template !== 'All' ? '&template=' + encodeURIComponent(template) : ''}`
+  );
+  return response;
+};
 
 export const TransmitterGetMasterActivityDetails = async (activity_id: number) => {
   const response = await TransmitterOCRAPI.get(BACKEND_TBWES_OCR_URL + `/transmitter_ocr/master_activity/${activity_id}`)
