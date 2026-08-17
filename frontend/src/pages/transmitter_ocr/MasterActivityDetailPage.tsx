@@ -8,6 +8,7 @@ import Toast from "../../components/Toast.tsx";
 import PageLoading from "../../components/PageLoading.tsx";
 import DropDownButton from "../../components/DropDownButton.tsx";
 // Component for displaying master data table (NOW EDITABLE)
+// Component for displaying master data table (NOW EDITABLE)
 const MasterDataTable: React.FC<{
   masterData: any[];
   onDataUpdate: (updatedData: any[]) => void;
@@ -21,12 +22,50 @@ const MasterDataTable: React.FC<{
     );
   }
 
-  const handleCellChange = (rowIndex: number, field: string, value: string) => {
+  // Deduplicate and group masterData based on row values (excluding S.No)
+  const getGroupedData = (data: any[]) => {
+    const groups: { [key: string]: { item: any; originalIndices: number[] } } = {};
+    const result: { item: any; originalIndices: number[] }[] = [];
+
+    data.forEach((item, index) => {
+      const tag = (item["Tag number"] || "").toString().trim().toLowerCase();
+      const model = (item["Model number"] || "").toString().trim().toLowerCase();
+      const lower = item["Lower Calibration Range"] !== null && item["Lower Calibration Range"] !== undefined 
+        ? item["Lower Calibration Range"].toString().trim().toLowerCase() 
+        : "";
+      const upper = item["Upper Calibration Range"] !== null && item["Upper Calibration Range"] !== undefined 
+        ? item["Upper Calibration Range"].toString().trim().toLowerCase() 
+        : "";
+      const unit = (item["Calibration Range Unit"] || "").toString().trim().toLowerCase();
+      
+      const key = `${tag}|${model}|${lower}|${upper}|${unit}`;
+
+      if (groups[key]) {
+        groups[key].originalIndices.push(index);
+      } else {
+        const newGroup = {
+          item: { ...item },
+          originalIndices: [index]
+        };
+        groups[key] = newGroup;
+        result.push(newGroup);
+      }
+    });
+
+    return result;
+  };
+
+  const groupedData = getGroupedData(masterData);
+
+  const handleCellChange = (originalIndices: number[], field: string, value: string) => {
     const updatedData = [...masterData];
-    updatedData[rowIndex] = {
-      ...updatedData[rowIndex],
-      [field]: value === "" || value === "-" ? null : value
-    };
+    const val = value === "" || value === "-" ? null : value;
+    originalIndices.forEach(idx => {
+      updatedData[idx] = {
+        ...updatedData[idx],
+        [field]: val
+      };
+    });
     onDataUpdate(updatedData);
   };
 
@@ -53,86 +92,121 @@ const MasterDataTable: React.FC<{
             <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 w-32">
               Calibration Range Unit
             </th>
+            {/* Blank borderless column for the info icon outside the table */}
+            <th className="w-12 bg-transparent border-none"></th>
           </tr>
         </thead>
         <tbody>
-          {masterData.map((item, index) => (
-            <tr key={index} className="hover:bg-gray-50">
-              <td className="border border-gray-200 px-4 py-3 text-sm">
-                {index + 1}
-              </td>
-              <td className="border border-gray-200 px-4 py-3 text-sm">
-                {disabled ? (
-                  <span title={item["Tag number"] || ""}>{item["Tag number"] || "-"}</span>
-                ) : (
-                  <input
-                    type="text"
-                    title={item["Tag number"] || ""}
-                    defaultValue={item["Tag number"] || ""}
-                    onBlur={(e) => handleCellChange(index, "Tag number", e.target.value)}
-                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
-                  />
-                )}
-              </td>
-              <td className="border border-gray-200 px-4 py-3 text-sm">
-                {disabled ? (
-                  <span title={item["Model number"] || ""}>{item["Model number"] || "-"}</span>
-                ) : (
-                  <input
-                    type="text"
-                    title={item["Model number"] || ""}
-                    defaultValue={item["Model number"] || ""}
-                    onBlur={(e) => handleCellChange(index, "Model number", e.target.value)}
-                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
-                  />
-                )}
-              </td>
-              <td className="border border-gray-200 px-4 py-3 text-sm">
-                {disabled ? (
-                  <span title={item["Lower Calibration Range"] !== null ? String(item["Lower Calibration Range"]) : ""}>
-                    {item["Lower Calibration Range"] !== null ? item["Lower Calibration Range"] : "-"}
-                  </span>
-                ) : (
-                  <input
-                    type="text"
-                    title={item["Lower Calibration Range"] !== null ? String(item["Lower Calibration Range"]) : ""}
-                    defaultValue={item["Lower Calibration Range"] !== null ? item["Lower Calibration Range"] : ""}
-                    onBlur={(e) => handleCellChange(index, "Lower Calibration Range", e.target.value)}
-                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
-                  />
-                )}
-              </td>
-              <td className="border border-gray-200 px-4 py-3 text-sm">
-                {disabled ? (
-                  <span title={item["Upper Calibration Range"] !== null ? String(item["Upper Calibration Range"]) : ""}>
-                    {item["Upper Calibration Range"] !== null ? item["Upper Calibration Range"] : "-"}
-                  </span>
-                ) : (
-                  <input
-                    type="text"
-                    title={item["Upper Calibration Range"] !== null ? String(item["Upper Calibration Range"]) : ""}
-                    defaultValue={item["Upper Calibration Range"] !== null ? item["Upper Calibration Range"] : ""}
-                    onBlur={(e) => handleCellChange(index, "Upper Calibration Range", e.target.value)}
-                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
-                  />
-                )}
-              </td>
-              <td className="border border-gray-200 px-4 py-3 text-sm">
-                {disabled ? (
-                  <span title={item["Calibration Range Unit"] || ""}>{item["Calibration Range Unit"] || "-"}</span>
-                ) : (
-                  <input
-                    key={`unit-${item["Calibration Range Unit"] || ""}`}
-                    type="text"
-                    title={item["Calibration Range Unit"] || ""}
-                    defaultValue={item["Calibration Range Unit"] || ""}
-                    onBlur={(e) => handleCellChange(index, "Calibration Range Unit", e.target.value)}
-                    className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
-                  />
-                )}
-              </td>
-            </tr>
-          ))}
+          {groupedData.map((group, index) => {
+            const { item, originalIndices } = group;
+            return (
+              <tr key={index} className="hover:bg-gray-50">
+                <td className="border border-gray-200 px-4 py-3 text-sm">
+                  {index + 1}
+                </td>
+                <td className="border border-gray-200 px-4 py-3 text-sm">
+                  {disabled ? (
+                    <span title={item["Tag number"] || ""}>{item["Tag number"] || "-"}</span>
+                  ) : (
+                    <input
+                      type="text"
+                      title={item["Tag number"] || ""}
+                      defaultValue={item["Tag number"] || ""}
+                      onBlur={(e) => handleCellChange(originalIndices, "Tag number", e.target.value)}
+                      className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                    />
+                  )}
+                </td>
+                <td className="border border-gray-200 px-4 py-3 text-sm">
+                  {disabled ? (
+                    <span title={item["Model number"] || ""}>{item["Model number"] || "-"}</span>
+                  ) : (
+                    <input
+                      type="text"
+                      title={item["Model number"] || ""}
+                      defaultValue={item["Model number"] || ""}
+                      onBlur={(e) => handleCellChange(originalIndices, "Model number", e.target.value)}
+                      className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                    />
+                  )}
+                </td>
+                <td className="border border-gray-200 px-4 py-3 text-sm">
+                  {disabled ? (
+                    <span title={item["Lower Calibration Range"] !== null ? String(item["Lower Calibration Range"]) : ""}>
+                      {item["Lower Calibration Range"] !== null ? item["Lower Calibration Range"] : "-"}
+                    </span>
+                  ) : (
+                    <input
+                      type="text"
+                      title={item["Lower Calibration Range"] !== null ? String(item["Lower Calibration Range"]) : ""}
+                      defaultValue={item["Lower Calibration Range"] !== null ? item["Lower Calibration Range"] : ""}
+                      onBlur={(e) => handleCellChange(originalIndices, "Lower Calibration Range", e.target.value)}
+                      className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                    />
+                  )}
+                </td>
+                <td className="border border-gray-200 px-4 py-3 text-sm">
+                  {disabled ? (
+                    <span title={item["Upper Calibration Range"] !== null ? String(item["Upper Calibration Range"]) : ""}>
+                      {item["Upper Calibration Range"] !== null ? item["Upper Calibration Range"] : "-"}
+                    </span>
+                  ) : (
+                    <input
+                      type="text"
+                      title={item["Upper Calibration Range"] !== null ? String(item["Upper Calibration Range"]) : ""}
+                      defaultValue={item["Upper Calibration Range"] !== null ? item["Upper Calibration Range"] : ""}
+                      onBlur={(e) => handleCellChange(originalIndices, "Upper Calibration Range", e.target.value)}
+                      className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                    />
+                  )}
+                </td>
+                <td className="border border-gray-200 px-4 py-3 text-sm">
+                  {disabled ? (
+                    <span title={item["Calibration Range Unit"] || ""}>{item["Calibration Range Unit"] || "-"}</span>
+                  ) : (
+                    <input
+                      key={`unit-${item["Calibration Range Unit"] || ""}`}
+                      type="text"
+                      title={item["Calibration Range Unit"] || ""}
+                      defaultValue={item["Calibration Range Unit"] || ""}
+                      onBlur={(e) => handleCellChange(originalIndices, "Calibration Range Unit", e.target.value)}
+                      className="w-full focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
+                    />
+                  )}
+                </td>
+                {/* Red "i" info icon outside the table on the rightmost side with a custom hover tooltip */}
+                <td className="w-12 border-none bg-transparent text-center align-middle relative pr-4">
+                  {originalIndices.length > 1 && (
+                    <div className="relative group inline-flex items-center justify-center">
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700 cursor-default focus:outline-none transition-colors"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-5 h-5"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                      </button>
+                      <div className="absolute z-50 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1.5 px-3 right-full mr-2 whitespace-nowrap shadow-lg">
+                        Duplicate S.Nos: {originalIndices.map(idx => idx + 1).join(", ")}
+                        <div className="absolute top-1/2 -translate-y-1/2 left-full w-0 h-0 border-4 border-transparent border-l-gray-900"></div>
+                      </div>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
