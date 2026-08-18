@@ -52,7 +52,7 @@ const DislikeReason: React.FC<Props> = ({ onSubmit }) => {
 
     return (
         <Transition appear show={openModal} as={Fragment}>
-            <Dialog as="div" className="relative z-40" onClose={closeModal}>
+            <Dialog as="div" className="relative z-[100]" onClose={closeModal}>
                 <TransitionChild
                     as={Fragment}
                     enter="ease-out duration-300"

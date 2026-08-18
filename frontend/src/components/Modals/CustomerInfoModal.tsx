@@ -32,7 +32,7 @@ const CustomerInfoModal: React.FC<Props> = ({ onSubmit, show, onClose }) => {
   return (
     <>
       <Transition appear show={show} as={Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={closeModal}>
+        <Dialog as="div" className="relative z-[100]" onClose={closeModal}>
           <TransitionChild
             as={Fragment}
             enter="ease-out duration-300"

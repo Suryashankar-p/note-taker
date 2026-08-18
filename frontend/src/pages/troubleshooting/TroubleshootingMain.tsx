@@ -35,16 +35,23 @@ const TroubleshootingMain = () => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [assetModalOpen, setAssetModalOpen] = useState<boolean>(false);
   const [pendingAsset, setPendingAsset] = useState<SelectedAsset | null>(null);
+  const [pendingTicketId, setPendingTicketId] = useState<string | null>(null);
+
+  const clearPending = () => {
+    setPendingAsset(null);
+    setPendingTicketId(null);
+  };
 
   const openNewChatFlow = () => {
     dispatch.chatContent.clearChat();
-    setPendingAsset(null);
+    clearPending();
     navigate(`/ai-studio/troubleshooting`);
     setAssetModalOpen(true);
   };
 
-  const onAssetSubmit = (asset: SelectedAsset) => {
+  const onAssetSubmit = (asset: SelectedAsset, ticketId: string) => {
     setPendingAsset(asset);
+    setPendingTicketId(ticketId);
     setAssetModalOpen(false);
   };
 
@@ -61,11 +68,12 @@ const TroubleshootingMain = () => {
   //    prevents the dialog from lingering (with a Cancel button) over them.
   useEffect(() => {
     if (!chat_id) {
-      setPendingAsset(null);
+      clearPending();
       setAssetModalOpen(true);
     } else {
       setAssetModalOpen(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chat_id]);
 
   useEffect(() => {
@@ -145,10 +153,11 @@ const TroubleshootingMain = () => {
           />
         </div>
   
-        <div className="flex-1 bg-background overflow-y-hidden h-[73.5vh] mt-2 mx-4 relative z-0">
+        <div className="flex-1 min-w-0 bg-background overflow-y-hidden h-[73.5vh] mt-2 mx-4 relative z-0">
+          {/* Kept below the drawer's z-40 so it does not float over the open sidebar. */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-3 left-4 z-50 text-3xl md:hidden"
+            className="absolute top-3 left-4 z-30 text-3xl md:hidden"
           >
             ☰
           </button>
@@ -156,7 +165,8 @@ const TroubleshootingMain = () => {
             onNewChatAddition={getChatLists}
             disabled={relatedExpanded}
             pendingAsset={pendingAsset}
-            clearPendingAsset={() => setPendingAsset(null)}
+            pendingTicketId={pendingTicketId}
+            clearPendingAsset={clearPending}
           />
         </div>
       </div>

@@ -18,10 +18,13 @@ import {
   ReadProducts,
   TroubleshootingChatMode,
   updateChatHistory,
+  UpdateChatResolution,
+  ReadChat,
 } from "../../services/troubleshooting.ts";
 import LikeIcon from "../../assets/Like.tsx";
 import Dislike from "../../assets/Dislike.tsx";
 import DislikeReason from "../../components/Modals/DislikeReason.tsx";
+import SessionResolutionModal from "../../components/Modals/SessionResolutionModal.tsx";
 import Loading from "../../components/ChatLoading.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CopyIcon from "../../assets/Copy.tsx";
@@ -42,6 +45,7 @@ interface Props {
   disabled?: boolean;
   onQuestionAsked?: any;
   pendingAsset?: SelectedAsset | null;
+  pendingTicketId?: string | null;
   clearPendingAsset?: () => void;
 }
 
@@ -56,6 +60,7 @@ const ChatArea: React.FC<Props> = ({
   disabled,
   onQuestionAsked,
   pendingAsset,
+  pendingTicketId,
   clearPendingAsset,
 }) => {
   const [inputValue, setInputValue] = useState("");
@@ -111,6 +116,18 @@ const ChatArea: React.FC<Props> = ({
   // the chat history row; this overlay keeps the UI responsive while we wait
   // for the refetch to confirm.
   const [localLikes, setLocalLikes] = useState<{ [id: number]: boolean | null }>({});
+  // Session-ending protocol: hide the prompt once this session has been closed out,
+  // and stop double-submits while the PATCH is in flight.
+  const [sessionClosed, setSessionClosed] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const [resolutionModalOpen, setResolutionModalOpen] = useState(false);
+  // Asset / ticket this conversation belongs to, shown above the messages.
+  const [chatContext, setChatContext] = useState<{
+    ticket_id?: string | null;
+    asset_number?: string | null;
+    sf_asset_id?: string | null;
+    resolution_status?: string | null;
+  } | null>(null);
   const [defaultChatData, setDefaultChatData] = useState<any>(null);
 
   const onLikeClick = async (e: any, message: any) => {
@@ -216,6 +233,110 @@ const ChatArea: React.FC<Props> = ({
     }
   }, [chatContent]);
 
+  // A fresh session starts unanswered again.
+  useEffect(() => {
+    setSessionClosed(false);
+    setResolutionModalOpen(false);
+  }, [chat_id]);
+
+  // Load this chat's asset/ticket context. Re-runs when the session changes, and
+  // after a resolution so the status chip reflects the new state.
+  useEffect(() => {
+    if (!chat_id) {
+      setChatContext(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const chat: any = await ReadChat(chat_id);
+        if (!cancelled && chat?.id) setChatContext(chat);
+      } catch {
+        // Non-fatal: the conversation still works without the context bar.
+        if (!cancelled) setChatContext(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chat_id, sessionClosed]);
+
+  // The newest answer that actually carried a solution.
+  //
+  // In troubleshooting mode the agent records the route it took on every turn, so
+  // a solution turn is identifiable without guessing from the text — a clarifying
+  // question or a greeting must not trigger the prompt. KB-mode turns carry no
+  // resolved_path, so there the last answered message counts, excluding the
+  // first-turn product gate (which is the only KB reply that ships pills).
+  const lastSolutionIndex = (() => {
+    for (let i = chatContent.length - 1; i >= 0; i--) {
+      const message = chatContent[i];
+      if (!message?.ai) continue;
+      const route = message?.resolved_path?.route;
+      if (route) {
+        if (route === "TREE_SOLUTION" || route === "KB") return i;
+        continue; // TREE_CLARIFY / SMALLTALK / OUT_OF_SCOPE are not solutions
+      }
+      if (mode === "KB" && !(message?.pills?.length > 0)) return i;
+    }
+    return -1;
+  })();
+
+  const onResolutionAnswer = async (resolved: boolean) => {
+    if (!chat_id) return;
+    if (!resolved) {
+      // Route the negative answer back through the normal message path: the engine
+      // already treats "that didn't work" as a failed fix and walks to the next
+      // documented cause, so no separate handling is needed here.
+      setSessionClosed(true);
+      await submitMessage("That didn't resolve it, still facing the issue");
+      return;
+    }
+    setResolving(true);
+    try {
+      await UpdateChatResolution(chat_id, true);
+      setSessionClosed(true);
+      dispatch.toast.openToast({
+        status: true,
+        message: "Session marked as resolved.",
+        type: "success",
+      });
+    } catch {
+      dispatch.toast.openToast({
+        status: true,
+        message: "Could not save the resolution. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const onEndSessionSubmit = async (resolved: boolean, note?: string) => {
+    if (!chat_id) return;
+    setResolving(true);
+    try {
+      await UpdateChatResolution(chat_id, resolved, note);
+      setSessionClosed(true);
+      setResolutionModalOpen(false);
+      dispatch.toast.openToast({
+        status: true,
+        message: resolved
+          ? "Session marked as resolved."
+          : "Session flagged as unresolved for follow-up.",
+        type: "success",
+      });
+    } catch {
+      dispatch.toast.openToast({
+        status: true,
+        message: "Could not save the resolution. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setResolving(false);
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -298,10 +419,10 @@ const ChatArea: React.FC<Props> = ({
     if (!text.trim()) return;
     // A new chat (no active session) must have an asset selected before it
     // can be started. The asset dialog enforces this, but guard here too.
-    if (!chat_id && !pendingAsset) {
+    if (!chat_id && (!pendingAsset || !pendingTicketId)) {
       dispatch.toast.openToast({
         status: true,
-        message: "Please select an asset to start a new chat.",
+        message: "Please select an asset and enter a ticket ID to start a new chat.",
         type: "error",
       });
       return;
@@ -310,7 +431,12 @@ const ChatArea: React.FC<Props> = ({
     dispatch.chatContent.addQuestion([{ human: text }]);
     try {
       const activeChatId = chat_id ?? (await (async () => {
-        const newSession = await CreateChat(text, pendingAsset?.asset_name, pendingAsset?.sf_asset_id);
+        const newSession = await CreateChat(
+          text,
+          pendingAsset?.asset_name,
+          pendingAsset?.sf_asset_id,
+          pendingTicketId ?? undefined,
+        );
         if (!newSession?.id) {
           dispatch.toast.openToast({ status: true, message: newSession?.detail, type: "error" });
           setLoading(false);
@@ -520,6 +646,44 @@ const ChatArea: React.FC<Props> = ({
           onClose={() => setShowInfoModal(false)}
         />
       )} */}
+      {/* Which equipment and ticket this conversation belongs to. An engineer
+          often has several sessions open across a shift, and the answers alone
+          do not say which machine they are about. */}
+      {chatContext && (
+        <div className="mx-4 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-grey bg-white px-3 py-2">
+          {chatContext.ticket_id && (
+            <span className="text-[12px] text-primary_text">
+              <span className="text-gray-500">Ticket</span>{" "}
+              <span className="font-medium">{chatContext.ticket_id}</span>
+            </span>
+          )}
+          {chatContext.asset_number && (
+            <span className="text-[12px] text-primary_text">
+              <span className="text-gray-500">Asset</span>{" "}
+              <span className="font-medium">{chatContext.asset_number}</span>
+            </span>
+          )}
+          {chatContext.sf_asset_id && (
+            <span className="text-[12px] text-gray-500" title="Salesforce asset ID">
+              <span className="text-gray-500">Asset ID</span>{" "}
+              <span className="font-medium text-primary_text">{chatContext.sf_asset_id}</span>
+            </span>
+          )}
+          {chatContext.resolution_status &&
+            chatContext.resolution_status !== "OPEN" && (
+              <span
+                className={`ml-auto rounded-full px-2 py-0.5 text-[11px] ${
+                  chatContext.resolution_status === "RESOLVED"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {chatContext.resolution_status}
+              </span>
+            )}
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-scroll smooth-scroll p-4 pb-2 space-y-8 bg-inherit"
@@ -717,11 +881,37 @@ const ChatArea: React.FC<Props> = ({
                   </div>
                 </button>
               )}
+
+              {/* Session-ending prompt. Shown under the newest answer that actually
+                  carried a solution — deliberately NOT rendered as pills, because the
+                  pills under a solution are alternative causes and mixing the two
+                  reads as nonsense. "No" goes back through the normal message path so
+                  the engine's existing failed-fix handling serves the next cause. */}
+              {index === lastSolutionIndex && !sessionClosed && (
+                <div className="ml-12 mt-2 flex items-center gap-3 rounded-lg border border-grey bg-white px-3 py-2 w-fit">
+                  <Text type="small">Did this resolve your issue?</Text>
+                  <button
+                    disabled={disabled || resolving}
+                    className="rounded-full border border-[#0061F3] px-3 py-1 text-[12px] text-[#0061F3] hover:bg-[#0061F3] hover:text-white disabled:opacity-50"
+                    onClick={() => onResolutionAnswer(true)}
+                  >
+                    Yes, resolved
+                  </button>
+                  <button
+                    disabled={disabled || resolving}
+                    className="rounded-full border border-grey px-3 py-1 text-[12px] text-primary_text hover:bg-gray-100 disabled:opacity-50"
+                    onClick={() => onResolutionAnswer(false)}
+                  >
+                    No, still an issue
+                  </button>
+                </div>
+              )}
             </div>
           ))
-        ) : !loading && productTitles.length > 0 ? (
-          // First turn: ask the user to pick a product via pills before the
-          // normal flow (TROUBLESHOOTING) / KB retrieval (KB) begins.
+        ) : !loading && mode === "KB" && productTitles.length > 0 ? (
+          // KB mode only: retrieval is scoped to one product, so the user picks it
+          // first. TROUBLESHOOTING mode resolves the product from the linked asset
+          // and the question itself, so it opens straight into a free-text box.
           <div className="flex items-start space-x-2">
             <div className="w-8 h-8 bg-gray-200 px-4 rounded-full flex items-center justify-center">
               <span className="text-gray-600">AI</span>
@@ -742,6 +932,21 @@ const ChatArea: React.FC<Props> = ({
           </div>
         ) : (
           <EmptyChat />
+        )}
+
+        {/* Always reachable, even for a session that never produced a solution —
+            an unresolved interaction still needs closing out so it can be picked
+            up for follow-up rather than silently sitting open. */}
+        {chat_id && chatContent.length > 0 && !sessionClosed && (
+          <div className="ml-12 mt-4 flex justify-start">
+            <button
+              disabled={disabled || resolving}
+              className="rounded-lg border border-grey px-3 py-1 text-[12px] text-primary_text hover:bg-gray-100 disabled:opacity-50"
+              onClick={() => setResolutionModalOpen(true)}
+            >
+              End session
+            </button>
+          </div>
         )}
         <div className="my-24" ref={messagesEndRef}></div>
       </div>
@@ -823,6 +1028,12 @@ const ChatArea: React.FC<Props> = ({
         />
       )}
       {dislikeModalStatus && <DislikeReason onSubmit={onDislikeSubmit} />}
+      <SessionResolutionModal
+        show={resolutionModalOpen}
+        submitting={resolving}
+        onSubmit={onEndSessionSubmit}
+        onClose={() => setResolutionModalOpen(false)}
+      />
     </div>
   );
 };

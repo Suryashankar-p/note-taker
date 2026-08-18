@@ -116,7 +116,7 @@ const FileEditModal: React.FC<Props> = ({ defaultValues, onSubmit, products, mul
   return (
     <>
       {isOpen?.status && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4 sm:px-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 px-4 sm:px-6">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 sm:p-8 space-y-6 relative">
             {/* Modal Header */}
             <div>

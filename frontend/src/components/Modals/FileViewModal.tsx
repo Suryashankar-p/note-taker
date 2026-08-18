@@ -116,7 +116,7 @@ const FileViewModal = ({ fileUrl, isOpen, onClose }) => {
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={closeModal}>
+      <Dialog as="div" className="relative z-[100]" onClose={closeModal}>
         <TransitionChild
           as={Fragment}
           enter="ease-out duration-300"

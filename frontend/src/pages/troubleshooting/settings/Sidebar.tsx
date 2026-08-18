@@ -54,7 +54,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ onSelect, selected })
             key: 'usage'
         },
         {
-            title: 'Analysis',
+            title: 'Analytics',
             src: Message,
             alt: 'analysis',
             key: 'analysis',
@@ -65,6 +65,13 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ onSelect, selected })
             src: FeedbackIcon,
             alt: 'feedback',
             key: 'feedback',
+            ownerOnly: true
+        },
+        {
+            title: 'Support Report',
+            src: Message,
+            alt: 'support_report',
+            key: 'support_report',
             ownerOnly: true
         }
         // {

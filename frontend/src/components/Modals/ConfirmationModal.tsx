@@ -22,7 +22,7 @@ const ConfirmationModal: React.FC<Props> = ({ title, content, onSubmit }) => {
     return (
         <>
             <Transition appear show={confirmationStatus} as={Fragment}>
-                <Dialog as="div" className="relative z-10" onClose={closeModal}>
+                <Dialog as="div" className="relative z-[100]" onClose={closeModal}>
                     <TransitionChild
                         as={Fragment}
                         enter="ease-out duration-300"

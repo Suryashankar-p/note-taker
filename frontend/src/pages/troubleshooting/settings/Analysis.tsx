@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bar, Line, Doughnut } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,7 +11,6 @@ import {
   Title,
   Tooltip,
   Legend,
-  ArcElement,
 } from "chart.js";
 import Text from "../../../components/Text";
 import { ReadTroubleshootingAnalytics } from "../../../services/troubleshooting";
@@ -25,8 +24,7 @@ ChartJS.register(
   Filler,
   Title,
   Tooltip,
-  Legend,
-  ArcElement
+  Legend
 );
 
 type AssetIssue = { asset_number: string; count: number };
@@ -86,7 +84,6 @@ export default function Analysis() {
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [selectedProduct, setSelectedProduct] = useState<string>("");
 
   const load = async () => {
     setLoading(true);
@@ -95,7 +92,6 @@ export default function Analysis() {
       const res = await ReadTroubleshootingAnalytics(from, to);
       if (res?.total_chats !== undefined) {
         setData(res);
-        setSelectedProduct(res.product_distribution?.[0]?.product ?? "");
       } else {
         setData(null);
         setError(res?.detail || "No analytics available.");
@@ -137,27 +133,6 @@ export default function Analysis() {
     }],
   }), [data]);
 
-  const problemChart = useMemo(() => {
-    const product = data?.product_distribution.find((p) => p.product === selectedProduct);
-    return {
-      labels: product?.problems.map((p) => p.problem) ?? [],
-      datasets: [{
-        data: product?.problems.map((p) => p.count) ?? [],
-        backgroundColor: PALETTE,
-      }],
-    };
-  }, [data, selectedProduct]);
-
-  const whyChart = useMemo(() => ({
-    labels: data?.why_levels.map((w) => `Level ${w.why_level}`) ?? [],
-    datasets: [{
-      label: "Sessions",
-      data: data?.why_levels.map((w) => w.count) ?? [],
-      backgroundColor: "#9966FF",
-      borderRadius: 4,
-    }],
-  }), [data]);
-
   const trendChart = useMemo(() => ({
     labels: data?.trend.map((t) => t.label) ?? [],
     datasets: [{
@@ -171,7 +146,6 @@ export default function Analysis() {
     }],
   }), [data]);
 
-  const deepestWhy = data?.why_levels.reduce((m, w) => Math.max(m, w.why_level), 0) ?? 0;
   const hasData = !!data && data.total_chats > 0;
 
   return (
@@ -179,7 +153,7 @@ export default function Analysis() {
       {/* Header + date range */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Text type="header2">Analysis</Text>
+          <Text type="header2">Analytics</Text>
           <Text type="small" className="text-gray-500">
             Admin reporting · one session = one troubleshooting conversation
           </Text>
@@ -226,12 +200,11 @@ export default function Analysis() {
       {!loading && hasData && (
         <>
           {/* Stat cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Stat label="Total sessions" value={data!.total_chats} />
             <Stat label="KB queries" value={data!.total_kb_queries ?? 0} />
             <Stat label="Assets with issues" value={data!.issues_by_asset.length} />
             <Stat label="Products covered" value={data!.product_distribution.length} />
-            <Stat label="Deepest why-level" value={deepestWhy} />
           </div>
 
           {/* Charts */}
@@ -258,37 +231,6 @@ export default function Analysis() {
               </div>
             </Card>
 
-            <Card title="Why-level (root-cause depth)">
-              <div className="h-72">
-                {whyChart.labels.length ? (
-                  <Bar data={whyChart} options={baseOptions} />
-                ) : <EmptyMsg text="No why-level data." />}
-              </div>
-            </Card>
-
-            <Card title="Problem distribution by product">
-              {data!.product_distribution.length > 0 ? (
-                <>
-                  <select
-                    value={selectedProduct}
-                    onChange={(e) => setSelectedProduct(e.target.value)}
-                    className="mb-3 rounded-md border border-gray-300 p-2 text-sm text-primary_text w-full md:w-2/3"
-                  >
-                    {data!.product_distribution.map((p) => (
-                      <option key={p.product} value={p.product}>{p.product}</option>
-                    ))}
-                  </select>
-                  <div className="h-64">
-                    {problemChart.labels.length ? (
-                      <Doughnut
-                        data={problemChart}
-                        options={{ ...baseOptions, plugins: { legend: { position: "right" as const } } }}
-                      />
-                    ) : <EmptyMsg text="No problems recorded for this product." />}
-                  </div>
-                </>
-              ) : <EmptyMsg text="No products resolved yet." />}
-            </Card>
           </div>
         </>
       )}

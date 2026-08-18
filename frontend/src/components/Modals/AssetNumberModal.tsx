@@ -12,7 +12,7 @@ export interface SelectedAsset {
 
 interface Props {
   show: boolean;
-  onSubmit: (asset: SelectedAsset) => void;
+  onSubmit: (asset: SelectedAsset, ticketId: string) => void;
   onClose: () => void;
   // When true the dialog cannot be dismissed (no Cancel/X/Esc/backdrop close).
   // Used to enforce the rule that a new chat must have an asset.
@@ -32,6 +32,7 @@ const AssetNumberModal: React.FC<Props> = ({
   mandatory = false,
 }) => {
   const [selectedAsset, setSelectedAsset] = useState<SelectedAsset | null>(null);
+  const [ticketId, setTicketId] = useState("");
   const [nameOptions, setNameOptions] = useState<Option[]>([]);
   const [idOptions, setIdOptions] = useState<Option[]>([]);
   const [error, setError] = useState("");
@@ -72,6 +73,7 @@ const AssetNumberModal: React.FC<Props> = ({
 
   const closeModal = () => {
     setSelectedAsset(null);
+    setTicketId("");
     setError("");
     onClose();
   };
@@ -82,8 +84,15 @@ const AssetNumberModal: React.FC<Props> = ({
       setError("Please select an asset");
       return;
     }
-    onSubmit(selectedAsset);
+    // Every support interaction has to be traceable to a ticket in the owner
+    // report, so this is required rather than optional.
+    if (!ticketId.trim()) {
+      setError("Please enter a ticket ID");
+      return;
+    }
+    onSubmit(selectedAsset, ticketId.trim());
     setSelectedAsset(null);
+    setTicketId("");
     setError("");
   };
 
@@ -91,6 +100,7 @@ const AssetNumberModal: React.FC<Props> = ({
   useEffect(() => {
     if (show) {
       setSelectedAsset(null);
+      setTicketId("");
       setError("");
       runSearch("");
     }
@@ -167,6 +177,21 @@ const AssetNumberModal: React.FC<Props> = ({
               onQueryChange={onQueryChange}
               onChange={(option: Option) => {
                 setSelectedAsset(option.asset);
+                if (error) setError("");
+              }}
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Ticket ID *
+            </label>
+            <input
+              type="text"
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#0061F3] focus:outline-none focus:ring-1 focus:ring-[#0061F3]"
+              placeholder="e.g. TKT-10432"
+              value={ticketId}
+              onChange={(e) => {
+                setTicketId(e.target.value);
                 if (error) setError("");
               }}
             />
