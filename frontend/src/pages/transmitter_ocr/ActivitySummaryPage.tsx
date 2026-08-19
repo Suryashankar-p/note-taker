@@ -9,7 +9,7 @@ import { getInitials } from "../../utils/functions.ts";
 import NoData from "../../assets/no_data.tsx";
 import Toast from "../../components/Toast.tsx";
 import PageLoading from "../../components/PageLoading.tsx";
-import { 
+import {
   TransmitterGetMasterActivities,
   TransmitterGetYearTagsCount,
   TransmitterGetProcessedYears
@@ -21,6 +21,8 @@ interface MasterActivity {
   id: number;
   title: string;
   created_on: string;
+  template?: string;
+  template_name?: string;
   user: {
     name: string;
     user_id: string;
@@ -44,9 +46,8 @@ const YearButton: React.FC<YearButtonProps> = ({ processedYears, yearIndex, onPr
       <button
         type="button"
         disabled={yearIndex === processedYears.length - 1}
-        className={`w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded font-semibold text-lg transition duration-300 ${
-          yearIndex === processedYears.length - 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-        }`}
+        className={`w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded font-semibold text-lg transition duration-300 ${yearIndex === processedYears.length - 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+          }`}
         onClick={onPrev}
       >
         &lt;
@@ -57,9 +58,8 @@ const YearButton: React.FC<YearButtonProps> = ({ processedYears, yearIndex, onPr
       <button
         type="button"
         disabled={yearIndex === 0}
-        className={`w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded font-semibold text-lg transition duration-300 ${
-          yearIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-        }`}
+        className={`w-12 h-12 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded font-semibold text-lg transition duration-300 ${yearIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+          }`}
         onClick={onNext}
       >
         &gt;
@@ -82,6 +82,8 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
   const toastStatus = useSelector((state: RootState) => state.toast);
 
   const [activeTab, setActiveTab] = useState<'master_activities' | 'analytics'>('master_activities');
+  const [filterOptions, setFilterOptions] = useState<string[]>(['All', 'Honeywell', 'Gauges Bourdon', 'Yokogawa', 'Emerson']);
+  const [selectedFilter, setSelectedFilter] = useState<string>('All');
   const [tagsData, setTagsData] = useState<any>(null);
   const [processedYears, setProcessedYears] = useState<number[]>([new Date().getFullYear()]);
   const [yearIndex, setYearIndex] = useState<number>(0);
@@ -120,6 +122,30 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
     } finally {
       setIsTagsLoading(false);
     }
+  };
+
+  const getFilteredActivities = () => {
+    if (selectedFilter === 'All') return masterActivities;
+
+    const target = selectedFilter.toLowerCase();
+    return masterActivities.filter((activity) => {
+      const title = (activity.title || '').toLowerCase();
+      const template = (activity.template || '').toLowerCase();
+      const templateName = (activity.template_name || '').toLowerCase();
+
+      if (selectedFilter === 'Gauges Bourdon') {
+        return (
+          title.includes('gauges') ||
+          title.includes('bourdon') ||
+          template.includes('gauges') ||
+          template.includes('bourdon') ||
+          templateName.includes('gauges') ||
+          templateName.includes('bourdon')
+        );
+      }
+
+      return title.includes(target) || template.includes(target) || templateName.includes(target);
+    });
   };
 
   const handlePrevYear = () => {
@@ -177,7 +203,8 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
   const getAllMasterActivities = async (
     skip: number,
     limit: number,
-    search_term: string
+    search_term: string,
+    filter: string = selectedFilter
   ) => {
     setIsLoading(true);
     try {
@@ -186,11 +213,24 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
         limit,
         search_term,
         null,
-        null
+        null,
+        filter
       );
       if (response?.result) {
         setMasterActivities(response.result);
         setActivityTotal(response.total);
+
+        // Dynamically extract unique template names returned in the API response
+        const apiTemplates: string[] = response.result
+          .map((act: MasterActivity) => act.template || act.template_name)
+          .filter((t: string | undefined): t is string => Boolean(t) && typeof t === 'string');
+
+        if (apiTemplates.length > 0) {
+          setFilterOptions((prev) => {
+            const combined = new Set(['All', ...prev.filter(f => f !== 'All'), ...apiTemplates]);
+            return Array.from(combined);
+          });
+        }
       } else {
         console.error("Error fetching master activities");
       }
@@ -217,7 +257,8 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
         pageSize.limit,
         searchValue,
         null,
-        null
+        null,
+        selectedFilter
       );
       if (response?.result) {
         const newActivities = response.result;
@@ -289,8 +330,7 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
             <TabList className="flex space-x-2">
               <Tab
                 className={({ selected }) =>
-                  `px-4 py-2 rounded-md transition-colors duration-300 ${
-                    selected ? 'bg-danger text-white font-medium' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
+                  `px-4 py-2 rounded-md transition-colors duration-300 ${selected ? 'bg-danger text-white font-medium' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
                   }`
                 }
               >
@@ -298,8 +338,7 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
               </Tab>
               <Tab
                 className={({ selected }) =>
-                  `px-4 py-2 rounded-md transition-colors duration-300 ${
-                    selected ? 'bg-danger text-white font-medium' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
+                  `px-4 py-2 rounded-md transition-colors duration-300 ${selected ? 'bg-danger text-white font-medium' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
                   }`
                 }
               >
@@ -326,6 +365,27 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
               />
             )}
           </div>
+
+          {activeTab === 'master_activities' && (
+            <div className="flex space-x-2 mt-2 mb-4 overflow-x-auto">
+              {filterOptions.map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => {
+                    setSelectedFilter(filter);
+                    getAllMasterActivities(0, pageSize.limit, searchValue, filter);
+                  }}
+                  className={`px-4 py-2 rounded-md transition-colors duration-300 capitalize ${selectedFilter === filter
+                      ? 'bg-danger text-white font-medium'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
+                    }`}
+                >
+                  <Text type="body">{filter}</Text>
+                </button>
+              ))}
+            </div>
+          )}
 
           <TabPanels className="h-full">
             <TabPanel className="h-full">
@@ -361,11 +421,11 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
               >
                 {isLoading && masterActivities.length === 0 ? (
                   <PageLoading />
-                ) : masterActivities.length > 0 ? (
-                  masterActivities.map((activity, index) => (
+                ) : getFilteredActivities().length > 0 ? (
+                  getFilteredActivities().map((activity, index, arr) => (
                     <div
                       key={activity.id}
-                      className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== masterActivities.length - 1
+                      className={`py-4 px-4 cursor-pointer hover:bg-gray-50 transition-colors ${index !== arr.length - 1
                         ? "border-b border-gray-200"
                         : ""
                         }`}
@@ -412,25 +472,24 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
               </div>
             </TabPanel>
 
-            <TabPanel className="h-full flex flex-col overflow-y-auto bg-white border border-gray-200 rounded-lg p-6">
+            <TabPanel className="h-[calc(100vh-245px)] flex flex-col overflow-hidden bg-white border border-gray-200 rounded-lg p-6">
               {isTagsLoading ? (
                 <PageLoading />
               ) : (
-                <div className="flex flex-col">
-                  <div className="mb-4">
+                <div className="flex flex-col flex-1 min-h-0">
+                  <div className="mb-4 flex-shrink-0">
                     <Text className="text-xl font-semibold text-gray-800" type="header3">
                       Total Tags Processed in {processedYears[yearIndex]} (Total: {tagsData?.total ?? 0})
                     </Text>
                   </div>
-                  
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+                  <div className="flex-1 overflow-y-auto overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-50">
                             Month
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-50">
                             Tags Count
                           </th>
                         </tr>
@@ -441,7 +500,7 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
                           const countIndex = tagsData?.month?.indexOf(monthNum);
                           const rawCount = countIndex !== undefined && countIndex !== -1 ? tagsData?.activity?.[countIndex] : 0;
                           const displayCount = rawCount > 0 ? rawCount : "-";
-                          
+
                           return (
                             <tr key={monthName} className="hover:bg-gray-50 transition-colors">
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
