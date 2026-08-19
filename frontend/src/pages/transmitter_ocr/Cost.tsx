@@ -53,7 +53,7 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
   const donutOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    radius: 100,
+    radius: 80,
     cutout: '60%',
     plugins: {
       legend: {
@@ -148,48 +148,39 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
           <EditLimitModal defaultValue={limit} onSubmit={onLimitEdit} />
         </div>
       )}
-      <div className="w-full lg:w-2/3 h-80 relative">
+      <div className="w-full lg:w-[55%] h-80 relative">
         <Bar
           className="pl-4"
           options={options}
           data={data}
         />
       </div>
-      <div className="w-full lg:w-1/2 flex relative justify-center items-center">
-        <Doughnut
-          width={50}
-          height={100}
-          data={donutData}
-          options={donutOptions}
-          className=" absolute right-41 mr-20"
-        />
-        <div
-          ref={percentageRef}
-          className="absolute top-40 xl:top-[11.5rem] flex self-center items-center text-center text-primary_text min-w-[10px]"
-          style={{
-            transform: `translateX(-${
-              percentage === 0 ? percentageWidth : percentageWidth/1.5
-            }px)`,
-          }}
-        >
-          <Text type="header3">{percentage}%</Text>
+      <div className="w-full lg:w-[45%] flex flex-col sm:flex-row justify-center items-center gap-8 min-h-[320px] self-center">
+        <div className="relative w-64 h-64 flex justify-center items-center">
+          <Doughnut
+            data={donutData}
+            options={donutOptions}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-8">
+            <Text type="header3" className="text-gray-800 font-bold">{percentage}%</Text>
+          </div>
         </div>
-        <div className="absolute flex flex-col ml-4 top-70 items-center -right-2">
-          <Text type="header2">${totalCost}</Text>
-          <Text className="text-primary_text" type="body">
+        <div className="flex flex-col items-center justify-center text-center p-4 bg-gray-50 rounded-xl border border-gray-100 min-w-[180px]">
+          <Text type="header2" className="text-gray-800 font-bold">${totalCost}</Text>
+          <Text className="text-gray-500 mt-1" type="body">
             /${limit} limit
           </Text>
           {ocrMemberDetails && ocrMemberDetails?.role === "OWNER" ? (
             <button
               onClick={() => dispatch.modal.openEditLimit()}
-              className="bg-danger rounded-lg p-2 m-2"
+              className="bg-danger hover:bg-red-700 text-white font-semibold rounded-lg px-4 py-2 mt-4 shadow-sm transition duration-300 w-full"
             >
               <Text className="text-white" type="body">
                 Increase Limit
               </Text>
             </button>
           ) : (
-            <div className="p-2 m-2" style={{ visibility: "hidden" }}>
+            <div className="py-2 mt-4 invisible" style={{ visibility: "hidden" }}>
               <Text type="body">Increase Limit</Text>
             </div>
           )}
