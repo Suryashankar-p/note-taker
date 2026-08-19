@@ -67,7 +67,6 @@ const OverallMargin = () => {
     return flattenedRows;
   }, [allDivisionsData]);
 
-  // Quarters list from table data
   const tableQuarters = useMemo(() => {
     const qSet = new Set<string>();
     overallMarginTableData.forEach((row) => {
@@ -75,12 +74,18 @@ const OverallMargin = () => {
         Object.keys(row.quarters).forEach((q) => qSet.add(q));
       }
     });
-    return Array.from(qSet).sort(sortQuarters);
+    const isQ3Fy25OrLater = (q: string) => {
+      const m = q.match(/Q(\d)\s+FY\s+(\d+)/);
+      if (!m) return false;
+      const qNum = parseInt(m[1]);
+      const fyNum = parseInt(m[2]);
+      return fyNum > 25 || (fyNum === 25 && qNum >= 3);
+    };
+    return Array.from(qSet).filter(isQ3Fy25OrLater).sort(sortQuarters);
   }, [overallMarginTableData]);
 
   const latestQuarter = tableQuarters[tableQuarters.length - 1] || "Q4 FY 26";
 
-  // Build trend data dynamically
   const trendData = useMemo(() => {
     if (!allDivisionsData) return [];
     const quartersSet = new Set<string>();
@@ -149,18 +154,10 @@ const OverallMargin = () => {
         <p className="text-xs text-gray-505 max-w-md mb-8 leading-relaxed">
           It looks like none of the business units (Heating, Cooling, or Water) have been compiled yet. Please go to the Analyst Studio to upload the required files and compile the data models.
         </p>
-        <button
-          onClick={() => navigate("../analyst/select-bu")}
-          className="px-5 py-2.5 bg-[#a61c1e] hover:bg-red-750 text-white font-bold rounded-lg text-xs tracking-wider uppercase transition-colors shadow-sm"
-        >
-          Go to Analyst Studio →
-        </button>
       </div>
     );
   }
 
-
-  // Table rendering logic
   const renderTable = () => {
     if (overallMarginTableData.length === 0) {
       return (
@@ -169,6 +166,20 @@ const OverallMargin = () => {
         </div>
       );
     }
+
+    const groupedByBU: { segment: string; rows: typeof overallMarginTableData }[] = [];
+    overallMarginTableData.forEach((row) => {
+      const last = groupedByBU[groupedByBU.length - 1];
+      if (last && last.segment === row.segment) {
+        last.rows.push(row);
+      } else {
+        groupedByBU.push({ segment: row.segment, rows: [row] });
+      }
+    });
+
+    const buAccent: Record<string, string> = {
+      Heating: "bg-orange-50/60",
+    };
 
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm overflow-x-auto text-gray-800">
@@ -187,7 +198,7 @@ const OverallMargin = () => {
                 Segment
               </th>
               <th className="p-3 font-bold text-gray-600 border-r border-gray-200 text-center" colSpan={2}>
-                Baseline
+                Baseline<br /><span className="text-[10px] text-gray-400 font-normal">(Q4 FY24 + Q1 FY25)</span>
               </th>
               {tableQuarters.map((q) => (
                 <th key={q} className="p-3 font-bold text-gray-600 border-r border-gray-200 text-center" colSpan={2}>
@@ -200,7 +211,7 @@ const OverallMargin = () => {
             </tr>
             <tr className="border-b border-gray-200 bg-gray-55/50">
               <th className="p-2 text-center text-[10px] font-bold text-gray-450 border-r border-gray-200">
-                Revenue (Cr)
+                Revenue (INR Cr)
               </th>
               <th className="p-2 text-center text-[10px] font-bold text-gray-450 border-r border-gray-200">
                 Achieved GM%
@@ -208,7 +219,7 @@ const OverallMargin = () => {
               {tableQuarters.map((_, i) => (
                 <React.Fragment key={i}>
                   <th className="p-2 text-center text-[10px] font-bold text-gray-450 border-r border-gray-200">
-                    Revenue (Cr)
+                    Revenue (INR Cr)
                   </th>
                   <th className="p-2 text-center text-[10px] font-bold text-gray-450 border-r border-gray-200">
                     Achieved GM%
@@ -218,65 +229,71 @@ const OverallMargin = () => {
             </tr>
           </thead>
           <tbody>
-            {overallMarginTableData.map((row, idx) => {
-              const baselineGm = row.baseline_gm_pct || 0;
-              const latestData = row.quarters?.[latestQuarter];
-              const delta = latestData ? latestData.gm_pct - baselineGm : 0;
-              const deltaStr = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`;
-              const deltaClass = delta >= 0 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100";
+            {groupedByBU.map(({ segment, rows }) =>
+              rows.map((row, rowIdx) => {
+                const baselineGm = row.baseline_gm_pct || 0;
+                const latestData = row.quarters?.[latestQuarter];
+                const delta = latestData ? latestData.gm_pct - baselineGm : 0;
+                const deltaStr = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`;
+                const deltaClass = delta >= 0 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100";
+                const accentBg = buAccent[segment] ?? "bg-gray-50/20";
 
-              // Simple rendering segments grouping check (Heating, Cooling, Water have standard/non-standard options)
-              // We will just show segment names for each row label
-              return (
-                <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50/50 transition-colors">
-                  <td className="p-3 font-bold text-gray-900 border-r border-gray-200 align-middle bg-gray-50/20">
-                    {row.segment || "Unknown"}
-                  </td>
-                  <td className="p-3 font-semibold text-gray-600 border-r border-gray-200 bg-gray-55/10">
-                    {row.label || "Overall"}
-                  </td>
-                  <td className="p-3 text-center text-gray-600 border-r border-gray-200">
-                    {row.baseline_rev_cr?.toFixed(2) ?? "—"}
-                  </td>
-                  <td className="p-3 text-center font-bold text-gray-600 border-r border-gray-200">
-                    {row.baseline_gm_pct != null ? `${row.baseline_gm_pct.toFixed(2)}%` : "—"}
-                  </td>
-                  {tableQuarters.map((q) => {
-                    const qData = row.quarters?.[q];
-                    if (!qData) {
+                return (
+                  <tr key={`${segment}-${rowIdx}`} className="border-b border-gray-200 hover:bg-gray-50/50 transition-colors">
+                    {rowIdx === 0 && (
+                      <td
+                        rowSpan={rows.length}
+                        className={`p-3 font-bold text-gray-900 border-r border-gray-200 align-middle ${accentBg}`}
+                      >
+                        {segment || "Unknown"}
+                      </td>
+                    )}
+                    <td className="p-3 font-semibold text-gray-600 border-r border-gray-200 bg-gray-55/10">
+                      {row.label || "Overall"}
+                    </td>
+                    <td className="p-3 text-center text-gray-600 border-r border-gray-200">
+                      {row.baseline_rev_cr?.toFixed(2) ?? "—"}
+                    </td>
+                    <td className="p-3 text-center font-bold text-gray-600 border-r border-gray-200">
+                      {row.baseline_gm_pct != null ? `${row.baseline_gm_pct.toFixed(2)}%` : "—"}
+                    </td>
+                    {tableQuarters.map((q) => {
+                      const qData = row.quarters?.[q];
+                      if (!qData) {
+                        return (
+                          <React.Fragment key={q}>
+                            <td className="p-3 text-center text-gray-400 border-r border-gray-200">—</td>
+                            <td className="p-3 text-center text-gray-400 border-r border-gray-200">—</td>
+                          </React.Fragment>
+                        );
+                      }
+                      const isImproved = qData.gm_pct >= baselineGm;
                       return (
                         <React.Fragment key={q}>
-                          <td className="p-3 text-center text-gray-400 border-r border-gray-200">—</td>
-                          <td className="p-3 text-center text-gray-400 border-r border-gray-200">—</td>
+                          <td className="p-3 text-center text-gray-600 border-r border-gray-200">
+                            {qData.rev_cr?.toFixed(2) ?? "—"}
+                          </td>
+                          <td
+                            className={`p-3 text-center font-bold border-r border-gray-200 ${
+                              isImproved ? "text-emerald-600" : "text-rose-600"
+                            }`}
+                          >
+                            {qData.gm_pct != null ? `${qData.gm_pct.toFixed(2)}%` : "—"}
+                          </td>
                         </React.Fragment>
                       );
-                    }
-                    const isImproved = qData.gm_pct >= baselineGm;
-                    return (
-                      <React.Fragment key={q}>
-                        <td className="p-3 text-center text-gray-600 border-r border-gray-200">
-                          {qData.rev_cr?.toFixed(2) ?? "—"}
-                        </td>
-                        <td
-                          className={`p-3 text-center font-bold border-r border-gray-200 ${
-                            isImproved ? "text-emerald-600" : "text-rose-600"
-                          }`}
-                        >
-                          {qData.gm_pct != null ? `${qData.gm_pct.toFixed(2)}%` : "—"}
-                        </td>
-                      </React.Fragment>
-                    );
-                  })}
-                  <td className={`p-3 text-center font-bold border-l border-gray-200 ${deltaClass}`}>
-                    {deltaStr}
-                  </td>
-                </tr>
-              );
-            })}
+                    })}
+                    <td className={`p-3 text-center font-bold border-l border-gray-200 ${deltaClass}`}>
+                      {deltaStr}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
         <div className="text-[10px] text-gray-400 mt-3 text-center">
-          Baseline is determined by transaction data from earlier quarters. Select a business unit below for detailed charts and matrices.
+          Baseline: Q4 FY24 + Q1 FY25. Select a business unit below for charts, snapshot, and insights.
         </div>
       </div>
     );
@@ -313,6 +330,8 @@ const OverallMargin = () => {
         pointRadius: 4,
       },
     ].filter((ds) => {
+      const buKey = ds.label.split(" ")[0].toLowerCase();
+      if ((allDivisionsData as any)?.[buKey] === null) return false;
       if (selectedBU === "All BUs") return true;
       return ds.label.toLowerCase().includes(selectedBU.toLowerCase());
     }),
@@ -353,6 +372,86 @@ const OverallMargin = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-12 bg-slate-50 text-gray-800">
+      {(() => {
+        const formatDate = (raw?: string | null): string => {
+          if (!raw) return "—";
+          try {
+            const ddmmyyyy = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+            if (ddmmyyyy) {
+              const [, dd, mm, yyyy] = ddmmyyyy;
+              const date = new Date(`${yyyy}-${mm}-${dd}`);
+              if (isNaN(date.getTime())) return raw;
+              return date.toLocaleDateString("en-IN", {
+                day: "2-digit", month: "short", year: "numeric",
+              });
+            }
+            const normalized = raw.replace(/(\.\d{3})\d+/, "$1");
+            const date = new Date(normalized);
+            if (isNaN(date.getTime())) return raw;
+            return date.toLocaleString("en-IN", {
+              day: "2-digit", month: "short", year: "numeric",
+              hour: "2-digit", minute: "2-digit", hour12: true,
+            });
+          } catch {
+            return raw;
+          }
+        };
+
+        const buList = [
+          { key: "heating", label: "Heating", color: "#f97316" },
+          { key: "cooling", label: "Cooling", color: "#06b6d4" },
+          { key: "water",   label: "Water",   color: "#3b82f6" },
+        ];
+        const publishMeta: Record<string, { by: string; at: string }> = {
+          heating: {
+            by: (allDivisionsData as any)?.heating?.published_by,
+            at: formatDate((allDivisionsData as any)?.heating?.published_date),
+          },
+          cooling: {
+            by: (allDivisionsData as any)?.cooling?.published_by,
+            at: formatDate((allDivisionsData as any)?.cooling?.published_date),
+          },
+          water: {
+            by: (allDivisionsData as any)?.water?.published_by,
+            at: formatDate((allDivisionsData as any)?.water?.published_date),
+          },
+        };
+        return (
+          <div className="flex flex-wrap gap-3 pt-1">
+            {buList.map(({ key, label, color }) => {
+              const buData = (allDivisionsData as any)?.[key];
+              const isCompiled = !!buData;
+              const meta = isCompiled ? publishMeta[key] : null;
+              return isCompiled ? (
+                <div
+                  key={key}
+                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-xs text-[11px] font-semibold text-gray-700"
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span className="font-extrabold text-gray-900 uppercase tracking-wide">{label}</span>
+                  <span className="text-gray-300 mx-0.5">·</span>
+                  <span className="text-gray-500">Published by</span>
+                  <span className="text-gray-800 font-bold">{meta!.by}</span>
+                  <span className="text-gray-300 mx-0.5">·</span>
+                  <span className="text-gray-500">Pushed at</span>
+                  <span className="text-gray-800 font-bold">{meta!.at}</span>
+                </div>
+              ) : (
+                <div
+                  key={key}
+                  className="flex items-center gap-2 bg-gray-50 border border-dashed border-gray-300 rounded-full px-4 py-1.5 text-[11px] font-semibold text-gray-400"
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0 bg-gray-300" />
+                  <span className="font-extrabold uppercase tracking-wide">{label}</span>
+                  <span className="text-gray-300 mx-0.5">·</span>
+                  <span className="italic">Not compiled</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {renderTable()}
 
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -378,7 +477,7 @@ const OverallMargin = () => {
           <Line data={chartData} options={chartOptions} />
         </div>
 
-        <div className="bg-[#a61c1e]/5 border border-[#a61c1e]/15 p-4 rounded-xl text-center text-xs text-gray-650 mt-5 leading-relaxed max-w-3xl mx-auto">
+        <div className="bg-[#a61c1e]/5 border border-[#a61c1e]/15 p-4 rounded-xl text-center text-xs text-gray-650 mt-5 leading-relaxed w-full">
           All BUs view shows the combined margin trend only. Select Heating, Cooling, or Water above to load revenue vs COGS, PMA matrix, executive snapshot, and mix/margin insights for that BU.
         </div>
       </div>

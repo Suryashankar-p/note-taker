@@ -630,6 +630,9 @@ const ChatArea: React.FC<Props> = ({
         const processedChatHistory: any[] = [];
 
         response.result.forEach((chat: any, index: number) => {
+          if (typeof chat.human === 'string' && chat.human.startsWith('System Notification: Uploaded file')) {
+            return;
+          }
           processedChatHistory.push(chat);
 
           const doc = chat.document;
@@ -840,7 +843,7 @@ const ChatArea: React.FC<Props> = ({
               );
               const streamId = streamResponse?.id || streamResponse?.chat_history_id;
               if (streamId) {
-                startStreaming(newChatId || chat_id || "", streamId, localMessagesToPass || [], isNewChat, effectiveThinkingToPass, false);
+                startStreaming(newChatId || chat_id || "", streamId, localMessagesToPass || [], isNewChat, effectiveThinkingToPass, true);
               } else {
                 setLoading(false);
                 dispatch.toast.openToast({
@@ -1048,7 +1051,7 @@ const ChatArea: React.FC<Props> = ({
             return;
           } else if (streamResponse?.id || streamResponse?.chat_history_id) {
             const streamId = streamResponse.id || streamResponse.chat_history_id;
-            startStreaming(chat_id, streamId, localMessages, false, effectiveThinking, mode === "query");
+            startStreaming(chat_id, streamId, localMessages, false, effectiveThinking, mode === "query" || localFiles?.length > 0);
             return; // Exit early for streaming
           } else {
             dispatch.toast.openToast({
@@ -1148,7 +1151,7 @@ const ChatArea: React.FC<Props> = ({
                   localFiles,
                   true,
                   effectiveThinking,
-                  mode === "query"
+                  mode === "query" || localFiles?.length > 0
                 );
                 return; // Exit early for streaming
               } else {

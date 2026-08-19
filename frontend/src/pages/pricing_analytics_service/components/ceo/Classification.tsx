@@ -60,6 +60,54 @@ const Classification = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto text-gray-800">
+
+      {(() => {
+        const formatDate = (raw?: string | null): string => {
+          if (!raw) return "—";
+          try {
+            const ddmmyyyy = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+            if (ddmmyyyy) {
+              const [, dd, mm, yyyy] = ddmmyyyy;
+              const date = new Date(`${yyyy}-${mm}-${dd}`);
+              if (isNaN(date.getTime())) return raw;
+              return date.toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              });
+            }
+            const normalized = raw.replace(/(\.\d{3})\d+/, "$1");
+            const date = new Date(normalized);
+            if (isNaN(date.getTime())) return raw;
+            return date.toLocaleString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            });
+          } catch {
+            return raw;
+          }
+        };
+
+        const publishedBy = (classificationData as any)?.published_by || "—";
+        const publishedAt = formatDate((classificationData as any)?.published_date);
+        return (
+          <div className="flex items-center gap-2 self-start bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-xs text-[11px] font-semibold text-gray-700">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            <span className="font-extrabold text-gray-900 uppercase tracking-wide">{activeBu}</span>
+            <span className="text-gray-300 mx-0.5">·</span>
+            <span className="text-gray-500">Published by</span>
+            <span className="text-gray-800 font-bold">{publishedBy}</span>
+            <span className="text-gray-300 mx-0.5">·</span>
+            <span className="text-gray-500">Pushed at</span>
+            <span className="text-gray-800 font-bold">{publishedAt}</span>
+          </div>
+        );
+      })()}
+
       <ClassificationGrid
         data={activeData}
         quartersList={quartersList}
