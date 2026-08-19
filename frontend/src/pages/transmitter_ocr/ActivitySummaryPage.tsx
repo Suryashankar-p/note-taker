@@ -82,7 +82,7 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
   const toastStatus = useSelector((state: RootState) => state.toast);
 
   const [activeTab, setActiveTab] = useState<'master_activities' | 'analytics'>('master_activities');
-  const [filterOptions, setFilterOptions] = useState<string[]>(['All', 'Honeywell', 'Gauges Bourdon', 'Yokogawa', 'Emerson']);
+  const [filterOptions, setFilterOptions] = useState<string[]>(['All']);
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
   const [tagsData, setTagsData] = useState<any>(null);
   const [processedYears, setProcessedYears] = useState<number[]>([new Date().getFullYear()]);
@@ -141,6 +141,14 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
           template.includes('bourdon') ||
           templateName.includes('gauges') ||
           templateName.includes('bourdon')
+        );
+      }
+
+      if (target === 'general') {
+        return (
+          (!template && !templateName) ||
+          template.includes('general') ||
+          templateName.includes('general')
         );
       }
 
@@ -222,15 +230,13 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
 
         // Dynamically extract unique template names returned in the API response
         const apiTemplates: string[] = response.result
-          .map((act: MasterActivity) => act.template || act.template_name)
+          .map((act: MasterActivity) => act.template || act.template_name || "General")
           .filter((t: string | undefined): t is string => Boolean(t) && typeof t === 'string');
 
-        if (apiTemplates.length > 0) {
-          setFilterOptions((prev) => {
-            const combined = new Set(['All', ...prev.filter(f => f !== 'All'), ...apiTemplates]);
-            return Array.from(combined);
-          });
-        }
+        setFilterOptions(() => {
+          const combined = new Set(['All', ...apiTemplates]);
+          return Array.from(combined);
+        });
       } else {
         console.error("Error fetching master activities");
       }
@@ -272,6 +278,18 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
             ...prevPageSize,
             skip: prevPageSize.skip + prevPageSize.limit,
           }));
+
+          // Dynamically extract unique template names returned in the API response
+          const apiTemplates: string[] = newActivities
+            .map((act: MasterActivity) => act.template || act.template_name || "General")
+            .filter((t: string | undefined): t is string => Boolean(t) && typeof t === 'string');
+
+          if (apiTemplates.length > 0) {
+            setFilterOptions((prev) => {
+              const combined = new Set([...prev, ...apiTemplates]);
+              return Array.from(combined);
+            });
+          }
 
           activityListRef.current?.scrollTo(0, scrollPosition);
         }
@@ -377,8 +395,8 @@ const ActivitySummaryPage: React.FC<ActivitySummaryPageProps> = ({ onSelectActiv
                     getAllMasterActivities(0, pageSize.limit, searchValue, filter);
                   }}
                   className={`px-4 py-2 rounded-md transition-colors duration-300 capitalize ${selectedFilter === filter
-                      ? 'bg-danger text-white font-medium'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
+                    ? 'bg-danger text-white font-medium'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium'
                     }`}
                 >
                   <Text type="body">{filter}</Text>
