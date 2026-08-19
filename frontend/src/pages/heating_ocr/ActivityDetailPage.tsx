@@ -900,7 +900,7 @@ const ActivityDetailPage: React.FC = () => {
                   )}
                   {item?.source === CHEM_CORRECTION_SOURCE && (
                     <p className="mt-1 text-xs text-orange-500">
-                      ⚠ Chemistry read from the product column and corrected to the mill column — please verify.
+                      ⚠ Low OCR confidence — please verify.
                     </p>
                   )}
                 </div>
