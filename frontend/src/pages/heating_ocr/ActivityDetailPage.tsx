@@ -37,9 +37,17 @@ interface Item {
   is_valid: boolean;
   invalid_reason: string | null;
   confidence: number | null;
+  // Set by the backend when it changed a value after extraction, e.g.
+  // "chem_correction" when a chemistry value was read from the product
+  // column and repointed at the mill column. Absent on untouched fields.
+  source?: string | null;
 }
 
 const LOW_CONFIDENCE_THRESHOLD = 0.7;
+
+// Backend marker for a chemistry value corrected from the product column to
+// the mill column. Such values are plausible but worth a human check.
+const CHEM_CORRECTION_SOURCE = "chem_correction";
 
 const ActivityDetailPage: React.FC = () => {
   const location = useLocation();
@@ -888,6 +896,11 @@ const ActivityDetailPage: React.FC = () => {
                   {typeof item?.confidence === "number" && item.confidence < LOW_CONFIDENCE_THRESHOLD && (
                     <p className="mt-1 text-xs text-orange-500">
                       ⚠ Low OCR confidence ({Math.round(item.confidence * 100)}%) — please verify.
+                    </p>
+                  )}
+                  {item?.source === CHEM_CORRECTION_SOURCE && (
+                    <p className="mt-1 text-xs text-orange-500">
+                      ⚠ Low OCR confidence — please verify.
                     </p>
                   )}
                 </div>
