@@ -68,6 +68,7 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: "top" as const,
@@ -141,22 +142,20 @@ export default function Cost({ usageData, limit, onLimitEdit, month }: any) {
   };
 
   return (
-    <div className="flex relative py-6 justify-between px-4 flex-row">
+    <div className="flex relative py-6 px-4 flex-col lg:flex-row justify-between items-start gap-6">
       {editLimit && (
         <div>
           <EditLimitModal defaultValue={limit} onSubmit={onLimitEdit} />
         </div>
       )}
-      <div className="w-2/3">
+      <div className="w-full lg:w-2/3 h-80 relative">
         <Bar
-          width={100}
-          height={50}
           className="pl-4"
           options={options}
           data={data}
         />
       </div>
-      <div className="w-1/2 flex relative justify-center items-center">
+      <div className="w-full lg:w-1/2 flex relative justify-center items-center">
         <Doughnut
           width={50}
           height={100}
