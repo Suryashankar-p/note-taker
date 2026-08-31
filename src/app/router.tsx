@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { HomePage } from '@/pages/DashBoard';
 import { NotesPage } from '@/pages/NotesPage';
@@ -7,7 +7,10 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-slate-50">
+      {/* 1. Sidebar on the left */}
       <Sidebar />
+
+      {/* 2. Main content area on the right */}
       <main className="flex-1 p-8 overflow-y-auto">{children}</main>
     </div>
   );
