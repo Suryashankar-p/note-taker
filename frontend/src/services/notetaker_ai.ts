@@ -1,6 +1,4 @@
-import { SSOAPI } from "./Axios";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_NOTETAKER_URL || import.meta.env.VITE_BACKEND_SSO_URL;
+import { NotetakerAPI } from "./Axios";
 
 export interface MeetingItem {
   id: string;
@@ -13,12 +11,13 @@ export interface MeetingItem {
 
 /**
  * Checks with the backend whether the user has synced their calendar.
- * Returns true if synced, false otherwise.
+ * Interceptor automatically attaches the Authorization Bearer token
+ * and handles 401/500 errors.
  */
 export const CheckCalendarSyncStatus = async (): Promise<boolean> => {
   try {
-    const response = await SSOAPI.get(`${BACKEND_URL}/notetaker/calendar-status`);
-    return response.data?.is_synced ?? response.data ?? false;
+    const data = await NotetakerAPI.get("/notetaker/calendar-status");
+    return data?.is_synced ?? data ?? false;
   } catch (error) {
     console.error("Error checking calendar sync status:", error);
     return false;
@@ -30,10 +29,41 @@ export const CheckCalendarSyncStatus = async (): Promise<boolean> => {
  */
 export const GetCalendarMeetings = async (): Promise<MeetingItem[]> => {
   try {
-    const response = await SSOAPI.get(`${BACKEND_URL}/notetaker/meetings`);
-    return response.data?.result || response.data || [];
+    const data = await NotetakerAPI.get("/notetaker/meetings");
+    return data?.result || data || [];
   } catch (error) {
     console.error("Error fetching calendar meetings:", error);
     return [];
+  }
+};
+
+/**
+ * Syncs the user's Microsoft 365 or Google Calendar.
+ */
+export const SyncCalendar = async (provider: "microsoft" | "google"): Promise<any> => {
+  try {
+    const data = await NotetakerAPI.post("/notetaker/sync-calendar", { provider });
+    return data;
+  } catch (error) {
+    console.error("Error syncing calendar:", error);
+    throw error;
+  }
+};
+
+/**
+ * Sends meeting summary email to selected recipients.
+ */
+export const SendMeetingEmail = async (
+  meetingId: string,
+  recipients: string[]
+): Promise<any> => {
+  try {
+    const data = await NotetakerAPI.post(`/notetaker/meetings/${meetingId}/send-email`, {
+      recipients,
+    });
+    return data;
+  } catch (error) {
+    console.error("Error sending meeting email:", error);
+    throw error;
   }
 };

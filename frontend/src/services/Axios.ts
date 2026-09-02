@@ -13,6 +13,7 @@ import {
   axiosEdge,
   axiosPricingAnalytics,
   axiosLegalChecker,
+  axiosNotetaker,
 } from "./axiosInstances";
 
 import { setInterceptors } from "./axiosConfig";
@@ -33,6 +34,7 @@ import { setInterceptors } from "./axiosConfig";
   axiosEdge,
   axiosPricingAnalytics,
   axiosLegalChecker,
+  axiosNotetaker,
 ].forEach(setInterceptors);
 
 // Reusable wrapper for standard HTTP methods
@@ -71,3 +73,4 @@ export async function redirectToLogin(): Promise<void> {
   localStorage.clear();
 }
 export const PricingAnalyticsAPI = createAPI(axiosPricingAnalytics);
+export const NotetakerAPI = createAPI(axiosNotetaker);
