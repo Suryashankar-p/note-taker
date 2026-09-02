@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import NoteTakerMain from "./Main";
 import CalendarSync from "./CalendarSync";
 import PageLoading from "../../components/PageLoading";
@@ -9,17 +10,26 @@ interface NoteTakerEntryProps {}
 const NoteTakerEntry: React.FC<NoteTakerEntryProps> = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [isCalendarSynced, setIsCalendarSynced] = useState<boolean>(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const forceSyncView =
+    searchParams.get("sync") === "true" || searchParams.get("tab") === "calendar";
 
   useEffect(() => {
     checkCalendarStatus();
-  }, []);
+  }, [forceSyncView]);
 
   const checkCalendarStatus = async () => {
+    if (forceSyncView) {
+      setIsCalendarSynced(false);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      // Calls backend function to check calendar connect status (returns boolean true/false)
       const isSynced = await CheckCalendarSyncStatus();
-      setIsCalendarSynced(isSynced);
+      setIsCalendarSynced(isSynced === true);
     } catch (error) {
       console.error("Error checking calendar sync status:", error);
       setIsCalendarSynced(false);
@@ -32,12 +42,16 @@ const NoteTakerEntry: React.FC<NoteTakerEntryProps> = () => {
     return <PageLoading />;
   }
 
-  // If user has NOT synced calendar (false) -> Show CalendarSync page
-  if (!isCalendarSynced) {
+  // If user has NOT synced calendar (false) or explicitly requested sync view -> Show CalendarSync page
+  if (!isCalendarSynced || forceSyncView) {
     return (
       <CalendarSync
         onSyncComplete={() => {
+          localStorage.setItem("notetaker_calendar_synced", "true");
           setIsCalendarSynced(true);
+          if (forceSyncView) {
+            setSearchParams({ tab: "dashboard" });
+          }
         }}
       />
     );

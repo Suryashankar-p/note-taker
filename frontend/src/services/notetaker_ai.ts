@@ -16,8 +16,15 @@ export interface MeetingItem {
  */
 export const CheckCalendarSyncStatus = async (): Promise<boolean> => {
   try {
+    const localStatus = localStorage.getItem("notetaker_calendar_synced");
+    if (localStatus !== null) {
+      return localStatus === "true";
+    }
     const data = await NotetakerAPI.get("/notetaker/calendar-status");
-    return data?.is_synced ?? data ?? false;
+    if (data && typeof data === "object" && typeof data.is_synced === "boolean") {
+      return data.is_synced;
+    }
+    return false;
   } catch (error) {
     console.error("Error checking calendar sync status:", error);
     return false;

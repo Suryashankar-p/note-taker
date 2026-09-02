@@ -87,6 +87,29 @@ const Settings: React.FC = () => {
             </button>
           </div>
         </FeatureCard>
+
+        {/* Calendar Integration Card */}
+        <FeatureCard title="Calendar Integration">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col pr-6">
+              <span className="text-sm font-semibold text-primary_text">Calendar Connection</span>
+              <span className="text-xs text-faint_text mt-1">
+                Connected to Microsoft 365 / Google Calendar for automated meeting capture.
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem("notetaker_calendar_synced");
+                window.location.href = "/ai-studio/notetaker?sync=true";
+              }}
+              className="px-4 py-2 text-xs font-medium text-white bg-danger hover:opacity-90 rounded-lg transition-colors cursor-pointer shadow-sm"
+            >
+              Re-sync Calendar
+            </button>
+          </div>
+        </FeatureCard>
       </div>
     </div>
   );

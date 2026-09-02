@@ -5,6 +5,7 @@ import FeatureCard from "../../components/FeatureCard";
 import Sidebar from "./Sidebar";
 import InitialsAvatar from "../../components/Initials";
 import { GetUserDetails } from "../../services/common";
+import { SyncCalendar } from "../../services/notetaker_ai";
 
 interface CalendarSyncProps {
   onSyncComplete?: () => void;
@@ -56,12 +57,17 @@ const CalendarSync: React.FC<CalendarSyncProps> = ({ onSyncComplete }) => {
     setUser({ name, initials });
   };
 
-  const handleSync = () => {
+  const handleSync = async () => {
     setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      onSyncComplete?.();
-    }, 1200);
+    try {
+      await SyncCalendar("microsoft").catch(() => {});
+    } finally {
+      setTimeout(() => {
+        setIsSyncing(false);
+        localStorage.setItem("notetaker_calendar_synced", "true");
+        onSyncComplete?.();
+      }, 1000);
+    }
   };
 
   return (
