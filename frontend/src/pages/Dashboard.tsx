@@ -71,10 +71,8 @@ const Dashboard: React.FC = () => {
     limit: number,
     search_term: string
   ) => {
-    //setLoading(true);
     try {
       const servicesList = await GetServices(skip, limit, search_term);
-      console.log("Service List:", servicesList)
       if (servicesList?.result) {
         let filteredResult = servicesList.result;
         if (DOMAIN === "https://aistudio.thermaxglobal.com") {
@@ -83,17 +81,15 @@ const Dashboard: React.FC = () => {
             (service: Card) => !titlesToRemove.includes(service.title)
           );
         }
-        console.log("Filtered Result:", filteredResult);
         setServices(filteredResult);
         setTotalServices(servicesList?.total);
       } else {
         setPageError(true);
-        if (servicesList?.detail)
+        if (servicesList?.detail && servicesList.detail !== "Not authenticated")
           dispatch.toast.openToast({
             status: true,
             message: servicesList?.detail,
           });
-        navigate("/");
       }
       setLoading(false);
     } catch (err) {
@@ -304,6 +300,10 @@ const Dashboard: React.FC = () => {
 
   const openService = (title: string) => {
     switch (title) {
+      case "Notetaker AI":
+      case "notetaker":
+        navigate("./notetaker");
+        break;
       case "Sales Enablement Tool":
         getSalesRole();
         break;

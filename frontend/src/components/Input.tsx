@@ -33,7 +33,7 @@ const Input: React.FC<InputProps> = ({
     if (event.target.value.length > maxLength) {
       setWarning(`Maximum length of ${maxLength} characters exceeded!`);
     } else {
-      onChange(event);
+      if (onChange) onChange(event);
       setWarning(null);
     }
   };
