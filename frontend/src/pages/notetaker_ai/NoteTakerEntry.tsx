@@ -1,63 +1,33 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import NoteTakerMain from "./Main";
 import CalendarSync from "./CalendarSync";
-import PageLoading from "../../components/PageLoading";
-import { CheckCalendarSyncStatus } from "../../services/notetaker_ai";
 
-interface NoteTakerEntryProps {}
+interface NoteTakerEntryProps { }
 
 const NoteTakerEntry: React.FC<NoteTakerEntryProps> = () => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isCalendarSynced, setIsCalendarSynced] = useState<boolean>(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
 
-  const forceSyncView =
-    searchParams.get("sync") === "true" || searchParams.get("tab") === "calendar";
+  // By default, start with isCalendarSynced = false so CalendarSync lands first.
+  // If the user directly navigates to a tab (like ?tab=dashboard), they can view the main workspace.
+  const [isCalendarSynced, setIsCalendarSynced] = useState<boolean>(
+    Boolean(requestedTab && requestedTab !== "calendar")
+  );
 
-  useEffect(() => {
-    checkCalendarStatus();
-  }, [forceSyncView]);
-
-  const checkCalendarStatus = async () => {
-    if (forceSyncView) {
-      setIsCalendarSynced(false);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const isSynced = await CheckCalendarSyncStatus();
-      setIsCalendarSynced(isSynced === true);
-    } catch (error) {
-      console.error("Error checking calendar sync status:", error);
-      setIsCalendarSynced(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <PageLoading />;
-  }
-
-  // If user has NOT synced calendar (false) or explicitly requested sync view -> Show CalendarSync page
-  if (!isCalendarSynced || forceSyncView) {
+  // Whenever the page is freshly opened without a tab query or with ?tab=calendar / ?sync=true, land on CalendarSync
+  if (!isCalendarSynced || searchParams.get("sync") === "true" || requestedTab === "calendar") {
     return (
       <CalendarSync
         onSyncComplete={() => {
-          localStorage.setItem("notetaker_calendar_synced", "true");
           setIsCalendarSynced(true);
-          if (forceSyncView) {
-            setSearchParams({ tab: "dashboard" });
-          }
+          setSearchParams({ tab: "dashboard" });
         }}
       />
     );
   }
 
-  // If user HAS synced calendar (true) -> Show Main Notetaker AI workspace
+  // Once synced or navigated to a specific tab -> Show Main Notetaker AI workspace
   return <NoteTakerMain />;
 };
 
